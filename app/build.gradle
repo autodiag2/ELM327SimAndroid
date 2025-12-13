@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace "com.example.btserial"
+    namespace "com.autodiag.elm327emu"
     compileSdk 34
 
     compileOptions {
@@ -16,7 +16,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.example.btserial"
+        applicationId "com.autodiag.elm327emu"
         minSdk 28
         targetSdk 34
         versionCode 1

@@ -1,4 +1,4 @@
-package com.example.btserial
+package com.autodiag.elm327emu
 
 import android.Manifest
 import android.app.Activity
