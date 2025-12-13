@@ -13,6 +13,8 @@ import java.util.UUID
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothServerSocket
 import android.bluetooth.BluetoothSocket
+import android.net.LocalSocket
+import android.net.LocalSocketAddress
 import com.autodiag.elm327emu.libautodiag
 
 private const val REQUEST_CODE = 1
@@ -41,7 +43,6 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-
         logView = TextView(this).apply {
             setPadding(16,16,16,16)
         }
@@ -60,7 +61,6 @@ class MainActivity : Activity() {
     private fun startSimulation() {
         scope.launch {
             try {
-                
                 val filesDirPath = filesDir.absolutePath
                 appendLog(filesDirPath)
                 libautodiag.setTmpDir(filesDirPath)
@@ -68,35 +68,35 @@ class MainActivity : Activity() {
                 val location = libautodiag.launchEmu()
                 appendLog("Native sim location: $location")
 
-                val port = location.substringAfter("127.0.0.1:").toInt()
+                val socketPath = location
 
-                appendLog("Connecting to loopback port $port")
+                appendLog("Connecting to local socket at $socketPath")
 
-                val loopbackSocket = Socket("127.0.0.1", port)
-                val loopbackInput = loopbackSocket.getInputStream()
-                val loopbackOutput = loopbackSocket.getOutputStream()
+                val loopbackSocket = LocalSocket()
+                loopbackSocket.connect(LocalSocketAddress(socketPath, LocalSocketAddress.Namespace.FILESYSTEM))
+
+                val loopbackInput = loopbackSocket.inputStream
+                val loopbackOutput = loopbackSocket.outputStream
 
                 val buffer = ByteArray(1024)
 
-                // Launch coroutine to forward BT -> Loopback
                 val jobBTtoLoopback = launch {
                     while (true) {
                         val n = bt_input?.read(buffer) ?: break
                         if (n <= 0) break
                         loopbackOutput.write(buffer, 0, n)
                         loopbackOutput.flush()
-                        appendLog("BT->Loopback sent ${n} bytes")
+                        appendLog("BT->Loopback sent $n bytes")
                     }
                 }
 
-                // Launch coroutine to forward Loopback -> BT
                 val jobLoopbackToBT = launch {
                     while (true) {
                         val n = loopbackInput.read(buffer)
                         if (n <= 0) break
                         bt_output?.write(buffer, 0, n)
                         bt_output?.flush()
-                        appendLog("Loopback->BT sent ${n} bytes")
+                        appendLog("Loopback->BT sent $n bytes")
                     }
                 }
 
@@ -128,7 +128,6 @@ class MainActivity : Activity() {
 
                     startSimulation() // Start sim only after BT connection established
 
-                    // This loop now only monitors connection until closed
                     val buffer = ByteArray(1024)
                     while (true) {
                         val n = bt_input?.read(buffer) ?: break
