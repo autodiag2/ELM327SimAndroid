@@ -168,6 +168,11 @@ class MainActivity : AppCompatActivity() {
                 running = !running
                 text = if (running) "Stop simulation" else "Start simulation"
                 appendLog(if (running) "Simulation started" else "Simulation stopped")
+                if ( running ) {
+                    startBluetoothServer()
+                } else {
+                    stopBluetoothServer()
+                }
             }
         }
 
@@ -177,9 +182,9 @@ class MainActivity : AppCompatActivity() {
             setPadding(16, 16, 16, 16)
             movementMethod = ScrollingMovementMethod()
         }
+        container.addView(logView)
 
         val content = FrameLayout(this).apply {
-            addView(logView)
             addView(container)
         }
 
@@ -210,7 +215,6 @@ class MainActivity : AppCompatActivity() {
                 return
             }
         }
-        startBluetoothServer()
     }
 
     private fun dpToPx(dp: Int): Int {
@@ -251,6 +255,27 @@ class MainActivity : AppCompatActivity() {
         }
 
         return result.toString()
+    }
+
+    private fun stopBluetoothServer() {
+        try {
+            bt_input?.close()
+            bt_input = null
+
+            bt_output?.close()
+            bt_output = null
+
+            socket?.close()
+            socket = null
+
+            server?.close()
+            server = null
+        } catch (_: Exception) {
+        }
+
+        scope.coroutineContext.cancelChildren()
+
+        appendLog("Bluetooth server stopped")
     }
 
     private fun startBluetoothServer() {
