@@ -26,6 +26,7 @@ import android.view.MenuItem
 import android.content.Intent
 import com.autodiag.elm327emu.SettingsActivity
 import androidx.appcompat.widget.Toolbar
+import android.content.Context
 
 private const val REQUEST_CODE = 1
 
@@ -50,6 +51,9 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var drawer: DrawerLayout
     private lateinit var logView: TextView
+
+    private val prefs by lazy { getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
+    private val autoScroll get() = prefs.getBoolean("auto_scroll", true)
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
@@ -222,10 +226,12 @@ class MainActivity : AppCompatActivity() {
     private fun appendLog(text: String) {
         runOnUiThread {
             logView.append(text + "\n")
-            val layout = logView.layout
-            if (layout != null) {
-                val scroll = layout.getLineTop(logView.lineCount) - logView.height
-                if (0 < scroll) logView.scrollTo(0, scroll) else logView.scrollTo(0, 0)
+            if ( autoScroll ) {
+                val layout = logView.layout
+                if (layout != null) {
+                    val scroll = layout.getLineTop(logView.lineCount) - logView.height
+                    if (0 < scroll) logView.scrollTo(0, scroll) else logView.scrollTo(0, 0)
+                }
             }
         }
     }
