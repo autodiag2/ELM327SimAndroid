@@ -41,7 +41,7 @@ class SettingsActivity : AppCompatActivity() {
         }
         val navView = NavigationView(this).apply {
             menu.add("Home").setOnMenuItemClickListener {
-                startActivity(Intent(this@SettingsActivity, MainActivity::class.java))
+                finish()
                 drawer.closeDrawer(Gravity.LEFT)
                 true
             }
