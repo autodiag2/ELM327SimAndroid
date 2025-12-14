@@ -27,6 +27,14 @@ import android.content.Intent
 import com.autodiag.elm327emu.SettingsActivity
 import androidx.appcompat.widget.Toolbar
 import android.content.Context
+import android.widget.LinearLayout
+import android.widget.SeekBar
+import android.widget.ListView
+import android.widget.ArrayAdapter
+import android.widget.EditText
+import android.widget.Button
+import android.widget.CheckBox
+import android.widget.ScrollView
 
 private const val REQUEST_CODE = 1
 
@@ -73,8 +81,106 @@ class MainActivity : AppCompatActivity() {
             movementMethod = ScrollingMovementMethod()
         }
 
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(16, 16, 16, 16)
+        }
+
+        fun labeledSeekBar(label: String, min: Int, max: Int, unit: String): Pair<SeekBar, TextView> {
+            val title = TextView(this).apply { text = label }
+            val value = TextView(this).apply { text = "$min $unit" }
+            val seek = SeekBar(this).apply {
+                this.max = max - min
+                setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                    override fun onProgressChanged(s: SeekBar, p: Int, f: Boolean) {
+                        value.text = "${p + min} $unit"
+                    }
+                    override fun onStartTrackingTouch(s: SeekBar) {}
+                    override fun onStopTrackingTouch(s: SeekBar) {}
+                })
+            }
+            container.addView(title)
+            container.addView(value)
+            container.addView(seek)
+            return seek to value
+        }
+
+        labeledSeekBar("Vehicle speed (km/h)", 0, 250, "km/h")
+        labeledSeekBar("Coolant temperature (°C)", -40, 150, "°C")
+        labeledSeekBar("Engine speed (r/min)", 0, 8000, "rpm")
+
+        val events = mutableListOf<String>()
+        val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, events)
+
+        val listView = ListView(this).apply {
+            this.adapter = adapter
+        }
+
+        val eventInput = EditText(this).apply {
+            hint = "P0103"
+        }
+
+        val addButton = Button(this).apply {
+            text = "Add"
+            setOnClickListener {
+                if (eventInput.text.isNotEmpty()) {
+                    events.add(eventInput.text.toString())
+                    adapter.notifyDataSetChanged()
+                    eventInput.text.clear()
+                }
+            }
+        }
+
+        val eventRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            addView(eventInput, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            addView(addButton)
+        }
+
+        container.addView(listView, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, 300
+        ))
+        container.addView(eventRow)
+
+        val milCheck = CheckBox(this).apply { text = "MIL status" }
+        val dtcCheck = CheckBox(this).apply { text = "DTCs cleared" }
+
+        container.addView(milCheck)
+        container.addView(dtcCheck)
+
+        val ecuName = EditText(this).apply {
+            hint = "ECU name"
+            setText("ECU from gui")
+        }
+
+        val vin = EditText(this).apply {
+            hint = "VIN"
+            setText("VF7RD5FV8FL507366")
+        }
+
+        container.addView(ecuName)
+        container.addView(vin)
+
+        var running = false
+        val startStop = Button(this).apply {
+            text = "Start simulation"
+            setOnClickListener {
+                running = !running
+                text = if (running) "Stop simulation" else "Start simulation"
+                appendLog(if (running) "Simulation started" else "Simulation stopped")
+            }
+        }
+
+        container.addView(startStop)
+
+        logView = TextView(this).apply {
+            setPadding(16, 16, 16, 16)
+            movementMethod = ScrollingMovementMethod()
+        }
+
         val content = FrameLayout(this).apply {
             addView(logView)
+            addView(container)
         }
 
         val navView = NavigationView(this).apply {
