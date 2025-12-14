@@ -1,7 +1,7 @@
 package com.autodiag.elm327emu
 
 import android.Manifest
-import android.app.Activity
+import androidx.appcompat.app.AppCompatActivity
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -18,6 +18,15 @@ import android.net.LocalSocketAddress
 import com.autodiag.elm327emu.libautodiag
 import android.util.Log
 import android.text.method.ScrollingMovementMethod
+import android.view.Gravity
+import android.widget.FrameLayout
+import androidx.drawerlayout.widget.DrawerLayout
+import com.google.android.material.navigation.NavigationView
+import android.view.MenuItem
+import android.content.Intent
+import com.autodiag.elm327emu.SettingsActivity
+import androidx.appcompat.widget.Toolbar
+import androidx.appcompat.app.ActionBarDrawerToggle
 
 private const val REQUEST_CODE = 1
 
@@ -29,7 +38,7 @@ object libautodiag {
     external fun setTmpDir(path: String)
 }
 
-class MainActivity : Activity() {
+class MainActivity : AppCompatActivity() {
     private val adapter = BluetoothAdapter.getDefaultAdapter()
     private val uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
 
@@ -40,16 +49,66 @@ class MainActivity : Activity() {
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
+    private lateinit var drawer: DrawerLayout
     private lateinit var logView: TextView
+    private lateinit var toggle: ActionBarDrawerToggle
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == android.R.id.home) {
+            drawer.openDrawer(Gravity.LEFT)
+            return true
+        }
+        return super.onOptionsItemSelected(item)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        drawer = DrawerLayout(this)
 
         logView = TextView(this).apply {
             setPadding(16, 16, 16, 16)
             movementMethod = ScrollingMovementMethod()
         }
-        setContentView(logView)
+
+        val content = FrameLayout(this).apply {
+            addView(logView)
+        }
+
+        val navView = NavigationView(this).apply {
+            menu.add("Settings").setOnMenuItemClickListener {
+                startActivity(Intent(this@MainActivity, SettingsActivity::class.java))
+                drawer.closeDrawer(Gravity.LEFT)
+                true
+            }
+        }
+
+        drawer.addView(content, DrawerLayout.LayoutParams(
+            DrawerLayout.LayoutParams.MATCH_PARENT,
+            DrawerLayout.LayoutParams.MATCH_PARENT
+        ))
+        drawer.addView(navView, DrawerLayout.LayoutParams(
+            DrawerLayout.LayoutParams.WRAP_CONTENT,
+            DrawerLayout.LayoutParams.MATCH_PARENT
+        ).apply {
+            gravity = Gravity.START
+        })
+
+        setContentView(drawer)
+
+        // Add a toolbar to enable ActionBarDrawerToggle
+        val toolbar = Toolbar(this)
+        toolbar.title = "Bluetooth Server"
+        drawer.addView(toolbar, DrawerLayout.LayoutParams(
+            DrawerLayout.LayoutParams.MATCH_PARENT,
+            dpToPx(56)
+        ))
+
+        setSupportActionBar(toolbar)
+
+        toggle = ActionBarDrawerToggle(this, drawer, toolbar, R.string.open, R.string.close)
+        drawer.addDrawerListener(toggle)
+        toggle.syncState()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
@@ -58,6 +117,10 @@ class MainActivity : Activity() {
             }
         }
         startBluetoothServer()
+    }
+
+    private fun dpToPx(dp: Int): Int {
+        return (dp * resources.displayMetrics.density).toInt()
     }
 
     private fun toStr(buffer: ByteArray, size: Int): String {
