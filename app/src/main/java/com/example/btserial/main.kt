@@ -16,6 +16,7 @@ import android.bluetooth.BluetoothSocket
 import android.net.LocalSocket
 import android.net.LocalSocketAddress
 import com.autodiag.elm327emu.libautodiag
+import android.util.Log
 
 private const val REQUEST_CODE = 1
 
@@ -58,6 +59,43 @@ class MainActivity : Activity() {
         startSimulation()
     }
 
+    private fun toStr(buffer: ByteArray, size: Int): String {
+        val colSize = 20
+        val result = StringBuilder()
+        var byteI = 0
+
+        while (byteI < size) {
+            val hexCollector = StringBuilder()
+            val asciiCollector = StringBuilder()
+            var col = 0
+
+            while (col < colSize && byteI < size) {
+                val b = buffer[byteI].toInt() and 0xFF
+
+                if (col > 0) hexCollector.append(' ')
+                hexCollector.append(String.format("%02x", b))
+
+                asciiCollector.append(
+                    if (b in 0x20..0x7E) b.toChar() else '.'
+                )
+
+                col += 1
+                byteI += 1
+            }
+
+            result.append(
+                String.format(
+                    "%59s | %20s\n",
+                    hexCollector.toString(),
+                    asciiCollector.toString()
+                )
+            )
+        }
+
+        return result.toString()
+    }
+
+
     private fun startSimulation() {
         scope.launch {
             try {
@@ -75,6 +113,8 @@ class MainActivity : Activity() {
                 val loopbackSocket = LocalSocket()
                 loopbackSocket.connect(LocalSocketAddress(socketPath, LocalSocketAddress.Namespace.FILESYSTEM))
 
+                appendLog("Socket connected !")
+
                 val loopbackInput = loopbackSocket.inputStream
                 val loopbackOutput = loopbackSocket.outputStream
 
@@ -86,7 +126,9 @@ class MainActivity : Activity() {
                         if (n <= 0) break
                         loopbackOutput.write(buffer, 0, n)
                         loopbackOutput.flush()
-                        appendLog("BT->Loopback sent $n bytes")
+                        val hexd = toStr(buffer, n)
+                        appendLog(" * Received from Bluetooth: (passing to loopback)")
+                        appendLog(hexd)
                     }
                 }
 
@@ -96,7 +138,9 @@ class MainActivity : Activity() {
                         if (n <= 0) break
                         bt_output?.write(buffer, 0, n)
                         bt_output?.flush()
-                        appendLog("Loopback->BT sent $n bytes")
+                        val hexd = toStr(buffer, n)
+                        appendLog(" * Sending the data received from loopback on bluetooth:")
+                        appendLog(hexd)
                     }
                 }
 
