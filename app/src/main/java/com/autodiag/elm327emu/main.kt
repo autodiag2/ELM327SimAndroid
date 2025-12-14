@@ -26,7 +26,6 @@ import android.view.MenuItem
 import android.content.Intent
 import com.autodiag.elm327emu.SettingsActivity
 import androidx.appcompat.widget.Toolbar
-import androidx.appcompat.app.ActionBarDrawerToggle
 
 private const val REQUEST_CODE = 1
 
@@ -51,7 +50,6 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var drawer: DrawerLayout
     private lateinit var logView: TextView
-    private lateinit var toggle: ActionBarDrawerToggle
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
@@ -95,20 +93,6 @@ class MainActivity : AppCompatActivity() {
         })
 
         setContentView(drawer)
-
-        // Add a toolbar to enable ActionBarDrawerToggle
-        val toolbar = Toolbar(this)
-        toolbar.title = "Bluetooth Server"
-        drawer.addView(toolbar, DrawerLayout.LayoutParams(
-            DrawerLayout.LayoutParams.MATCH_PARENT,
-            dpToPx(56)
-        ))
-
-        setSupportActionBar(toolbar)
-
-        toggle = ActionBarDrawerToggle(this, drawer, toolbar, R.string.open, R.string.close)
-        drawer.addDrawerListener(toggle)
-        toggle.syncState()
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
