@@ -65,6 +65,7 @@ object libautodiag {
     @JvmStatic fun getDtcCleared(): Boolean = SimGeneratorGui.dtcCleared
     @JvmStatic fun getEcuName(): String = SimGeneratorGui.ecuName
     @JvmStatic fun getVin(): String = SimGeneratorGui.vin
+    @JvmStatic fun getDtcs(): Array<String> = SimGeneratorGui.dtcs.toTypedArray()
 }
 
 class MainActivity : AppCompatActivity() {
