@@ -56,7 +56,6 @@ class MainActivity : Activity() {
             }
         }
         startBluetoothServer()
-        startSimulation()
     }
 
     private fun toStr(buffer: ByteArray, size: Int): String {
@@ -95,88 +94,68 @@ class MainActivity : Activity() {
         return result.toString()
     }
 
-
-    private fun startSimulation() {
-        scope.launch {
-            try {
-                val filesDirPath = filesDir.absolutePath
-                appendLog(filesDirPath)
-                libautodiag.setTmpDir(filesDirPath)
-
-                val location = libautodiag.launchEmu()
-                appendLog("Native sim location: $location")
-
-                val socketPath = location
-
-                appendLog("Connecting to local socket at $socketPath")
-
-                val loopbackSocket = LocalSocket()
-                loopbackSocket.connect(LocalSocketAddress(socketPath, LocalSocketAddress.Namespace.FILESYSTEM))
-
-                appendLog("Socket connected !")
-
-                val loopbackInput = loopbackSocket.inputStream
-                val loopbackOutput = loopbackSocket.outputStream
-
-                val buffer = ByteArray(1024)
-
-                val jobBTtoLoopback = launch {
-                    while (true) {
-                        val n = bt_input?.read(buffer) ?: break
-                        if (n <= 0) break
-                        loopbackOutput.write(buffer, 0, n)
-                        loopbackOutput.flush()
-                        val hexd = toStr(buffer, n)
-                        appendLog(" * Received from Bluetooth: (passing to loopback)")
-                        appendLog(hexd)
-                    }
-                }
-
-                val jobLoopbackToBT = launch {
-                    while (true) {
-                        val n = loopbackInput.read(buffer)
-                        if (n <= 0) break
-                        bt_output?.write(buffer, 0, n)
-                        bt_output?.flush()
-                        val hexd = toStr(buffer, n)
-                        appendLog(" * Sending the data received from loopback on bluetooth:")
-                        appendLog(hexd)
-                    }
-                }
-
-                jobBTtoLoopback.join()
-                jobLoopbackToBT.cancelAndJoin()
-
-                loopbackInput.close()
-                loopbackOutput.close()
-                loopbackSocket.close()
-                appendLog("Loopback connection closed")
-
-            } catch (e: Exception) {
-                appendLog("Error: ${e.message}")
-            }
-        }
-    }
-
     private fun startBluetoothServer() {
-        GlobalScope.launch(Dispatchers.IO) {
-            while(true) {
+        scope.launch {
+            while (true) {
                 try {
                     server = adapter.listenUsingRfcommWithServiceRecord("BTSerial", uuid)
                     appendLog("Waiting for connection...")
+
                     socket = server?.accept()
                     appendLog("Client connected: ${socket?.remoteDevice?.address}")
 
                     bt_input = socket?.inputStream
                     bt_output = socket?.outputStream
 
-                    startSimulation() // Start sim only after BT connection established
+                    val filesDirPath = filesDir.absolutePath
+                    libautodiag.setTmpDir(filesDirPath)
 
-                    val buffer = ByteArray(1024)
-                    while (true) {
-                        val n = bt_input?.read(buffer) ?: break
-                        if (n <= 0) break
+                    val location = libautodiag.launchEmu()
+                    appendLog("Native sim location: $location")
+
+                    val loopbackSocket = LocalSocket()
+                    loopbackSocket.connect(
+                        LocalSocketAddress(location, LocalSocketAddress.Namespace.FILESYSTEM)
+                    )
+
+                    appendLog("Loopback socket connected")
+
+                    val loopbackInput = loopbackSocket.inputStream
+                    val loopbackOutput = loopbackSocket.outputStream
+
+                    val bufferBT = ByteArray(1024)
+                    val bufferLoop = ByteArray(1024)
+
+                    val btToLoop = launch {
+                        while (true) {
+                            val n = bt_input?.read(bufferBT) ?: break
+                            if (n <= 0) break
+                            loopbackOutput.write(bufferBT, 0, n)
+                            loopbackOutput.flush()
+                            appendLog(" * Received from Bluetooth: (passing to loopback)")
+                            appendLog(toStr(bufferBT, n))
+                        }
                     }
+
+                    val loopToBt = launch {
+                        while (true) {
+                            val n = loopbackInput.read(bufferLoop)
+                            if (n <= 0) break
+                            bt_output?.write(bufferLoop, 0, n)
+                            bt_output?.flush()
+                            appendLog(" * Sending the data received from loopback on bluetooth:")
+                            appendLog(toStr(bufferLoop, n))
+                        }
+                    }
+
+                    btToLoop.join()
+                    loopToBt.cancelAndJoin()
+
+                    loopbackInput.close()
+                    loopbackOutput.close()
+                    loopbackSocket.close()
+                } catch (e: CancellationException) {
+                    throw e
                 } catch (e: Exception) {
                     appendLog("Error: ${e.message}")
                 } finally {
@@ -189,6 +168,7 @@ class MainActivity : Activity() {
             }
         }
     }
+
 
     private fun appendLog(text: String) {
         runOnUiThread {
