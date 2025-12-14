@@ -17,6 +17,7 @@ import android.net.LocalSocket
 import android.net.LocalSocketAddress
 import com.autodiag.elm327emu.libautodiag
 import android.util.Log
+import android.text.method.ScrollingMovementMethod
 
 private const val REQUEST_CODE = 1
 
@@ -45,7 +46,8 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
 
         logView = TextView(this).apply {
-            setPadding(16,16,16,16)
+            setPadding(16, 16, 16, 16)
+            movementMethod = ScrollingMovementMethod()
         }
         setContentView(logView)
 
@@ -173,6 +175,11 @@ class MainActivity : Activity() {
     private fun appendLog(text: String) {
         runOnUiThread {
             logView.append(text + "\n")
+            val layout = logView.layout
+            if (layout != null) {
+                val scroll = layout.getLineTop(logView.lineCount) - logView.height
+                if (0 < scroll) logView.scrollTo(0, scroll) else logView.scrollTo(0, 0)
+            }
         }
     }
 
