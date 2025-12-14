@@ -25,6 +25,7 @@ import com.google.android.material.navigation.NavigationView
 import android.view.MenuItem
 import android.content.Intent
 import com.autodiag.elm327emu.SettingsActivity
+import com.autodiag.elm327emu.SimGeneratorGui
 import androidx.appcompat.widget.Toolbar
 import android.content.Context
 import android.widget.LinearLayout
@@ -35,15 +36,35 @@ import android.widget.EditText
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.ScrollView
+import androidx.core.widget.addTextChangedListener
 
 private const val REQUEST_CODE = 1
+
+object SimGeneratorGui {
+    @Volatile var vehicleSpeed = 0
+    @Volatile var coolantTemp = -40
+    @Volatile var engineRpm = 0
+    @Volatile var mil = false
+    @Volatile var dtcCleared = false
+    @Volatile var ecuName = "ECU from gui"
+    @Volatile var vin = "VF7RD5FV8FL507366"
+    val dtcs = mutableListOf<String>()
+}
 
 object libautodiag {
     init {
         System.loadLibrary("autodiag")
     }
-    external fun launchEmu(): String
-    external fun setTmpDir(path: String)
+    @JvmStatic external fun launchEmu(): String
+    @JvmStatic external fun setTmpDir(path: String)
+
+    @JvmStatic fun getVehicleSpeed(): Int = SimGeneratorGui.vehicleSpeed
+    @JvmStatic fun getCoolantTemp(): Int = SimGeneratorGui.coolantTemp
+    @JvmStatic fun getEngineRpm(): Int = SimGeneratorGui.engineRpm
+    @JvmStatic fun getMil(): Boolean = SimGeneratorGui.mil
+    @JvmStatic fun getDtcCleared(): Boolean = SimGeneratorGui.dtcCleared
+    @JvmStatic fun getEcuName(): String = SimGeneratorGui.ecuName
+    @JvmStatic fun getVin(): String = SimGeneratorGui.vin
 }
 
 class MainActivity : AppCompatActivity() {
@@ -76,24 +97,21 @@ class MainActivity : AppCompatActivity() {
 
         drawer = DrawerLayout(this)
 
-        logView = TextView(this).apply {
-            setPadding(16, 16, 16, 16)
-            movementMethod = ScrollingMovementMethod()
-        }
-
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(16, 16, 16, 16)
         }
 
-        fun labeledSeekBar(label: String, min: Int, max: Int, unit: String): Pair<SeekBar, TextView> {
+        fun labeledSeekBar(label: String, min: Int, max: Int, unit: String, onChange: (Int) -> Unit): Pair<SeekBar, TextView> {
             val title = TextView(this).apply { text = label }
             val value = TextView(this).apply { text = "$min $unit" }
             val seek = SeekBar(this).apply {
                 this.max = max - min
                 setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                     override fun onProgressChanged(s: SeekBar, p: Int, f: Boolean) {
-                        value.text = "${p + min} $unit"
+                        val v = p + min
+                        value.text = "$v $unit"
+                        onChange(v)
                     }
                     override fun onStartTrackingTouch(s: SeekBar) {}
                     override fun onStopTrackingTouch(s: SeekBar) {}
@@ -105,57 +123,83 @@ class MainActivity : AppCompatActivity() {
             return seek to value
         }
 
-        labeledSeekBar("Vehicle speed (km/h)", 0, 250, "km/h")
-        labeledSeekBar("Coolant temperature (°C)", -40, 150, "°C")
-        labeledSeekBar("Engine speed (r/min)", 0, 8000, "rpm")
-
-        val events = mutableListOf<String>()
-        val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, events)
-
-        val listView = ListView(this).apply {
-            this.adapter = adapter
+        labeledSeekBar("Vehicle speed (km/h)", 0, 250, "km/h") {
+            SimGeneratorGui.vehicleSpeed = it
         }
 
-        val eventInput = EditText(this).apply {
+        labeledSeekBar("Coolant temperature (°C)", -40, 150, "°C") {
+            SimGeneratorGui.coolantTemp = it
+        }
+
+        labeledSeekBar("Engine speed (r/min)", 0, 8000, "rpm") {
+            SimGeneratorGui.engineRpm = it
+        }
+
+        val dtcs = mutableListOf<String>()
+        val dtcAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, dtcs)
+
+        val listView = ListView(this).apply {
+            this.adapter = dtcAdapter
+        }
+
+        val dtcInput = EditText(this).apply {
             hint = "P0103"
         }
 
         val addButton = Button(this).apply {
             text = "Add"
             setOnClickListener {
-                if (eventInput.text.isNotEmpty()) {
-                    events.add(eventInput.text.toString())
-                    adapter.notifyDataSetChanged()
-                    eventInput.text.clear()
+                val v = dtcInput.text.toString()
+                if (v.isNotEmpty()) {
+                    dtcs.add(v.toString())
+                    SimGeneratorGui.dtcs.add(v)
+                    dtcAdapter.notifyDataSetChanged()
+                    dtcInput.text.clear()
                 }
             }
         }
 
-        val eventRow = LinearLayout(this).apply {
+        val dtcRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            addView(eventInput, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            addView(dtcInput, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
             addView(addButton)
         }
 
         container.addView(listView, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, 300
         ))
-        container.addView(eventRow)
+        container.addView(dtcRow)
 
-        val milCheck = CheckBox(this).apply { text = "MIL status" }
-        val dtcCheck = CheckBox(this).apply { text = "DTCs cleared" }
+        val milCheck = CheckBox(this).apply { 
+            text = "MIL status" 
+            setOnCheckedChangeListener { _, v ->
+                SimGeneratorGui.mil = v
+            }
+        }
+        val dtcCleared = CheckBox(this).apply { 
+            text = "DTCs cleared"
+            setOnCheckedChangeListener { _, v ->
+                SimGeneratorGui.dtcCleared = v
+            }
+        }
 
         container.addView(milCheck)
-        container.addView(dtcCheck)
+        container.addView(dtcCleared)
 
         val ecuName = EditText(this).apply {
             hint = "ECU name"
-            setText("ECU from gui")
+            setText(SimGeneratorGui.ecuName)
+            addTextChangedListener {
+                SimGeneratorGui.ecuName = it.toString()
+            }
         }
 
         val vin = EditText(this).apply {
-            hint = "VIN"
-            setText("VF7RD5FV8FL507366")
+            hint = "VF7RD5FV8FL507366"
+            setText(SimGeneratorGui.vin)
+            addTextChangedListener {
+                SimGeneratorGui.vin = it.toString()
+            }
         }
 
         container.addView(ecuName)
