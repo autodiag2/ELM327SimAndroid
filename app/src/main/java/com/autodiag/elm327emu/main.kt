@@ -316,9 +316,19 @@ class MainActivity : AppCompatActivity() {
 
         appendLog("Bluetooth server stopped")
     }
+    
+    private fun clearSocketFiles() {
+        val dir = filesDir
+        dir.listFiles()?.forEach { f ->
+            if (f.name.startsWith("socket")) {
+                f.delete()
+            }
+        }
+    }
 
     private fun startBluetoothServer() {
         scope.launch {
+            clearSocketFiles()
             while (true) {
                 try {
                     server = adapter.listenUsingRfcommWithServiceRecord("BTSerial", uuid)
@@ -348,7 +358,7 @@ class MainActivity : AppCompatActivity() {
                     val bufferLoop = ByteArray(1024)
 
                     val btToLoop = launch {
-                        while (true) {
+                        while (isActive) {
                             try {
                                 val n = bt_input?.read(bufferBT) ?: break
                                 if (n <= 0) break
@@ -364,9 +374,9 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     val loopToBt = launch {
-                        while (true) {
+                        while (isActive) {
                             try {
-                                val n = loopbackInput.read(bufferLoop)
+                                val n = loopbackInput?.read(bufferLoop) ?: break
                                 if (n <= 0) break
                                 bt_output?.write(bufferLoop, 0, n)
                                 bt_output?.flush()
@@ -380,7 +390,7 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     btToLoop.join()
-                    loopToBt.cancelAndJoin()
+                    loopToBt.cancel()
 
                     loopbackInput.close()
                     loopbackOutput.close()
