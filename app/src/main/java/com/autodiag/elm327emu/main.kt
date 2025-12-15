@@ -349,23 +349,33 @@ class MainActivity : AppCompatActivity() {
 
                     val btToLoop = launch {
                         while (true) {
-                            val n = bt_input?.read(bufferBT) ?: break
-                            if (n <= 0) break
-                            loopbackOutput.write(bufferBT, 0, n)
-                            loopbackOutput.flush()
-                            appendLog(" * Received from Bluetooth: (passing to loopback)")
-                            appendLog(toStr(bufferBT, n))
+                            try {
+                                val n = bt_input?.read(bufferBT) ?: break
+                                if (n <= 0) break
+                                loopbackOutput.write(bufferBT, 0, n)
+                                loopbackOutput.flush()
+                                appendLog(" * Received from Bluetooth: (passing to loopback)")
+                                appendLog(toStr(bufferBT, n))
+                            } catch(e: Exception) {
+                                appendLog("exiting btToLoop: ${e.message}")
+                                break
+                            }
                         }
                     }
 
                     val loopToBt = launch {
                         while (true) {
-                            val n = loopbackInput.read(bufferLoop)
-                            if (n <= 0) break
-                            bt_output?.write(bufferLoop, 0, n)
-                            bt_output?.flush()
-                            appendLog(" * Sending the data received from loopback on bluetooth:")
-                            appendLog(toStr(bufferLoop, n))
+                            try {
+                                val n = loopbackInput.read(bufferLoop)
+                                if (n <= 0) break
+                                bt_output?.write(bufferLoop, 0, n)
+                                bt_output?.flush()
+                                appendLog(" * Sending the data received from loopback on bluetooth:")
+                                appendLog(toStr(bufferLoop, n))
+                            } catch(e: Exception) {
+                                appendLog("exiting loopToBt: ${e.message}")
+                                break
+                            }
                         }
                     }
 
