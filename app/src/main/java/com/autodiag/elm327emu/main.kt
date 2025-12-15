@@ -391,7 +391,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
     private fun appendLog(text: String) {
         if ( BuildConfig.DEBUG ) {
             runOnUiThread {
