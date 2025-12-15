@@ -50,6 +50,9 @@ object SimGeneratorGui {
     @Volatile var vin = "VF7RD5FV8FL507366"
     val dtcs = mutableListOf<String>()
 }
+object MainActivityRef {
+    @Volatile var activity: MainActivity? = null
+}
 
 object libautodiag {
     init {
@@ -65,6 +68,13 @@ object libautodiag {
     @JvmStatic fun getEcuName(): String = SimGeneratorGui.ecuName
     @JvmStatic fun getVin(): String = SimGeneratorGui.vin
     @JvmStatic fun getDtcs(): Array<String> = SimGeneratorGui.dtcs.toTypedArray()
+    @JvmStatic
+    fun setDtcCleared(value: Boolean) {
+        SimGeneratorGui.dtcCleared = value
+        MainActivityRef.activity?.runOnUiThread {
+            MainActivityRef.activity?.setDtcClearedUi(value)
+        }
+    }
 }
 
 class MainActivity : AppCompatActivity() {
@@ -80,6 +90,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var drawer: DrawerLayout
     private lateinit var logView: TextView
+    private lateinit var dtcClearedCheck: CheckBox
 
     private val prefs by lazy { getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
     private val autoScroll get() = prefs.getBoolean("auto_scroll", true)
@@ -94,7 +105,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        MainActivityRef.activity = this
         drawer = DrawerLayout(this)
 
         val container = LinearLayout(this).apply {
@@ -176,7 +187,7 @@ class MainActivity : AppCompatActivity() {
                 SimGeneratorGui.mil = v
             }
         }
-        val dtcCleared = CheckBox(this).apply { 
+        dtcClearedCheck = CheckBox(this).apply { 
             text = "DTCs cleared"
             setOnCheckedChangeListener { _, v ->
                 SimGeneratorGui.dtcCleared = v
@@ -184,7 +195,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         container.addView(milCheck)
-        container.addView(dtcCleared)
+        container.addView(dtcClearedCheck)
 
         val ecuName = EditText(this).apply {
             hint = "ECU name"
@@ -259,6 +270,10 @@ class MainActivity : AppCompatActivity() {
                 return
             }
         }
+    }
+
+    fun setDtcClearedUi(value: Boolean) {
+        dtcClearedCheck.isChecked = value
     }
 
     private fun dpToPx(dp: Int): Int {
@@ -407,6 +422,11 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    override fun onDestroy() {
+        MainActivityRef.activity = null
+        super.onDestroy()
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
