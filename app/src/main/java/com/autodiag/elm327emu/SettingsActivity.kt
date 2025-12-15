@@ -38,17 +38,18 @@ class SettingsActivity : AppCompatActivity() {
             text = "General"
             textSize = 18f
         }
-
-        val autoScrollToggle = Switch(this).apply {
-            text = "Auto-scroll on output"
-            isChecked = prefs.getBoolean("auto_scroll", true)
-            setOnCheckedChangeListener { _, v ->
-                prefs.edit().putBoolean("auto_scroll", v).apply()
-            }
-        }
-
         root.addView(generalTitle)
-        root.addView(autoScrollToggle)
+
+        if ( BuildConfig.DEBUG ) {
+            val autoScrollToggle = Switch(this).apply {
+                text = "Auto-scroll on output"
+                isChecked = prefs.getBoolean("auto_scroll", true)
+                setOnCheckedChangeListener { _, v ->
+                    prefs.edit().putBoolean("auto_scroll", v).apply()
+                }
+            }
+            root.addView(autoScrollToggle)
+        }
 
         /* ========= ELM327 parameters section ========= */
 

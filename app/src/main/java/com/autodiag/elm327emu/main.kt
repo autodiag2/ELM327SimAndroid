@@ -235,23 +235,29 @@ class MainActivity : AppCompatActivity() {
         }
 
         container.addView(startStop)
-        val clearLog = Button(this).apply {
-            text = "Clear log"
-            setOnClickListener {
-                runOnUiThread {
-                    logView.text = ""
-                    logView.scrollTo(0, 0)
+
+        if ( BuildConfig.DEBUG ) {
+
+            val clearLog = Button(this).apply {
+                text = "Clear log"
+                setOnClickListener {
+                    runOnUiThread {
+                        logView.text = ""
+                        logView.scrollTo(0, 0)
+                    }
                 }
             }
+    
+            container.addView(clearLog)
+
+            logView = TextView(this).apply {
+                setPadding(16, 16, 16, 16)
+                movementMethod = ScrollingMovementMethod()
+            }
+            container.addView(logView)
+
         }
 
-        container.addView(clearLog)
-
-        logView = TextView(this).apply {
-            setPadding(16, 16, 16, 16)
-            movementMethod = ScrollingMovementMethod()
-        }
-        container.addView(logView)
 
         val content = FrameLayout(this).apply {
             addView(container)
@@ -426,13 +432,15 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun appendLog(text: String) {
-        runOnUiThread {
-            logView.append(text + "\n")
-            if ( autoScroll ) {
-                val layout = logView.layout
-                if (layout != null) {
-                    val scroll = layout.getLineTop(logView.lineCount) - logView.height
-                    if (0 < scroll) logView.scrollTo(0, scroll) else logView.scrollTo(0, 0)
+        if ( BuildConfig.DEBUG ) {
+            runOnUiThread {
+                logView.append(text + "\n")
+                if ( autoScroll ) {
+                    val layout = logView.layout
+                    if (layout != null) {
+                        val scroll = layout.getLineTop(logView.lineCount) - logView.height
+                        if (0 < scroll) logView.scrollTo(0, scroll) else logView.scrollTo(0, 0)
+                    }
                 }
             }
         }
