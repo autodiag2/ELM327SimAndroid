@@ -75,6 +75,9 @@ object libautodiag {
             MainActivityRef.activity?.setDtcClearedUi(value)
         }
     }
+    @JvmStatic external fun getProtocols(): Array<String>
+    @JvmStatic external fun setProtocol(protocol: Int)
+    @JvmStatic external fun getProtocol(): Int
 }
 
 class MainActivity : AppCompatActivity() {
