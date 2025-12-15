@@ -376,6 +376,7 @@ class MainActivity : AppCompatActivity() {
                     loopbackOutput.close()
                     loopbackSocket.close()
                 } catch (e: CancellationException) {
+                    appendLog("Cancelled")
                     throw e
                 } catch (e: Exception) {
                     appendLog("Error: ${e.message}")
