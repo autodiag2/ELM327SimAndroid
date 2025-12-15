@@ -235,6 +235,17 @@ class MainActivity : AppCompatActivity() {
         }
 
         container.addView(startStop)
+        val clearLog = Button(this).apply {
+            text = "Clear log"
+            setOnClickListener {
+                runOnUiThread {
+                    logView.text = ""
+                    logView.scrollTo(0, 0)
+                }
+            }
+        }
+
+        container.addView(clearLog)
 
         logView = TextView(this).apply {
             setPadding(16, 16, 16, 16)
