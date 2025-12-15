@@ -55,8 +55,7 @@ object libautodiag {
     init {
         System.loadLibrary("autodiag")
     }
-    @JvmStatic external fun launchEmu(): String
-    @JvmStatic external fun setTmpDir(path: String)
+    @JvmStatic external fun launchEmu(tmpDirPath: String): String
 
     @JvmStatic fun getVehicleSpeed(): Int = SimGeneratorGui.vehicleSpeed
     @JvmStatic fun getCoolantTemp(): Int = SimGeneratorGui.coolantTemp
@@ -337,9 +336,7 @@ class MainActivity : AppCompatActivity() {
                     bt_output = socket?.outputStream
 
                     val filesDirPath = filesDir.absolutePath
-                    libautodiag.setTmpDir(filesDirPath)
-
-                    val location = libautodiag.launchEmu()
+                    val location = libautodiag.launchEmu(filesDirPath)
                     appendLog("Native sim location: $location")
 
                     val loopbackSocket = LocalSocket()
