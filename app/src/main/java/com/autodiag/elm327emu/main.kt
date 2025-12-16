@@ -379,6 +379,33 @@ class MainActivity : AppCompatActivity() {
                 prefs.edit().putBoolean("auto_scroll", v).apply()
             }
         })
+        val btNameLabel = TextView(this).apply {
+            text = "Bluetooth device name"
+            setPadding(0, 16, 0, 0)
+        }
+        root.addView(btNameLabel)
+
+        val btNameEdit = EditText(this).apply {
+            hint = "OBD II"
+            setText(adapter?.name ?: "")
+        }
+        root.addView(btNameEdit)
+
+        val applyBtn = Button(this).apply {
+            text = "Set"
+            setOnClickListener {
+                val newName = btNameEdit.text.toString().trim()
+                if (newName.isEmpty() || adapter == null) return@setOnClickListener
+
+                if ( isPermissionsGranted() ) {
+                    adapter.name = newName
+                } else {
+                    requestPermissions()
+                }
+
+            }
+        }
+        root.addView(applyBtn)
 
         val elmTitle = TextView(this).apply {
             text = "ELM327 parameters"
@@ -554,6 +581,7 @@ class MainActivity : AppCompatActivity() {
             clearSocketFiles()
             while (true) {
                 try {
+
                     server = adapter.listenUsingRfcommWithServiceRecord("BTSerial", uuid)
                     appendLog(LogLevel.INFO, "Waiting for connection...")
 
