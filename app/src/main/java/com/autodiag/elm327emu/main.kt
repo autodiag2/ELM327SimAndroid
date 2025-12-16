@@ -291,7 +291,6 @@ class MainActivity : AppCompatActivity() {
         floatingButtons = buildButtons().apply {
             visibility = View.GONE
             elevation = dpToPx(6).toFloat()
-            setBackgroundColor(0xFFFFFFFF.toInt())
         }
 
         logRoot.addView(
