@@ -41,6 +41,7 @@ import android.view.ViewGroup.LayoutParams
 import android.view.View
 import android.content.SharedPreferences
 import android.widget.*
+import android.view.MotionEvent
 
 private const val REQUEST_CODE = 1
 private const val REQUEST_SAVE_LOG = 1001
@@ -68,6 +69,7 @@ class MainActivity : AppCompatActivity() {
     private var logPendingScroll = false
     lateinit var logButtonsContainer: LinearLayout
     lateinit var logFloatingButtons: LinearLayout
+    private var logUserTouched = false
 
     lateinit var settingsView: View
 
@@ -286,6 +288,24 @@ class MainActivity : AppCompatActivity() {
         logScroll = ScrollView(this).apply {
             isFillViewport = true
             addView(container)
+        }
+
+        logScroll.setOnTouchListener { _, event ->
+            if (event.action == MotionEvent.ACTION_DOWN) {
+                logUserTouched = true
+            }
+            false
+        }
+
+        logScroll.viewTreeObserver.addOnScrollChangedListener {
+            if (!logUserTouched) return@addOnScrollChangedListener
+
+            val child = logScroll.getChildAt(0) ?: return@addOnScrollChangedListener
+            val diff = child.bottom - (logScroll.height + logScroll.scrollY)
+
+            if (diff == 0) {
+                logUserTouched = false
+            }
         }
 
         logFloatingButtons = buildButtons().apply {
@@ -619,13 +639,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun appendLog(level: LogLevel, text: String) {
-        val shouldLog =
-        BuildConfig.DEBUG || level == LogLevel.INFO
+        val shouldLog = BuildConfig.DEBUG || level == LogLevel.INFO
 
         if (!shouldLog || !::logView.isInitialized) return
+
         runOnUiThread {
             logView.append(text + "\n")
-            if (autoScroll && !logPendingScroll) {
+            if (autoScroll && !logPendingScroll && !logUserTouched) {
                 logPendingScroll = true
                 logScroll.post {
                     logScroll.fullScroll(View.FOCUS_DOWN)
