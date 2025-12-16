@@ -38,6 +38,7 @@ import android.widget.CheckBox
 import android.widget.ScrollView
 import androidx.core.widget.addTextChangedListener
 import com.autodiag.elm327emu.R
+import android.view.ViewGroup.LayoutParams
 
 private const val REQUEST_CODE = 1
 
@@ -84,6 +85,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         MainActivityRef.activity = this
+        
         drawer = DrawerLayout(this)
 
         val container = LinearLayout(this).apply {
@@ -91,7 +93,7 @@ class MainActivity : AppCompatActivity() {
             setPadding(16, 16, 16, 16)
         }
 
-        fun labeledSeekBar(label: String, min: Int, max: Int, unit: String, onChange: (Int) -> Unit): Pair<SeekBar, TextView> {
+        fun labeledSeekBar(label: String, min: Int, max: Int, unit: String, onChange: (Int) -> Unit) {
             val title = TextView(this).apply { text = label }
             val value = TextView(this).apply { text = "$min $unit" }
             val seek = SeekBar(this).apply {
@@ -109,7 +111,6 @@ class MainActivity : AppCompatActivity() {
             container.addView(title)
             container.addView(value)
             container.addView(seek)
-            return seek to value
         }
 
         labeledSeekBar("Vehicle speed (km/h)", 0, 250, "km/h") {
@@ -128,7 +129,7 @@ class MainActivity : AppCompatActivity() {
         val dtcAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, dtcs)
 
         val listView = ListView(this).apply {
-            this.adapter = dtcAdapter
+            adapter = dtcAdapter
         }
 
         val dtcInput = EditText(this).apply {
@@ -140,7 +141,7 @@ class MainActivity : AppCompatActivity() {
             setOnClickListener {
                 val v = dtcInput.text.toString()
                 if (v.isNotEmpty()) {
-                    dtcs.add(v.toString())
+                    dtcs.add(v)
                     SimGeneratorGui.dtcs.add(v)
                     dtcAdapter.notifyDataSetChanged()
                     dtcInput.text.clear()
@@ -154,22 +155,23 @@ class MainActivity : AppCompatActivity() {
             addView(addButton)
         }
 
-        container.addView(listView, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, 300
-        ))
+        container.addView(
+            listView,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                300
+            )
+        )
         container.addView(dtcRow)
 
-        val milCheck = CheckBox(this).apply { 
-            text = "MIL status" 
-            setOnCheckedChangeListener { _, v ->
-                SimGeneratorGui.mil = v
-            }
+        val milCheck = CheckBox(this).apply {
+            text = "MIL status"
+            setOnCheckedChangeListener { _, v -> SimGeneratorGui.mil = v }
         }
-        dtcClearedCheck = CheckBox(this).apply { 
+
+        dtcClearedCheck = CheckBox(this).apply {
             text = "DTCs cleared"
-            setOnCheckedChangeListener { _, v ->
-                SimGeneratorGui.dtcCleared = v
-            }
+            setOnCheckedChangeListener { _, v -> SimGeneratorGui.dtcCleared = v }
         }
 
         container.addView(milCheck)
@@ -178,17 +180,13 @@ class MainActivity : AppCompatActivity() {
         val ecuName = EditText(this).apply {
             hint = "ECU name"
             setText(SimGeneratorGui.ecuName)
-            addTextChangedListener {
-                SimGeneratorGui.ecuName = it.toString()
-            }
+            addTextChangedListener { SimGeneratorGui.ecuName = it.toString() }
         }
 
         val vin = EditText(this).apply {
             hint = "VF7RD5FV8FL507366"
             setText(SimGeneratorGui.vin)
-            addTextChangedListener {
-                SimGeneratorGui.vin = it.toString()
-            }
+            addTextChangedListener { SimGeneratorGui.vin = it.toString() }
         }
 
         container.addView(ecuName)
@@ -198,17 +196,11 @@ class MainActivity : AppCompatActivity() {
         val startStop = Button(this).apply {
             text = "Start simulation"
             setOnClickListener {
-                if ( isPermissionsGranted() ) {
+                if (isPermissionsGranted()) {
                     running = !running
                     text = if (running) "Stop simulation" else "Start simulation"
-                    appendLog(LogLevel.INFO, if (running) "Simulation started" else "Simulation stopped")
-                    if ( running ) {
-                        startBluetoothServer()
-                    } else {
-                        stopBluetoothServer()
-                    }
+                    if (running) startBluetoothServer() else stopBluetoothServer()
                 } else {
-                    appendLog(LogLevel.INFO, "Missing permissions - server not started")
                     requestPermissions()
                 }
             }
@@ -216,31 +208,58 @@ class MainActivity : AppCompatActivity() {
 
         container.addView(startStop)
 
-        if ( BuildConfig.DEBUG ) {
+        val downloadLog = Button(this).apply {
+            text = "Download log"
+            setOnClickListener {
+                scope.launch {
+                    val txt = if (::logView.isInitialized) logView.text.toString() else ""
+                    val file = File(getExternalFilesDir(null), "elm327emu_log.txt")
+                    file.writeText(txt)
+                    appendLog(LogLevel.INFO, "Log written to: ${file.absolutePath}")
+                }
+            }
+        }
+
+        container.addView(downloadLog)
+
+        if (BuildConfig.DEBUG) {
 
             val clearLog = Button(this).apply {
                 text = "Clear log"
                 setOnClickListener {
-                    runOnUiThread {
-                        logView.text = ""
-                        logView.scrollTo(0, 0)
-                    }
+                    runOnUiThread { logView.text = "" }
                 }
             }
-    
+
             container.addView(clearLog)
 
             logView = TextView(this).apply {
                 setPadding(16, 16, 16, 16)
                 movementMethod = ScrollingMovementMethod()
             }
-            container.addView(logView)
 
+            container.addView(logView)
         }
 
+        val scrollView = ScrollView(this).apply {
+            isFillViewport = true
+            addView(
+                container,
+                android.view.ViewGroup.LayoutParams(
+                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+            )
+        }
 
         val content = FrameLayout(this).apply {
-            addView(container)
+            addView(
+                scrollView,
+                FrameLayout.LayoutParams(
+                    FrameLayout.LayoutParams.MATCH_PARENT,
+                    FrameLayout.LayoutParams.MATCH_PARENT
+                )
+            )
         }
 
         val navView = NavigationView(this).apply {
@@ -251,16 +270,21 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        drawer.addView(content, DrawerLayout.LayoutParams(
-            DrawerLayout.LayoutParams.MATCH_PARENT,
-            DrawerLayout.LayoutParams.MATCH_PARENT
-        ))
-        drawer.addView(navView, DrawerLayout.LayoutParams(
-            DrawerLayout.LayoutParams.WRAP_CONTENT,
-            DrawerLayout.LayoutParams.MATCH_PARENT
-        ).apply {
-            gravity = Gravity.START
-        })
+        drawer.addView(
+            content,
+            DrawerLayout.LayoutParams(
+                DrawerLayout.LayoutParams.MATCH_PARENT,
+                DrawerLayout.LayoutParams.MATCH_PARENT
+            )
+        )
+
+        drawer.addView(
+            navView,
+            DrawerLayout.LayoutParams(
+                DrawerLayout.LayoutParams.WRAP_CONTENT,
+                DrawerLayout.LayoutParams.MATCH_PARENT
+            ).apply { gravity = Gravity.START }
+        )
 
         setContentView(drawer)
 
