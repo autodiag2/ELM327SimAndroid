@@ -185,7 +185,7 @@ class MainActivity : AppCompatActivity() {
             setOnClickListener {
                 running = !running
                 text = if (running) "Stop simulation" else "Start simulation"
-                appendLog(if (running) "Simulation started" else "Simulation stopped")
+                appendLog(LogLevel.INFO, if (running) "Simulation started" else "Simulation stopped")
                 if ( running ) {
                     startBluetoothServer()
                 } else {
@@ -260,42 +260,6 @@ class MainActivity : AppCompatActivity() {
         return (dp * resources.displayMetrics.density).toInt()
     }
 
-    private fun toStr(buffer: ByteArray, size: Int): String {
-        val colSize = 20
-        val result = StringBuilder()
-        var byteI = 0
-
-        while (byteI < size) {
-            val hexCollector = StringBuilder()
-            val asciiCollector = StringBuilder()
-            var col = 0
-
-            while (col < colSize && byteI < size) {
-                val b = buffer[byteI].toInt() and 0xFF
-
-                if (col > 0) hexCollector.append(' ')
-                hexCollector.append(String.format("%02x", b))
-
-                asciiCollector.append(
-                    if (b in 0x20..0x7E) b.toChar() else '.'
-                )
-
-                col += 1
-                byteI += 1
-            }
-
-            result.append(
-                String.format(
-                    "%59s | %20s\n",
-                    hexCollector.toString(),
-                    asciiCollector.toString()
-                )
-            )
-        }
-
-        return result.toString()
-    }
-
     private fun stopBluetoothServer() {
         try {
             bt_input?.close()
@@ -314,7 +278,7 @@ class MainActivity : AppCompatActivity() {
 
         scope.coroutineContext.cancelChildren()
 
-        appendLog("Bluetooth server stopped")
+        appendLog(LogLevel.INFO, "Bluetooth server stopped")
     }
     
     private fun clearSocketFiles() {
@@ -332,24 +296,24 @@ class MainActivity : AppCompatActivity() {
             while (true) {
                 try {
                     server = adapter.listenUsingRfcommWithServiceRecord("BTSerial", uuid)
-                    appendLog("Waiting for connection...")
+                    appendLog(LogLevel.INFO, "Waiting for connection...")
 
                     socket = server?.accept()
-                    appendLog("Client connected: ${socket?.remoteDevice?.address}")
+                    appendLog(LogLevel.INFO, "Client connected: ${socket?.remoteDevice?.address}")
 
                     bt_input = socket?.inputStream
                     bt_output = socket?.outputStream
 
                     val filesDirPath = filesDir.absolutePath
                     val location = libautodiag.launchEmu(filesDirPath)
-                    appendLog("Native sim location: $location")
+                    appendLog(LogLevel.DEBUG, "Native sim location: $location")
 
                     val loopbackSocket = LocalSocket()
                     loopbackSocket.connect(
                         LocalSocketAddress(location, LocalSocketAddress.Namespace.FILESYSTEM)
                     )
 
-                    appendLog("Loopback socket connected")
+                    appendLog(LogLevel.DEBUG, "Loopback socket connected")
 
                     val loopbackInput = loopbackSocket.inputStream
                     val loopbackOutput = loopbackSocket.outputStream
@@ -364,10 +328,10 @@ class MainActivity : AppCompatActivity() {
                                 if (n <= 0) break
                                 loopbackOutput.write(bufferBT, 0, n)
                                 loopbackOutput.flush()
-                                appendLog(" * Received from Bluetooth: (passing to loopback)")
-                                appendLog(toStr(bufferBT, n))
+                                appendLog(LogLevel.DEBUG, " * Received from Bluetooth: (passing to loopback)")
+                                appendLog(LogLevel.DEBUG, hexDump(bufferBT, n))
                             } catch(e: Exception) {
-                                appendLog("exiting btToLoop: ${e.message}")
+                                appendLog(LogLevel.DEBUG, "exiting btToLoop: ${e.message}")
                                 break
                             }
                         }
@@ -380,10 +344,10 @@ class MainActivity : AppCompatActivity() {
                                 if (n <= 0) break
                                 bt_output?.write(bufferLoop, 0, n)
                                 bt_output?.flush()
-                                appendLog(" * Sending the data received from loopback on bluetooth:")
-                                appendLog(toStr(bufferLoop, n))
+                                appendLog(LogLevel.DEBUG, " * Sending the data received from loopback on bluetooth:")
+                                appendLog(LogLevel.DEBUG, hexDump(bufferLoop, n))
                             } catch(e: Exception) {
-                                appendLog("exiting loopToBt: ${e.message}")
+                                appendLog(LogLevel.DEBUG, "exiting loopToBt: ${e.message}")
                                 break
                             }
                         }
@@ -396,23 +360,31 @@ class MainActivity : AppCompatActivity() {
                     loopbackOutput.close()
                     loopbackSocket.close()
                 } catch (e: CancellationException) {
-                    appendLog("Cancelled")
+                    appendLog(LogLevel.DEBUG, "Cancelled")
                     throw e
                 } catch (e: Exception) {
-                    appendLog("Error: ${e.message}")
+                    appendLog(LogLevel.DEBUG, "Error: ${e.message}")
                 } finally {
                     bt_input?.close()
                     bt_output?.close()
                     socket?.close()
                     server?.close()
-                    appendLog("Bluetooth connection closed")
+                    appendLog(LogLevel.INFO, "Bluetooth connection closed")
                 }
             }
         }
     }
 
-    private fun appendLog(text: String) {
+    private fun appendLog(level: LogLevel, text: String) {
+        var shouldLog = false;
         if ( BuildConfig.DEBUG ) {
+            shouldLog = true;
+        } else {
+            if ( level == LogLevel.INFO ) {
+                shouldLog = true;
+            }
+        }
+        if ( shouldLog ) {
             runOnUiThread {
                 logView.append(text + "\n")
                 if ( autoScroll ) {
