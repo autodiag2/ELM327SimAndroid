@@ -245,12 +245,7 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(drawer)
 
-        drawer.setBackgroundColor(getColor(R.color.sol_base03))
-        container.setBackgroundColor(getColor(R.color.sol_base03))
-        navView.setBackgroundColor(getColor(R.color.sol_base02))
-        logView.setTextColor(getColor(R.color.sol_base0))
-        logView.setBackgroundColor(getColor(R.color.sol_base03))
-        logView.typeface = android.graphics.Typeface.MONOSPACE
+        
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {

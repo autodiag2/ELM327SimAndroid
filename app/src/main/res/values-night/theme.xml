@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.Solarized" parent="Theme.AppCompat.NoActionBar">
+        <item name="colorPrimary">@color/sol_base02</item>
+        <item name="colorPrimaryDark">@color/sol_base03</item>
+        <item name="colorAccent">@color/sol_blue</item>
+
+        <item name="android:windowBackground">@color/sol_base03</item>
+        <item name="android:colorBackground">@color/sol_base03</item>
+        <item name="android:textColor">@color/sol_base0</item>
+        <item name="android:textColorSecondary">@color/sol_base01</item>
+        <item name="android:textViewStyle">@style/Solarized.TextView.Dark</item>
+        <item name="android:editTextStyle">@style/Solarized.EditText.Dark</item>
+        <item name="android:buttonStyle">@style/Solarized.Button.Dark</item>
+        <item name="android:checkboxStyle">@style/Solarized.CheckBox.Dark</item>
+    </style>
+
+    <style name="Solarized.TextView.Dark" parent="TextAppearance.AppCompat">
+        <item name="android:textColor">@color/sol_base0</item>
+    </style>
+
+    <style name="Solarized.EditText.Dark" parent="Widget.AppCompat.EditText">
+        <item name="android:textColor">@color/sol_base0</item>
+        <item name="android:textColorHint">@color/sol_base01</item>
+        <item name="android:backgroundTint">@color/sol_base01</item>
+    </style>
+
+    <style name="Solarized.Button.Dark" parent="Widget.AppCompat.Button">
+        <item name="android:textColor">@color/sol_base3</item>
+        <item name="android:backgroundTint">@color/sol_blue</item>
+    </style>
+
+    <style name="Solarized.CheckBox.Dark" parent="Widget.AppCompat.CompoundButton.CheckBox">
+        <item name="android:textColor">@color/sol_base0</item>
+        <item name="buttonTint">@color/sol_cyan</item>
+    </style>
+
+</resources>
