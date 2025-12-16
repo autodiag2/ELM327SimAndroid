@@ -39,6 +39,7 @@ import android.widget.ScrollView
 import androidx.core.widget.addTextChangedListener
 import com.autodiag.elm327emu.R
 import android.view.ViewGroup.LayoutParams
+import android.view.View
 
 private const val REQUEST_CODE = 1
 private const val REQUEST_SAVE_LOG = 1001
@@ -57,6 +58,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var drawer: DrawerLayout
     private lateinit var logView: TextView
     private lateinit var dtcClearedCheck: CheckBox
+    lateinit var contentFrame: FrameLayout
+    lateinit var simView: View
+    lateinit var logViewRoot: View
 
     private val prefs by lazy { getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
     private val autoScroll get() = prefs.getBoolean("auto_scroll", true)
@@ -83,12 +87,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        MainActivityRef.activity = this
-
-        drawer = DrawerLayout(this)
-
+    private fun buildSimView(): View {
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(16, 16, 16, 16)
@@ -209,66 +208,92 @@ class MainActivity : AppCompatActivity() {
 
         container.addView(startStop)
 
-        if (BuildConfig.DEBUG) {
-
-            val downloadLog = Button(this).apply {
-                text = "Download log"
-                setOnClickListener {
-                    scope.launch {
-                        val txt = if (::logView.isInitialized) logView.text.toString() else ""
-                        val file = File(getExternalFilesDir(null), "elm327emu_log.txt")
-                        file.writeText(txt)
-                        appendLog(LogLevel.INFO, "Log written to: ${file.absolutePath}")
-                    }
-                }
-            }
-
-            container.addView(downloadLog)
-
-            container.addView(Button(this).apply {
-                text = "Download log on FS"
-                setOnClickListener { openSaveLogDialog() }
-            })
-            
-            val clearLog = Button(this).apply {
-                text = "Clear log"
-                setOnClickListener {
-                    runOnUiThread { logView.text = "" }
-                }
-            }
-
-            container.addView(clearLog)
-
-            logView = TextView(this).apply {
-                setPadding(16, 16, 16, 16)
-                movementMethod = ScrollingMovementMethod()
-            }
-
-            container.addView(logView)
-        }
-
-        val scrollView = ScrollView(this).apply {
+        return ScrollView(this).apply {
             isFillViewport = true
-            addView(
-                container,
-                android.view.ViewGroup.LayoutParams(
-                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-            )
+            addView(container)
+        }
+    }
+
+    private fun buildLogView(): View {
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(16, 16, 16, 16)
         }
 
-        val content = FrameLayout(this).apply {
-            addView(
-                scrollView,
-                FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
-                    FrameLayout.LayoutParams.MATCH_PARENT
-                )
-            )
+        val downloadLog = Button(this).apply {
+            text = "Download log"
+            setOnClickListener {
+                scope.launch {
+                    val txt = if (::logView.isInitialized) logView.text.toString() else ""
+                    val file = File(getExternalFilesDir(null), "elm327emu_log.txt")
+                    file.writeText(txt)
+                    appendLog(LogLevel.INFO, "Log written to: ${file.absolutePath}")
+                }
+            }
         }
+
+        container.addView(downloadLog)
+
+        container.addView(Button(this).apply {
+            text = "Download log on FS"
+            setOnClickListener { openSaveLogDialog() }
+        })
+        
+        val clearLog = Button(this).apply {
+            text = "Clear log"
+            setOnClickListener {
+                runOnUiThread { logView.text = "" }
+            }
+        }
+
+        container.addView(clearLog)
+
+        logView = TextView(this).apply {
+            setPadding(16, 16, 16, 16)
+            movementMethod = ScrollingMovementMethod()
+        }
+
+        container.addView(logView)
+
+        return ScrollView(this).apply {
+            isFillViewport = true
+            addView(container)
+        }
+    }
+
+    private fun show(view: View) {
+        contentFrame.removeAllViews()
+        contentFrame.addView(view)
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        MainActivityRef.activity = this
+
+        drawer = DrawerLayout(this)
+
+        simView = buildSimView()
+        logViewRoot = buildLogView()
+
+        
+        contentFrame = FrameLayout(this)
+        contentFrame.addView(simView)
 
         val navView = NavigationView(this).apply {
+            menu.add("Sim").setOnMenuItemClickListener {
+                show(simView)
+                drawer.closeDrawer(Gravity.LEFT)
+                true
+            }
+
+            if ( BuildConfig.DEBUG ) {
+                menu.add("Log").setOnMenuItemClickListener {
+                    show(logViewRoot)
+                    drawer.closeDrawer(Gravity.LEFT)
+                    true
+                }
+            }
+
             menu.add("Settings").setOnMenuItemClickListener {
                 startActivity(Intent(this@MainActivity, SettingsActivity::class.java))
                 drawer.closeDrawer(Gravity.LEFT)
@@ -277,7 +302,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         drawer.addView(
-            content,
+            contentFrame,
             DrawerLayout.LayoutParams(
                 DrawerLayout.LayoutParams.MATCH_PARENT,
                 DrawerLayout.LayoutParams.MATCH_PARENT
