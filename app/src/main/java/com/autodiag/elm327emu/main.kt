@@ -41,6 +41,7 @@ import com.autodiag.elm327emu.R
 import android.view.ViewGroup.LayoutParams
 
 private const val REQUEST_CODE = 1
+private const val REQUEST_SAVE_LOG = 1001
 
 class MainActivity : AppCompatActivity() {
     private val adapter = BluetoothAdapter.getDefaultAdapter()
@@ -223,6 +224,11 @@ class MainActivity : AppCompatActivity() {
             }
 
             container.addView(downloadLog)
+
+            container.addView(Button(this).apply {
+                text = "Download log on FS"
+                setOnClickListener { openSaveLogDialog() }
+            })
             
             val clearLog = Button(this).apply {
                 text = "Clear log"
@@ -290,6 +296,27 @@ class MainActivity : AppCompatActivity() {
 
         if (!isPermissionsGranted()) {
             requestPermissions()
+        }
+    }
+
+    private fun openSaveLogDialog() {
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TITLE, "elm327emu_log.txt")
+        }
+        startActivityForResult(intent, REQUEST_SAVE_LOG)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == REQUEST_SAVE_LOG && resultCode == RESULT_OK) {
+            val uri = data?.data ?: return
+            scope.launch {
+                contentResolver.openOutputStream(uri)?.use {
+                    it.write(logView.text.toString().toByteArray())
+                }
+            }
         }
     }
 
