@@ -85,7 +85,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         MainActivityRef.activity = this
-        
+
         drawer = DrawerLayout(this)
 
         val container = LinearLayout(this).apply {
@@ -208,22 +208,22 @@ class MainActivity : AppCompatActivity() {
 
         container.addView(startStop)
 
-        val downloadLog = Button(this).apply {
-            text = "Download log"
-            setOnClickListener {
-                scope.launch {
-                    val txt = if (::logView.isInitialized) logView.text.toString() else ""
-                    val file = File(getExternalFilesDir(null), "elm327emu_log.txt")
-                    file.writeText(txt)
-                    appendLog(LogLevel.INFO, "Log written to: ${file.absolutePath}")
-                }
-            }
-        }
-
-        container.addView(downloadLog)
-
         if (BuildConfig.DEBUG) {
 
+            val downloadLog = Button(this).apply {
+                text = "Download log"
+                setOnClickListener {
+                    scope.launch {
+                        val txt = if (::logView.isInitialized) logView.text.toString() else ""
+                        val file = File(getExternalFilesDir(null), "elm327emu_log.txt")
+                        file.writeText(txt)
+                        appendLog(LogLevel.INFO, "Log written to: ${file.absolutePath}")
+                    }
+                }
+            }
+
+            container.addView(downloadLog)
+            
             val clearLog = Button(this).apply {
                 text = "Clear log"
                 setOnClickListener {
