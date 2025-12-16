@@ -48,7 +48,7 @@ private const val REQUEST_SAVE_LOG = 1001
 
 class MainActivity : AppCompatActivity() {
     private val adapter = BluetoothAdapter.getDefaultAdapter()
-    private val uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
+    private val classicalBtUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
 
     private var server: BluetoothServerSocket? = null
     private var socket: BluetoothSocket? = null
@@ -95,6 +95,7 @@ class MainActivity : AppCompatActivity() {
     private fun requestPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             requestPermissions(arrayOf(Manifest.permission.BLUETOOTH_CONNECT), REQUEST_CODE)
+            requestPermissions(arrayOf(Manifest.permission.BLUETOOTH_CONNECT), 0)
         }
     }
 
@@ -588,10 +589,12 @@ class MainActivity : AppCompatActivity() {
         }
         scope.launch {
             clearSocketFiles()
+            val isMultipleAdvertisementSupported = adapter.isMultipleAdvertisementSupported
+
             while (true) {
                 try {
 
-                    server = adapter.listenUsingRfcommWithServiceRecord("BTSerial", uuid)
+                    server = adapter.listenUsingRfcommWithServiceRecord("BTSerial", classicalBtUUID)
                     appendLog(LogLevel.INFO, "Waiting for connection...")
 
                     socket = server?.accept()
