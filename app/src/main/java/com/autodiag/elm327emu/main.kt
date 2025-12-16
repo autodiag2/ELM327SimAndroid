@@ -576,7 +576,16 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun showBluetoothEnablePopup() {
+        val intent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+        startActivityForResult(intent, REQUEST_CODE)
+    }
+
     private fun startBluetoothServer() {
+        if (!adapter.isEnabled) {
+            showBluetoothEnablePopup()
+            return
+        }
         scope.launch {
             clearSocketFiles()
             while (true) {
