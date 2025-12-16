@@ -66,6 +66,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var logView: TextView
     lateinit var logScroll: ScrollView
     private var logPendingScroll = false
+    lateinit var buttonsContainer: LinearLayout
+    lateinit var floatingButtons: LinearLayout
 
     lateinit var settingsView: View
 
@@ -222,52 +224,97 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun buildLogView(): View {
+
+        val logRoot = FrameLayout(this)
+
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(16, 16, 16, 16)
         }
 
-        val downloadLog = Button(this).apply {
-            text = "Download log"
-            setOnClickListener {
-                scope.launch {
-                    val txt = if (::logView.isInitialized) logView.text.toString() else ""
-                    val file = File(getExternalFilesDir(null), "elm327emu_log.txt")
-                    file.writeText(txt)
-                    appendLog(LogLevel.INFO, "Log written to: ${file.absolutePath}")
-                }
+        fun buildButtons(): LinearLayout =
+            LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                addView(Button(this@MainActivity).apply {
+                    text = "Download log"
+                    setOnClickListener {
+                        scope.launch {
+                            val txt = logView.text.toString()
+                            val file = File(getExternalFilesDir(null), "elm327emu_log.txt")
+                            file.writeText(txt)
+                            appendLog(LogLevel.INFO, "Log written to: ${file.absolutePath}")
+                        }
+                    }
+                })
+                addView(Button(this@MainActivity).apply {
+                    text = "Download log on FS"
+                    setOnClickListener { openSaveLogDialog() }
+                })
+                addView(Button(this@MainActivity).apply {
+                    text = "Clear log"
+                    setOnClickListener { logView.text = "" }
+                })
             }
-        }
 
-        container.addView(downloadLog)
-
-        container.addView(Button(this).apply {
-            text = "Download log on FS"
-            setOnClickListener { openSaveLogDialog() }
-        })
-        
-        val clearLog = Button(this).apply {
-            text = "Clear log"
-            setOnClickListener {
-                runOnUiThread { logView.text = "" }
-            }
-        }
-
-        container.addView(clearLog)
+        buttonsContainer = buildButtons()
+        container.addView(buttonsContainer)
 
         logView = TextView(this).apply {
             setPadding(16, 16, 16, 16)
-            movementMethod = ScrollingMovementMethod()
         }
-
         container.addView(logView)
+
         logScroll = ScrollView(this).apply {
             isFillViewport = true
             addView(container)
         }
 
-        return logScroll
+        floatingButtons = buildButtons().apply {
+            visibility = View.GONE
+            elevation = dpToPx(6).toFloat()
+            setBackgroundColor(0xFFFFFFFF.toInt())
+        }
+
+        logRoot.addView(
+            logScroll,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        )
+
+        logRoot.addView(
+            floatingButtons,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                gravity = Gravity.TOP or Gravity.END
+                topMargin = dpToPx(8)
+                marginEnd = dpToPx(8)
+            }
+        )
+
+        logScroll.viewTreeObserver.addOnScrollChangedListener {
+            val triggerY = buttonsContainer.top
+            val scrolled = logScroll.scrollY > triggerY
+
+            if (scrolled) {
+                if (floatingButtons.visibility != View.VISIBLE) {
+                    floatingButtons.visibility = View.VISIBLE
+                    buttonsContainer.visibility = View.INVISIBLE
+                }
+            } else {
+                if (floatingButtons.visibility != View.GONE) {
+                    floatingButtons.visibility = View.GONE
+                    buttonsContainer.visibility = View.VISIBLE
+                }
+            }
+        }
+
+        return logRoot
     }
+
 
     private fun buildSettingsView(): View {
         val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
@@ -551,23 +598,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun appendLog(level: LogLevel, text: String) {
-        var shouldLog = false;
-        if ( BuildConfig.DEBUG ) {
-            shouldLog = true;
-        } else {
-            if ( level == LogLevel.INFO ) {
-                shouldLog = true;
-            }
-        }
-        if ( shouldLog ) {
-            runOnUiThread {
-                logView.append(text + "\n")
-                if (autoScroll && !logPendingScroll) {
-                    logPendingScroll = true
-                    logScroll.post {
-                        logScroll.fullScroll(View.FOCUS_DOWN)
-                        logPendingScroll = false
-                    }
+        val shouldLog =
+        BuildConfig.DEBUG || level == LogLevel.INFO
+
+        if (!shouldLog || !::logView.isInitialized) return
+        runOnUiThread {
+            logView.append(text + "\n")
+            if (autoScroll && !logPendingScroll) {
+                logPendingScroll = true
+                logScroll.post {
+                    logScroll.fullScroll(View.FOCUS_DOWN)
+                    logPendingScroll = false
                 }
             }
         }
