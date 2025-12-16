@@ -372,15 +372,13 @@ class MainActivity : AppCompatActivity() {
         }
         root.addView(generalTitle)
 
-        if (BuildConfig.DEBUG) {
-            root.addView(Switch(this).apply {
-                text = "Auto-scroll on output"
-                isChecked = prefs.getBoolean("auto_scroll", true)
-                setOnCheckedChangeListener { _, v ->
-                    prefs.edit().putBoolean("auto_scroll", v).apply()
-                }
-            })
-        }
+        root.addView(Switch(this).apply {
+            text = "Auto-scroll on output"
+            isChecked = prefs.getBoolean("auto_scroll", true)
+            setOnCheckedChangeListener { _, v ->
+                prefs.edit().putBoolean("auto_scroll", v).apply()
+            }
+        })
 
         val elmTitle = TextView(this).apply {
             text = "ELM327 parameters"
@@ -455,12 +453,10 @@ class MainActivity : AppCompatActivity() {
                 true
             }
 
-            if ( BuildConfig.DEBUG ) {
-                menu.add("Log").setOnMenuItemClickListener {
-                    show(logViewRoot)
-                    drawer.closeDrawer(Gravity.LEFT)
-                    true
-                }
+            menu.add("Log").setOnMenuItemClickListener {
+                show(logViewRoot)
+                drawer.closeDrawer(Gravity.LEFT)
+                true
             }
 
             menu.add("Settings").setOnMenuItemClickListener {
