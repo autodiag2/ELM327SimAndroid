@@ -635,9 +635,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun appendLog(level: LogLevel, text: String) {
-        val shouldLog = BuildConfig.DEBUG || level == LogLevel.INFO
 
-        if (!shouldLog || !::logView.isInitialized) return
+        if (!::logView.isInitialized) return
 
         runOnUiThread {
             logView.append(text + "\n")
