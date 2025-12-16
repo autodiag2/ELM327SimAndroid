@@ -56,12 +56,17 @@ class MainActivity : AppCompatActivity() {
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    private lateinit var drawer: DrawerLayout
-    private lateinit var logView: TextView
-    private lateinit var dtcClearedCheck: CheckBox
     lateinit var contentFrame: FrameLayout
+    private lateinit var drawer: DrawerLayout
+
     lateinit var simView: View
+    private lateinit var dtcClearedCheck: CheckBox
+    
     lateinit var logViewRoot: View
+    private lateinit var logView: TextView
+    lateinit var logScroll: ScrollView
+    private var logPendingScroll = false
+
     lateinit var settingsView: View
 
     private val prefs by lazy { getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
@@ -256,11 +261,12 @@ class MainActivity : AppCompatActivity() {
         }
 
         container.addView(logView)
-
-        return ScrollView(this).apply {
+        logScroll = ScrollView(this).apply {
             isFillViewport = true
             addView(container)
         }
+
+        return logScroll
     }
 
     private fun buildSettingsView(): View {
@@ -556,11 +562,11 @@ class MainActivity : AppCompatActivity() {
         if ( shouldLog ) {
             runOnUiThread {
                 logView.append(text + "\n")
-                if ( autoScroll ) {
-                    val layout = logView.layout
-                    if (layout != null) {
-                        val scroll = layout.getLineTop(logView.lineCount) - logView.height
-                        if (0 < scroll) logView.scrollTo(0, scroll) else logView.scrollTo(0, 0)
+                if (autoScroll && !logPendingScroll) {
+                    logPendingScroll = true
+                    logScroll.post {
+                        logScroll.fullScroll(View.FOCUS_DOWN)
+                        logPendingScroll = false
                     }
                 }
             }
