@@ -66,8 +66,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var logView: TextView
     lateinit var logScroll: ScrollView
     private var logPendingScroll = false
-    lateinit var buttonsContainer: LinearLayout
-    lateinit var floatingButtons: LinearLayout
+    lateinit var logButtonsContainer: LinearLayout
+    lateinit var logFloatingButtons: LinearLayout
 
     lateinit var settingsView: View
 
@@ -257,12 +257,12 @@ class MainActivity : AppCompatActivity() {
                 })
             }
 
-        buttonsContainer = buildButtons()
+        logButtonsContainer = buildButtons()
 
         val buttonsRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            addView(buttonsContainer)
+            addView(logButtonsContainer)
         }
 
         container.addView(
@@ -288,7 +288,7 @@ class MainActivity : AppCompatActivity() {
             addView(container)
         }
 
-        floatingButtons = buildButtons().apply {
+        logFloatingButtons = buildButtons().apply {
             visibility = View.GONE
             elevation = dpToPx(6).toFloat()
         }
@@ -302,7 +302,7 @@ class MainActivity : AppCompatActivity() {
             )
         )
         logRoot.addView(
-            floatingButtons,
+            logFloatingButtons,
             FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.WRAP_CONTENT,
                 FrameLayout.LayoutParams.WRAP_CONTENT
@@ -317,18 +317,18 @@ class MainActivity : AppCompatActivity() {
         )
 
         logScroll.viewTreeObserver.addOnScrollChangedListener {
-            val triggerY = buttonsContainer.top
+            val triggerY = logButtonsContainer.top
             val scrolled = logScroll.scrollY > triggerY
 
             if (scrolled) {
-                if (floatingButtons.visibility != View.VISIBLE) {
-                    floatingButtons.visibility = View.VISIBLE
-                    buttonsContainer.visibility = View.INVISIBLE
+                if (logFloatingButtons.visibility != View.VISIBLE) {
+                    logFloatingButtons.visibility = View.VISIBLE
+                    logButtonsContainer.visibility = View.INVISIBLE
                 }
             } else {
-                if (floatingButtons.visibility != View.GONE) {
-                    floatingButtons.visibility = View.GONE
-                    buttonsContainer.visibility = View.VISIBLE
+                if (logFloatingButtons.visibility != View.GONE) {
+                    logFloatingButtons.visibility = View.GONE
+                    logButtonsContainer.visibility = View.VISIBLE
                 }
             }
         }
