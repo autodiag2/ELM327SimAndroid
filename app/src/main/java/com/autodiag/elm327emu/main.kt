@@ -67,6 +67,20 @@ class MainActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 
+    private fun isPermissionsGranted(): Boolean {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            return (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED)
+        } else {
+            return true
+        }
+    }
+
+    private fun requestPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            requestPermissions(arrayOf(Manifest.permission.BLUETOOTH_CONNECT), REQUEST_CODE)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         MainActivityRef.activity = this
@@ -184,13 +198,20 @@ class MainActivity : AppCompatActivity() {
         val startStop = Button(this).apply {
             text = "Start simulation"
             setOnClickListener {
-                running = !running
-                text = if (running) "Stop simulation" else "Start simulation"
-                appendLog(LogLevel.INFO, if (running) "Simulation started" else "Simulation stopped")
-                if ( running ) {
-                    startBluetoothServer()
+                if ( ! isPermissionsGranted() ) {
+                    requestPermissions()
+                }
+                if ( isPermissionsGranted() ) {
+                    running = !running
+                    text = if (running) "Stop simulation" else "Start simulation"
+                    appendLog(LogLevel.INFO, if (running) "Simulation started" else "Simulation stopped")
+                    if ( running ) {
+                        startBluetoothServer()
+                    } else {
+                        stopBluetoothServer()
+                    }
                 } else {
-                    stopBluetoothServer()
+                    appendLog(LogLevel.INFO, "Missing permissions - server not started")
                 }
             }
         }
@@ -245,13 +266,8 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(drawer)
 
-        
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(arrayOf(Manifest.permission.BLUETOOTH_CONNECT), REQUEST_CODE)
-                return
-            }
+        if (!isPermissionsGranted()) {
+            requestPermissions()
         }
     }
 
