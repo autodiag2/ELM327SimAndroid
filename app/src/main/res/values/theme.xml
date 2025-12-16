@@ -1,0 +1,45 @@
+<resources>
+    <style name="Theme.Solarized" parent="Theme.AppCompat.NoActionBar">
+        <item name="colorPrimary">@color/sol_base02</item>
+        <item name="colorPrimaryDark">@color/sol_base03</item>
+        <item name="colorAccent">@color/sol_blue</item>
+
+        <item name="android:windowBackground">@color/sol_base03</item>
+        <item name="android:textColor">@color/sol_base0</item>
+        <item name="android:textColorSecondary">@color/sol_base01</item>
+        <item name="android:colorBackground">@color/sol_base03</item>
+        <item name="android:statusBarColor">@color/sol_base03</item>
+        <item name="android:navigationBarColor">@color/sol_base03</item>
+
+        <item name="android:editTextStyle">@style/Solarized.EditText</item>
+        <item name="android:buttonStyle">@style/Solarized.Button</item>
+        <item name="android:checkboxStyle">@style/Solarized.CheckBox</item>
+        <item name="android:listViewStyle">@style/Solarized.ListView</item>
+        <item name="android:textViewStyle">@style/Solarized.TextView</item>
+    </style>
+
+    <style name="Solarized.TextView" parent="TextAppearance.AppCompat">
+        <item name="android:textColor">@color/sol_base0</item>
+    </style>
+
+    <style name="Solarized.EditText" parent="Widget.AppCompat.EditText">
+        <item name="android:textColor">@color/sol_base0</item>
+        <item name="android:textColorHint">@color/sol_base01</item>
+        <item name="android:backgroundTint">@color/sol_base01</item>
+    </style>
+
+    <style name="Solarized.Button" parent="Widget.AppCompat.Button">
+        <item name="android:textColor">@color/sol_base2</item>
+        <item name="android:backgroundTint">@color/sol_blue</item>
+    </style>
+
+    <style name="Solarized.CheckBox" parent="Widget.AppCompat.CompoundButton.CheckBox">
+        <item name="android:textColor">@color/sol_base0</item>
+        <item name="buttonTint">@color/sol_cyan</item>
+    </style>
+
+    <style name="Solarized.ListView" parent="Widget.AppCompat.ListView">
+        <item name="android:divider">@color/sol_base02</item>
+        <item name="android:dividerHeight">1dp</item>
+    </style>
+</resources>

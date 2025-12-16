@@ -37,6 +37,7 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.ScrollView
 import androidx.core.widget.addTextChangedListener
+import com.autodiag.elm327emu.R
 
 private const val REQUEST_CODE = 1
 
@@ -244,6 +245,13 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(drawer)
 
+        drawer.setBackgroundColor(getColor(R.color.sol_base03))
+        container.setBackgroundColor(getColor(R.color.sol_base03))
+        navView.setBackgroundColor(getColor(R.color.sol_base02))
+        logView.setTextColor(getColor(R.color.sol_base0))
+        logView.setBackgroundColor(getColor(R.color.sol_base03))
+        logView.typeface = android.graphics.Typeface.MONOSPACE
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             if (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(arrayOf(Manifest.permission.BLUETOOTH_CONNECT), REQUEST_CODE)
@@ -406,7 +414,7 @@ class MainActivity : AppCompatActivity() {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQUEST_CODE && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            startBluetoothServer()
+            // Add logic here
         }
     }
 }
