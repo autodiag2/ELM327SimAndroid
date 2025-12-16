@@ -235,6 +235,7 @@ class MainActivity : AppCompatActivity() {
         fun buildButtons(): LinearLayout =
             LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
                 addView(Button(this@MainActivity).apply {
                     text = "Download log"
                     setOnClickListener {
@@ -257,7 +258,25 @@ class MainActivity : AppCompatActivity() {
             }
 
         buttonsContainer = buildButtons()
-        container.addView(buttonsContainer)
+
+        val buttonsRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            addView(buttonsContainer)
+        }
+
+        container.addView(
+            buttonsRow,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                topMargin = 0
+                bottomMargin = 0
+                leftMargin = 0
+                rightMargin = 0
+            }
+        )
 
         logView = TextView(this).apply {
             setPadding(16, 16, 16, 16)
@@ -279,10 +298,10 @@ class MainActivity : AppCompatActivity() {
             logScroll,
             FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                Gravity.CENTER_VERTICAL or Gravity.END
             )
         )
-
         logRoot.addView(
             floatingButtons,
             FrameLayout.LayoutParams(
@@ -290,8 +309,11 @@ class MainActivity : AppCompatActivity() {
                 FrameLayout.LayoutParams.WRAP_CONTENT
             ).apply {
                 gravity = Gravity.TOP or Gravity.END
-                topMargin = dpToPx(8)
-                marginEnd = dpToPx(8)
+                topMargin = 0
+                marginEnd = 0
+                leftMargin = 0
+                rightMargin = 0
+                bottomMargin = 0
             }
         )
 
