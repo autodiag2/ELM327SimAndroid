@@ -24,7 +24,6 @@ import androidx.drawerlayout.widget.DrawerLayout
 import com.google.android.material.navigation.NavigationView
 import android.view.MenuItem
 import android.content.Intent
-import com.autodiag.elm327emu.SettingsActivity
 import com.autodiag.elm327emu.SimGeneratorGui
 import androidx.appcompat.widget.Toolbar
 import android.content.Context
@@ -40,6 +39,8 @@ import androidx.core.widget.addTextChangedListener
 import com.autodiag.elm327emu.R
 import android.view.ViewGroup.LayoutParams
 import android.view.View
+import android.content.SharedPreferences
+import android.widget.*
 
 private const val REQUEST_CODE = 1
 private const val REQUEST_SAVE_LOG = 1001
@@ -61,6 +62,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var contentFrame: FrameLayout
     lateinit var simView: View
     lateinit var logViewRoot: View
+    lateinit var settingsView: View
 
     private val prefs by lazy { getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
     private val autoScroll get() = prefs.getBoolean("auto_scroll", true)
@@ -261,6 +263,79 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun buildSettingsView(): View {
+        val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+
+        val root = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(32, 32, 32, 32)
+            gravity = Gravity.TOP
+        }
+
+        val generalTitle = TextView(this).apply {
+            text = "General"
+            textSize = 18f
+        }
+        root.addView(generalTitle)
+
+        if (BuildConfig.DEBUG) {
+            root.addView(Switch(this).apply {
+                text = "Auto-scroll on output"
+                isChecked = prefs.getBoolean("auto_scroll", true)
+                setOnCheckedChangeListener { _, v ->
+                    prefs.edit().putBoolean("auto_scroll", v).apply()
+                }
+            })
+        }
+
+        val elmTitle = TextView(this).apply {
+            text = "ELM327 parameters"
+            textSize = 18f
+            setPadding(0, 32, 0, 0)
+        }
+        root.addView(elmTitle)
+
+        val protocols = libautodiag.getProtocols()
+        val currentProto = libautodiag.getProtocol()
+        val PROTOCOL_OFFSET = 1
+
+        val spinner = Spinner(this)
+        val adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            protocols
+        ).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+
+        spinner.adapter = adapter
+
+        val index = currentProto - PROTOCOL_OFFSET
+        if (index in protocols.indices) {
+            spinner.setSelection(index)
+        }
+
+        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>,
+                view: View?,
+                pos: Int,
+                id: Long
+            ) {
+                libautodiag.setProtocol(pos + PROTOCOL_OFFSET)
+            }
+            override fun onNothingSelected(parent: AdapterView<*>) {}
+        }
+
+        root.addView(spinner)
+
+        return ScrollView(this).apply {
+            isFillViewport = true
+            addView(root)
+        }
+    }
+
+
     private fun show(view: View) {
         contentFrame.removeAllViews()
         contentFrame.addView(view)
@@ -274,7 +349,7 @@ class MainActivity : AppCompatActivity() {
 
         simView = buildSimView()
         logViewRoot = buildLogView()
-
+        settingsView = buildSettingsView()
         
         contentFrame = FrameLayout(this)
         contentFrame.addView(simView)
@@ -295,10 +370,11 @@ class MainActivity : AppCompatActivity() {
             }
 
             menu.add("Settings").setOnMenuItemClickListener {
-                startActivity(Intent(this@MainActivity, SettingsActivity::class.java))
+                show(settingsView)
                 drawer.closeDrawer(Gravity.LEFT)
                 true
             }
+
         }
 
         drawer.addView(
