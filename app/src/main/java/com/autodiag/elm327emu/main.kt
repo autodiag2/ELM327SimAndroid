@@ -198,9 +198,6 @@ class MainActivity : AppCompatActivity() {
         val startStop = Button(this).apply {
             text = "Start simulation"
             setOnClickListener {
-                if ( ! isPermissionsGranted() ) {
-                    requestPermissions()
-                }
                 if ( isPermissionsGranted() ) {
                     running = !running
                     text = if (running) "Stop simulation" else "Start simulation"
@@ -212,6 +209,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 } else {
                     appendLog(LogLevel.INFO, "Missing permissions - server not started")
+                    requestPermissions()
                 }
             }
         }
