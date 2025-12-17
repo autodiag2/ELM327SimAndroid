@@ -119,7 +119,6 @@ class MainActivity : AppCompatActivity() {
     private fun requestPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             requestPermissions(arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_ADVERTISE), REQUEST_CODE)
-            requestPermissions(arrayOf(Manifest.permission.BLUETOOTH_CONNECT), 0)
         }
     }
 
