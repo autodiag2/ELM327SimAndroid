@@ -48,6 +48,8 @@ import android.os.ParcelUuid
 import java.io.InputStream
 import java.io.OutputStream
 import android.bluetooth.BluetoothManager
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 private const val REQUEST_CODE = 1
 private const val REQUEST_SAVE_LOG = 1001
@@ -62,6 +64,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var gattServer: BluetoothGattServer
     private lateinit var advertiser: BluetoothLeAdvertiser
     private var connectedDevice: BluetoothDevice? = null
+    private var txNotificationsEnabled = false
 
     private lateinit var rxChar: BluetoothGattCharacteristic
     private lateinit var txChar: BluetoothGattCharacteristic
@@ -106,7 +109,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun isPermissionsGranted(): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            return (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED)
+            return (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) &&
+                (checkSelfPermission(Manifest.permission.BLUETOOTH_ADVERTISE) == PackageManager.PERMISSION_GRANTED)
         } else {
             return true
         }
@@ -114,7 +118,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun requestPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            requestPermissions(arrayOf(Manifest.permission.BLUETOOTH_CONNECT), REQUEST_CODE)
+            requestPermissions(arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_ADVERTISE), REQUEST_CODE)
             requestPermissions(arrayOf(Manifest.permission.BLUETOOTH_CONNECT), 0)
         }
     }
@@ -602,7 +606,51 @@ class MainActivity : AppCompatActivity() {
         startActivityForResult(intent, REQUEST_CODE)
     }
 
+    private fun sendTx(device: BluetoothDevice, text: String) {
+        if (!txNotificationsEnabled) return
+
+        val bytes = text.toByteArray(Charsets.US_ASCII)
+        val mtu = 20
+        var i = 0
+
+        while (i < bytes.size) {
+            val end = minOf(i + mtu, bytes.size)
+            txChar.value = bytes.copyOfRange(i, end)
+            gattServer.notifyCharacteristicChanged(device, txChar, false)
+            i = end
+        }
+    }
+
     private val gattCallback = object : BluetoothGattServerCallback() {
+
+        override fun onDescriptorWriteRequest(
+            device: BluetoothDevice,
+            requestId: Int,
+            descriptor: BluetoothGattDescriptor,
+            preparedWrite: Boolean,
+            responseNeeded: Boolean,
+            offset: Int,
+            value: ByteArray
+        ) {
+            appendLog(LogLevel.DEBUG, "CCCD write: ${value.joinToString()}")
+            if (descriptor.uuid.toString() == "00002902-0000-1000-8000-00805f9b34fb") {
+                txNotificationsEnabled = value.contentEquals(byteArrayOf(0x01, 0x00))
+
+                if (txNotificationsEnabled) {
+                    sendTx(device, "ELM327 v1.5\r>")
+                }
+            }
+
+            if (responseNeeded) {
+                gattServer.sendResponse(
+                    device,
+                    requestId,
+                    BluetoothGatt.GATT_SUCCESS,
+                    0,
+                    null
+                )
+            }
+        }
 
         override fun onConnectionStateChange(
             device: BluetoothDevice,
@@ -618,6 +666,8 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        /*
+
         override fun onDescriptorWriteRequest(
             device: BluetoothDevice,
             requestId: Int,
@@ -627,7 +677,6 @@ class MainActivity : AppCompatActivity() {
             offset: Int,
             value: ByteArray
         ) {
-            appendLog(LogLevel.DEBUG, "CCCD write: ${value.joinToString()}")
             if (responseNeeded) {
                 gattServer.sendResponse(
                     device,
@@ -638,6 +687,7 @@ class MainActivity : AppCompatActivity() {
                 )
             }
         }
+        */
 
         override fun onCharacteristicWriteRequest(
             device: BluetoothDevice,
@@ -666,7 +716,55 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val advertiseCallback = object : AdvertiseCallback() {}
+    private val advertiseCallback = object : AdvertiseCallback() {
+        override fun onStartSuccess(settingsInEffect: AdvertiseSettings) {
+            appendLog(LogLevel.DEBUG, "BLE advertising started")
+        }
+
+        override fun onStartFailure(errorCode: Int) {
+            appendLog(LogLevel.DEBUG, "BLE advertising failed: $errorCode")
+        }
+    }
+
+    private fun dumpAdvertiseData(
+        name: String?,
+        serviceUuid: UUID?,
+        includeFlags: Boolean = true
+    ) {
+        val bytes = ByteArrayOutputStream()
+
+        if (includeFlags) {
+            bytes.write(byteArrayOf(
+                0x02,
+                0x01,
+                0x06
+            ))
+        }
+
+        if (name != null) {
+            val nameBytes = name.toByteArray(Charsets.UTF_8)
+            bytes.write(nameBytes.size + 1)
+            bytes.write(0x09)
+            bytes.write(nameBytes)
+        }
+
+        if (serviceUuid != null) {
+            val uuidBytes = ByteBuffer
+                .allocate(16)
+                .order(ByteOrder.LITTLE_ENDIAN)
+                .putLong(serviceUuid.leastSignificantBits)
+                .putLong(serviceUuid.mostSignificantBits)
+                .array()
+
+            bytes.write(17)
+            bytes.write(0x07)
+            bytes.write(uuidBytes)
+        }
+
+        val payload = bytes.toByteArray()
+        appendLog(LogLevel.DEBUG, "ADV length = ${payload.size}")
+        appendLog(LogLevel.DEBUG, payload.joinToString(" ") { "%02X".format(it) })
+    }
 
     private fun startBluetoothServer() {
         if (!adapter.isEnabled) {
@@ -690,8 +788,28 @@ class MainActivity : AppCompatActivity() {
                 .setIncludeDeviceName(true)
                 .addServiceUuid(ParcelUuid(ELM_SERVICE_UUID))
                 .build()
-            appendLog(LogLevel.DEBUG, "A")
-            advertiser.startAdvertising(settings, data, advertiseCallback)
+            val advData = AdvertiseData.Builder()
+                .setIncludeDeviceName(true)
+                .build()
+            appendLog(LogLevel.DEBUG, "data.toString():")
+            appendLog(LogLevel.DEBUG, data.toString())
+            if (!adapter.isMultipleAdvertisementSupported) {
+                appendLog(LogLevel.DEBUG, "BLE advertising not supported")
+                return@launch
+            }
+
+            advertiser = adapter.bluetoothLeAdvertiser ?: run {
+                appendLog(LogLevel.DEBUG, "bluetoothLeAdvertiser == null")
+                return@launch
+            }
+            dumpAdvertiseData(
+                name = adapter.name,
+                serviceUuid = ELM_SERVICE_UUID
+            )
+            val scanResp = AdvertiseData.Builder()
+                .addServiceUuid(ParcelUuid(ELM_SERVICE_UUID))
+                .build()
+            advertiser.startAdvertising(settings, advData, scanResp, advertiseCallback)
             appendLog(LogLevel.DEBUG, "A")
             val btManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
             gattServer = btManager.openGattServer(this@MainActivity, gattCallback)
