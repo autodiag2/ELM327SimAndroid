@@ -47,6 +47,7 @@ import android.bluetooth.le.*
 import android.os.ParcelUuid
 import java.io.InputStream
 import java.io.OutputStream
+import android.bluetooth.BluetoothManager
 
 private const val REQUEST_CODE = 1
 private const val REQUEST_SAVE_LOG = 1001
@@ -609,9 +610,32 @@ class MainActivity : AppCompatActivity() {
             newState: Int
         ) {
             if (newState == BluetoothProfile.STATE_CONNECTED) {
+                appendLog(LogLevel.DEBUG, "connected")
                 connectedDevice = device
             } else {
+                appendLog(LogLevel.DEBUG, "disconnected")
                 connectedDevice = null
+            }
+        }
+
+        override fun onDescriptorWriteRequest(
+            device: BluetoothDevice,
+            requestId: Int,
+            descriptor: BluetoothGattDescriptor,
+            preparedWrite: Boolean,
+            responseNeeded: Boolean,
+            offset: Int,
+            value: ByteArray
+        ) {
+            appendLog(LogLevel.DEBUG, "CCCD write: ${value.joinToString()}")
+            if (responseNeeded) {
+                gattServer.sendResponse(
+                    device,
+                    requestId,
+                    BluetoothGatt.GATT_SUCCESS,
+                    0,
+                    null
+                )
             }
         }
 
@@ -624,6 +648,7 @@ class MainActivity : AppCompatActivity() {
             offset: Int,
             value: ByteArray
         ) {
+            appendLog(LogLevel.DEBUG, "onCharacteristicWriteRequest")
             if (characteristic.uuid == ELM_RX_UUID) {
                 loopbackOutput?.write(value)
                 loopbackOutput?.flush()
@@ -652,28 +677,30 @@ class MainActivity : AppCompatActivity() {
         scope.launch(Dispatchers.IO) {
             clearSocketFiles()
 
+            appendLog(LogLevel.DEBUG, "A")
             advertiser = adapter.bluetoothLeAdvertiser
-
+            appendLog(LogLevel.DEBUG, "A")
             val settings = AdvertiseSettings.Builder()
                 .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
                 .setConnectable(true)
                 .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
                 .build()
-
+            appendLog(LogLevel.DEBUG, "A")
             val data = AdvertiseData.Builder()
                 .setIncludeDeviceName(true)
                 .addServiceUuid(ParcelUuid(ELM_SERVICE_UUID))
                 .build()
-
+            appendLog(LogLevel.DEBUG, "A")
             advertiser.startAdvertising(settings, data, advertiseCallback)
-
-            gattServer = adapter.getBluetoothManager()
-                .openGattServer(this@MainActivity, gattCallback)
-
+            appendLog(LogLevel.DEBUG, "A")
+            val btManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+            gattServer = btManager.openGattServer(this@MainActivity, gattCallback)
+            appendLog(LogLevel.DEBUG, "A")
             val service = BluetoothGattService(
                 ELM_SERVICE_UUID,
                 BluetoothGattService.SERVICE_TYPE_PRIMARY
             )
+            appendLog(LogLevel.DEBUG, "A")
 
             rxChar = BluetoothGattCharacteristic(
                 ELM_RX_UUID,
@@ -681,36 +708,41 @@ class MainActivity : AppCompatActivity() {
                         BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE,
                 BluetoothGattCharacteristic.PERMISSION_WRITE
             )
+            appendLog(LogLevel.DEBUG, "A")
 
             txChar = BluetoothGattCharacteristic(
                 ELM_TX_UUID,
                 BluetoothGattCharacteristic.PROPERTY_NOTIFY,
                 BluetoothGattCharacteristic.PERMISSION_READ
             )
+            appendLog(LogLevel.DEBUG, "A")
 
             val cccd = BluetoothGattDescriptor(
                 UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"),
                 BluetoothGattDescriptor.PERMISSION_READ or BluetoothGattDescriptor.PERMISSION_WRITE
             )
+            appendLog(LogLevel.DEBUG, "A")
 
             txChar.addDescriptor(cccd)
             service.addCharacteristic(rxChar)
             service.addCharacteristic(txChar)
             gattServer.addService(service)
-
+            appendLog(LogLevel.DEBUG, "A")
             val location = libautodiag.launchEmu(filesDir.absolutePath)
-
+            appendLog(LogLevel.DEBUG, "A")
             val loopSock = LocalSocket()
             loopSock.connect(LocalSocketAddress(location, LocalSocketAddress.Namespace.FILESYSTEM))
             loopbackInput = loopSock.inputStream
             loopbackOutput = loopSock.outputStream
-
+            appendLog(LogLevel.DEBUG, "A")
             launch {
                 val buffer = ByteArray(512)
                 while (isActive) {
+                    appendLog(LogLevel.DEBUG, "waiting a read")
                     val n = loopbackInput?.read(buffer) ?: break
                     if (n <= 0) break
                     txChar.value = buffer.copyOf(n)
+                    appendLog(LogLevel.DEBUG, "readed values")
                     connectedDevice?.let {
                         gattServer.notifyCharacteristicChanged(it, txChar, false)
                     }
