@@ -37,6 +37,7 @@ import android.widget.CheckBox
 import android.widget.ScrollView
 import androidx.core.widget.addTextChangedListener
 import com.autodiag.elm327emu.R
+import com.autodiag.elm327emu.BluetoothBridge
 import android.view.ViewGroup.LayoutParams
 import android.view.View
 import android.content.SharedPreferences
@@ -59,11 +60,7 @@ class MainActivity : AppCompatActivity() {
     private val classicalBtUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
 
     lateinit var bleBridge: BLEBridge
-
-    private var server: BluetoothServerSocket? = null
-    private var socket: BluetoothSocket? = null
-    private var bt_input: InputStream? = null
-    private var bt_output: OutputStream? = null
+    lateinit var btBridge: BluetoothBridge
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -475,6 +472,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         MainActivityRef.activity = this
         bleBridge = BLEBridge(this, adapter)
+        btBridge = BluetoothBridge(this, adapter)
 
         drawer = DrawerLayout(this)
 
@@ -561,21 +559,7 @@ class MainActivity : AppCompatActivity() {
     private fun stopBluetoothServer() {
 
         bleBridge.stop()
-
-        try {
-            bt_input?.close()
-            bt_input = null
-
-            bt_output?.close()
-            bt_output = null
-
-            socket?.close()
-            socket = null
-
-            server?.close()
-            server = null
-        } catch (_: Exception) {
-        }
+        btBridge.stop()
 
         scope.coroutineContext.cancelChildren()
 
@@ -596,10 +580,13 @@ class MainActivity : AppCompatActivity() {
         startActivityForResult(intent, REQUEST_CODE)
     }
 
-    private fun startBluetoothServer() {
-        bleBridge.start()
+    private fun startBluetoothServer(useBLE: Boolean = true) {
+        if ( useBLE ) {
+            bleBridge.start()
+        } else {
+            btBridge.start()
+        }
     }
-
 
     public fun appendLog(level: LogLevel, text: String) {
 
