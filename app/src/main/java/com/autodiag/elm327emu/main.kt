@@ -689,28 +689,6 @@ class MainActivity : AppCompatActivity() {
                 appendLog(LogLevel.DEBUG, "Service add failed: $status")
             }
         }
-        /*
-
-        override fun onDescriptorWriteRequest(
-            device: BluetoothDevice,
-            requestId: Int,
-            descriptor: BluetoothGattDescriptor,
-            preparedWrite: Boolean,
-            responseNeeded: Boolean,
-            offset: Int,
-            value: ByteArray
-        ) {
-            if (responseNeeded) {
-                gattServer.sendResponse(
-                    device,
-                    requestId,
-                    BluetoothGatt.GATT_SUCCESS,
-                    0,
-                    null
-                )
-            }
-        }
-        */
 
         override fun onCharacteristicWriteRequest(
             device: BluetoothDevice,
