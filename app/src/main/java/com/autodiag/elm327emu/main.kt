@@ -59,6 +59,10 @@ class MainActivity : AppCompatActivity() {
     private val adapter = BluetoothAdapter.getDefaultAdapter()
     private val classicalBtUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
 
+    // Order in the settings screen
+    private val NETWORK_BT = 0
+    private val NETWORK_BLE = 1
+
     lateinit var bleBridge: BLEBridge
     lateinit var btBridge: BluetoothBridge
 
@@ -218,7 +222,7 @@ class MainActivity : AppCompatActivity() {
                 if (isPermissionsGranted()) {
                     running = !running
                     text = if (running) "Stop simulation" else "Start simulation"
-                    if (running) startBluetoothServer() else stopBluetoothServer()
+                    if (running) startServer() else stopServer()
                 } else {
                     requestPermissions()
                 }
@@ -415,6 +419,49 @@ class MainActivity : AppCompatActivity() {
         }
         root.addView(applyBtn)
 
+        val networkLabel = TextView(this).apply {
+            text = "Network"
+            setPadding(0, 16, 0, 0)
+        }
+        root.addView(networkLabel)
+
+        val networks = listOf(
+            "Bluetooth",
+            "Bluetooth LE (4.0+)"
+        )
+
+        val networkSpinner = Spinner(this)
+
+        val networkAdapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            networks
+        ).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+
+        networkSpinner.adapter = networkAdapter
+
+        val savedNetwork = prefs.getInt("network_mode", 0)
+        if (savedNetwork in networks.indices) {
+            networkSpinner.setSelection(savedNetwork)
+        }
+
+        networkSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>,
+                view: View?,
+                pos: Int,
+                id: Long
+            ) {
+                prefs.edit().putInt("network_mode", pos).apply()
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>) {}
+        }
+
+        root.addView(networkSpinner)
+
         val elmTitle = TextView(this).apply {
             text = "ELM327 parameters"
             textSize = 18f
@@ -556,7 +603,7 @@ class MainActivity : AppCompatActivity() {
         return (dp * resources.displayMetrics.density).toInt()
     }
 
-    private fun stopBluetoothServer() {
+    private fun stopServer() {
 
         bleBridge.stop()
         btBridge.stop()
@@ -580,11 +627,11 @@ class MainActivity : AppCompatActivity() {
         startActivityForResult(intent, REQUEST_CODE)
     }
 
-    private fun startBluetoothServer(useBLE: Boolean = true) {
-        if ( useBLE ) {
-            bleBridge.start()
-        } else {
-            btBridge.start()
+    private fun startServer() {
+        when (prefs.getInt("network_mode", NETWORK_BT)) {
+            NETWORK_BT  -> btBridge.start()
+            NETWORK_BLE -> bleBridge.start()
+            else -> appendLog(LogLevel.DEBUG, "Network mode not implemented")
         }
     }
 
