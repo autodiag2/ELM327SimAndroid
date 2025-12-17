@@ -42,6 +42,11 @@ import android.view.View
 import android.content.SharedPreferences
 import android.widget.*
 import android.view.MotionEvent
+import android.bluetooth.*
+import android.bluetooth.le.*
+import android.os.ParcelUuid
+import java.io.InputStream
+import java.io.OutputStream
 
 private const val REQUEST_CODE = 1
 private const val REQUEST_SAVE_LOG = 1001
@@ -49,6 +54,20 @@ private const val REQUEST_SAVE_LOG = 1001
 class MainActivity : AppCompatActivity() {
     private val adapter = BluetoothAdapter.getDefaultAdapter()
     private val classicalBtUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
+
+    private val ELM_SERVICE_UUID = UUID.fromString("6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
+    private val ELM_RX_UUID      = UUID.fromString("6E400002-B5A3-F393-E0A9-E50E24DCCA9E")
+    private val ELM_TX_UUID      = UUID.fromString("6E400003-B5A3-F393-E0A9-E50E24DCCA9E")
+    private lateinit var gattServer: BluetoothGattServer
+    private lateinit var advertiser: BluetoothLeAdvertiser
+    private var connectedDevice: BluetoothDevice? = null
+
+    private lateinit var rxChar: BluetoothGattCharacteristic
+    private lateinit var txChar: BluetoothGattCharacteristic
+
+    private var loopbackInput: InputStream? = null
+    private var loopbackOutput: OutputStream? = null
+
 
     private var server: BluetoothServerSocket? = null
     private var socket: BluetoothSocket? = null
@@ -582,97 +601,124 @@ class MainActivity : AppCompatActivity() {
         startActivityForResult(intent, REQUEST_CODE)
     }
 
+    private val gattCallback = object : BluetoothGattServerCallback() {
+
+        override fun onConnectionStateChange(
+            device: BluetoothDevice,
+            status: Int,
+            newState: Int
+        ) {
+            if (newState == BluetoothProfile.STATE_CONNECTED) {
+                connectedDevice = device
+            } else {
+                connectedDevice = null
+            }
+        }
+
+        override fun onCharacteristicWriteRequest(
+            device: BluetoothDevice,
+            requestId: Int,
+            characteristic: BluetoothGattCharacteristic,
+            preparedWrite: Boolean,
+            responseNeeded: Boolean,
+            offset: Int,
+            value: ByteArray
+        ) {
+            if (characteristic.uuid == ELM_RX_UUID) {
+                loopbackOutput?.write(value)
+                loopbackOutput?.flush()
+            }
+
+            if (responseNeeded) {
+                gattServer.sendResponse(
+                    device,
+                    requestId,
+                    BluetoothGatt.GATT_SUCCESS,
+                    0,
+                    null
+                )
+            }
+        }
+    }
+
+    private val advertiseCallback = object : AdvertiseCallback() {}
+
     private fun startBluetoothServer() {
         if (!adapter.isEnabled) {
             showBluetoothEnablePopup()
             return
         }
-        scope.launch {
+
+        scope.launch(Dispatchers.IO) {
             clearSocketFiles()
-            val isMultipleAdvertisementSupported = adapter.isMultipleAdvertisementSupported
 
-            while (true) {
-                try {
+            advertiser = adapter.bluetoothLeAdvertiser
 
-                    server = adapter.listenUsingRfcommWithServiceRecord("BTSerial", classicalBtUUID)
-                    appendLog(LogLevel.INFO, "Waiting for connection...")
+            val settings = AdvertiseSettings.Builder()
+                .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
+                .setConnectable(true)
+                .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
+                .build()
 
-                    socket = server?.accept()
-                    appendLog(LogLevel.INFO, "Client connected: ${socket?.remoteDevice?.address}")
+            val data = AdvertiseData.Builder()
+                .setIncludeDeviceName(true)
+                .addServiceUuid(ParcelUuid(ELM_SERVICE_UUID))
+                .build()
 
-                    bt_input = socket?.inputStream
-                    bt_output = socket?.outputStream
+            advertiser.startAdvertising(settings, data, advertiseCallback)
 
-                    val filesDirPath = filesDir.absolutePath
-                    val location = libautodiag.launchEmu(filesDirPath)
-                    appendLog(LogLevel.DEBUG, "Native sim location: $location")
+            gattServer = adapter.getBluetoothManager()
+                .openGattServer(this@MainActivity, gattCallback)
 
-                    val loopbackSocket = LocalSocket()
-                    loopbackSocket.connect(
-                        LocalSocketAddress(location, LocalSocketAddress.Namespace.FILESYSTEM)
-                    )
+            val service = BluetoothGattService(
+                ELM_SERVICE_UUID,
+                BluetoothGattService.SERVICE_TYPE_PRIMARY
+            )
 
-                    appendLog(LogLevel.DEBUG, "Loopback socket connected")
+            rxChar = BluetoothGattCharacteristic(
+                ELM_RX_UUID,
+                BluetoothGattCharacteristic.PROPERTY_WRITE or
+                        BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE,
+                BluetoothGattCharacteristic.PERMISSION_WRITE
+            )
 
-                    val loopbackInput = loopbackSocket.inputStream
-                    val loopbackOutput = loopbackSocket.outputStream
+            txChar = BluetoothGattCharacteristic(
+                ELM_TX_UUID,
+                BluetoothGattCharacteristic.PROPERTY_NOTIFY,
+                BluetoothGattCharacteristic.PERMISSION_READ
+            )
 
-                    val bufferBT = ByteArray(1024)
-                    val bufferLoop = ByteArray(1024)
+            val cccd = BluetoothGattDescriptor(
+                UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"),
+                BluetoothGattDescriptor.PERMISSION_READ or BluetoothGattDescriptor.PERMISSION_WRITE
+            )
 
-                    val btToLoop = launch {
-                        while (isActive) {
-                            try {
-                                val n = bt_input?.read(bufferBT) ?: break
-                                if (n <= 0) break
-                                loopbackOutput.write(bufferBT, 0, n)
-                                loopbackOutput.flush()
-                                appendLog(LogLevel.DEBUG, " * Received from Bluetooth: (passing to loopback)")
-                                appendLog(LogLevel.DEBUG, hexDump(bufferBT, n))
-                            } catch(e: Exception) {
-                                appendLog(LogLevel.DEBUG, "exiting btToLoop: ${e.message}")
-                                break
-                            }
-                        }
+            txChar.addDescriptor(cccd)
+            service.addCharacteristic(rxChar)
+            service.addCharacteristic(txChar)
+            gattServer.addService(service)
+
+            val location = libautodiag.launchEmu(filesDir.absolutePath)
+
+            val loopSock = LocalSocket()
+            loopSock.connect(LocalSocketAddress(location, LocalSocketAddress.Namespace.FILESYSTEM))
+            loopbackInput = loopSock.inputStream
+            loopbackOutput = loopSock.outputStream
+
+            launch {
+                val buffer = ByteArray(512)
+                while (isActive) {
+                    val n = loopbackInput?.read(buffer) ?: break
+                    if (n <= 0) break
+                    txChar.value = buffer.copyOf(n)
+                    connectedDevice?.let {
+                        gattServer.notifyCharacteristicChanged(it, txChar, false)
                     }
-
-                    val loopToBt = launch {
-                        while (isActive) {
-                            try {
-                                val n = loopbackInput?.read(bufferLoop) ?: break
-                                if (n <= 0) break
-                                bt_output?.write(bufferLoop, 0, n)
-                                bt_output?.flush()
-                                appendLog(LogLevel.DEBUG, " * Sending the data received from loopback on bluetooth:")
-                                appendLog(LogLevel.DEBUG, hexDump(bufferLoop, n))
-                            } catch(e: Exception) {
-                                appendLog(LogLevel.DEBUG, "exiting loopToBt: ${e.message}")
-                                break
-                            }
-                        }
-                    }
-
-                    btToLoop.join()
-                    loopToBt.cancel()
-
-                    loopbackInput.close()
-                    loopbackOutput.close()
-                    loopbackSocket.close()
-                } catch (e: CancellationException) {
-                    appendLog(LogLevel.DEBUG, "Cancelled")
-                    throw e
-                } catch (e: Exception) {
-                    appendLog(LogLevel.DEBUG, "Error: ${e.message}")
-                } finally {
-                    bt_input?.close()
-                    bt_output?.close()
-                    socket?.close()
-                    server?.close()
-                    appendLog(LogLevel.INFO, "Bluetooth connection closed")
                 }
             }
         }
     }
+
 
     private fun appendLog(level: LogLevel, text: String) {
 
