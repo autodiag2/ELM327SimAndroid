@@ -65,13 +65,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var advertiser: BluetoothLeAdvertiser
     private var connectedDevice: BluetoothDevice? = null
     private var txNotificationsEnabled = false
+    private var gattReady = false
 
     private lateinit var rxChar: BluetoothGattCharacteristic
     private lateinit var txChar: BluetoothGattCharacteristic
 
     private var loopbackInput: InputStream? = null
     private var loopbackOutput: OutputStream? = null
-
 
     private var server: BluetoothServerSocket? = null
     private var socket: BluetoothSocket? = null
@@ -666,6 +666,14 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        override fun onServiceAdded(status: Int, service: BluetoothGattService) {
+            if (status == BluetoothGatt.GATT_SUCCESS) {
+                gattReady = true
+                appendLog(LogLevel.DEBUG, "GATT service added")
+            } else {
+                appendLog(LogLevel.DEBUG, "Service add failed: $status")
+            }
+        }
         /*
 
         override fun onDescriptorWriteRequest(
@@ -809,7 +817,7 @@ class MainActivity : AppCompatActivity() {
             val scanResp = AdvertiseData.Builder()
                 .addServiceUuid(ParcelUuid(ELM_SERVICE_UUID))
                 .build()
-            advertiser.startAdvertising(settings, advData, scanResp, advertiseCallback)
+
             appendLog(LogLevel.DEBUG, "A")
             val btManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
             gattServer = btManager.openGattServer(this@MainActivity, gattCallback)
@@ -844,7 +852,13 @@ class MainActivity : AppCompatActivity() {
             txChar.addDescriptor(cccd)
             service.addCharacteristic(rxChar)
             service.addCharacteristic(txChar)
+
             gattServer.addService(service)
+            while (!gattReady) {
+                delay(10)
+            }
+            advertiser.startAdvertising(settings, advData, scanResp, advertiseCallback)
+
             appendLog(LogLevel.DEBUG, "A")
             val location = libautodiag.launchEmu(filesDir.absolutePath)
             appendLog(LogLevel.DEBUG, "A")
