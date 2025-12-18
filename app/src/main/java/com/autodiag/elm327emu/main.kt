@@ -392,17 +392,21 @@ class MainActivity : AppCompatActivity() {
                 prefs.edit().putBoolean("auto_scroll", v).apply()
             }
         })
-        val btNameLabel = TextView(this).apply {
-            text = "Bluetooth device name"
+        val btNameContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
             setPadding(0, 16, 0, 0)
         }
-        root.addView(btNameLabel)
+
+        val btNameLabel = TextView(this).apply {
+            text = "Bluetooth device name"
+        }
+        btNameContainer.addView(btNameLabel)
 
         val btNameEdit = EditText(this).apply {
             hint = "OBD II"
             setText(adapter?.name ?: "")
         }
-        root.addView(btNameEdit)
+        btNameContainer.addView(btNameEdit)
 
         val applyBtn = Button(this).apply {
             text = "Set"
@@ -410,15 +414,16 @@ class MainActivity : AppCompatActivity() {
                 val newName = btNameEdit.text.toString().trim()
                 if (newName.isEmpty() || adapter == null) return@setOnClickListener
 
-                if ( isPermissionsGranted() ) {
+                if (isPermissionsGranted()) {
                     adapter.name = newName
                 } else {
                     requestPermissions()
                 }
-
             }
         }
-        root.addView(applyBtn)
+        btNameContainer.addView(applyBtn)
+
+        root.addView(btNameContainer)
 
         val networkLabel = TextView(this).apply {
             text = "Network"
@@ -448,6 +453,8 @@ class MainActivity : AppCompatActivity() {
         if (savedNetwork in networks.indices) {
             networkSpinner.setSelection(savedNetwork)
         }
+        btNameContainer.visibility =
+            if (savedNetwork == NETWORK_BLE || savedNetwork == NETWORK_BT) View.VISIBLE else View.GONE
 
         networkSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(
@@ -457,6 +464,8 @@ class MainActivity : AppCompatActivity() {
                 id: Long
             ) {
                 prefs.edit().putInt("network_mode", pos).apply()
+                 btNameContainer.visibility =
+                    if (savedNetwork == NETWORK_BLE || savedNetwork == NETWORK_BT) View.VISIBLE else View.GONE
             }
 
             override fun onNothingSelected(parent: AdapterView<*>) {}
