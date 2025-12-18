@@ -66,6 +66,7 @@ class MainActivity : AppCompatActivity() {
 
     lateinit var bleBridge: BLEBridge
     lateinit var btBridge: BluetoothBridge
+    lateinit var ntBridge: NetworkBridge
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -531,6 +532,7 @@ class MainActivity : AppCompatActivity() {
         MainActivityRef.activity = this
         bleBridge = BLEBridge(this, adapter)
         btBridge = BluetoothBridge(this, adapter)
+        ntBridge = NetworkBridge(this)
 
         drawer = DrawerLayout(this)
 
@@ -618,6 +620,7 @@ class MainActivity : AppCompatActivity() {
 
         bleBridge.stop()
         btBridge.stop()
+        ntBridge.stop()
 
         scope.coroutineContext.cancelChildren()
 
@@ -642,10 +645,7 @@ class MainActivity : AppCompatActivity() {
         when (prefs.getInt("network_mode", NETWORK_BT)) {
             NETWORK_BT  -> btBridge.start()
             NETWORK_BLE -> bleBridge.start()
-            NETWORK_IP -> {
-                val location = libautodiag.launchEmu(filesDir.absolutePath, "network")
-                appendLog(LogLevel.DEBUG, "Server launched on: $location")
-            }
+            NETWORK_IP -> ntBridge.start()
             else -> appendLog(LogLevel.DEBUG, "Network mode not implemented")
         }
     }
