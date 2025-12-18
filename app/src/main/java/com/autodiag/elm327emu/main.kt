@@ -486,7 +486,7 @@ class MainActivity : AppCompatActivity() {
         val PROTOCOL_OFFSET = 1
 
         val spinner = Spinner(this)
-        val adapter = ArrayAdapter(
+        val protocolAdapter = ArrayAdapter(
             this,
             android.R.layout.simple_spinner_item,
             protocols
@@ -494,7 +494,7 @@ class MainActivity : AppCompatActivity() {
             setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         }
 
-        spinner.adapter = adapter
+        spinner.adapter = protocolAdapter
 
         val index = currentProto - PROTOCOL_OFFSET
         if (index in protocols.indices) {
