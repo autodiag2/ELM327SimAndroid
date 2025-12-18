@@ -466,7 +466,7 @@ class MainActivity : AppCompatActivity() {
             ) {
                 prefs.edit().putInt("network_mode", pos).apply()
                  btNameContainer.visibility =
-                    if (savedNetwork == NETWORK_BLE || savedNetwork == NETWORK_BT) View.VISIBLE else View.GONE
+                    if (pos == NETWORK_BLE || pos == NETWORK_BT) View.VISIBLE else View.GONE
             }
 
             override fun onNothingSelected(parent: AdapterView<*>) {}
