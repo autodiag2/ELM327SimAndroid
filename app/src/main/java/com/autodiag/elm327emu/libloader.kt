@@ -19,7 +19,7 @@ object libautodiag {
     init {
         System.loadLibrary("autodiag")
     }
-    @JvmStatic external fun launchEmu(tmpDirPath: String): String
+    @JvmStatic external fun launchEmu(tmpDirPath: String, kind: String = "socket"): String
 
     @JvmStatic fun getVehicleSpeed(): Int = SimGeneratorGui.vehicleSpeed
     @JvmStatic fun getCoolantTemp(): Int = SimGeneratorGui.coolantTemp
