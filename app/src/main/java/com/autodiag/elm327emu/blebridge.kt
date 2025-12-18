@@ -53,7 +53,7 @@ import java.nio.ByteOrder
 
 class BLEBridge(
     private val activity: MainActivity,
-    private val adapter: BluetoothAdapter
+    private val btAdapter: BluetoothAdapter
     ) {
     private val ELM_SERVICE_UUID = UUID.fromString("6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
     private val ELM_RX_UUID      = UUID.fromString("6E400002-B5A3-F393-E0A9-E50E24DCCA9E")
@@ -228,7 +228,7 @@ class BLEBridge(
     }
 
     public fun start() {
-        if (!adapter.isEnabled) {
+        if (!btAdapter.isEnabled) {
             activity.showBluetoothEnablePopup()
             return
         }
@@ -236,7 +236,7 @@ class BLEBridge(
         scope.launch(Dispatchers.IO) {
             activity.clearSocketFiles()
 
-            advertiser = adapter.bluetoothLeAdvertiser
+            advertiser = btAdapter.bluetoothLeAdvertiser
             val settings = AdvertiseSettings.Builder()
                 .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
                 .setConnectable(true)
@@ -247,12 +247,12 @@ class BLEBridge(
                 .setIncludeDeviceName(true)
                 .build()
             
-            if (!adapter.isMultipleAdvertisementSupported) {
+            if (!btAdapter.isMultipleAdvertisementSupported) {
                 appendLog(LogLevel.DEBUG, "BLE advertising not supported")
                 return@launch
             }
 
-            advertiser = adapter.bluetoothLeAdvertiser ?: run {
+            advertiser = btAdapter.bluetoothLeAdvertiser ?: run {
                 appendLog(LogLevel.DEBUG, "bluetoothLeAdvertiser == null")
                 return@launch
             }

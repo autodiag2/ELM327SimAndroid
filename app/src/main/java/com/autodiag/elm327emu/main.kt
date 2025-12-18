@@ -56,7 +56,7 @@ private const val REQUEST_CODE = 1
 private const val REQUEST_SAVE_LOG = 1001
 
 class MainActivity : AppCompatActivity() {
-    private val adapter = BluetoothAdapter.getDefaultAdapter()
+    private val btAdapter = BluetoothAdapter.getDefaultAdapter()
     private val classicalBtUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
 
     // Order in the settings screen
@@ -405,7 +405,7 @@ class MainActivity : AppCompatActivity() {
 
         val btNameEdit = EditText(this).apply {
             hint = "OBD II"
-            setText(adapter?.name ?: "")
+            setText(btAdapter?.name ?: "")
         }
         btNameContainer.addView(btNameEdit)
 
@@ -413,10 +413,10 @@ class MainActivity : AppCompatActivity() {
             text = "Set"
             setOnClickListener {
                 val newName = btNameEdit.text.toString().trim()
-                if (newName.isEmpty() || adapter == null) return@setOnClickListener
+                if (newName.isEmpty() || btAdapter == null) return@setOnClickListener
 
                 if (isPermissionsGranted()) {
-                    adapter.name = newName
+                    btAdapter.name = newName
                 } else {
                     requestPermissions()
                 }
@@ -530,8 +530,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         MainActivityRef.activity = this
-        bleBridge = BLEBridge(this, adapter)
-        btBridge = BluetoothBridge(this, adapter)
+        bleBridge = BLEBridge(this, btAdapter)
+        btBridge = BluetoothBridge(this, btAdapter)
         ntBridge = NetworkBridge(this)
 
         drawer = DrawerLayout(this)

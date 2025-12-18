@@ -45,7 +45,7 @@ import android.view.MotionEvent
 
 class BluetoothBridge(
     private val activity: MainActivity,
-    private val adapter: BluetoothAdapter
+    private val btAdapter: BluetoothAdapter
 ) {
 
     private val classicalBtUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
@@ -62,18 +62,18 @@ class BluetoothBridge(
     }
 
     public fun start() {
-        if (!adapter.isEnabled) {
+        if (!btAdapter.isEnabled) {
             activity.showBluetoothEnablePopup()
             return
         }
         scope.launch {
             activity.clearSocketFiles()
-            val isMultipleAdvertisementSupported = adapter.isMultipleAdvertisementSupported
+            val isMultipleAdvertisementSupported = btAdapter.isMultipleAdvertisementSupported
 
             while (true) {
                 try {
 
-                    server = adapter.listenUsingRfcommWithServiceRecord("BTSerial", classicalBtUUID)
+                    server = btAdapter.listenUsingRfcommWithServiceRecord("BTSerial", classicalBtUUID)
                     appendLog(LogLevel.INFO, "Waiting for connection...")
 
                     socket = server?.accept()
