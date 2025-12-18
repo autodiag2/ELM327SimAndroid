@@ -62,6 +62,7 @@ class MainActivity : AppCompatActivity() {
     // Order in the settings screen
     private val NETWORK_BT = 0
     private val NETWORK_BLE = 1
+    private val NETWORK_IP = 2
 
     lateinit var bleBridge: BLEBridge
     lateinit var btBridge: BluetoothBridge
@@ -427,7 +428,8 @@ class MainActivity : AppCompatActivity() {
 
         val networks = listOf(
             "Bluetooth",
-            "Bluetooth LE (4.0+)"
+            "Bluetooth LE (4.0+)",
+            "Network"
         )
 
         val networkSpinner = Spinner(this)
@@ -631,6 +633,10 @@ class MainActivity : AppCompatActivity() {
         when (prefs.getInt("network_mode", NETWORK_BT)) {
             NETWORK_BT  -> btBridge.start()
             NETWORK_BLE -> bleBridge.start()
+            NETWORK_IP -> {
+                val location = libautodiag.launchEmu(filesDir.absolutePath, "network")
+                appendLog(LogLevel.DEBUG, "Server launched on: $location")
+            }
             else -> appendLog(LogLevel.DEBUG, "Network mode not implemented")
         }
     }
