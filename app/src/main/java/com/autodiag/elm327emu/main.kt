@@ -450,7 +450,7 @@ class MainActivity : AppCompatActivity() {
 
         networkSpinner.adapter = networkAdapter
 
-        val savedNetwork = prefs.getInt("network_mode", 0)
+        val savedNetwork = prefs.getInt("network_mode", NETWORK_BT)
         if (savedNetwork in networks.indices) {
             networkSpinner.setSelection(savedNetwork)
         }
