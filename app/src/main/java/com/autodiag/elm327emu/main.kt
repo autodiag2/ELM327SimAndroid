@@ -406,9 +406,13 @@ class MainActivity : AppCompatActivity() {
         }
         btNameContainer.addView(btNameLabel)
 
+        var adapterName = "Missing permission"
+        if ( isPermissionsGranted() ) {
+            adapterName = btAdapter?.name ?: ""
+        }
         val btNameEdit = EditText(this).apply {
             hint = "OBD II"
-            setText(btAdapter?.name ?: "")
+            setText(adapterName)
         }
         btNameContainer.addView(btNameEdit)
 
