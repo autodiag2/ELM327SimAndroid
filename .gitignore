@@ -1,5 +1,4 @@
 /build/
 /app/build/
 .gradle/
-gradle.properties
 TODO

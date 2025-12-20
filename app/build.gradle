@@ -27,10 +27,10 @@ android {
     }
     signingConfigs {
         release {
-            storeFile file("../../AndroidPrivateFiles/release.keystore")
-            storePassword STORE_PASSWORD
-            keyAlias "release"
-            keyPassword KEY_PASSWORD
+            storeFile file(System.getenv("KEYSTORE_PATH"))
+            storePassword System.getenv("KEYSTORE_PASSWORD")
+            keyAlias System.getenv("KEY_ALIAS")
+            keyPassword System.getenv("KEY_PASSWORD")
         }
     }
     buildTypes {
