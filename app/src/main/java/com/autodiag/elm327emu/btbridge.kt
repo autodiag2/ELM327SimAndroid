@@ -73,7 +73,7 @@ class BluetoothBridge(
             while (true) {
                 try {
 
-                    server = btAdapter.listenUsingRfcommWithServiceRecord("BTSerial", classicalBtUUID)
+                    server = btAdapter.listenUsingRfcommWithServiceRecord("ELM327 Emu", classicalBtUUID)
                     appendLog("Waiting for connection...", LogLevel.INFO)
 
                     socket = server?.accept()
