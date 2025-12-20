@@ -1,5 +1,10 @@
-SRC=logo.png
-RES=app/src/main/res
+SRC=./logo.png
+RES=../app/src/main/res
+
+if ! [ -f "$SRC" ] ; then
+	echo "this script must be launched from devscripts/"
+	exit 1
+fi
 
 declare -A sizes=(
   [mipmap-mdpi]=48
