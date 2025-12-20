@@ -51,6 +51,9 @@ import java.io.OutputStream
 import android.bluetooth.BluetoothManager
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import android.text.Spannable
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
 
 private const val REQUEST_CODE = 1
 private const val REQUEST_SAVE_LOG = 1001
@@ -651,11 +654,29 @@ class MainActivity : AppCompatActivity() {
     }
 
     public fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {
-
         if (!::logView.isInitialized) return
 
         runOnUiThread {
+            val start = logView.text.length
             logView.append(text + "\n")
+            val end = logView.text.length
+
+            val colorRes = when (level) {
+                LogLevel.INFO -> R.color.sol_blue
+                LogLevel.ERROR -> R.color.sol_red
+                else -> null
+            }
+
+            if (colorRes != null) {
+                val span = logView.text as Spannable
+                span.setSpan(
+                    ForegroundColorSpan(getColor(colorRes)),
+                    start,
+                    end,
+                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+                )
+            }
+
             if (autoScroll && !logPendingScroll && !logUserTouched) {
                 logPendingScroll = true
                 logScroll.post {
@@ -665,6 +686,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
 
     override fun onDestroy() {
         MainActivityRef.activity = null
