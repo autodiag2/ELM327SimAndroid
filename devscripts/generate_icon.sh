@@ -1,3 +1,4 @@
+#!/bin/bash
 SRC=./logo.png
 RES=../app/src/main/res
 
