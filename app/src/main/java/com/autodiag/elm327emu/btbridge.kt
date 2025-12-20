@@ -57,8 +57,8 @@ class BluetoothBridge(
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    private fun appendLog(level: LogLevel, text: String) {
-        activity.appendLog(level, text)
+    private fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {
+        activity.appendLog(text, level)
     }
 
     public fun start() {
@@ -74,24 +74,24 @@ class BluetoothBridge(
                 try {
 
                     server = btAdapter.listenUsingRfcommWithServiceRecord("BTSerial", classicalBtUUID)
-                    appendLog(LogLevel.INFO, "Waiting for connection...")
+                    appendLog("Waiting for connection...", LogLevel.INFO)
 
                     socket = server?.accept()
-                    appendLog(LogLevel.INFO, "Client connected: ${socket?.remoteDevice?.address}")
+                    appendLog("Client connected: ${socket?.remoteDevice?.address}", LogLevel.INFO)
 
                     bt_input = socket?.inputStream
                     bt_output = socket?.outputStream
 
                     val filesDirPath = activity.filesDir.absolutePath
                     val location = libautodiag.launchEmu(filesDirPath)
-                    appendLog(LogLevel.DEBUG, "Native sim location: $location")
+                    appendLog("Native sim location: $location", LogLevel.DEBUG)
 
                     val loopbackSocket = LocalSocket()
                     loopbackSocket.connect(
                         LocalSocketAddress(location, LocalSocketAddress.Namespace.FILESYSTEM)
                     )
 
-                    appendLog(LogLevel.DEBUG, "Loopback socket connected")
+                    appendLog("Loopback socket connected", LogLevel.DEBUG)
 
                     val loopbackInput = loopbackSocket.inputStream
                     val loopbackOutput = loopbackSocket.outputStream
@@ -106,10 +106,10 @@ class BluetoothBridge(
                                 if (n <= 0) break
                                 loopbackOutput.write(bufferBT, 0, n)
                                 loopbackOutput.flush()
-                                appendLog(LogLevel.DEBUG, " * Received from Bluetooth: (passing to loopback)")
-                                appendLog(LogLevel.DEBUG, hexDump(bufferBT, n))
+                                appendLog(" * Received from Bluetooth: (passing to loopback)")
+                                appendLog(hexDump(bufferBT, n))
                             } catch(e: Exception) {
-                                appendLog(LogLevel.DEBUG, "exiting btToLoop: ${e.message}")
+                                appendLog("exiting btToLoop: ${e.message}")
                                 break
                             }
                         }
@@ -122,10 +122,10 @@ class BluetoothBridge(
                                 if (n <= 0) break
                                 bt_output?.write(bufferLoop, 0, n)
                                 bt_output?.flush()
-                                appendLog(LogLevel.DEBUG, " * Sending the data received from loopback on bluetooth:")
-                                appendLog(LogLevel.DEBUG, hexDump(bufferLoop, n))
+                                appendLog(" * Sending the data received from loopback on bluetooth:", LogLevel.DEBUG)
+                                appendLog(hexDump(bufferLoop, n))
                             } catch(e: Exception) {
-                                appendLog(LogLevel.DEBUG, "exiting loopToBt: ${e.message}")
+                                appendLog("exiting loopToBt: ${e.message}", LogLevel.DEBUG)
                                 break
                             }
                         }
@@ -138,16 +138,16 @@ class BluetoothBridge(
                     loopbackOutput.close()
                     loopbackSocket.close()
                 } catch (e: CancellationException) {
-                    appendLog(LogLevel.DEBUG, "Cancelled")
+                    appendLog("Cancelled", LogLevel.DEBUG)
                     throw e
                 } catch (e: Exception) {
-                    appendLog(LogLevel.DEBUG, "Error: ${e.message}")
+                    appendLog("Error: ${e.message}", LogLevel.DEBUG)
                 } finally {
                     bt_input?.close()
                     bt_output?.close()
                     socket?.close()
                     server?.close()
-                    appendLog(LogLevel.INFO, "Bluetooth connection closed")
+                    appendLog("Bluetooth connection closed", LogLevel.INFO)
                 }
             }
         }

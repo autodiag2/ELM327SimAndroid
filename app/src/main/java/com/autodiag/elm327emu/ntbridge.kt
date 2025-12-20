@@ -65,8 +65,8 @@ class NetworkBridge(
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    private fun appendLog(level: LogLevel, text: String) {
-        activity.appendLog(level, text)
+    private fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {
+        activity.appendLog(text, level)
     }
 
     private fun openServer(): ServerSocket {
@@ -74,7 +74,7 @@ class NetworkBridge(
         while (true) {
             try {
                 return ServerSocket(port).also {
-                    appendLog(LogLevel.INFO, "Network server listening on port $port")
+                    appendLog("Network server listening on port $port", LogLevel.INFO)
                 }
             } catch (_: IOException) {
                 port++
@@ -91,8 +91,8 @@ class NetworkBridge(
                     serverSocket = openServer()
                     clientSocket = serverSocket!!.accept()
                     appendLog(
-                        LogLevel.INFO,
-                        "Client connected: ${clientSocket!!.inetAddress.hostAddress}:${clientSocket!!.port}"
+                        "Client connected: ${clientSocket!!.inetAddress.hostAddress}:${clientSocket!!.port}",
+                        LogLevel.INFO
                     )
 
                     netInput = clientSocket!!.getInputStream()
@@ -100,13 +100,13 @@ class NetworkBridge(
 
                     val filesDirPath = activity.filesDir.absolutePath
                     val location = libautodiag.launchEmu(filesDirPath)
-                    appendLog(LogLevel.DEBUG, "Native sim location: $location")
+                    appendLog("Native sim location: $location", LogLevel.DEBUG)
 
                     val loopbackSocket = LocalSocket()
                     loopbackSocket.connect(
                         LocalSocketAddress(location, LocalSocketAddress.Namespace.FILESYSTEM)
                     )
-                    appendLog(LogLevel.DEBUG, "Loopback socket connected")
+                    appendLog("Loopback socket connected", LogLevel.DEBUG)
 
                     val loopbackInput = loopbackSocket.inputStream
                     val loopbackOutput = loopbackSocket.outputStream
@@ -121,10 +121,10 @@ class NetworkBridge(
                                 if (n <= 0) break
                                 loopbackOutput.write(bufferNet, 0, n)
                                 loopbackOutput.flush()
-                                appendLog(LogLevel.DEBUG, " * Received from network:")
-                                appendLog(LogLevel.DEBUG, hexDump(bufferNet, n))
+                                appendLog(" * Received from network:", LogLevel.DEBUG)
+                                appendLog(hexDump(bufferNet, n), LogLevel.DEBUG)
                             } catch (e: Exception) {
-                                appendLog(LogLevel.DEBUG, "exiting netToLoop: ${e.message}")
+                                appendLog("exiting netToLoop: ${e.message}", LogLevel.DEBUG)
                                 break
                             }
                         }
@@ -137,10 +137,10 @@ class NetworkBridge(
                                 if (n <= 0) break
                                 netOutput?.write(bufferLoop, 0, n)
                                 netOutput?.flush()
-                                appendLog(LogLevel.DEBUG, " * Sending data to network:")
-                                appendLog(LogLevel.DEBUG, hexDump(bufferLoop, n))
+                                appendLog(" * Sending data to network:", LogLevel.DEBUG)
+                                appendLog(hexDump(bufferLoop, n), LogLevel.DEBUG)
                             } catch (e: Exception) {
-                                appendLog(LogLevel.DEBUG, "exiting loopToNet: ${e.message}")
+                                appendLog("exiting loopToNet: ${e.message}", LogLevel.DEBUG)
                                 break
                             }
                         }
@@ -154,10 +154,10 @@ class NetworkBridge(
                     loopbackSocket.close()
 
                 } catch (e: CancellationException) {
-                    appendLog(LogLevel.DEBUG, "Cancelled")
+                    appendLog("Cancelled", LogLevel.DEBUG)
                     throw e
                 } catch (e: Exception) {
-                    appendLog(LogLevel.DEBUG, "Error: ${e.message}")
+                    appendLog("Error: ${e.message}", LogLevel.DEBUG)
                 } finally {
                     netInput?.close()
                     netOutput?.close()
@@ -169,7 +169,7 @@ class NetworkBridge(
                     clientSocket = null
                     serverSocket = null
 
-                    appendLog(LogLevel.INFO, "Network connection closed")
+                    appendLog("Network connection closed", LogLevel.INFO)
                 }
             }
         }

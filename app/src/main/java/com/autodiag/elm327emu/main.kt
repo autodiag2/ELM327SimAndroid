@@ -259,7 +259,7 @@ class MainActivity : AppCompatActivity() {
                             val txt = logView.text.toString()
                             val file = File(getExternalFilesDir(null), "elm327emu_log.txt")
                             file.writeText(txt)
-                            appendLog(LogLevel.INFO, "Log written to: ${file.absolutePath}")
+                            appendLog("Log written to: ${file.absolutePath}", LogLevel.INFO)
                         }
                     }
                 })
@@ -624,7 +624,7 @@ class MainActivity : AppCompatActivity() {
 
         scope.coroutineContext.cancelChildren()
 
-        appendLog(LogLevel.INFO, "Bluetooth server stopped")
+        appendLog("Bluetooth server stopped", LogLevel.INFO)
     }
     
     public fun clearSocketFiles() {
@@ -646,11 +646,11 @@ class MainActivity : AppCompatActivity() {
             NETWORK_BT  -> btBridge.start()
             NETWORK_BLE -> bleBridge.start()
             NETWORK_IP -> ntBridge.start()
-            else -> appendLog(LogLevel.DEBUG, "Network mode not implemented")
+            else -> appendLog("Network mode not implemented", LogLevel.DEBUG)
         }
     }
 
-    public fun appendLog(level: LogLevel, text: String) {
+    public fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {
 
         if (!::logView.isInitialized) return
 

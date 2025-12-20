@@ -72,8 +72,8 @@ class BLEBridge(
 
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    private fun appendLog(level: LogLevel, text: String) {
-        activity.appendLog(level, text)
+    private fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {
+        activity.appendLog(text, level)
     }
     
     private fun sendTx(device: BluetoothDevice, text: String) {
@@ -128,10 +128,10 @@ class BLEBridge(
         ) {
             val addr = device.address ?: "unknown"
             if (newState == BluetoothProfile.STATE_CONNECTED) {
-                appendLog(LogLevel.DEBUG, "$addr: connected")
+                appendLog("$addr: connected", LogLevel.DEBUG)
                 connectedDevice = device
             } else {
-                appendLog(LogLevel.DEBUG, "$addr: disconnected")
+                appendLog("$addr: disconnected", LogLevel.DEBUG)
                 connectedDevice = null
             }
         }
@@ -139,9 +139,9 @@ class BLEBridge(
         override fun onServiceAdded(status: Int, service: BluetoothGattService) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 gattReady = true
-                appendLog(LogLevel.DEBUG, "GATT service added")
+                appendLog("GATT service added", LogLevel.DEBUG)
             } else {
-                appendLog(LogLevel.DEBUG, "Service add failed: $status")
+                appendLog("Service add failed: $status", LogLevel.DEBUG)
             }
         }
 
@@ -158,10 +158,10 @@ class BLEBridge(
                 try {
                     loopbackOutput?.write(value)
                     loopbackOutput?.flush()
-                    appendLog(LogLevel.DEBUG, " * Received from Bluetooth: (passing to loopback)")
-                    appendLog(LogLevel.DEBUG, hexDump(value, value.size))
+                    appendLog(" * Received from Bluetooth: (passing to loopback)")
+                    appendLog(hexDump(value, value.size))
                 } catch(e: Exception) {
-                    appendLog(LogLevel.DEBUG, "exiting btToLoop: ${e.message}")
+                    appendLog("exiting btToLoop: ${e.message}")
                 }
             }
 
@@ -179,11 +179,11 @@ class BLEBridge(
 
     private val advertiseCallback = object : AdvertiseCallback() {
         override fun onStartSuccess(settingsInEffect: AdvertiseSettings) {
-            appendLog(LogLevel.DEBUG, "BLE advertising started")
+            appendLog("BLE advertising started", LogLevel.DEBUG)
         }
 
         override fun onStartFailure(errorCode: Int) {
-            appendLog(LogLevel.DEBUG, "BLE advertising failed: $errorCode")
+            appendLog("BLE advertising failed: $errorCode", LogLevel.DEBUG)
         }
     }
 
@@ -223,8 +223,8 @@ class BLEBridge(
         }
 
         val payload = bytes.toByteArray()
-        appendLog(LogLevel.DEBUG, "ADV length = ${payload.size}")
-        appendLog(LogLevel.DEBUG, payload.joinToString(" ") { "%02X".format(it) })
+        appendLog("ADV length = ${payload.size}", LogLevel.DEBUG)
+        appendLog(payload.joinToString(" ") { "%02X".format(it) }, LogLevel.DEBUG)
     }
 
     public fun start() {
@@ -248,12 +248,12 @@ class BLEBridge(
                 .build()
             
             if (!btAdapter.isMultipleAdvertisementSupported) {
-                appendLog(LogLevel.DEBUG, "BLE advertising not supported")
+                appendLog("BLE advertising not supported", LogLevel.DEBUG)
                 return@launch
             }
 
             advertiser = btAdapter.bluetoothLeAdvertiser ?: run {
-                appendLog(LogLevel.DEBUG, "bluetoothLeAdvertiser == null")
+                appendLog("bluetoothLeAdvertiser == null", LogLevel.DEBUG)
                 return@launch
             }
             val scanResp = AdvertiseData.Builder()
@@ -309,13 +309,13 @@ class BLEBridge(
                         val n = loopbackInput?.read(bufferLoop) ?: break
                         if (n <= 0) break
                         txChar.value = bufferLoop.copyOf(n)
-                        appendLog(LogLevel.DEBUG, " * Sending the data received from loopback on bluetooth:")
-                        appendLog(LogLevel.DEBUG, hexDump(bufferLoop, n))
+                        appendLog(" * Sending the data received from loopback on bluetooth:")
+                        appendLog(hexDump(bufferLoop, n))
                         connectedDevice?.let {
                             gattServer.notifyCharacteristicChanged(it, txChar, false)
                         }
                     } catch(e: Exception) {
-                        appendLog(LogLevel.DEBUG, "exiting loopToBt: ${e.message}")
+                        appendLog("exiting loopToBt: ${e.message}")
                         break
                     }
                 }
@@ -327,13 +327,13 @@ class BLEBridge(
         try {
             advertiser.stopAdvertising(advertiseCallback)
         } catch (e: Exception) {
-            appendLog(LogLevel.DEBUG, "Error: ${e.message}")
+            appendLog("Error: ${e.message}", LogLevel.DEBUG)
         }
 
         try {
             gattServer.close()
         } catch (e: Exception) {
-            appendLog(LogLevel.DEBUG, "Error: ${e.message}")
+            appendLog("Error: ${e.message}", LogLevel.DEBUG)
         }
 
         connectedDevice = null
