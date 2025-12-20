@@ -429,8 +429,48 @@ class MainActivity : AppCompatActivity() {
 
         root.addView(btNameContainer)
 
+        val logLevelLabel = TextView(this).apply {
+            text = "Log level"
+            setPadding(0, 16, 0, 0)
+        }
+        root.addView(logLevelLabel)
+
+        val logLevels = LogLevel.values().toList()
+
+        val logLevelSpinner = Spinner(this)
+
+        val logLevelAdapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            logLevels
+        ).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+
+        logLevelSpinner.adapter = logLevelAdapter
+
+        val savedLogLevel = prefs.getInt("log_level", LogLevel.INFO.ordinal)
+        if (savedLogLevel in logLevels.indices) {
+            logLevelSpinner.setSelection(savedLogLevel)
+        }
+
+        logLevelSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>,
+                view: View?,
+                pos: Int,
+                id: Long
+            ) {
+                prefs.edit().putInt("log_level", pos).apply()
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>) {}
+        }
+
+        root.addView(logLevelSpinner)
+
         val networkLabel = TextView(this).apply {
-            text = "Network"
+            text = "Networking mode"
             setPadding(0, 16, 0, 0)
         }
         root.addView(networkLabel)
@@ -655,6 +695,11 @@ class MainActivity : AppCompatActivity() {
 
     public fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {
         if (!::logView.isInitialized) return
+
+        val currentLogLevel = prefs.getInt("log_level", LogLevel.INFO.ordinal)
+        if ( currentLogLevel < level.ordinal ) {
+            return
+        }
 
         runOnUiThread {
             val start = logView.text.length

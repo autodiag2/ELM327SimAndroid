@@ -1,9 +1,9 @@
 package com.autodiag.elm327emu
 
 public enum class LogLevel(val value: Int) {
+    ERROR(0),
     INFO(1),
-    DEBUG(2),
-    ERROR(3)
+    DEBUG(2)
 }
 
 public fun hexDump(buffer: ByteArray, size: Int): String {
