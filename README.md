@@ -4,12 +4,12 @@ You can emulate ELM327 wifi, bluetooth, bluetooth BLE then connect to it for exa
 
 <table>
   <tr>
-    <td><img src="https://raw.githubusercontent.com/autodiag2/ELM327SimAndroid/main/main.png"></td>
-    <td><img src="https://raw.githubusercontent.com/autodiag2/ELM327SimAndroid/main/side.png"></td>
+    <td><img src="https://raw.githubusercontent.com/autodiag2/ELM327SimAndroid/main/media/main.png"></td>
+    <td><img src="https://raw.githubusercontent.com/autodiag2/ELM327SimAndroid/main/media/side.png"></td>
   </tr>
   <tr>
-    <td><img src="https://raw.githubusercontent.com/autodiag2/ELM327SimAndroid/main/settings.png"></td>
-    <td><img src="https://raw.githubusercontent.com/autodiag2/ELM327SimAndroid/main/log.png"></td>
+    <td><img src="https://raw.githubusercontent.com/autodiag2/ELM327SimAndroid/main/media/settings.png"></td>
+    <td><img src="https://raw.githubusercontent.com/autodiag2/ELM327SimAndroid/main/media/log.png"></td>
   </tr>
 </table>
 
