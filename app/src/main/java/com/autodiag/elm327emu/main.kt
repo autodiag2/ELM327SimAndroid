@@ -301,7 +301,7 @@ class MainActivity : AppCompatActivity() {
 
         val rv = RecyclerView(this).apply {
             layoutManager = LinearLayoutManager(this@MainActivity).apply {
-                stackFromEnd = true
+                stackFromEnd = false
             }
             adapter = logAdapter
             itemAnimator = null
@@ -602,11 +602,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+
         if (requestCode == REQUEST_SAVE_LOG && resultCode == RESULT_OK) {
             val uri = data?.data ?: return
-            scope.launch {
-                contentResolver.openOutputStream(uri)?.use {
-                    it.write(logRepo.snapshotUnsafe().joinToString("\n").toByteArray())
+
+            scope.launch(Dispatchers.IO) {
+                contentResolver.openOutputStream(uri)?.use { out ->
+                    val text = logRepo.snapshotUnsafe()
+                        .joinToString("\n") { it.text }
+                    out.write(text.toByteArray())
                 }
             }
         }
