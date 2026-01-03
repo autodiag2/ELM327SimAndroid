@@ -54,6 +54,14 @@ import java.nio.ByteOrder
 import android.text.Spannable
 import android.text.Spanned
 import android.text.style.ForegroundColorSpan
+import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.paging.PagingData
+
+import androidx.lifecycle.lifecycleScope
+
+import kotlinx.coroutines.flow.collectLatest
+import androidx.paging.cachedIn
 
 private const val REQUEST_CODE = 1
 private const val REQUEST_SAVE_LOG = 1001
@@ -80,12 +88,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var dtcClearedCheck: CheckBox
     
     lateinit var logViewRoot: View
-    private lateinit var logView: TextView
-    lateinit var logScroll: ScrollView
-    private var logPendingScroll = false
-    lateinit var logButtonsContainer: LinearLayout
-    lateinit var logFloatingButtons: LinearLayout
-    private var logUserTouched = false
 
     lateinit var settingsView: View
 
@@ -242,135 +244,90 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private val logRepo = LogRepository()
+    private lateinit var logAdapter: LogAdapter
+
     private fun buildLogView(): View {
+        logAdapter = LogAdapter()
 
-        val logRoot = FrameLayout(this)
+        val root = FrameLayout(this)
 
-        val container = LinearLayout(this).apply {
+        val vertical = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            setPadding(16, 16, 16, 16)
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
         }
 
         fun buildButtons(): LinearLayout =
             LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
+                setPadding(16, 16, 16, 16)
+
                 addView(Button(this@MainActivity).apply {
                     text = "Download log"
                     setOnClickListener {
                         scope.launch {
-                            val txt = logView.text.toString()
                             val file = File(getExternalFilesDir(null), "elm327emu_log.txt")
-                            file.writeText(txt)
+                            file.writeText(logRepo.snapshotUnsafe().joinToString("\n") { it.text })
                             appendLog("Log written to: ${file.absolutePath}", LogLevel.INFO)
                         }
                     }
                 })
+
                 addView(Button(this@MainActivity).apply {
                     text = "Download log on FS"
                     setOnClickListener { openSaveLogDialog() }
                 })
+
                 addView(Button(this@MainActivity).apply {
                     text = "Clear log"
-                    setOnClickListener { logView.text = "" }
+                    setOnClickListener {
+                        logAdapter.submitData(lifecycle, PagingData.empty())
+                    }
                 })
             }
 
-        logButtonsContainer = buildButtons()
-
-        val buttonsRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            addView(logButtonsContainer)
-        }
-
-        container.addView(
-            buttonsRow,
+        val buttons = buildButtons()
+        vertical.addView(
+            buttons,
             LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                topMargin = 0
-                bottomMargin = 0
-                leftMargin = 0
-                rightMargin = 0
-            }
-        )
-
-        logView = TextView(this).apply {
-            setPadding(16, 16, 16, 16)
-        }
-        container.addView(logView)
-
-        logScroll = ScrollView(this).apply {
-            isFillViewport = true
-            addView(container)
-        }
-
-        logScroll.setOnTouchListener { _, event ->
-            if (event.action == MotionEvent.ACTION_DOWN) {
-                logUserTouched = true
-            }
-            false
-        }
-
-        logScroll.viewTreeObserver.addOnScrollChangedListener {
-            if (!logUserTouched) return@addOnScrollChangedListener
-
-            val child = logScroll.getChildAt(0) ?: return@addOnScrollChangedListener
-            val diff = child.bottom - (logScroll.height + logScroll.scrollY)
-
-            if (diff == 0) {
-                logUserTouched = false
-            }
-        }
-
-        logFloatingButtons = buildButtons().apply {
-            visibility = View.GONE
-            elevation = dpToPx(6).toFloat()
-        }
-
-        logRoot.addView(
-            logScroll,
-            FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                Gravity.CENTER_VERTICAL or Gravity.END
             )
         )
-        logRoot.addView(
-            logFloatingButtons,
-            FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                gravity = Gravity.TOP or Gravity.END
-                topMargin = 0
-                marginEnd = 0
-                leftMargin = 0
-                rightMargin = 0
-                bottomMargin = 0
-            }
-        )
 
-        logScroll.viewTreeObserver.addOnScrollChangedListener {
-            val triggerY = logButtonsContainer.top
-            val scrolled = logScroll.scrollY > triggerY
-
-            if (scrolled) {
-                if (logFloatingButtons.visibility != View.VISIBLE) {
-                    logFloatingButtons.visibility = View.VISIBLE
-                    logButtonsContainer.visibility = View.INVISIBLE
-                }
-            } else {
-                if (logFloatingButtons.visibility != View.GONE) {
-                    logFloatingButtons.visibility = View.GONE
-                    logButtonsContainer.visibility = View.VISIBLE
-                }
+        val rv = RecyclerView(this).apply {
+            layoutManager = LinearLayoutManager(this@MainActivity).apply {
+                stackFromEnd = true
             }
+            adapter = logAdapter
+            itemAnimator = null
         }
 
-        return logRoot
+        vertical.addView(
+            rv,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+            )
+        )
+
+        root.addView(vertical)
+
+        lifecycleScope.launch {
+            logRepo.pager()
+                .flow
+                .cachedIn(this)
+                .collectLatest {
+                    logAdapter.submitData(it)
+                }
+        }
+
+        return root
     }
 
 
@@ -649,7 +606,7 @@ class MainActivity : AppCompatActivity() {
             val uri = data?.data ?: return
             scope.launch {
                 contentResolver.openOutputStream(uri)?.use {
-                    it.write(logView.text.toString().toByteArray())
+                    it.write(logRepo.snapshotUnsafe().joinToString("\n").toByteArray())
                 }
             }
         }
@@ -697,45 +654,17 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    public fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {
-        if (!::logView.isInitialized) return
-
+    fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {
         val currentLogLevel = prefs.getInt("log_level", LogLevel.INFO.ordinal)
-        if ( currentLogLevel < level.ordinal ) {
-            return
-        }
+        if (currentLogLevel < level.ordinal) return
 
-        runOnUiThread {
-            val start = logView.text.length
-            logView.append(text + "\n")
-            val end = logView.text.length
-
-            val colorRes = when (level) {
-                LogLevel.INFO -> R.color.sol_blue
-                LogLevel.ERROR -> R.color.sol_red
-                else -> null
-            }
-
-            if (colorRes != null) {
-                val span = logView.text as Spannable
-                span.setSpan(
-                    ForegroundColorSpan(getColor(colorRes)),
-                    start,
-                    end,
-                    Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-                )
-            }
-
-            if (autoScroll && !logPendingScroll && !logUserTouched) {
-                logPendingScroll = true
-                logScroll.post {
-                    logScroll.fullScroll(View.FOCUS_DOWN)
-                    logPendingScroll = false
-                }
+        scope.launch {
+            logRepo.append(text, level)
+            withContext(Dispatchers.Main) {
+                logAdapter.refresh()
             }
         }
     }
-
 
     override fun onDestroy() {
         MainActivityRef.activity = null
