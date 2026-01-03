@@ -245,6 +245,7 @@ class MainActivity : AppCompatActivity() {
     private val logRepo = LogRepository()
     private lateinit var logAdapter: LogAdapter
     lateinit var logViewRoot: View
+    private var stickToBottom = false
 
     private fun captureScrollAnchor(rv: RecyclerView): Pair<Int, Int>? {
         val lm = rv.layoutManager as? LinearLayoutManager ?: return null
@@ -324,7 +325,19 @@ class MainActivity : AppCompatActivity() {
             }
             adapter = logAdapter
             itemAnimator = null
+
+            isFocusable = true
+            isFocusableInTouchMode = true
         }
+        rv.addOnScrollListener(
+            object : RecyclerView.OnScrollListener() {
+                override fun onScrolled(rv: RecyclerView, dx: Int, dy: Int) {
+                    if (dy < 0) {
+                        stickToBottom = false
+                    }
+                }
+            }
+        )
 
         vertical.addView(
             rv,
@@ -335,6 +348,45 @@ class MainActivity : AppCompatActivity() {
             )
         )
 
+        val overlayButtons = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.END
+            setPadding(8, 8, 8, 8)
+            elevation = dpToPx(6).toFloat()
+
+            addView(Button(this@MainActivity).apply {
+                text = "↑"
+                setOnClickListener {
+                    stickToBottom = false
+                    (rv.layoutManager as? LinearLayoutManager)
+                        ?.scrollToPositionWithOffset(0, 0)
+                }
+            })
+
+            addView(Button(this@MainActivity).apply {
+                text = "↓"
+                setOnClickListener {
+                    stickToBottom = true
+                    val count = logAdapter.itemCount
+                    if (count > 0) {
+                        rv.scrollToPosition(count - 1)
+                    }
+                }
+            })
+        }
+
+        root.addView(
+            overlayButtons,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                gravity = Gravity.END or Gravity.BOTTOM
+                marginEnd = dpToPx(8)
+                bottomMargin = dpToPx(8)
+            }
+        )
+
         root.addView(vertical)
 
         lifecycleScope.launch {
@@ -342,9 +394,17 @@ class MainActivity : AppCompatActivity() {
                 .flow
                 .cachedIn(this)
                 .collectLatest { pagingData ->
-                    val anchor = captureScrollAnchor(rv)
-                    logAdapter.submitData(pagingData)
-                    restoreScrollAnchor(rv, anchor)
+                    if (stickToBottom) {
+                        logAdapter.submitData(pagingData)
+                        rv.post {
+                            val count = logAdapter.itemCount
+                            if (count > 0) rv.scrollToPosition(count - 1)
+                        }
+                    } else {
+                        val anchor = captureScrollAnchor(rv)
+                        logAdapter.submitData(pagingData)
+                        restoreScrollAnchor(rv, anchor)
+                    }
                 }
         }
 
