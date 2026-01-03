@@ -86,8 +86,6 @@ class MainActivity : AppCompatActivity() {
 
     lateinit var simView: View
     private lateinit var dtcClearedCheck: CheckBox
-    
-    lateinit var logViewRoot: View
 
     lateinit var settingsView: View
 
@@ -246,6 +244,27 @@ class MainActivity : AppCompatActivity() {
 
     private val logRepo = LogRepository()
     private lateinit var logAdapter: LogAdapter
+    lateinit var logViewRoot: View
+
+    private fun captureScrollAnchor(rv: RecyclerView): Pair<Int, Int>? {
+        val lm = rv.layoutManager as? LinearLayoutManager ?: return null
+        val pos = lm.findFirstVisibleItemPosition()
+        if (pos == RecyclerView.NO_POSITION) return null
+        val view = rv.getChildAt(0) ?: return null
+        return pos to view.top
+    }
+
+    private fun restoreScrollAnchor(
+        rv: RecyclerView,
+        anchor: Pair<Int, Int>?
+    ) {
+        if (anchor == null) return
+        val lm = rv.layoutManager as? LinearLayoutManager ?: return
+        rv.post {
+            lm.scrollToPositionWithOffset(anchor.first, anchor.second)
+        }
+    }
+
 
     private fun buildLogView(): View {
         logAdapter = LogAdapter()
@@ -322,8 +341,10 @@ class MainActivity : AppCompatActivity() {
             logRepo.pager()
                 .flow
                 .cachedIn(this)
-                .collectLatest {
-                    logAdapter.submitData(it)
+                .collectLatest { pagingData ->
+                    val anchor = captureScrollAnchor(rv)
+                    logAdapter.submitData(pagingData)
+                    restoreScrollAnchor(rv, anchor)
                 }
         }
 
