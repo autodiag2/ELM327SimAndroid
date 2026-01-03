@@ -105,10 +105,21 @@ class LogRepository {
     private val mutex = Mutex()
     private var counter = 0L
 
+    @Volatile
+    private var pagingSource: LogPagingSource? = null
+
     suspend fun append(text: String, level: LogLevel) {
         mutex.withLock {
             buffer.add(LogEntry(counter++, text, level))
         }
+        pagingSource?.invalidate()
+    }
+
+    suspend fun clear() {
+        mutex.withLock {
+            buffer.clear()
+        }
+        pagingSource?.invalidate()
     }
 
     fun snapshotUnsafe(): List<LogEntry> {
@@ -127,16 +138,17 @@ class LogRepository {
             buffer.toList()
         }
 
-    suspend fun pager(): Pager<Int, LogEntry> =
+    fun pager(): Pager<Int, LogEntry> =
         Pager(
             PagingConfig(
                 pageSize = LogPagingSource.PAGE_SIZE,
                 enablePlaceholders = false
             )
         ) {
-            LogPagingSource(snapshotUnsafe())
+            LogPagingSource(snapshotUnsafe()).also {
+                pagingSource = it
+            }
         }
-
 }
 
 class LogAdapter :

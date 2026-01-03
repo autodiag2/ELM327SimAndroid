@@ -304,7 +304,9 @@ class MainActivity : AppCompatActivity() {
                 addView(Button(this@MainActivity).apply {
                     text = "Clear log"
                     setOnClickListener {
-                        logAdapter.submitData(lifecycle, PagingData.empty())
+                        scope.launch {
+                            logRepo.clear()
+                        }
                     }
                 })
             }
