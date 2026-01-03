@@ -90,7 +90,6 @@ class MainActivity : AppCompatActivity() {
     lateinit var settingsView: View
 
     private val prefs by lazy { getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
-    private val autoScroll get() = prefs.getBoolean("auto_scroll", true)
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
@@ -421,19 +420,6 @@ class MainActivity : AppCompatActivity() {
             gravity = Gravity.TOP
         }
 
-        val generalTitle = TextView(this).apply {
-            text = "General"
-            textSize = 18f
-        }
-        root.addView(generalTitle)
-
-        root.addView(Switch(this).apply {
-            text = "Auto-scroll on output"
-            isChecked = prefs.getBoolean("auto_scroll", true)
-            setOnCheckedChangeListener { _, v ->
-                prefs.edit().putBoolean("auto_scroll", v).apply()
-            }
-        })
         val btNameContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(0, 16, 0, 0)
