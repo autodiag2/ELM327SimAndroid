@@ -105,6 +105,7 @@ class LogRepository(
     private val context: Context
 ) {
 
+    public val LOG_MAX_ENTRIES = 1000
     private val buffer = ArrayList<LogEntry>()
     private val mutex = Mutex()
     private var counter = 0L
@@ -115,7 +116,7 @@ class LogRepository(
 
     suspend fun append(text: String, level: LogLevel = LogLevel.DEBUG) {
         mutex.withLock {
-            if (buffer.size > prefs.getInt("log_max_entries", 10000)) {
+            if (buffer.size > prefs.getInt("log_max_entries", LOG_MAX_ENTRIES)) {
                 buffer.removeAt(0)
             }
             buffer.add(LogEntry(counter++, text, level))

@@ -500,28 +500,25 @@ class MainActivity : AppCompatActivity() {
         root.addView(logLevelSpinner)
 
         val logMaxEntries = TextView(this).apply {
-            text = "Max log entries: 10000"
+            text = "Max log entries"
             setPadding(0, 16, 0, 0)
         }
         root.addView(logMaxEntries)
 
-        val savedMax = prefs.getInt("log_max_entries", 10000)
+        val savedMax = prefs.getInt("log_max_entries", logRepo.LOG_MAX_ENTRIES)
+
         val logMaxEdit = EditText(this).apply {
             inputType = android.text.InputType.TYPE_CLASS_NUMBER
             setText(savedMax.toString())
-            hint = "10000"
-        }
-        root.addView(logMaxEdit)
+            hint = logRepo.LOG_MAX_ENTRIES.toString()
 
-        val applyLogMaxBtn = Button(this).apply {
-            text = "Apply"
-            setOnClickListener {
-                val v = logMaxEdit.text.toString().toIntOrNull() ?: return@setOnClickListener
-                if (v < 100) return@setOnClickListener
+            addTextChangedListener {
+                val v = it?.toString()?.toIntOrNull() ?: return@addTextChangedListener
+                if (v < 100) return@addTextChangedListener
                 prefs.edit().putInt("log_max_entries", v).apply()
             }
         }
-        root.addView(applyLogMaxBtn)
+        root.addView(logMaxEdit)
 
         val networkLabel = TextView(this).apply {
             text = "Networking mode"
