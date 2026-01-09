@@ -17,6 +17,17 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 import android.content.Context
+import android.view.View
+import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.Button
+import android.view.Gravity
+import kotlinx.coroutines.launch
+import java.io.File
+import androidx.lifecycle.lifecycleScope
+
+import kotlinx.coroutines.flow.collectLatest
+import androidx.paging.cachedIn
 
 public enum class LogLevel(val value: Int) {
     ERROR(0),
@@ -200,6 +211,174 @@ class LogAdapter :
         val DIFF = object : DiffUtil.ItemCallback<LogEntry>() {
             override fun areItemsTheSame(a: LogEntry, b: LogEntry) = a.id == b.id
             override fun areContentsTheSame(a: LogEntry, b: LogEntry) = a == b
+        }
+    }
+}
+
+class LogView(
+    private val activity: MainActivity
+) : FrameLayout(activity) {
+    
+    private var stickToBottom = false
+
+    public fun build() {
+        activity.logAdapter = LogAdapter()
+
+        val vertical = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        }
+
+        fun buildButtons(): LinearLayout =
+            LinearLayout(activity).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(16, 16, 16, 16)
+
+                addView(Button(activity).apply {
+                    text = "Download log"
+                    setOnClickListener {
+                        activity.scope.launch {
+                            val file = File(activity.getExternalFilesDir(null), "elm327emu_log.txt")
+                            file.writeText(activity.logRepo.snapshotUnsafe().joinToString("\n") { it.text })
+                            activity.appendLog("Log written to: ${file.absolutePath}", LogLevel.INFO)
+                        }
+                    }
+                })
+
+                addView(Button(activity).apply {
+                    text = "Download log on FS"
+                    setOnClickListener { activity.openSaveLogDialog() }
+                })
+
+                addView(Button(activity).apply {
+                    text = "Clear log"
+                    setOnClickListener {
+                        activity.scope.launch {
+                            activity.logRepo.clear()
+                        }
+                    }
+                })
+            }
+
+        val buttons = buildButtons()
+        vertical.addView(
+            buttons,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        )
+
+        val rv = RecyclerView(activity).apply {
+            layoutManager = LinearLayoutManager(activity).apply {
+                stackFromEnd = false
+            }
+            adapter = activity.logAdapter
+            itemAnimator = null
+
+            isFocusable = true
+            isFocusableInTouchMode = true
+        }
+        rv.addOnScrollListener(
+            object : RecyclerView.OnScrollListener() {
+                override fun onScrolled(rv: RecyclerView, dx: Int, dy: Int) {
+                    if (dy < 0) {
+                        stickToBottom = false
+                    }
+                }
+            }
+        )
+
+        vertical.addView(
+            rv,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+            )
+        )
+
+        val overlayButtons = LinearLayout(activity).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.END
+            setPadding(8, 8, 8, 8)
+            elevation = activity.dpToPx(6).toFloat()
+
+            addView(Button(activity).apply {
+                text = "↑"
+                setOnClickListener {
+                    stickToBottom = false
+                    (rv.layoutManager as? LinearLayoutManager)
+                        ?.scrollToPositionWithOffset(0, 0)
+                }
+            })
+
+            addView(Button(activity).apply {
+                text = "↓"
+                setOnClickListener {
+                    stickToBottom = true
+                    val count = activity.logAdapter.itemCount
+                    if (count > 0) {
+                        rv.scrollToPosition(count - 1)
+                    }
+                }
+            })
+        }
+
+        this.addView(
+            overlayButtons,
+            FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.WRAP_CONTENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT
+            ).apply {
+                gravity = Gravity.END or Gravity.BOTTOM
+                marginEnd = activity.dpToPx(8)
+                bottomMargin = activity.dpToPx(8)
+            }
+        )
+
+        this.addView(vertical)
+
+        activity.lifecycleScope.launch {
+            activity.logRepo.pager()
+                .flow
+                .cachedIn(this)
+                .collectLatest { pagingData ->
+                    if (stickToBottom) {
+                        activity.logAdapter.submitData(pagingData)
+                        rv.post {
+                            val count = activity.logAdapter.itemCount
+                            if (count > 0) rv.scrollToPosition(count - 1)
+                        }
+                    } else {
+                        val anchor = captureScrollAnchor(rv)
+                        activity.logAdapter.submitData(pagingData)
+                        restoreScrollAnchor(rv, anchor)
+                    }
+                }
+        }
+    }
+    
+    private fun captureScrollAnchor(rv: RecyclerView): Pair<Int, Int>? {
+        val lm = rv.layoutManager as? LinearLayoutManager ?: return null
+        val pos = lm.findFirstVisibleItemPosition()
+        if (pos == RecyclerView.NO_POSITION) return null
+        val view = rv.getChildAt(0) ?: return null
+        return pos to view.top
+    }
+
+    private fun restoreScrollAnchor(
+        rv: RecyclerView,
+        anchor: Pair<Int, Int>?
+    ) {
+        if (anchor == null) return
+        val lm = rv.layoutManager as? LinearLayoutManager ?: return
+        rv.post {
+            lm.scrollToPositionWithOffset(anchor.first, anchor.second)
         }
     }
 }

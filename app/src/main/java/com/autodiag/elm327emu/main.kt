@@ -94,7 +94,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var btBridge: BluetoothBridge
     lateinit var ntBridge: NetworkBridge
 
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    public val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     lateinit var contentFrame: FrameLayout
     private lateinit var drawer: DrawerLayout
@@ -103,6 +103,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var dtcClearedCheck: CheckBox
 
     lateinit var settingsView: View
+    lateinit var logView: LogView
 
     private val prefs by lazy { getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
 
@@ -256,177 +257,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    lateinit var logRepo: LogRepository
-    private lateinit var logAdapter: LogAdapter
-    lateinit var logViewRoot: View
-    private var stickToBottom = false
-
-    private fun captureScrollAnchor(rv: RecyclerView): Pair<Int, Int>? {
-        val lm = rv.layoutManager as? LinearLayoutManager ?: return null
-        val pos = lm.findFirstVisibleItemPosition()
-        if (pos == RecyclerView.NO_POSITION) return null
-        val view = rv.getChildAt(0) ?: return null
-        return pos to view.top
-    }
-
-    private fun restoreScrollAnchor(
-        rv: RecyclerView,
-        anchor: Pair<Int, Int>?
-    ) {
-        if (anchor == null) return
-        val lm = rv.layoutManager as? LinearLayoutManager ?: return
-        rv.post {
-            lm.scrollToPositionWithOffset(anchor.first, anchor.second)
-        }
-    }
-
-
-    private fun buildLogView(): View {
-        logAdapter = LogAdapter()
-
-        val root = FrameLayout(this)
-
-        val vertical = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-        }
-
-        fun buildButtons(): LinearLayout =
-            LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                setPadding(16, 16, 16, 16)
-
-                addView(Button(this@MainActivity).apply {
-                    text = "Download log"
-                    setOnClickListener {
-                        scope.launch {
-                            val file = File(getExternalFilesDir(null), "elm327emu_log.txt")
-                            file.writeText(logRepo.snapshotUnsafe().joinToString("\n") { it.text })
-                            appendLog("Log written to: ${file.absolutePath}", LogLevel.INFO)
-                        }
-                    }
-                })
-
-                addView(Button(this@MainActivity).apply {
-                    text = "Download log on FS"
-                    setOnClickListener { openSaveLogDialog() }
-                })
-
-                addView(Button(this@MainActivity).apply {
-                    text = "Clear log"
-                    setOnClickListener {
-                        scope.launch {
-                            logRepo.clear()
-                        }
-                    }
-                })
-            }
-
-        val buttons = buildButtons()
-        vertical.addView(
-            buttons,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-        )
-
-        val rv = RecyclerView(this).apply {
-            layoutManager = LinearLayoutManager(this@MainActivity).apply {
-                stackFromEnd = false
-            }
-            adapter = logAdapter
-            itemAnimator = null
-
-            isFocusable = true
-            isFocusableInTouchMode = true
-        }
-        rv.addOnScrollListener(
-            object : RecyclerView.OnScrollListener() {
-                override fun onScrolled(rv: RecyclerView, dx: Int, dy: Int) {
-                    if (dy < 0) {
-                        stickToBottom = false
-                    }
-                }
-            }
-        )
-
-        vertical.addView(
-            rv,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                0,
-                1f
-            )
-        )
-
-        val overlayButtons = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.END
-            setPadding(8, 8, 8, 8)
-            elevation = dpToPx(6).toFloat()
-
-            addView(Button(this@MainActivity).apply {
-                text = "↑"
-                setOnClickListener {
-                    stickToBottom = false
-                    (rv.layoutManager as? LinearLayoutManager)
-                        ?.scrollToPositionWithOffset(0, 0)
-                }
-            })
-
-            addView(Button(this@MainActivity).apply {
-                text = "↓"
-                setOnClickListener {
-                    stickToBottom = true
-                    val count = logAdapter.itemCount
-                    if (count > 0) {
-                        rv.scrollToPosition(count - 1)
-                    }
-                }
-            })
-        }
-
-        root.addView(
-            overlayButtons,
-            FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                gravity = Gravity.END or Gravity.BOTTOM
-                marginEnd = dpToPx(8)
-                bottomMargin = dpToPx(8)
-            }
-        )
-
-        root.addView(vertical)
-
-        lifecycleScope.launch {
-            logRepo.pager()
-                .flow
-                .cachedIn(this)
-                .collectLatest { pagingData ->
-                    if (stickToBottom) {
-                        logAdapter.submitData(pagingData)
-                        rv.post {
-                            val count = logAdapter.itemCount
-                            if (count > 0) rv.scrollToPosition(count - 1)
-                        }
-                    } else {
-                        val anchor = captureScrollAnchor(rv)
-                        logAdapter.submitData(pagingData)
-                        restoreScrollAnchor(rv, anchor)
-                    }
-                }
-        }
-
-        return root
-    }
-
+    public lateinit var logRepo: LogRepository
+    public lateinit var logAdapter: LogAdapter
 
     private fun buildSettingsView(): View {
         val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
@@ -650,7 +482,8 @@ class MainActivity : AppCompatActivity() {
         drawer = DrawerLayout(this)
 
         simView = buildSimView()
-        logViewRoot = buildLogView()
+        logView = LogView(this)
+        logView.build()
         settingsView = buildSettingsView()
         
         contentFrame = FrameLayout(this)
@@ -664,7 +497,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             menu.add("Log").setOnMenuItemClickListener {
-                show(logViewRoot)
+                show(logView)
                 drawer.closeDrawer(Gravity.LEFT)
                 true
             }
@@ -700,7 +533,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun openSaveLogDialog() {
+    public fun openSaveLogDialog() {
         val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
             type = "text/plain"
@@ -713,7 +546,7 @@ class MainActivity : AppCompatActivity() {
         dtcClearedCheck.isChecked = value
     }
 
-    private fun dpToPx(dp: Int): Int {
+    public fun dpToPx(dp: Int): Int {
         return (dp * resources.displayMetrics.density).toInt()
     }
 
