@@ -28,6 +28,13 @@ import androidx.lifecycle.lifecycleScope
 
 import kotlinx.coroutines.flow.collectLatest
 import androidx.paging.cachedIn
+import android.content.Intent
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.withContext
+import androidx.activity.result.contract.ActivityResultContracts
+import android.app.Activity.RESULT_OK
 
 public enum class LogLevel(val value: Int) {
     ERROR(0),
@@ -127,7 +134,7 @@ class LogRepository(
 
     suspend fun append(text: String, level: LogLevel = LogLevel.DEBUG) {
         mutex.withLock {
-            if (buffer.size > prefs.getInt("log_max_entries", LOG_MAX_ENTRIES)) {
+            if (buffer.size >= prefs.getInt("log_max_entries", LOG_MAX_ENTRIES)) {
                 buffer.removeAt(0)
             }
             buffer.add(LogEntry(counter++, text, level))
@@ -220,9 +227,24 @@ class LogView(
 ) : FrameLayout(activity) {
     
     private var stickToBottom = false
+    public lateinit var logAdapter: LogAdapter
+    public val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    private val saveLogLauncher =
+        activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                val uri = result.data?.data ?: return@registerForActivityResult
+                scope.launch(Dispatchers.IO) {
+                    activity.contentResolver.openOutputStream(uri)?.use { out ->
+                        val text = activity.logRepo.snapshotUnsafe().joinToString("\n") { it.text }
+                        out.write(text.toByteArray())
+                    }
+                }
+            }
+        }
 
     public fun build() {
-        activity.logAdapter = LogAdapter()
+        logAdapter = LogAdapter()
 
         val vertical = LinearLayout(activity).apply {
             orientation = LinearLayout.VERTICAL
@@ -251,7 +273,7 @@ class LogView(
 
                 addView(Button(activity).apply {
                     text = "Download log on FS"
-                    setOnClickListener { activity.openSaveLogDialog() }
+                    setOnClickListener { openSaveLogDialog() }
                 })
 
                 addView(Button(activity).apply {
@@ -277,7 +299,7 @@ class LogView(
             layoutManager = LinearLayoutManager(activity).apply {
                 stackFromEnd = false
             }
-            adapter = activity.logAdapter
+            adapter = logAdapter
             itemAnimator = null
 
             isFocusable = true
@@ -321,7 +343,7 @@ class LogView(
                 text = "↓"
                 setOnClickListener {
                     stickToBottom = true
-                    val count = activity.logAdapter.itemCount
+                    val count = logAdapter.itemCount
                     if (count > 0) {
                         rv.scrollToPosition(count - 1)
                     }
@@ -349,14 +371,14 @@ class LogView(
                 .cachedIn(this)
                 .collectLatest { pagingData ->
                     if (stickToBottom) {
-                        activity.logAdapter.submitData(pagingData)
+                        logAdapter.submitData(pagingData)
                         rv.post {
-                            val count = activity.logAdapter.itemCount
+                            val count = logAdapter.itemCount
                             if (count > 0) rv.scrollToPosition(count - 1)
                         }
                     } else {
                         val anchor = captureScrollAnchor(rv)
-                        activity.logAdapter.submitData(pagingData)
+                        logAdapter.submitData(pagingData)
                         restoreScrollAnchor(rv, anchor)
                     }
                 }
@@ -381,4 +403,26 @@ class LogView(
             lm.scrollToPositionWithOffset(anchor.first, anchor.second)
         }
     }
+
+    public fun openSaveLogDialog() {
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TITLE, "elm327emu_log.txt")
+        }
+        saveLogLauncher.launch(intent)
+    }
+
+    fun append(text: String, level: LogLevel = LogLevel.DEBUG) {
+        val currentLogLevel = activity.prefs.getInt("log_level", LogLevel.INFO.ordinal)
+        if (currentLogLevel < level.ordinal) return
+
+        scope.launch {
+            activity.logRepo.append(text, level)
+            withContext(Dispatchers.Main) {
+                logAdapter.refresh()
+            }
+        }
+    }
+
 }

@@ -72,19 +72,6 @@ class MainActivity : AppCompatActivity() {
     private val enableBtLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { }
 
-    private val saveLogLauncher =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == RESULT_OK) {
-                val uri = result.data?.data ?: return@registerForActivityResult
-                scope.launch(Dispatchers.IO) {
-                    contentResolver.openOutputStream(uri)?.use { out ->
-                        val text = logRepo.snapshotUnsafe().joinToString("\n") { it.text }
-                        out.write(text.toByteArray())
-                    }
-                }
-            }
-        }
-
     // Order in the settings screen
     private val NETWORK_BT = 0
     private val NETWORK_BLE = 1
@@ -105,7 +92,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var settingsView: View
     lateinit var logView: LogView
 
-    private val prefs by lazy { getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
+    public val prefs by lazy { getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
@@ -258,7 +245,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     public lateinit var logRepo: LogRepository
-    public lateinit var logAdapter: LogAdapter
 
     private fun buildSettingsView(): View {
         val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
@@ -533,15 +519,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    public fun openSaveLogDialog() {
-        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            type = "text/plain"
-            putExtra(Intent.EXTRA_TITLE, "elm327emu_log.txt")
-        }
-        saveLogLauncher.launch(intent)
-    }
-
     fun setDtcClearedUi(value: Boolean) {
         dtcClearedCheck.isChecked = value
     }
@@ -585,15 +562,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {
-        val currentLogLevel = prefs.getInt("log_level", LogLevel.INFO.ordinal)
-        if (currentLogLevel < level.ordinal) return
-
-        scope.launch {
-            logRepo.append(text, level)
-            withContext(Dispatchers.Main) {
-                logAdapter.refresh()
-            }
-        }
+        logView.append(text, level)
     }
 
     override fun onDestroy() {
