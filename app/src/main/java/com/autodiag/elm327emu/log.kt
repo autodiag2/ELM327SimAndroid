@@ -227,8 +227,8 @@ class LogView(
 ) : FrameLayout(activity) {
     
     private var stickToBottom = false
-    public lateinit var logAdapter: LogAdapter
-    public val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private lateinit var logAdapter: LogAdapter
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     private val saveLogLauncher =
         activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -263,23 +263,23 @@ class LogView(
                 addView(Button(activity).apply {
                     text = "Download log"
                     setOnClickListener {
-                        activity.scope.launch {
+                        scope.launch {
                             val file = File(activity.getExternalFilesDir(null), "elm327emu_log.txt")
                             file.writeText(activity.logRepo.snapshotUnsafe().joinToString("\n") { it.text })
-                            activity.appendLog("Log written to: ${file.absolutePath}", LogLevel.INFO)
+                            append("Log written to: ${file.absolutePath}", LogLevel.INFO)
                         }
                     }
                 })
 
                 addView(Button(activity).apply {
-                    text = "Download log on FS"
+                    text = "Save as..."
                     setOnClickListener { openSaveLogDialog() }
                 })
 
                 addView(Button(activity).apply {
                     text = "Clear log"
                     setOnClickListener {
-                        activity.scope.launch {
+                        scope.launch {
                             activity.logRepo.clear()
                         }
                     }
