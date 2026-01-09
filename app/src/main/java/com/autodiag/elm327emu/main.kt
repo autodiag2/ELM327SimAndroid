@@ -57,6 +57,7 @@ import android.text.style.ForegroundColorSpan
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.paging.PagingData
+import androidx.activity.result.contract.ActivityResultContracts
 
 import androidx.lifecycle.lifecycleScope
 
@@ -64,11 +65,25 @@ import kotlinx.coroutines.flow.collectLatest
 import androidx.paging.cachedIn
 
 private const val REQUEST_CODE = 1
-private const val REQUEST_SAVE_LOG = 1001
 
 class MainActivity : AppCompatActivity() {
-    private val btAdapter = BluetoothAdapter.getDefaultAdapter()
-    private val classicalBtUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
+    private lateinit var btAdapter: BluetoothAdapter
+
+    private val enableBtLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { }
+
+    private val saveLogLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                val uri = result.data?.data ?: return@registerForActivityResult
+                scope.launch(Dispatchers.IO) {
+                    contentResolver.openOutputStream(uri)?.use { out ->
+                        val text = logRepo.snapshotUnsafe().joinToString("\n") { it.text }
+                        out.write(text.toByteArray())
+                    }
+                }
+            }
+        }
 
     // Order in the settings screen
     private val NETWORK_BT = 0
@@ -434,7 +449,7 @@ class MainActivity : AppCompatActivity() {
 
         var adapterName = "Missing permission"
         if ( isPermissionsGranted() ) {
-            adapterName = btAdapter?.name ?: ""
+            adapterName = btAdapter.name ?: ""
         }
         val btNameEdit = EditText(this).apply {
             hint = "OBD II"
@@ -446,7 +461,7 @@ class MainActivity : AppCompatActivity() {
             text = "Set"
             setOnClickListener {
                 val newName = btNameEdit.text.toString().trim()
-                if (newName.isEmpty() || btAdapter == null) return@setOnClickListener
+                if (newName.isEmpty()) return@setOnClickListener
 
                 if (isPermissionsGranted()) {
                     btAdapter.name = newName
@@ -623,6 +638,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val manager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        btAdapter = manager.adapter
+
         MainActivityRef.activity = this
         bleBridge = BLEBridge(this, btAdapter)
         btBridge = BluetoothBridge(this, btAdapter)
@@ -688,23 +706,7 @@ class MainActivity : AppCompatActivity() {
             type = "text/plain"
             putExtra(Intent.EXTRA_TITLE, "elm327emu_log.txt")
         }
-        startActivityForResult(intent, REQUEST_SAVE_LOG)
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-
-        if (requestCode == REQUEST_SAVE_LOG && resultCode == RESULT_OK) {
-            val uri = data?.data ?: return
-
-            scope.launch(Dispatchers.IO) {
-                contentResolver.openOutputStream(uri)?.use { out ->
-                    val text = logRepo.snapshotUnsafe()
-                        .joinToString("\n") { it.text }
-                    out.write(text.toByteArray())
-                }
-            }
-        }
+        saveLogLauncher.launch(intent)
     }
 
     fun setDtcClearedUi(value: Boolean) {
@@ -737,7 +739,7 @@ class MainActivity : AppCompatActivity() {
 
     public fun showBluetoothEnablePopup() {
         val intent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-        startActivityForResult(intent, REQUEST_CODE)
+        enableBtLauncher.launch(intent)
     }
 
     private fun startServer() {
