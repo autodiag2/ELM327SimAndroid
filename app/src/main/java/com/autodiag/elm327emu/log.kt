@@ -16,6 +16,8 @@ import androidx.paging.PagingDataAdapter
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
+import android.content.Context
+
 public enum class LogLevel(val value: Int) {
     ERROR(0),
     INFO(1),
@@ -99,17 +101,23 @@ class LogPagingSource(
     }
 }
 
-class LogRepository {
+class LogRepository(
+    private val context: Context
+) {
 
     private val buffer = ArrayList<LogEntry>()
     private val mutex = Mutex()
     private var counter = 0L
+    val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
 
     @Volatile
     private var pagingSource: LogPagingSource? = null
 
-    suspend fun append(text: String, level: LogLevel) {
+    suspend fun append(text: String, level: LogLevel = LogLevel.DEBUG) {
         mutex.withLock {
+            if (buffer.size > prefs.getInt("log_max_entries", 10000)) {
+                buffer.removeAt(0)
+            }
             buffer.add(LogEntry(counter++, text, level))
         }
         pagingSource?.invalidate()

@@ -241,7 +241,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private val logRepo = LogRepository()
+    lateinit var logRepo: LogRepository
     private lateinit var logAdapter: LogAdapter
     lateinit var logViewRoot: View
     private var stickToBottom = false
@@ -499,6 +499,30 @@ class MainActivity : AppCompatActivity() {
 
         root.addView(logLevelSpinner)
 
+        val logMaxEntries = TextView(this).apply {
+            text = "Max log entries: 10000"
+            setPadding(0, 16, 0, 0)
+        }
+        root.addView(logMaxEntries)
+
+        val savedMax = prefs.getInt("log_max_entries", 10000)
+        val logMaxEdit = EditText(this).apply {
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            setText(savedMax.toString())
+            hint = "10000"
+        }
+        root.addView(logMaxEdit)
+
+        val applyLogMaxBtn = Button(this).apply {
+            text = "Apply"
+            setOnClickListener {
+                val v = logMaxEdit.text.toString().toIntOrNull() ?: return@setOnClickListener
+                if (v < 100) return@setOnClickListener
+                prefs.edit().putInt("log_max_entries", v).apply()
+            }
+        }
+        root.addView(applyLogMaxBtn)
+
         val networkLabel = TextView(this).apply {
             text = "Networking mode"
             setPadding(0, 16, 0, 0)
@@ -606,6 +630,7 @@ class MainActivity : AppCompatActivity() {
         bleBridge = BLEBridge(this, btAdapter)
         btBridge = BluetoothBridge(this, btAdapter)
         ntBridge = NetworkBridge(this)
+        logRepo = LogRepository(this)
 
         drawer = DrawerLayout(this)
 
