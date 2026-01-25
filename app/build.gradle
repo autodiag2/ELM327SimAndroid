@@ -3,6 +3,35 @@ plugins {
     id("org.jetbrains.kotlin.android") version "1.9.24"
 }
 
+import java.util.regex.Pattern
+
+tasks.register("bumpVersion") {
+  doLast {
+    def gradleFile = file("build.gradle")
+    if (!gradleFile.exists()) throw new GradleException("Missing: ${gradleFile}")
+
+    def s = gradleFile.getText("UTF-8")
+
+    def m = (s =~ /versionCode\s+(\d+)/)
+    if (!m.find()) throw new GradleException("versionCode not found in ${gradleFile}")
+    def oldCode = Integer.parseInt(m.group(1))
+    def newCode = oldCode + 1
+
+    s = s.replaceFirst(/versionCode\s+\d+/, "versionCode ${newCode}")
+
+    if ((s =~ /versionName\s+"[^"]*"/).find()) {
+      s = s.replaceFirst(/versionName\s+"[^"]*"/, "versionName \"${newCode}\"")
+    } else if ((s =~ /versionName\s+'[^']*'/).find()) {
+      s = s.replaceFirst(/versionName\s+'[^']*'/, "versionName \"${newCode}\"")
+    } else {
+      throw new GradleException("versionName not found in ${gradleFile}")
+    }
+
+    gradleFile.write(s, "UTF-8")
+    println("Bumped: versionCode=${newCode}, versionName=${newCode}")
+  }
+}
+
 android {
     namespace "com.github.autodiag2.elm327emu"
     compileSdk 34
@@ -26,8 +55,8 @@ android {
         applicationId "com.github.autodiag2.elm327emu"
         minSdk 28
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode 3
+        versionName "3"
 
         ndk {
             abiFilters "arm64-v8a", "armeabi-v7a", "x86", "x86_64"
