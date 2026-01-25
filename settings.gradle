@@ -6,7 +6,7 @@ pluginManagement {
     }
 }
 
-rootProject.name = "BluetoothAndroid"
+rootProject.name = "ELM327 Emulation"
 include(":app")
 
 dependencyResolutionManagement {

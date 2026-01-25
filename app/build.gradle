@@ -37,7 +37,6 @@ android {
                 arguments(
                     "NDK_PROJECT_PATH=${projectDir}/autodiag",
                     "APP_BUILD_SCRIPT=${projectDir}/autodiag/jni/Android.mk",
-                    "NDK_APPLICATION_MK=${projectDir}/autodiag/jni/Application.mk"
                 )
             }
         }
@@ -59,6 +58,7 @@ android {
             minifyEnabled false
         }
     }
+
 }
 
 dependencies {
