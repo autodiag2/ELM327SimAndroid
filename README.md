@@ -15,3 +15,6 @@ You can emulate ELM327 wifi, bluetooth, bluetooth BLE then connect to it for exa
 
 ## Install
 Available with [releases](https://github.com/autodiag2/ELM327SimAndroid/releases/)
+
+## Dev
+See [this](/doc/DEV.md)

@@ -1,0 +1,3 @@
+[submodule "autodiag"]
+	path = autodiag
+	url = https://github.com/autodiag2/autodiag
