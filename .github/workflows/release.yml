@@ -20,6 +20,9 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
+      
+      - name: Submodule update
+        run: git submodule update --init --recursive || true
 
       - name: Decode keystore
         run: |
