@@ -3,12 +3,33 @@ plugins {
     id("org.jetbrains.kotlin.android") version "1.9.24"
 }
 
-import java.util.regex.Pattern
+import java.io.ByteArrayOutputStream
+
+def runCmd(List<String> cmd) {
+  def out = new ByteArrayOutputStream()
+  def err = new ByteArrayOutputStream()
+  def res = exec {
+    commandLine cmd
+    standardOutput = out
+    errorOutput = err
+    ignoreExitValue = true
+  }
+  def stdout = out.toString("UTF-8").trim()
+  def stderr = err.toString("UTF-8").trim()
+  if (res.exitValue != 0) {
+    throw new GradleException("Command failed (${res.exitValue}): ${cmd.join(' ')}\n${stderr}\n${stdout}")
+  }
+  stdout
+}
 
 tasks.register("bumpVersion") {
   doLast {
     def gradleFile = file("build.gradle")
     if (!gradleFile.exists()) throw new GradleException("Missing: ${gradleFile}")
+
+    runCmd(["git", "rev-parse", "--is-inside-work-tree"])
+    def status = runCmd(["git", "status", "--porcelain"])
+    if (status) throw new GradleException("Working tree not clean. Commit or stash first.\n${status}")
 
     def s = gradleFile.getText("UTF-8")
 
@@ -28,7 +49,18 @@ tasks.register("bumpVersion") {
     }
 
     gradleFile.write(s, "UTF-8")
-    println("Bumped: versionCode=${newCode}, versionName=${newCode}")
+
+    runCmd(["git", "add", gradleFile.path])
+    runCmd(["git", "commit", "-m", "chore: bump version to ${newCode}"])
+    def tag = "v${newCode}"
+
+    def existing = ""
+    try { existing = runCmd(["git", "tag", "-l", tag]) } catch(Exception ignored) { }
+    if (existing) throw new GradleException("Tag already exists: ${tag}")
+
+    runCmd(["git", "tag", "-a", tag, "-m", tag])
+
+    println("Bumped: versionCode=${newCode}, versionName=${newCode}, tag=${tag}")
   }
 }
 
