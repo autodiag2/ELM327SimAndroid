@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if ! [ -d "../autodiag" ] ; then
+  echo "this script must be launched from devscripts/"
+  exit 1
+fi
+
 OPWD="$(pwd)"
 cd "../autodiag"
 ndk-build
