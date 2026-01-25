@@ -20,7 +20,28 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK (side-by-side)
+        run: |
+          yes | sdkmanager --licenses
+
+          NDK_VERSION=$(grep -E 'ndkVersion[[:space:]]+"[^"]+"' app/build.gradle \
+            | sed -E 's/.*ndkVersion[[:space:]]+"([^"]+)".*/\1/' \
+            | head -n1)
+
+          if [ -z "$NDK_VERSION" ]; then
+            echo "ndkVersion not found in app/build.gradle"
+            exit 1
+          fi
+
+          echo "Installing NDK $NDK_VERSION"
+          sdkmanager --install "ndk;$NDK_VERSION"
+
+          test -d "$ANDROID_SDK_ROOT/ndk/$NDK_VERSION"
+
       - name: Submodule update
         run: git submodule update --init --recursive || true
 
