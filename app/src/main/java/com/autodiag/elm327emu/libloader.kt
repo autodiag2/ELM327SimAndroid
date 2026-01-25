@@ -1,4 +1,4 @@
-package com.autodiag.elm327emu
+package com.github.autodiag2.elm327emu
 
 object SimGeneratorGui {
     @Volatile var vehicleSpeed = 0

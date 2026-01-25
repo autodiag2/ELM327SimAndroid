@@ -1,4 +1,4 @@
-package com.autodiag.elm327emu
+package com.github.autodiag2.elm327emu
 
 import android.Manifest
 import androidx.appcompat.app.AppCompatActivity
@@ -15,7 +15,7 @@ import android.bluetooth.BluetoothServerSocket
 import android.bluetooth.BluetoothSocket
 import android.net.LocalSocket
 import android.net.LocalSocketAddress
-import com.autodiag.elm327emu.libautodiag
+import com.github.autodiag2.elm327emu.libautodiag
 import android.util.Log
 import android.text.method.ScrollingMovementMethod
 import android.view.Gravity
@@ -24,7 +24,7 @@ import androidx.drawerlayout.widget.DrawerLayout
 import com.google.android.material.navigation.NavigationView
 import android.view.MenuItem
 import android.content.Intent
-import com.autodiag.elm327emu.SimGeneratorGui
+import com.github.autodiag2.elm327emu.SimGeneratorGui
 import androidx.appcompat.widget.Toolbar
 import android.content.Context
 import android.widget.LinearLayout
@@ -36,8 +36,8 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.ScrollView
 import androidx.core.widget.addTextChangedListener
-import com.autodiag.elm327emu.R
-import com.autodiag.elm327emu.BluetoothBridge
+import com.github.autodiag2.elm327emu.R
+import com.github.autodiag2.elm327emu.BluetoothBridge
 import android.view.ViewGroup.LayoutParams
 import android.view.View
 import android.content.SharedPreferences

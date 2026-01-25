@@ -4,8 +4,9 @@ plugins {
 }
 
 android {
-    namespace "com.autodiag.elm327emu"
+    namespace "com.github.autodiag2.elm327emu"
     compileSdk 34
+    ndkVersion "28.0.12433566"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -15,12 +16,31 @@ android {
         jvmTarget = "1.8"
     }
 
+    externalNativeBuild {
+        ndkBuild {
+            path file("autodiag/jni/Android.mk")
+        }
+    }
+
     defaultConfig {
-        applicationId "com.autodiag.elm327emu"
+        applicationId "com.github.autodiag2.elm327emu"
         minSdk 28
         targetSdk 34
         versionCode 1
         versionName "1.0"
+
+        ndk {
+            abiFilters "arm64-v8a", "armeabi-v7a", "x86", "x86_64"
+        }
+        externalNativeBuild {
+            ndkBuild {
+                arguments(
+                    "NDK_PROJECT_PATH=${projectDir}/autodiag",
+                    "APP_BUILD_SCRIPT=${projectDir}/autodiag/jni/Android.mk",
+                    "NDK_APPLICATION_MK=${projectDir}/autodiag/jni/Application.mk"
+                )
+            }
+        }
     }
     buildFeatures {
         buildConfig true

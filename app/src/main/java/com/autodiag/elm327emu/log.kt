@@ -1,4 +1,4 @@
-package com.autodiag.elm327emu
+package com.github.autodiag2.elm327emu
 
 import android.view.ViewGroup
 import android.widget.TextView
