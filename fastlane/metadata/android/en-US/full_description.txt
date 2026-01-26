@@ -1,0 +1,5 @@
+Simulates an ELM327 OBD-II interface over Bluetooth/BLE/network.
+Useful for development and testing without a real vehicle.
+Support many protocols CAN, KWP2000, ... any supported by ELM327.
+Support OBD-II messages.
+Track what have been sent by the scantool using the log.

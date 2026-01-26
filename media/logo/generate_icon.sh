@@ -1,9 +1,9 @@
 #!/bin/bash
 SRC=./logo.png
-RES=../app/src/main/res
+RES=../../app/src/main/res
 
 if ! [ -f "$SRC" ] ; then
-	echo "this script must be launched from devscripts/"
+	echo "this script must be launched from media/logo"
 	exit 1
 fi
 
