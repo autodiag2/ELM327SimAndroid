@@ -6,7 +6,7 @@ pluginManagement {
     }
 }
 
-rootProject.name = "ELM327 Emulation"
+rootProject.name = "ELM327 Emulator"
 include(":app")
 
 dependencyResolutionManagement {
