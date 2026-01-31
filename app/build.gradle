@@ -67,7 +67,7 @@ tasks.register("bumpVersion") {
 android {
     namespace "com.github.autodiag2.elm327emu"
     compileSdk 34
-    ndkVersion "28.0.12433566"
+    ndkVersion "29.0.14206865"
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8

@@ -29,7 +29,7 @@ jobs:
 
       - name: Install fixed NDK (side-by-side)
         run: |
-          sdkmanager --install "ndk;28.0.12433566"
+          sdkmanager --install "ndk;29.0.14206865"
 
       - name: Submodule update
         run: git submodule update --init --recursive || true
@@ -49,10 +49,8 @@ jobs:
         run: |
           chmod +x gradlew
 
-          ./gradlew :app:externalNativeBuildRelease --info -Pandroid.native.buildOutput=verbose > /tmp/native.ci.log 2>&1 || true
-
           ./gradlew assembleRelease \
-            -Pandroid.ndkVersion=28.0.12433566
+            -Pandroid.ndkVersion=29.0.14206865
 
       - name: Rename APK to namespace
         run: |
