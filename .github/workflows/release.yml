@@ -65,19 +65,6 @@ jobs:
           mv "$APK" "$OUT"
           echo "RENAMED_APK=$OUT" >> "$GITHUB_ENV"
 
-      - name: Show native toolchain commands (excerpt)
-        if: always()
-        run: |
-          egrep -i "toolchains/llvm|linux-android[0-9]+-clang|darwin-android[0-9]+-clang|clang\+\+|clang|ld\.lld| -Wl,| --sysroot| -O[0-3sz]| -flto| -fprofile| -march| -mcpu| -D" /tmp/native.ci.log \
-            | head -n 200 || true
-
-      - name: Upload native build log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: native-build-log
-          path: /tmp/native.ci.log
-
       - name: Upload APK
         uses: softprops/action-gh-release@v2
         with:
