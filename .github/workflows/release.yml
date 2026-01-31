@@ -51,7 +51,20 @@ jobs:
           ./gradlew assembleRelease \
             -Pandroid.ndkVersion=28.0.12433566
 
+      - name: Rename APK to namespace
+        run: |
+          NS=$(sed -nE 's/^\s*namespace\s+"([^"]+)".*/\1/p' app/build.gradle | head -n1)
+          if [ -z "$NS" ]; then
+            echo "namespace not found in app/build.gradle"
+            exit 1
+          fi
+          APK=$(ls -1 app/build/outputs/apk/release/*.apk | head -n1)
+          OUTDIR="app/build/outputs/apk/release"
+          OUT="${OUTDIR}/${NS}.apk"
+          mv "$APK" "$OUT"
+          echo "RENAMED_APK=$OUT" >> "$GITHUB_ENV"
+
       - name: Upload APK
         uses: softprops/action-gh-release@v2
         with:
-          files: app/build/outputs/apk/release/*.apk
+          files: ${{ env.RENAMED_APK }}
