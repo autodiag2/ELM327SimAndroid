@@ -48,6 +48,9 @@ jobs:
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
+
+          ./gradlew :app:externalNativeBuildRelease --info -Pandroid.native.buildOutput=verbose > /tmp/native.ci.log 2>&1 || true
+
           ./gradlew assembleRelease \
             -Pandroid.ndkVersion=28.0.12433566
 
