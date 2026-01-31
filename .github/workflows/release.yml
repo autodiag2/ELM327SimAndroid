@@ -25,8 +25,11 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Accept licenses
+        run: yes | sdkmanager --licenses
+
+      - name: Install fixed NDK (side-by-side)
         run: |
-          yes | sdkmanager --licenses
+          sdkmanager --install "ndk;28.0.12433566"
 
       - name: Submodule update
         run: git submodule update --init --recursive || true
@@ -45,7 +48,8 @@ jobs:
           KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           chmod +x gradlew
-          ./gradlew assembleRelease
+          ./gradlew assembleRelease \
+            -Pandroid.ndkVersion=28.0.12433566
 
       - name: Upload APK
         uses: softprops/action-gh-release@v2
