@@ -58,7 +58,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.paging.PagingData
 import androidx.activity.result.contract.ActivityResultContracts
-
+import kotlin.math.roundToInt
 import androidx.lifecycle.lifecycleScope
 
 import kotlinx.coroutines.flow.collectLatest
@@ -117,43 +117,126 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun buildSimView(): View {
+        private fun buildSimView(): View {
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(16, 16, 16, 16)
         }
 
-        fun labeledSeekBar(label: String, min: Int, max: Int, unit: String, onChange: (Int) -> Unit) {
-            val title = TextView(this).apply { text = label }
-            val value = TextView(this).apply { text = "$min $unit" }
+        val allSignals = libautodiag.getSimSignals().sortedBy { it.name.lowercase() }
+        val addedSignalPaths = linkedSetOf<String>()
+        val dynamicSignalsContainer = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+        }
+
+        fun getSignalInitialValue(signal: SimSignal): Double {
+            val v = libautodiag.getSignalValue(signal.path)
+            if (!v.isNaN()) {
+                return v
+            }
+            return signal.min
+        }
+
+        fun setSignalValue(signal: SimSignal, value: Double) {
+            SimGeneratorGui.setSignalValue(signal.path, value)
+        }
+
+        fun addSignalWidget(signal: SimSignal) {
+            if (addedSignalPaths.contains(signal.path)) {
+                return
+            }
+            addedSignalPaths.add(signal.path)
+
+            val title = TextView(this).apply {
+                text = if (signal.unit.isNullOrBlank()) signal.name else "${signal.name} (${signal.unit})"
+            }
+
+            val step = if (signal.step <= 0.0) 1.0 else signal.step
+            val scale = (1.0 / step).toInt().coerceAtLeast(1)
+            val minI = (signal.min * scale).toInt()
+            val maxI = (signal.max * scale).toInt()
+            val initialI = (((getSignalInitialValue(signal)).coerceIn(signal.min, signal.max)) * scale).toInt()
+
+            val valueText = TextView(this).apply {
+                val shown = initialI.toDouble() / scale
+                text = if (signal.unit.isNullOrBlank()) "$shown" else "$shown ${signal.unit}"
+            }
+
             val seek = SeekBar(this).apply {
-                this.max = max - min
+                max = (maxI - minI).coerceAtLeast(0)
+                progress = (initialI - minI).coerceIn(0, max)
                 setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                    override fun onProgressChanged(s: SeekBar, p: Int, f: Boolean) {
-                        val v = p + min
-                        value.text = "$v $unit"
-                        onChange(v)
+                    override fun onProgressChanged(s: SeekBar, p: Int, fromUser: Boolean) {
+                        val v = (p + minI).toDouble() / scale
+                        valueText.text = if (signal.unit.isNullOrBlank()) "$v" else "$v ${signal.unit}"
+                        setSignalValue(signal, v)
                     }
                     override fun onStartTrackingTouch(s: SeekBar) {}
                     override fun onStopTrackingTouch(s: SeekBar) {}
                 })
             }
-            container.addView(title)
-            container.addView(value)
-            container.addView(seek)
+
+            setSignalValue(signal, initialI.toDouble() / scale)
+
+            val removeBtn = Button(this).apply {
+                text = "Remove"
+            }
+
+            val headerRow = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                addView(title, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                addView(removeBtn)
+            }
+
+            val block = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(0, 12, 0, 12)
+                addView(headerRow)
+                addView(valueText)
+                addView(seek)
+            }
+
+            removeBtn.setOnClickListener {
+                addedSignalPaths.remove(signal.path)
+                dynamicSignalsContainer.removeView(block)
+            }
+
+            dynamicSignalsContainer.addView(block)
         }
 
-        labeledSeekBar("Vehicle speed (km/h)", 0, 250, "km/h") {
-            SimGeneratorGui.vehicleSpeed = it
+        val signalSpinner = Spinner(this)
+        val spinnerSignals = allSignals
+        val spinnerAdapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            spinnerSignals.map { it.name }
+        ).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        signalSpinner.adapter = spinnerAdapter
+
+        val addSignalButton = Button(this).apply {
+            text = "Add signal"
+            setOnClickListener {
+                val index = signalSpinner.selectedItemPosition
+                if (index in spinnerSignals.indices) {
+                    addSignalWidget(spinnerSignals[index])
+                }
+            }
         }
 
-        labeledSeekBar("Coolant temperature (°C)", -40, 150, "°C") {
-            SimGeneratorGui.coolantTemp = it
+        val signalRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            addView(signalSpinner, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            addView(addSignalButton)
         }
 
-        labeledSeekBar("Engine speed (r/min)", 0, 8000, "rpm") {
-            SimGeneratorGui.engineRpm = it
-        }
+        container.addView(signalRow)
+        container.addView(dynamicSignalsContainer)
+
+        allSignals.firstOrNull { it.path == "SAEJ1979.engine_speed" }?.let { addSignalWidget(it) }
+        allSignals.firstOrNull { it.path == "SAEJ1979.vehicle_speed" }?.let { addSignalWidget(it) }
+        allSignals.firstOrNull { it.path == "SAEJ1979.coolant_temp" }?.let { addSignalWidget(it) }
 
         val dtcs = mutableListOf<String>()
         val dtcAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, dtcs)
