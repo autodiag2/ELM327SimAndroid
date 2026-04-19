@@ -117,17 +117,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-        private fun buildSimView(): View {
-        val container = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(16, 16, 16, 16)
-        }
+    private fun setupSimView(simView: View) {
 
         val allSignals = libautodiag.getSimSignals().sortedBy { it.name.lowercase() }
         val addedSignalPaths = linkedSetOf<String>()
-        val dynamicSignalsContainer = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-        }
+        val dynamicSignalsContainer = simView.findViewById<LinearLayout>(R.id.signal_container)
 
         fun getSignalInitialValue(signal: SimSignal): Double {
             val v = libautodiag.getSignalValue(signal.path)
@@ -204,7 +198,7 @@ class MainActivity : AppCompatActivity() {
             dynamicSignalsContainer.addView(block)
         }
 
-        val signalSpinner = Spinner(this)
+        val signalSpinner = simView.findViewById<Spinner>(R.id.signal_choice)
         val spinnerSignals = allSignals
         val spinnerAdapter = ArrayAdapter(
             this,
@@ -215,24 +209,16 @@ class MainActivity : AppCompatActivity() {
         }
         signalSpinner.adapter = spinnerAdapter
 
-        val addSignalButton = Button(this).apply {
-            text = "Add signal"
+        simView.findViewById<Button>(R.id.signal_add).apply {
             setOnClickListener {
                 val index = signalSpinner.selectedItemPosition
+
                 if (index in spinnerSignals.indices) {
-                    addSignalWidget(spinnerSignals[index])
+                    val signal = spinnerSignals[index]
+                    addSignalWidget(signal)
                 }
             }
         }
-
-        val signalRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            addView(signalSpinner, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-            addView(addSignalButton)
-        }
-
-        container.addView(signalRow)
-        container.addView(dynamicSignalsContainer)
 
         allSignals.firstOrNull { it.path == "SAEJ1979.engine_speed" }?.let { addSignalWidget(it) }
         allSignals.firstOrNull { it.path == "SAEJ1979.vehicle_speed" }?.let { addSignalWidget(it) }
@@ -241,16 +227,13 @@ class MainActivity : AppCompatActivity() {
         val dtcs = mutableListOf<String>()
         val dtcAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, dtcs)
 
-        val listView = ListView(this).apply {
+        simView.findViewById<ListView>(R.id.dtc_list).apply {
             adapter = dtcAdapter
         }
 
-        val dtcInput = EditText(this).apply {
-            hint = "P0103"
-        }
+        val dtcInput = simView.findViewById<EditText>(R.id.dtc_entry)
 
-        val addButton = Button(this).apply {
-            text = "Add"
+        simView.findViewById<Button>(R.id.dtc_entery_validate).apply {
             setOnClickListener {
                 val v = dtcInput.text.toString()
                 if (v.isNotEmpty()) {
@@ -262,68 +245,33 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        val dtcRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            addView(dtcInput, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-            addView(addButton)
-        }
-
-        container.addView(
-            listView,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                300
-            )
-        )
-        container.addView(dtcRow)
-
-        val milCheck = CheckBox(this).apply {
-            text = "MIL status"
+        simView.findViewById<CheckBox>(R.id.mil_state).apply {
             setOnCheckedChangeListener { _, v -> SimGeneratorGui.mil = v }
         }
 
-        dtcClearedCheck = CheckBox(this).apply {
-            text = "DTCs cleared"
+        dtcClearedCheck = simView.findViewById<CheckBox>(R.id.dtcs_cleared).apply {
             setOnCheckedChangeListener { _, v -> SimGeneratorGui.dtcCleared = v }
         }
 
-        container.addView(milCheck)
-        container.addView(dtcClearedCheck)
-
-        val ecuName = EditText(this).apply {
-            hint = "ECU name"
-            setText(SimGeneratorGui.ecuName)
+        simView.findViewById<EditText>(R.id.ecu_name).apply {
             addTextChangedListener { SimGeneratorGui.ecuName = it.toString() }
         }
 
-        val vin = EditText(this).apply {
-            hint = "VF7RD5FV8FL507366"
-            setText(SimGeneratorGui.vin)
+        simView.findViewById<EditText>(R.id.vin).apply {
             addTextChangedListener { SimGeneratorGui.vin = it.toString() }
         }
 
-        container.addView(ecuName)
-        container.addView(vin)
-
         var running = false
-        val startStop = Button(this).apply {
-            text = "Start simulation"
+        simView.findViewById<Button>(R.id.sim_state).apply {
             setOnClickListener {
                 if (isPermissionsGranted()) {
                     running = !running
-                    text = if (running) "Stop simulation" else "Start simulation"
+                    text = if (running) "Stop Sim" else "Start Sim"
                     if (running) startServer() else stopServer()
                 } else {
                     requestPermissions()
                 }
             }
-        }
-
-        container.addView(startStop)
-
-        return ScrollView(this).apply {
-            isFillViewport = true
-            addView(container)
         }
     }
 
@@ -550,7 +498,9 @@ class MainActivity : AppCompatActivity() {
 
         drawer = DrawerLayout(this)
 
-        simView = buildSimView()
+        val inflater = layoutInflater
+        simView = inflater.inflate(R.layout.sim, null)
+        setupSimView(simView)
         logView = LogView(this)
         logView.build()
         settingsView = buildSettingsView()
