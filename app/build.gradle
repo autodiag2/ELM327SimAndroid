@@ -64,6 +64,8 @@ tasks.register("bumpVersion") {
   }
 }
 
+def keystorePath = System.getenv("KEYSTORE_PATH")
+
 android {
     namespace "com.github.autodiag2.elm327emu"
     compileSdk 34
@@ -111,16 +113,22 @@ android {
         buildConfig true
     }
     signingConfigs {
-        release {
-            storeFile file(System.getenv("KEYSTORE_PATH"))
-            storePassword System.getenv("KEYSTORE_PASSWORD")
-            keyAlias System.getenv("KEY_ALIAS")
-            keyPassword System.getenv("KEY_PASSWORD")
+        if (keystorePath) {
+            release {
+                storeFile file(keystorePath)
+                storePassword System.getenv("KEYSTORE_PASSWORD")
+                keyAlias System.getenv("KEY_ALIAS")
+                keyPassword System.getenv("KEY_PASSWORD")
+            }
         }
     }
     buildTypes {
         release {
-            signingConfig signingConfigs.release
+            if (keystorePath) {
+                signingConfig signingConfigs.release
+            } else {
+                println("⚠️ No keystore defined → release will NOT be signed")
+            }
             minifyEnabled false
         }
     }

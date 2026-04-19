@@ -3,3 +3,5 @@
 .gradle/
 TODO
 .DS_STORE
+.idea
+local.properties
