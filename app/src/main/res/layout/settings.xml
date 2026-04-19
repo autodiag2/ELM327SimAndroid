@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/settingsScroll"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:id="@+id/rootContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="32dp">
+
+        <!-- Bluetooth section -->
+        <LinearLayout
+            android:id="@+id/btContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingTop="16dp">
+
+            <TextView
+                android:id="@+id/btLabel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Bluetooth device name" />
+
+            <EditText
+                android:id="@+id/btNameEdit"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="OBD II" />
+
+            <Button
+                android:id="@+id/btApplyBtn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Set" />
+        </LinearLayout>
+
+        <!-- Log level -->
+        <TextView
+            android:id="@+id/logLevelLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Log level"
+            android:paddingTop="16dp" />
+
+        <Spinner
+            android:id="@+id/logLevelSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- Max log entries -->
+        <TextView
+            android:id="@+id/maxLogLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Max log entries"
+            android:paddingTop="16dp" />
+
+        <EditText
+            android:id="@+id/maxLogEdit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="number" />
+
+        <!-- Network -->
+        <TextView
+            android:id="@+id/networkLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Networking mode"
+            android:paddingTop="16dp" />
+
+        <Spinner
+            android:id="@+id/networkSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <!-- ELM -->
+        <TextView
+            android:id="@+id/elmTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="ELM327 parameters"
+            android:textSize="18sp"
+            android:paddingTop="32dp" />
+
+        <Spinner
+            android:id="@+id/protocolSpinner"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>
