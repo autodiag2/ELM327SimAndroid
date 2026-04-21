@@ -35,6 +35,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.withContext
 import androidx.activity.result.contract.ActivityResultContracts
 import android.app.Activity.RESULT_OK
+import android.view.LayoutInflater
 
 public enum class LogLevel(val value: Int) {
     ERROR(0),
@@ -227,7 +228,7 @@ class LogView(
 ) : FrameLayout(activity) {
     
     private var stickToBottom = false
-    private lateinit var logAdapter: LogAdapter
+    private var logAdapter: LogAdapter
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     private val saveLogLauncher =
@@ -243,128 +244,70 @@ class LogView(
             }
         }
 
-    public fun build() {
+    init {
+        LayoutInflater.from(context).inflate(R.layout.log, this, true)
         logAdapter = LogAdapter()
+        setupLogsView()
+    }
 
-        val vertical = LinearLayout(activity).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
+    private fun setupLogsView() {
+        val rv = this.findViewById<RecyclerView>(R.id.rvLogs)
+
+        val btnDownload = this.findViewById<Button>(R.id.btnDownload)
+        val btnSave = this.findViewById<Button>(R.id.btnSave)
+        val btnClear = this.findViewById<Button>(R.id.btnClear)
+
+        val btnUp = this.findViewById<Button>(R.id.btnUp)
+        val btnDown = this.findViewById<Button>(R.id.btnDown)
+
+        rv.layoutManager = LinearLayoutManager(activity).apply {
+            stackFromEnd = false
         }
+        rv.adapter = logAdapter
+        rv.itemAnimator = null
 
-        fun buildButtons(): LinearLayout =
-            LinearLayout(activity).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                setPadding(16, 16, 16, 16)
-
-                addView(Button(activity).apply {
-                    text = "Download log"
-                    setOnClickListener {
-                        scope.launch {
-                            val file = File(activity.getExternalFilesDir(null), "elm327emu_log.txt")
-                            file.writeText(activity.logRepo.snapshotUnsafe().joinToString("\n") { it.text })
-                            append("Log written to: ${file.absolutePath}", LogLevel.INFO)
-                        }
-                    }
-                })
-
-                addView(Button(activity).apply {
-                    text = "Save as..."
-                    setOnClickListener { openSaveLogDialog() }
-                })
-
-                addView(Button(activity).apply {
-                    text = "Clear log"
-                    setOnClickListener {
-                        scope.launch {
-                            activity.logRepo.clear()
-                        }
-                    }
-                })
-            }
-
-        val buttons = buildButtons()
-        vertical.addView(
-            buttons,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-        )
-
-        val rv = RecyclerView(activity).apply {
-            layoutManager = LinearLayoutManager(activity).apply {
-                stackFromEnd = false
-            }
-            adapter = logAdapter
-            itemAnimator = null
-
-            isFocusable = true
-            isFocusableInTouchMode = true
-        }
-        rv.addOnScrollListener(
-            object : RecyclerView.OnScrollListener() {
-                override fun onScrolled(rv: RecyclerView, dx: Int, dy: Int) {
-                    if (dy < 0) {
-                        stickToBottom = false
-                    }
-                }
-            }
-        )
-
-        vertical.addView(
-            rv,
-            LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                0,
-                1f
-            )
-        )
-
-        val overlayButtons = LinearLayout(activity).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.END
-            setPadding(8, 8, 8, 8)
-            elevation = activity.dpToPx(6).toFloat()
-
-            addView(Button(activity).apply {
-                text = "↑"
-                setOnClickListener {
+        rv.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(rv: RecyclerView, dx: Int, dy: Int) {
+                if (dy < 0) {
                     stickToBottom = false
-                    (rv.layoutManager as? LinearLayoutManager)
-                        ?.scrollToPositionWithOffset(0, 0)
                 }
-            })
+            }
+        })
 
-            addView(Button(activity).apply {
-                text = "↓"
-                setOnClickListener {
-                    stickToBottom = true
-                    val count = logAdapter.itemCount
-                    if (count > 0) {
-                        rv.scrollToPosition(count - 1)
-                    }
-                }
-            })
+        // --- Buttons logic ---
+        btnDownload.setOnClickListener {
+            scope.launch {
+                val file = File(activity.getExternalFilesDir(null), "elm327emu_log.txt")
+                file.writeText(activity.logRepo.snapshotUnsafe().joinToString("\n") { it.text })
+                append("Log written to: ${file.absolutePath}", LogLevel.INFO)
+            }
         }
 
-        this.addView(
-            overlayButtons,
-            FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                gravity = Gravity.END or Gravity.BOTTOM
-                marginEnd = activity.dpToPx(8)
-                bottomMargin = activity.dpToPx(8)
+        btnSave.setOnClickListener {
+            openSaveLogDialog()
+        }
+
+        btnClear.setOnClickListener {
+            scope.launch {
+                activity.logRepo.clear()
             }
-        )
+        }
 
-        this.addView(vertical)
+        btnUp.setOnClickListener {
+            stickToBottom = false
+            (rv.layoutManager as? LinearLayoutManager)
+                ?.scrollToPositionWithOffset(0, 0)
+        }
 
+        btnDown.setOnClickListener {
+            stickToBottom = true
+            val count = logAdapter.itemCount
+            if (count > 0) {
+                rv.scrollToPosition(count - 1)
+            }
+        }
+
+        // --- Paging / data flow ---
         activity.lifecycleScope.launch {
             activity.logRepo.pager()
                 .flow

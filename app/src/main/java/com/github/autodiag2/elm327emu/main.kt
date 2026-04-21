@@ -416,7 +416,6 @@ class MainActivity : AppCompatActivity() {
         simView = inflater.inflate(R.layout.sim, null)
         setupSimView(simView)
         logView = LogView(this)
-        logView.build()
         settingsView = buildSettingsView()
         
         contentFrame = FrameLayout(this)
