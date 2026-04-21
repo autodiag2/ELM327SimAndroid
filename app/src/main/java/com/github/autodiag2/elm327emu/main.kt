@@ -225,21 +225,45 @@ class MainActivity : AppCompatActivity() {
         allSignals.firstOrNull { it.path == "SAEJ1979.coolant_temp" }?.let { addSignalWidget(it) }
 
         val dtcs = mutableListOf<String>()
-        val dtcAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, dtcs)
+        val dtcContainer = simView.findViewById<LinearLayout>(R.id.dtc_list)
 
-        simView.findViewById<ListView>(R.id.dtc_list).apply {
-            adapter = dtcAdapter
+        fun addDtcRow(code: String) {
+            if (code.isBlank()) return
+
+            dtcs.add(code)
+            SimGeneratorGui.dtcs.add(code)
+
+            val text = TextView(this).apply {
+                text = code
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            }
+
+            val removeBtn = Button(this)
+            removeBtn.text = "X"
+
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(0, 8, 0, 8)
+                addView(text)
+                addView(removeBtn)
+            }
+
+            removeBtn.setOnClickListener {
+                dtcContainer.removeView(row)
+                dtcs.remove(code)
+                SimGeneratorGui.dtcs.remove(code)
+            }
+
+            dtcContainer.addView(row)
         }
 
         val dtcInput = simView.findViewById<EditText>(R.id.dtc_entry)
 
         simView.findViewById<Button>(R.id.dtc_entery_validate).apply {
             setOnClickListener {
-                val v = dtcInput.text.toString()
+                val v = dtcInput.text.toString().uppercase()
                 if (v.isNotEmpty()) {
-                    dtcs.add(v)
-                    SimGeneratorGui.dtcs.add(v)
-                    dtcAdapter.notifyDataSetChanged()
+                    addDtcRow(v)
                     dtcInput.text.clear()
                 }
             }

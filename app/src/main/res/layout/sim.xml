@@ -64,11 +64,12 @@
                 android:orientation="vertical"
                 android:paddingVertical="20dp">
 
-                <ListView
+                <LinearLayout
                     android:id="@+id/dtc_list"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@drawable/border"
+                    android:orientation="vertical"
                     android:visibility="visible" />
 
                 <LinearLayout
