@@ -6,19 +6,13 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent" >
 
-    <Button
-        android:id="@+id/sim_state"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Start Sim"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
     <ScrollView
         android:id="@+id/sim_settings"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:clipToPadding="false"
+        app:layout_constraintBottom_toTopOf="@+id/sim_state"
+        app:layout_constraintTop_toTopOf="parent">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -88,7 +82,10 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:ems="10"
-                        android:inputType="text"
+                        android:inputType="textNoSuggestions"
+                        android:imeOptions="flagNoPersonalizedLearning"
+                        android:importantForAutofill="no"
+                        android:autofillHints=""
                         android:text="P0103" />
 
                     <Button
@@ -147,7 +144,10 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:ems="10"
-                    android:inputType="text"
+                    android:inputType="textNoSuggestions"
+                    android:imeOptions="flagNoPersonalizedLearning"
+                    android:importantForAutofill="no"
+                    android:autofillHints=""
                     android:text="VF7RD5FV8FL507366" />
             </LinearLayout>
 
@@ -171,11 +171,24 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:ems="10"
-                    android:inputType="text"
+                    android:inputType="textNoSuggestions"
+                    android:imeOptions="flagNoPersonalizedLearning"
+                    android:importantForAutofill="no"
+                    android:autofillHints=""
                     android:text="ECU from GUI" />
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
+
+    <Button
+        android:id="@+id/sim_state"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Start Sim"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/sim_settings" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
 
