@@ -6,7 +6,8 @@ plugins {
 import java.io.ByteArrayOutputStream
 
 def runCmd(List<String> cmd) {
-    def process = new ProcessBuilder(cmd)
+    def args = cmd.collect { it.toString() }
+    def process = new ProcessBuilder(args)
         .redirectErrorStream(true)
         .start()
 
