@@ -42,3 +42,6 @@ Available with [releases](https://github.com/autodiag2/ELM327SimAndroid/releases
 
 ## Dev
 See [this](/doc/DEV.md)
+
+## Contributing
+This app is open to contributions, also if you want to help the app to grow you can participate to internal tests for google play (send a mail at autodiag@netcourrier.com with your google account mail).
