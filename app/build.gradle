@@ -6,20 +6,21 @@ plugins {
 import java.io.ByteArrayOutputStream
 
 def runCmd(List<String> cmd) {
-  def out = new ByteArrayOutputStream()
-  def err = new ByteArrayOutputStream()
-  def res = exec {
-    commandLine cmd
-    standardOutput = out
-    errorOutput = err
-    ignoreExitValue = true
-  }
-  def stdout = out.toString("UTF-8").trim()
-  def stderr = err.toString("UTF-8").trim()
-  if (res.exitValue != 0) {
-    throw new GradleException("Command failed (${res.exitValue}): ${cmd.join(' ')}\n${stderr}\n${stdout}")
-  }
-  stdout
+    def process = new ProcessBuilder(cmd)
+        .redirectErrorStream(true)
+        .start()
+
+    def out = new ByteArrayOutputStream()
+    process.inputStream.withStream { it.transferTo(out) }
+
+    def exitCode = process.waitFor()
+    def stdout = out.toString("UTF-8").trim()
+
+    if (exitCode != 0) {
+        throw new GradleException("Command failed (${exitCode}): ${cmd.join(' ')}\n${stdout}")
+    }
+
+    return stdout
 }
 
 tasks.register("bumpVersion") {
