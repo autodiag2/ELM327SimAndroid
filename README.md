@@ -20,6 +20,9 @@
         <img src="https://img.shields.io/github/v/release/autodiag2/ELM327SimAndroid">
       </a>
     </td>
+    <td style="border:none;">
+      <img src="https://img.shields.io/github/downloads/autodiag2/ELM327SimAndroid/total" alt="Downloads">
+    </td>
   </tr>
 </table>
 
