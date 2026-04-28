@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/nav_sim" android:title="Sim"/>
+    <item android:id="@+id/nav_log" android:title="Log"/>
+    <item android:id="@+id/nav_settings" android:title="Settings"/>
+</menu>

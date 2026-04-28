@@ -121,8 +121,7 @@ class NetworkBridge(
                                 if (n <= 0) break
                                 loopbackOutput.write(bufferNet, 0, n)
                                 loopbackOutput.flush()
-                                appendLog(" * Received from network:", LogLevel.DEBUG)
-                                appendLog(hexDump(bufferNet, n), LogLevel.DEBUG)
+                                activity.onDataReceived(bufferNet, n)
                             } catch (e: Exception) {
                                 appendLog("exiting netToLoop: ${e.message}", LogLevel.DEBUG)
                                 break
@@ -137,8 +136,7 @@ class NetworkBridge(
                                 if (n <= 0) break
                                 netOutput?.write(bufferLoop, 0, n)
                                 netOutput?.flush()
-                                appendLog(" * Sending data to network:", LogLevel.DEBUG)
-                                appendLog(hexDump(bufferLoop, n), LogLevel.DEBUG)
+                                activity.onDataSent(bufferLoop, n)
                             } catch (e: Exception) {
                                 appendLog("exiting loopToNet: ${e.message}", LogLevel.DEBUG)
                                 break

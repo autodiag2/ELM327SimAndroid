@@ -106,8 +106,7 @@ class BluetoothBridge(
                                 if (n <= 0) break
                                 loopbackOutput.write(bufferBT, 0, n)
                                 loopbackOutput.flush()
-                                appendLog(" * Received from Bluetooth: (passing to loopback)")
-                                appendLog(hexDump(bufferBT, n))
+                                activity.onDataReceived(bufferBT, n)
                             } catch(e: Exception) {
                                 appendLog("exiting btToLoop: ${e.message}")
                                 break
@@ -122,8 +121,7 @@ class BluetoothBridge(
                                 if (n <= 0) break
                                 bt_output?.write(bufferLoop, 0, n)
                                 bt_output?.flush()
-                                appendLog(" * Sending the data received from loopback on bluetooth:", LogLevel.DEBUG)
-                                appendLog(hexDump(bufferLoop, n))
+                                activity.onDataSent(bufferLoop, n)
                             } catch(e: Exception) {
                                 appendLog("exiting loopToBt: ${e.message}", LogLevel.DEBUG)
                                 break

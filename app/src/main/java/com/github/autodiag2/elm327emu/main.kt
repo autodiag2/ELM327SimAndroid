@@ -63,6 +63,8 @@ import androidx.lifecycle.lifecycleScope
 
 import kotlinx.coroutines.flow.collectLatest
 import androidx.paging.cachedIn
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 
 private const val REQUEST_CODE = 1
 
@@ -425,65 +427,78 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Use XML layout instead of building everything in code
+        setContentView(R.layout.activity_main)
+
+        // ---- System services ----
         val manager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         btAdapter = manager.adapter
 
+        // ---- Init core components ----
         MainActivityRef.activity = this
         bleBridge = BLEBridge(this, btAdapter)
         btBridge = BluetoothBridge(this, btAdapter)
         ntBridge = NetworkBridge(this)
         logRepo = LogRepository(this)
 
-        drawer = DrawerLayout(this)
+        // ---- Bind views from XML ----
+        drawer = findViewById(R.id.drawer)
+        contentFrame = findViewById(R.id.contentFrame)
+        val navView: NavigationView = findViewById(R.id.navView)
+        val toolbar: Toolbar = findViewById(R.id.toolbar)
 
-        val inflater = layoutInflater
-        simView = inflater.inflate(R.layout.sim, null)
+        // ---- Toolbar setup ----
+        setSupportActionBar(toolbar)
+        val toggle = androidx.appcompat.app.ActionBarDrawerToggle(
+            this,
+            drawer,
+            toolbar,
+            R.string.open,
+            R.string.close
+        )
+
+        drawer.addDrawerListener(toggle)
+        toggle.syncState()
+
+        // ---- Inflate screens ----
+        simView = layoutInflater.inflate(R.layout.sim, contentFrame, false)
         setupSimView(simView)
+
         logView = LogView(this)
         settingsView = buildSettingsView()
-        
-        contentFrame = FrameLayout(this)
-        contentFrame.addView(simView)
 
-        val navView = NavigationView(this).apply {
-            menu.add("Sim").setOnMenuItemClickListener {
-                show(simView)
-                drawer.closeDrawer(Gravity.LEFT)
-                true
+        // Default screen
+        show(simView)
+
+        // ---- Navigation drawer handling ----
+        navView.setNavigationItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_sim -> show(simView)
+                R.id.nav_log -> show(logView)
+                R.id.nav_settings -> show(settingsView)
             }
-
-            menu.add("Log").setOnMenuItemClickListener {
-                show(logView)
-                drawer.closeDrawer(Gravity.LEFT)
-                true
-            }
-
-            menu.add("Settings").setOnMenuItemClickListener {
-                show(settingsView)
-                drawer.closeDrawer(Gravity.LEFT)
-                true
-            }
-
+            drawer.closeDrawer(Gravity.LEFT)
+            true
         }
 
-        drawer.addView(
-            contentFrame,
-            DrawerLayout.LayoutParams(
-                DrawerLayout.LayoutParams.MATCH_PARENT,
-                DrawerLayout.LayoutParams.MATCH_PARENT
+        // ---- Handle system bars (status + navigation) ----
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(contentFrame) { v, insets ->
+            val systemBars = insets.getInsets(
+                androidx.core.view.WindowInsetsCompat.Type.systemBars()
             )
-        )
 
-        drawer.addView(
-            navView,
-            DrawerLayout.LayoutParams(
-                DrawerLayout.LayoutParams.WRAP_CONTENT,
-                DrawerLayout.LayoutParams.MATCH_PARENT
-            ).apply { gravity = Gravity.START }
-        )
+            v.setPadding(
+                systemBars.left,
+                systemBars.top,
+                systemBars.right,
+                systemBars.bottom
+            )
 
-        setContentView(drawer)
+            insets
+        }
 
+        // ---- Permissions ----
         if (!isPermissionsGranted()) {
             requestPermissions()
         }
@@ -529,6 +544,14 @@ class MainActivity : AppCompatActivity() {
             NETWORK_IP -> ntBridge.start()
             else -> appendLog("Network mode not implemented", LogLevel.DEBUG)
         }
+    }
+
+    fun onDataReceived(data: ByteArray, size_used: Int) {
+        appendLog("recv : \n" + hexDump(data, size_used), LogLevel.DEBUG)
+    }
+
+    fun onDataSent(data: ByteArray, size_used: Int) {
+        appendLog("send : \n" + hexDump(data, size_used), LogLevel.DEBUG)
     }
 
     fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {

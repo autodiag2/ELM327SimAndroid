@@ -158,8 +158,7 @@ class BLEBridge(
                 try {
                     loopbackOutput?.write(value)
                     loopbackOutput?.flush()
-                    appendLog(" * Received from Bluetooth: (passing to loopback)")
-                    appendLog(hexDump(value, value.size))
+                    activity.onDataReceived(value, value.size)
                 } catch(e: Exception) {
                     appendLog("exiting btToLoop: ${e.message}")
                 }
@@ -309,8 +308,7 @@ class BLEBridge(
                         val n = loopbackInput?.read(bufferLoop) ?: break
                         if (n <= 0) break
                         txChar.value = bufferLoop.copyOf(n)
-                        appendLog(" * Sending the data received from loopback on bluetooth:")
-                        appendLog(hexDump(bufferLoop, n))
+                        activity.onDataSent(bufferLoop, n)
                         connectedDevice?.let {
                             gattServer.notifyCharacteristicChanged(it, txChar, false)
                         }
