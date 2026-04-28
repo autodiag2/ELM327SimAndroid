@@ -96,6 +96,20 @@ class MainActivity : AppCompatActivity() {
 
     public val prefs by lazy { getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
 
+    val saveLogLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                val uri = result.data?.data ?: return@registerForActivityResult
+                lifecycleScope.launch(Dispatchers.IO) {
+                    contentResolver.openOutputStream(uri)?.use { out ->
+                        val text = logRepo.snapshotUnsafe()
+                            .joinToString("\n") { it.text }
+                        out.write(text.toByteArray())
+                    }
+                }
+            }
+        }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
             drawer.openDrawer(Gravity.LEFT)
@@ -352,8 +366,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         // ---------- Max logs ----------
-        val savedMax = prefs.getInt("log_max_entries", logRepo.LOG_MAX_ENTRIES)
-        maxLogEdit.setText(savedMax.toString())
+        //val savedMax = prefs.getInt("log_max_entries", logRepo.LOG_MAX_ENTRIES)
+        //maxLogEdit.setText(savedMax.toString())
 
         maxLogEdit.addTextChangedListener {
             val v = it?.toString()?.toIntOrNull() ?: return@addTextChangedListener

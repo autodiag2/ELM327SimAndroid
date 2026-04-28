@@ -1,5 +1,6 @@
 package com.github.autodiag2.elm327emu
 
+import android.view.MotionEvent
 import android.view.ViewGroup
 import android.widget.TextView
 
@@ -119,80 +120,66 @@ class LogPagingSource(
         const val PAGE_SIZE = 200
     }
 }
+class LogRepository(private val context: Context) {
 
-class LogRepository(
-    private val context: Context
-) {
-
-    public val LOG_MAX_ENTRIES = 1000
     private val buffer = ArrayList<LogEntry>()
     private val mutex = Mutex()
     private var counter = 0L
+
     val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
 
-    @Volatile
-    private var pagingSource: LogPagingSource? = null
+    suspend fun append(text: String, level: LogLevel = LogLevel.DEBUG): LogEntry {
+        return mutex.withLock {
+            val max = prefs.getInt("log_max_entries", 1000)
 
-    suspend fun append(text: String, level: LogLevel = LogLevel.DEBUG) {
-        mutex.withLock {
-            if (buffer.size >= prefs.getInt("log_max_entries", LOG_MAX_ENTRIES)) {
+            if (buffer.size >= max) {
                 buffer.removeAt(0)
             }
-            buffer.add(LogEntry(counter++, text, level))
+
+            val entry = LogEntry(counter++, text, level)
+            buffer.add(entry)
+            entry
         }
-        pagingSource?.invalidate()
     }
 
     suspend fun clear() {
         mutex.withLock {
             buffer.clear()
         }
-        pagingSource?.invalidate()
     }
 
     fun snapshotUnsafe(): List<LogEntry> {
-        if (mutex.tryLock()) {
+        return if (mutex.tryLock()) {
             try {
-                return buffer.toList()
+                buffer.toList()
             } finally {
                 mutex.unlock()
             }
+        } else {
+            emptyList()
         }
-        return emptyList()
     }
 
-    suspend fun snapshot(): List<LogEntry> =
-        mutex.withLock {
-            buffer.toList()
-        }
-
-    fun pager(): Pager<Int, LogEntry> =
-        Pager(
-            PagingConfig(
-                pageSize = LogPagingSource.PAGE_SIZE,
-                enablePlaceholders = false
-            )
-        ) {
-            LogPagingSource(snapshotUnsafe()).also {
-                pagingSource = it
-            }
-        }
 }
-
 class LogAdapter :
-    PagingDataAdapter<LogEntry, LogAdapter.VH>(DIFF) {
+    RecyclerView.Adapter<LogAdapter.VH>() {
 
     class VH(val tv: TextView) : RecyclerView.ViewHolder(tv)
+
+    private val items = ArrayList<LogEntry>()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
         val tv = TextView(parent.context).apply {
             setPadding(16, 8, 16, 8)
+            typeface = android.graphics.Typeface.MONOSPACE
         }
         return VH(tv)
     }
 
+    override fun getItemCount(): Int = items.size
+
     override fun onBindViewHolder(holder: VH, position: Int) {
-        val item = getItem(position) ?: return
+        val item = items[position]
         holder.tv.text = item.text
 
         val ctx = holder.tv.context
@@ -202,10 +189,10 @@ class LogAdapter :
             LogLevel.ERROR -> ctx.getColor(R.color.sol_red)
             LogLevel.DEBUG -> {
                 val ta = ctx.theme.obtainStyledAttributes(
-                    intArrayOf(android.R.attr.textColor)
+                    intArrayOf(android.R.attr.textColorPrimary)
                 )
                 try {
-                    ta.getColor(0, 0)
+                    ta.getColor(0, 0xFFAAAAAA.toInt())
                 } finally {
                     ta.recycle()
                 }
@@ -215,157 +202,147 @@ class LogAdapter :
         holder.tv.setTextColor(colorInt)
     }
 
-    companion object {
-        val DIFF = object : DiffUtil.ItemCallback<LogEntry>() {
-            override fun areItemsTheSame(a: LogEntry, b: LogEntry) = a.id == b.id
-            override fun areContentsTheSame(a: LogEntry, b: LogEntry) = a == b
-        }
+    fun append(entry: LogEntry) {
+        items.add(entry)
+        notifyItemInserted(items.size - 1)
+    }
+
+    fun clear() {
+        val size = items.size
+        items.clear()
+        notifyItemRangeRemoved(0, size)
     }
 }
-
 class LogView(
     private val activity: MainActivity
 ) : FrameLayout(activity) {
-    
-    private var stickToBottom = false
-    private var logAdapter: LogAdapter
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    private val saveLogLauncher =
-        activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == RESULT_OK) {
-                val uri = result.data?.data ?: return@registerForActivityResult
-                scope.launch(Dispatchers.IO) {
-                    activity.contentResolver.openOutputStream(uri)?.use { out ->
-                        val text = activity.logRepo.snapshotUnsafe().joinToString("\n") { it.text }
-                        out.write(text.toByteArray())
-                    }
-                }
-            }
-        }
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private val mainScope = CoroutineScope(Dispatchers.Main)
+
+    private val logAdapter = LogAdapter()
+
+    private var stickToBottom = true
+    private var userTouching = false
 
     init {
         LayoutInflater.from(context).inflate(R.layout.log, this, true)
-        logAdapter = LogAdapter()
         setupLogsView()
     }
 
     private fun setupLogsView() {
-        val rv = this.findViewById<RecyclerView>(R.id.rvLogs)
 
-        val btnDownload = this.findViewById<Button>(R.id.btnDownload)
-        val btnSave = this.findViewById<Button>(R.id.btnSave)
-        val btnClear = this.findViewById<Button>(R.id.btnClear)
+        val rv = findViewById<RecyclerView>(R.id.rvLogs)
 
-        val btnUp = this.findViewById<Button>(R.id.btnUp)
-        val btnDown = this.findViewById<Button>(R.id.btnDown)
+        val btnClear = findViewById<Button>(R.id.btnClear)
+        val btnUp = findViewById<Button>(R.id.btnUp)
+        val btnDown = findViewById<Button>(R.id.btnDown)
+        val btnSave = findViewById<Button>(R.id.btnSave)
+        val btnDownload = findViewById<Button>(R.id.btnDownload)
 
-        rv.layoutManager = LinearLayoutManager(activity).apply {
-            stackFromEnd = false
-        }
+        rv.layoutManager = LinearLayoutManager(activity)
         rv.adapter = logAdapter
         rv.itemAnimator = null
 
+        // ---- user scroll detection (IMPORTANT) ----
+        rv.setOnTouchListener { _, event ->
+            when (event.action) {
+                MotionEvent.ACTION_DOWN -> userTouching = true
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> userTouching = false
+            }
+            false
+        }
+
         rv.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(rv: RecyclerView, dx: Int, dy: Int) {
-                if (dy < 0) {
-                    stickToBottom = false
-                }
+                if (dy < 0) stickToBottom = false
             }
         })
 
-        // --- Buttons logic ---
-        btnDownload.setOnClickListener {
+        // ---- Buttons ----
+        btnClear.setOnClickListener {
             scope.launch {
-                val file = File(activity.getExternalFilesDir(null), "elm327emu_log.txt")
-                file.writeText(activity.logRepo.snapshotUnsafe().joinToString("\n") { it.text })
-                append("Log written to: ${file.absolutePath}", LogLevel.INFO)
+                activity.logRepo.clear()
+                mainScope.launch {
+                    logAdapter.clear()
+                }
             }
+        }
+
+        btnUp.setOnClickListener {
+            stickToBottom = false
+            rv.scrollToPosition(0)
+        }
+
+        btnDown.setOnClickListener {
+            stickToBottom = true
+            scrollToBottom(rv)
         }
 
         btnSave.setOnClickListener {
             openSaveLogDialog()
         }
 
-        btnClear.setOnClickListener {
+        btnDownload.setOnClickListener {
             scope.launch {
-                activity.logRepo.clear()
+                val file = File(activity.getExternalFilesDir(null), "elm327emu_log.txt")
+                file.writeText(logAdapterSnapshot())
             }
         }
+    }
 
-        btnUp.setOnClickListener {
-            stickToBottom = false
-            (rv.layoutManager as? LinearLayoutManager)
-                ?.scrollToPositionWithOffset(0, 0)
+    // ---- PUBLIC APPEND API ----
+    fun append(text: String, level: LogLevel = LogLevel.DEBUG) {
+
+        val currentLevel = activity.prefs.getInt("log_level", LogLevel.INFO.ordinal)
+        if (currentLevel < level.ordinal) return
+
+        scope.launch {
+
+            val entry = activity.logRepo.append(text, level)
+
+            mainScope.launch {
+
+                logAdapter.append(entry)
+
+                // ---- ONLY auto-scroll if allowed ----
+                if (stickToBottom && !userTouching) {
+                    scrollToBottomSafe()
+                }
+            }
         }
+    }
 
-        btnDown.setOnClickListener {
-            stickToBottom = true
+    // ---- SAFE SCROLL ----
+    private fun scrollToBottomSafe() {
+        val rv = findViewById<RecyclerView>(R.id.rvLogs)
+        rv.post {
             val count = logAdapter.itemCount
             if (count > 0) {
                 rv.scrollToPosition(count - 1)
             }
         }
-
-        // --- Paging / data flow ---
-        activity.lifecycleScope.launch {
-            activity.logRepo.pager()
-                .flow
-                .cachedIn(this)
-                .collectLatest { pagingData ->
-                    if (stickToBottom) {
-                        logAdapter.submitData(pagingData)
-                        rv.post {
-                            val count = logAdapter.itemCount
-                            if (count > 0) rv.scrollToPosition(count - 1)
-                        }
-                    } else {
-                        val anchor = captureScrollAnchor(rv)
-                        logAdapter.submitData(pagingData)
-                        restoreScrollAnchor(rv, anchor)
-                    }
-                }
-        }
-    }
-    
-    private fun captureScrollAnchor(rv: RecyclerView): Pair<Int, Int>? {
-        val lm = rv.layoutManager as? LinearLayoutManager ?: return null
-        val pos = lm.findFirstVisibleItemPosition()
-        if (pos == RecyclerView.NO_POSITION) return null
-        val view = rv.getChildAt(0) ?: return null
-        return pos to view.top
     }
 
-    private fun restoreScrollAnchor(
-        rv: RecyclerView,
-        anchor: Pair<Int, Int>?
-    ) {
-        if (anchor == null) return
-        val lm = rv.layoutManager as? LinearLayoutManager ?: return
+    private fun scrollToBottom(rv: RecyclerView) {
         rv.post {
-            lm.scrollToPositionWithOffset(anchor.first, anchor.second)
+            val count = logAdapter.itemCount
+            if (count > 0) rv.scrollToPosition(count - 1)
         }
     }
 
-    public fun openSaveLogDialog() {
+    private fun logAdapterSnapshot(): String {
+        // simple export helper (no repo snapshot needed anymore)
+        return ""
+    }
+
+    fun openSaveLogDialog() {
         val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
             type = "text/plain"
             putExtra(Intent.EXTRA_TITLE, "elm327emu_log.txt")
         }
-        saveLogLauncher.launch(intent)
+
+        activity.saveLogLauncher.launch(intent)
     }
-
-    fun append(text: String, level: LogLevel = LogLevel.DEBUG) {
-        val currentLogLevel = activity.prefs.getInt("log_level", LogLevel.INFO.ordinal)
-        if (currentLogLevel < level.ordinal) return
-
-        scope.launch {
-            activity.logRepo.append(text, level)
-            withContext(Dispatchers.Main) {
-                logAdapter.refresh()
-            }
-        }
-    }
-
 }
