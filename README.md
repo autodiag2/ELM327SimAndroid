@@ -10,12 +10,12 @@ ELM327 Emulator is here ! Turn your phone into a car
 You can emulate ELM327 wifi, bluetooth, bluetooth BLE then connect to it for example with [autodiag](https://github.com/autodiag2/autodiag/).
 <table>
   <tr>
-    <td><img src="https://raw.githubusercontent.com/autodiag2/ELM327SimAndroid/main/media/main.png"></td>
-    <td><img src="https://raw.githubusercontent.com/autodiag2/ELM327SimAndroid/main/media/side.png"></td>
+    <td><img src="https://raw.githubusercontent.com/autodiag2/ELM327SimAndroid/main/fastlane/metadata/android/en-US/images/phoneScreenshots/1.png"></td>
+    <td><img src="https://raw.githubusercontent.com/autodiag2/ELM327SimAndroid/main/fastlane/metadata/android/en-US/images/phoneScreenshots/4.png"></td>
   </tr>
   <tr>
-    <td><img src="https://raw.githubusercontent.com/autodiag2/ELM327SimAndroid/main/media/settings.png"></td>
-    <td><img src="https://raw.githubusercontent.com/autodiag2/ELM327SimAndroid/main/media/log.png"></td>
+    <td><img src="https://raw.githubusercontent.com/autodiag2/ELM327SimAndroid/main/fastlane/metadata/android/en-US/images/phoneScreenshots/3.png"></td>
+    <td><img src="https://raw.githubusercontent.com/autodiag2/ELM327SimAndroid/main/fastlane/metadata/android/en-US/images/phoneScreenshots/2.png"></td>
   </tr>
 </table>
 
