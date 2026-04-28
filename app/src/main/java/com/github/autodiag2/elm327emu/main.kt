@@ -327,7 +327,6 @@ class MainActivity : AppCompatActivity() {
         val btApplyBtn = view.findViewById<Button>(R.id.btApplyBtn)
 
         val logLevelSpinner = view.findViewById<Spinner>(R.id.logLevelSpinner)
-        val maxLogEdit = view.findViewById<EditText>(R.id.maxLogEdit)
 
         val networkSpinner = view.findViewById<Spinner>(R.id.networkSpinner)
         val protocolSpinner = view.findViewById<Spinner>(R.id.protocolSpinner)
@@ -363,17 +362,6 @@ class MainActivity : AppCompatActivity() {
                 prefs.edit().putInt("log_level", pos).apply()
             }
             override fun onNothingSelected(parent: AdapterView<*>) {}
-        }
-
-        // ---------- Max logs ----------
-        //val savedMax = prefs.getInt("log_max_entries", logRepo.LOG_MAX_ENTRIES)
-        //maxLogEdit.setText(savedMax.toString())
-
-        maxLogEdit.addTextChangedListener {
-            val v = it?.toString()?.toIntOrNull() ?: return@addTextChangedListener
-            if (v >= 100) {
-                prefs.edit().putInt("log_max_entries", v).apply()
-            }
         }
 
         // ---------- Network ----------
