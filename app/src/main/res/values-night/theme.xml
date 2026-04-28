@@ -9,6 +9,7 @@
         <item name="android:windowBackground">@color/sol_base03</item>
         <item name="android:colorBackground">@color/sol_base03</item>
         <item name="android:textColor">@color/sol_base0</item>
+        <item name="colorOnPrimary">@color/sol_base0</item>
         <item name="android:textColorSecondary">@color/sol_base01</item>
         <item name="android:textViewStyle">@style/Solarized.TextView.Dark</item>
         <item name="android:editTextStyle">@style/Solarized.EditText.Dark</item>

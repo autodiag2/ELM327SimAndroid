@@ -16,8 +16,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:padding="16dp">
+            android:gravity="center"
+            android:background="@drawable/toolbar_with_border"
+            android:padding="5dp">
 
             <Button
                 android:id="@+id/btnDownload"

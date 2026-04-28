@@ -20,7 +20,9 @@
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:fitsSystemWindows="true"
-            app:title="AutoDiag"/>
+            app:titleTextColor="?attr/colorOnPrimary"
+            android:background="@drawable/toolbar_with_border"
+            app:title="ELM327 Emulator"/>
 
         <!-- Content container -->
         <FrameLayout
