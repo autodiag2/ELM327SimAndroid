@@ -548,13 +548,27 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun hexDumpPretty(data: ByteArray, length: Int): String {
-        val bytesPerLine = 8
+    fun hexDumpPretty(
+        data: ByteArray,
+        length: Int
+    ): String {
+        val charsPerLine = logView.charsPerLine
         val sb = StringBuilder()
 
+        // fixed layout parts
+        val indent = 1
+        val hexByteWidth = 3      // "FF "
+        val asciiSeparator = 2    // "  "
+
+        // reserve space for ASCII area (~1 char per byte)
+        val usable = charsPerLine - indent - asciiSeparator
+
+        // each byte takes ~4 chars in total (hex + space)
+        val bytesPerLine = (usable / 4).coerceIn(4, 64)
+
         for (i in 0 until length step bytesPerLine) {
-            // indent
-            sb.append("    ")
+
+            sb.append(" ")
 
             val lineEnd = minOf(i + bytesPerLine, length)
 
@@ -563,7 +577,7 @@ class MainActivity : AppCompatActivity() {
                 if (j < lineEnd) {
                     sb.append(String.format("%02X ", data[j]))
                 } else {
-                    sb.append("   ") // padding for alignment
+                    sb.append("   ")
                 }
             }
 

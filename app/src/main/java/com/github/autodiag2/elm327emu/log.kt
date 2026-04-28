@@ -176,6 +176,13 @@ class LogAdapter :
         return VH(tv)
     }
 
+    fun testTextView(context: Context): TextView {
+        return TextView(context).apply {
+            typeface = android.graphics.Typeface.MONOSPACE
+            setPadding(0, 0, 0, 0)
+        }
+    }
+
     override fun getItemCount(): Int = items.size
 
     override fun onBindViewHolder(holder: VH, position: Int) {
@@ -225,14 +232,36 @@ class LogView(
     private var stickToBottom = true
     private var userTouching = false
 
+    var charsPerLine = 30
+
     init {
         LayoutInflater.from(context).inflate(R.layout.log, this, true)
         setupLogsView()
     }
 
+    private fun updateLayoutMetrics(rv: RecyclerView) {
+        rv.post {
+            val tv = logAdapter.testTextView(rv.context)
+
+            val paint = tv.paint
+
+            val sampleCharWidth = paint.measureText("M")
+
+            val availableWidthPx = rv.width.toFloat()
+            if (availableWidthPx <= 0) return@post
+
+            charsPerLine = (availableWidthPx / sampleCharWidth).toInt().coerceAtLeast(20)
+
+        }
+    }
+
     private fun setupLogsView() {
 
         val rv = findViewById<RecyclerView>(R.id.rvLogs)
+
+        rv.viewTreeObserver.addOnGlobalLayoutListener {
+            updateLayoutMetrics(rv)
+        }
 
         val btnClear = findViewById<Button>(R.id.btnClear)
         val btnUp = findViewById<Button>(R.id.btnUp)
