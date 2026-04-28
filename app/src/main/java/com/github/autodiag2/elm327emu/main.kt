@@ -546,12 +546,46 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    fun hexDumpPretty(data: ByteArray, length: Int): String {
+        val bytesPerLine = 8
+        val sb = StringBuilder()
+
+        for (i in 0 until length step bytesPerLine) {
+            // indent
+            sb.append("    ")
+
+            val lineEnd = minOf(i + bytesPerLine, length)
+
+            // HEX PART
+            for (j in i until i + bytesPerLine) {
+                if (j < lineEnd) {
+                    sb.append(String.format("%02X ", data[j]))
+                } else {
+                    sb.append("   ") // padding for alignment
+                }
+            }
+
+            sb.append("  ")
+
+            // ASCII PART
+            for (j in i until lineEnd) {
+                val b = data[j].toInt() and 0xFF
+                val c = if (b in 32..126) b.toChar() else '.'
+                sb.append(c)
+            }
+
+            sb.append("\n")
+        }
+
+        return sb.toString()
+    }
+
     fun onDataReceived(data: ByteArray, size_used: Int) {
-        appendLog("recv : \n" + hexDump(data, size_used), LogLevel.DEBUG)
+        appendLog("recv : \n" + hexDumpPretty(data, size_used), LogLevel.DEBUG)
     }
 
     fun onDataSent(data: ByteArray, size_used: Int) {
-        appendLog("send : \n" + hexDump(data, size_used), LogLevel.DEBUG)
+        appendLog("send : \n" + hexDumpPretty(data, size_used), LogLevel.DEBUG)
     }
 
     fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {
