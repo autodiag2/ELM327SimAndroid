@@ -93,6 +93,7 @@ class MainActivity : AppCompatActivity() {
 
     lateinit var settingsView: View
     lateinit var logView: LogView
+    lateinit var statsView: StatsView
 
     public val prefs by lazy { getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
 
@@ -469,6 +470,7 @@ class MainActivity : AppCompatActivity() {
 
         logView = LogView(this)
         settingsView = buildSettingsView()
+        statsView = StatsView(this)
 
         // Default screen
         show(simView)
@@ -478,6 +480,7 @@ class MainActivity : AppCompatActivity() {
             when (item.itemId) {
                 R.id.nav_sim -> show(simView)
                 R.id.nav_log -> show(logView)
+                R.id.nav_stats -> show(statsView)
                 R.id.nav_settings -> show(settingsView)
             }
             drawer.closeDrawer(Gravity.LEFT)
@@ -598,10 +601,12 @@ class MainActivity : AppCompatActivity() {
 
     fun onDataReceived(data: ByteArray, size_used: Int) {
         appendLog("recv : \n" + hexDumpPretty(data, size_used), LogLevel.DEBUG)
+        statsView.onDataReceived(data, size_used)
     }
 
     fun onDataSent(data: ByteArray, size_used: Int) {
         appendLog("send : \n" + hexDumpPretty(data, size_used), LogLevel.DEBUG)
+        statsView.onDataSent(data, size_used)
     }
 
     fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {
