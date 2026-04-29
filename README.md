@@ -25,7 +25,8 @@ Available with [releases](https://github.com/autodiag2/ELM327SimAndroid/releases
 [<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on-en.png" width="250">](https://f-droid.org/fr/packages/com.github.autodiag2.elm327emu/)
 
 ## Roadmap
- - add a stats page
+ - allow to define many ecus in the sim
+ - scripting for ECUs
 
 ## Dev
 See [this](/doc/DEV.md)
