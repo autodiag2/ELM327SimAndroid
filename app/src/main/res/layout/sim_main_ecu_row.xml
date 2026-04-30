@@ -6,6 +6,7 @@
     android:radius="8dp"
     android:clickable="true"
     android:focusable="true"
+    android:id="@+id/ecu_row_cardview"
     android:foreground="?attr/selectableItemBackground"
     android:elevation="4dp">
 

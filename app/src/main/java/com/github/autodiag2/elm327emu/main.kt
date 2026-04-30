@@ -29,6 +29,7 @@ import android.bluetooth.BluetoothManager
 import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.cardview.widget.CardView
 import androidx.lifecycle.lifecycleScope
 import org.luaj.vm2.*
 import org.luaj.vm2.lib.jse.*
@@ -375,13 +376,32 @@ class MainActivity : AppCompatActivity() {
 
     fun addEcuRow(ecu: EcuConfig) {
         val row = layoutInflater.inflate(R.layout.sim_main_ecu_row, ecuListView, false)
-
+        val cardView = row.findViewById<CardView>(R.id.ecu_row_cardview)
         val title = row.findViewById<TextView>(R.id.ecu_title)
 
         title.text = "ECU 0x${ecu.id.toString(16).uppercase()} (${ecu.name})"
 
         row.setOnClickListener {
             openEcuConfig(ecu)
+        }
+
+        cardView.setOnLongClickListener {
+
+            val popup = PopupMenu(this, cardView)
+            popup.menuInflater.inflate(R.menu.main_ecu_row, popup.menu)
+
+            popup.setOnMenuItemClickListener { item ->
+                when (item.itemId) {
+                    R.id.action_delete -> {
+                        ecuRemoveByAddress(ecu.id)
+                        true
+                    }
+                    else -> false
+                }
+            }
+
+            popup.show()
+            true
         }
 
         ecuListView.addView(row)
@@ -393,8 +413,7 @@ class MainActivity : AppCompatActivity() {
         return selected as EcuType
     }
 
-    private fun buildAddECUToGUI(address: Int, name: String, type: EcuType) {
-
+    private fun ecuRemoveByAddress(address: Int) {
         // iterate backwards to safely remove
         val offset_in_layout = 1
         for (i in ecus.indices.reversed()) {
@@ -405,6 +424,10 @@ class MainActivity : AppCompatActivity() {
                 ecus.removeAt(i)
             }
         }
+    }
+    private fun buildAddECUToGUI(address: Int, name: String, type: EcuType) {
+
+        ecuRemoveByAddress(address)
 
         val ecu = buildEcuConfig(address, name, type)
 
