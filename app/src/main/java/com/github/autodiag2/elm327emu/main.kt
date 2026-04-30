@@ -7,66 +7,29 @@ import android.os.Build
 import android.os.Bundle
 import android.widget.TextView
 import kotlinx.coroutines.*
-import java.io.*
-import java.net.Socket
-import java.util.UUID
 import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothServerSocket
-import android.bluetooth.BluetoothSocket
-import android.net.LocalSocket
-import android.net.LocalSocketAddress
-import com.github.autodiag2.elm327emu.libautodiag
-import android.util.Log
-import android.text.method.ScrollingMovementMethod
 import android.view.Gravity
 import android.widget.FrameLayout
 import androidx.drawerlayout.widget.DrawerLayout
 import com.google.android.material.navigation.NavigationView
 import android.view.MenuItem
 import android.content.Intent
-import com.github.autodiag2.elm327emu.SimGeneratorGui
 import androidx.appcompat.widget.Toolbar
 import android.content.Context
 import android.widget.LinearLayout
 import android.widget.SeekBar
-import android.widget.ListView
 import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Button
 import android.widget.CheckBox
-import android.widget.ScrollView
 import androidx.core.widget.addTextChangedListener
-import com.github.autodiag2.elm327emu.R
-import com.github.autodiag2.elm327emu.BluetoothBridge
-import android.view.ViewGroup.LayoutParams
 import android.view.View
-import android.content.SharedPreferences
 import android.widget.*
-import android.view.MotionEvent
-import android.bluetooth.*
-import android.bluetooth.le.*
-import android.os.ParcelUuid
-import java.io.InputStream
-import java.io.OutputStream
 import android.bluetooth.BluetoothManager
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
-import android.text.Spannable
-import android.text.Spanned
-import android.text.style.ForegroundColorSpan
 import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
-import androidx.recyclerview.widget.RecyclerView
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.paging.PagingData
 import androidx.activity.result.contract.ActivityResultContracts
-import kotlin.math.roundToInt
 import androidx.lifecycle.lifecycleScope
-
-import kotlinx.coroutines.flow.collectLatest
-import androidx.paging.cachedIn
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 
 private const val REQUEST_CODE = 1
 
@@ -323,19 +286,6 @@ class MainActivity : AppCompatActivity() {
             addTextChangedListener { SimGeneratorGui.vin = it.toString() }
         }
 
-        var running = false
-        view.findViewById<Button>(R.id.sim_state).apply {
-            setOnClickListener {
-                if (isPermissionsGranted()) {
-                    running = !running
-                    text = if (running) "Stop Sim" else "Start Sim"
-                    if (running) startServer() else stopServer()
-                } else {
-                    requestPermissions()
-                }
-            }
-        }
-
         val ecu = EcuConfig(
             id = address,
             name = name,
@@ -377,12 +327,12 @@ class MainActivity : AppCompatActivity() {
         addEcuRow(ecu)
     }
 
-    private fun setupSimView(simView: View) {
-        ecuListView = simView.findViewById<ViewGroup>(R.id.ecu_list)
-        val addEcuBtn = simView.findViewById<Button>(R.id.add_ecu)
+    private fun setupSimView(view: View) {
+        ecuListView = view.findViewById<ViewGroup>(R.id.ecu_list)
+        val addEcuBtn = view.findViewById<Button>(R.id.add_ecu)
         addEcuBtn.isEnabled = false
         addEcuBtn.alpha = 0.3f
-        ecuAddSelect = simView.findViewById(R.id.ecu_type_spinner)
+        ecuAddSelect = view.findViewById(R.id.ecu_type_spinner)
         val types = EcuType.values().toList()
 
         val adapter = ArrayAdapter(
@@ -398,6 +348,19 @@ class MainActivity : AppCompatActivity() {
             val type = selectedType()
 
             buildAddECUToGUI(0xE8, "name", type)
+        }
+
+        var running = false
+        view.findViewById<Button>(R.id.sim_state).apply {
+            setOnClickListener {
+                if (isPermissionsGranted()) {
+                    running = !running
+                    text = if (running) "Stop Sim" else "Start Sim"
+                    if (running) startServer() else stopServer()
+                } else {
+                    requestPermissions()
+                }
+            }
         }
     }
 

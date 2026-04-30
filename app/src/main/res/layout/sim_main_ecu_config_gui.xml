@@ -12,7 +12,7 @@
         android:layout_height="0dp"
         android:clipToPadding="false"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toTopOf="@id/sim_state_container"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -181,26 +181,6 @@
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
-
-    <LinearLayout
-        android:id="@+id/sim_state_container"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/sim_settings"
-        android:background="@drawable/background_with_border_top"
-        android:gravity="center"
-        android:orientation="vertical">
-
-        <Button
-            android:id="@+id/sim_state"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Start Sim" />
-
-    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
 
