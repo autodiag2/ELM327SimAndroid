@@ -26,6 +26,8 @@ import androidx.core.widget.addTextChangedListener
 import android.view.View
 import android.widget.*
 import android.bluetooth.BluetoothManager
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
@@ -364,6 +366,38 @@ class MainActivity : AppCompatActivity() {
                     updateScript(luaEditor.text.toString(), ecu)
                 }
                 updateScript(luaEditor.text.toString(), ecu)
+                val copyBtn = view.findViewById<Button>(R.id.copy_script)
+                val pasteBtn = view.findViewById<Button>(R.id.paste_script)
+                val clearBtn = view.findViewById<Button>(R.id.clear_script)
+
+                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                copyBtn.setOnClickListener {
+                    val text = luaEditor.text.toString()
+
+                    if (text.isNotEmpty()) {
+                        val clip = ClipData.newPlainText("lua_script", text)
+                        clipboard.setPrimaryClip(clip)
+                        Toast.makeText(this, "Copied", Toast.LENGTH_SHORT).show()
+                    }
+                }
+                pasteBtn.setOnClickListener {
+                    if (clipboard.hasPrimaryClip()) {
+                        val item = clipboard.primaryClip?.getItemAt(0)
+                        val pasted = item?.coerceToText(this)?.toString()
+
+                        if (!pasted.isNullOrEmpty()) {
+                            luaEditor.setText(pasted)
+                            luaEditor.setSelection(pasted.length) // move cursor to end
+                        }
+                    }
+                }
+                clearBtn.setOnClickListener {
+                    luaEditor.setText("""
+function response(req)
+    
+end
+                    """)
+                }
                 ecu
             }
         }

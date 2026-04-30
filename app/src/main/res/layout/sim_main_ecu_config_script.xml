@@ -44,7 +44,7 @@
             android:gravity="top|start"
             android:textSize="14sp"
             android:padding="16dp"
-            android:background="@android:color/transparent"
+            android:textColor="?attr/android:textColor"
             android:inputType="textMultiLine|textNoSuggestions"
             android:fontFamily="monospace"
             android:scrollbars="vertical"
@@ -63,7 +63,8 @@ function response(req)\n
         }\n
     end\n
 \n
-    return {0x7F, req[1] or 0x00, 0x11} -- negative response\n
+    return {0x7F, req[1] or 0x00, 0x11}\n
+    -- negative response\n
 end\n
             " />
 
@@ -74,25 +75,67 @@ end\n
         android:id="@+id/bottom_bar"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:orientation="vertical"
         android:padding="12dp"
-        android:gravity="center"
         android:background="@drawable/background_with_border_top"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <Button
-            android:id="@+id/apply_script"
-            android:layout_width="wrap_content"
+        <!-- ROW 1: ACTION BUTTONS (SCROLLABLE) -->
+        <HorizontalScrollView
+            android:id="@+id/bottom_bar_scroll"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Apply Script" />
+            android:scrollbars="none">
 
+            <LinearLayout
+                android:id="@+id/bottom_bar_buttons"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/copy_script"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Copy" />
+
+                <Button
+                    android:id="@+id/paste_script"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Paste" />
+
+                <Button
+                    android:id="@+id/apply_script"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Apply Script" />
+
+                <Button
+                    android:id="@+id/clear_script"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="Clear" />
+
+            </LinearLayout>
+
+        </HorizontalScrollView>
+
+        <!-- ROW 2: ERROR OUTPUT -->
         <TextView
             android:id="@+id/error_return"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            />
+            android:text=""
+            android:textColor="#FF4444"
+            android:textSize="12sp"
+            android:paddingTop="8dp"
+            android:maxLines="3" />
 
     </LinearLayout>
 
