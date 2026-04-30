@@ -287,7 +287,7 @@ class MainActivity : AppCompatActivity() {
         view.findViewById<EditText>(R.id.vin).apply {
             addTextChangedListener { SimGeneratorGui.vin = it.toString() }
         }
-
+        libautodiag.setResponseGuiByAddress(address.toByte())
         val ecu = EcuConfig(
             id = address,
             name = name,
@@ -309,7 +309,7 @@ class MainActivity : AppCompatActivity() {
                 val ecu = EcuConfig(
                     id = address,
                     name = name,
-                    type = EcuType.GUI,
+                    type = EcuType.SCRIPT,
                     screen = View(this)
                 )
                 ecu
@@ -352,8 +352,6 @@ class MainActivity : AppCompatActivity() {
     private fun setupSimView(view: View) {
         ecuListView = view.findViewById<ViewGroup>(R.id.ecu_list)
         val addEcuBtn = view.findViewById<Button>(R.id.add_ecu)
-        addEcuBtn.isEnabled = false
-        addEcuBtn.alpha = 0.3f
         ecuAddSelect = view.findViewById(R.id.ecu_type_spinner)
         val types = EcuType.values().toList()
 
@@ -369,7 +367,7 @@ class MainActivity : AppCompatActivity() {
         addEcuBtn.setOnClickListener {
             val type = selectedType()
 
-            buildAddECUToGUI(0xE8, "name", type)
+            buildAddECUToGUI(0xE8, "override (${type})", type)
         }
 
         var running = false
@@ -557,7 +555,7 @@ class MainActivity : AppCompatActivity() {
         statsView = StatsView(this)
 
         // Default screen
-        buildAddECUToGUI(0xE8, "default", EcuType.GUI)
+        buildAddECUToGUI(0xE8, "default (gui)", EcuType.GUI)
         show(simView)
 
         // ---- Navigation drawer handling ----

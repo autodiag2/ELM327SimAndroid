@@ -79,4 +79,5 @@ object libautodiag {
         address: Byte,
         callback: EcuByteArrayHandler
     )
+    @JvmStatic external fun setResponseGuiByAddress(address: Byte)
 }
