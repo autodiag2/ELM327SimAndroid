@@ -354,11 +354,10 @@ class MainActivity : AppCompatActivity() {
         val row = layoutInflater.inflate(R.layout.sim_main_ecu_row, ecuListView, false)
 
         val title = row.findViewById<TextView>(R.id.ecu_title)
-        val open = row.findViewById<TextView>(R.id.ecu_open)
 
         title.text = "ECU 0x${ecu.id.toString(16).uppercase()} (${ecu.name})"
 
-        open.setOnClickListener {
+        row.setOnClickListener {
             openEcuConfig(ecu)
         }
 
