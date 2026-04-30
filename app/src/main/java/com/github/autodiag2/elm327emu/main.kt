@@ -54,6 +54,7 @@ import java.nio.ByteOrder
 import android.text.Spannable
 import android.text.Spanned
 import android.text.style.ForegroundColorSpan
+import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.paging.PagingData
@@ -67,6 +68,20 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 
 private const val REQUEST_CODE = 1
+
+enum class EcuType(val label: String) {
+    GUI("GUI"),
+    SCRIPT("Data Script");
+
+    override fun toString() = label
+}
+
+data class EcuConfig(
+    val id: Int,
+    var name: String,
+    var type: EcuType,
+    var screen: View
+)
 
 class MainActivity : AppCompatActivity() {
     private lateinit var btAdapter: BluetoothAdapter
@@ -90,6 +105,9 @@ class MainActivity : AppCompatActivity() {
 
     lateinit var simView: View
     private lateinit var dtcClearedCheck: CheckBox
+    lateinit var ecuListView: ViewGroup
+    val ecus = mutableListOf<EcuConfig>()
+    lateinit var ecuAddSelect: Spinner
 
     lateinit var settingsView: View
     lateinit var logView: LogView
@@ -134,11 +152,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupSimView(simView: View) {
-
+    fun buildEcuConfig(address: Int, name: String, type: EcuType): EcuConfig {
+        val view = layoutInflater.inflate(R.layout.sim_main_ecu_config_gui, contentFrame, false)
         val allSignals = libautodiag.getSimSignals().sortedBy { it.name.lowercase() }
         val addedSignalPaths = linkedSetOf<String>()
-        val dynamicSignalsContainer = simView.findViewById<LinearLayout>(R.id.signal_container)
+        val dynamicSignalsContainer = view.findViewById<LinearLayout>(R.id.signal_container)
 
         fun getSignalInitialValue(signal: SimSignal): Double {
             val v = libautodiag.getSignalValue(signal.path)
@@ -215,7 +233,7 @@ class MainActivity : AppCompatActivity() {
             dynamicSignalsContainer.addView(block)
         }
 
-        val signalSpinner = simView.findViewById<Spinner>(R.id.signal_choice)
+        val signalSpinner = view.findViewById<Spinner>(R.id.signal_choice)
         val spinnerSignals = allSignals
         val spinnerAdapter = ArrayAdapter(
             this,
@@ -226,7 +244,7 @@ class MainActivity : AppCompatActivity() {
         }
         signalSpinner.adapter = spinnerAdapter
 
-        simView.findViewById<Button>(R.id.signal_add).apply {
+        view.findViewById<Button>(R.id.signal_add).apply {
             setOnClickListener {
                 val index = signalSpinner.selectedItemPosition
 
@@ -242,7 +260,7 @@ class MainActivity : AppCompatActivity() {
         allSignals.firstOrNull { it.path == "SAEJ1979.coolant_temp" }?.let { addSignalWidget(it) }
 
         val dtcs = mutableListOf<String>()
-        val dtcContainer = simView.findViewById<LinearLayout>(R.id.dtc_list)
+        val dtcContainer = view.findViewById<LinearLayout>(R.id.dtc_list)
 
         fun addDtcRow(code: String) {
             if (code.isBlank()) return
@@ -274,9 +292,9 @@ class MainActivity : AppCompatActivity() {
             dtcContainer.addView(row)
         }
 
-        val dtcInput = simView.findViewById<EditText>(R.id.dtc_entry)
+        val dtcInput = view.findViewById<EditText>(R.id.dtc_entry)
 
-        simView.findViewById<Button>(R.id.dtc_entery_validate).apply {
+        view.findViewById<Button>(R.id.dtc_entery_validate).apply {
             setOnClickListener {
                 val v = dtcInput.text.toString().uppercase()
                 if (v.isNotEmpty()) {
@@ -286,24 +304,24 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        simView.findViewById<CheckBox>(R.id.mil_state).apply {
+        view.findViewById<CheckBox>(R.id.mil_state).apply {
             setOnCheckedChangeListener { _, v -> SimGeneratorGui.mil = v }
         }
 
-        dtcClearedCheck = simView.findViewById<CheckBox>(R.id.dtcs_cleared).apply {
+        dtcClearedCheck = view.findViewById<CheckBox>(R.id.dtcs_cleared).apply {
             setOnCheckedChangeListener { _, v -> SimGeneratorGui.dtcCleared = v }
         }
 
-        simView.findViewById<EditText>(R.id.ecu_name).apply {
+        view.findViewById<EditText>(R.id.ecu_name).apply {
             addTextChangedListener { SimGeneratorGui.ecuName = it.toString() }
         }
 
-        simView.findViewById<EditText>(R.id.vin).apply {
+        view.findViewById<EditText>(R.id.vin).apply {
             addTextChangedListener { SimGeneratorGui.vin = it.toString() }
         }
 
         var running = false
-        simView.findViewById<Button>(R.id.sim_state).apply {
+        view.findViewById<Button>(R.id.sim_state).apply {
             setOnClickListener {
                 if (isPermissionsGranted()) {
                     running = !running
@@ -313,6 +331,67 @@ class MainActivity : AppCompatActivity() {
                     requestPermissions()
                 }
             }
+        }
+
+        val ecu = EcuConfig(
+            id = address,
+            name = name,
+            type = type,
+            screen = view
+        )
+        return ecu
+    }
+
+    fun openEcuConfig(ecu: EcuConfig) {
+
+        show(ecu.screen)
+
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+    }
+
+    fun addEcuRow(ecu: EcuConfig) {
+        val row = layoutInflater.inflate(R.layout.sim_main_ecu_row, ecuListView, false)
+
+        val title = row.findViewById<TextView>(R.id.ecu_title)
+        val open = row.findViewById<TextView>(R.id.ecu_open)
+
+        title.text = "ECU 0x${ecu.id.toString(16).uppercase()} (${ecu.name})"
+
+        open.setOnClickListener {
+            openEcuConfig(ecu)
+        }
+
+        ecuListView.addView(row)
+    }
+
+
+    private fun selectedType(): EcuType {
+        val selected = ecuAddSelect.selectedItem
+        return selected as EcuType
+    }
+
+    private fun setupSimView(simView: View) {
+        ecuListView = simView.findViewById<ViewGroup>(R.id.ecu_list)
+        val addEcuBtn = simView.findViewById<Button>(R.id.add_ecu)
+        ecuAddSelect = simView.findViewById(R.id.ecu_type_spinner)
+        val types = EcuType.values().toList()
+
+        val adapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            types
+        )
+
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+
+        ecuAddSelect.adapter = adapter
+        addEcuBtn.setOnClickListener {
+            val type = selectedType()
+
+            val ecu = buildEcuConfig(0xE8, "name", type);
+
+            ecus.add(ecu)
+            addEcuRow(ecu)
         }
     }
 
@@ -465,7 +544,7 @@ class MainActivity : AppCompatActivity() {
         toggle.syncState()
 
         // ---- Inflate screens ----
-        simView = layoutInflater.inflate(R.layout.sim, contentFrame, false)
+        simView = layoutInflater.inflate(R.layout.sim_main, contentFrame, false)
         setupSimView(simView)
 
         logView = LogView(this)
