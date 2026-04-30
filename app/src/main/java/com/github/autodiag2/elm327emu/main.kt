@@ -30,6 +30,8 @@ import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
+import org.luaj.vm2.*
+import org.luaj.vm2.lib.jse.*
 
 private const val REQUEST_CODE = 1
 
@@ -39,15 +41,48 @@ enum class EcuType(val label: String) {
 
     override fun toString() = label
 }
-
+interface EcuByteArrayHandler {
+    fun response(request: ByteArray): ByteArray
+}
 data class EcuConfig(
     val id: Int,
     var name: String,
     var type: EcuType,
-    var screen: View
+    var screen: View,
+    var handler: EcuByteArrayHandler? = null
 )
-interface EcuByteArrayHandler {
-    fun response(request: ByteArray): ByteArray
+class LuaJEcuHandler(script: String) : EcuByteArrayHandler {
+
+    private var globals = JsePlatform.standardGlobals()
+    private val chunk = globals.load(script)
+
+    init {
+        chunk.call()
+    }
+
+    fun reload(script: String) {
+        globals = JsePlatform.standardGlobals()
+        globals.load(script).call()
+    }
+
+    override fun response(request: ByteArray): ByteArray {
+
+        val luaReq = LuaTable()
+
+        for (i in request.indices) {
+            luaReq.set(i + 1, LuaValue.valueOf(request[i].toInt() and 0xFF))
+        }
+
+        val func = globals.get("response")
+
+        val result = func.call(luaReq)
+
+        val len = result.length()
+
+        return ByteArray(len) { i ->
+            result.get(i + 1).toint().toByte()
+        }
+    }
 }
 class MainActivity : AppCompatActivity() {
     private lateinit var btAdapter: BluetoothAdapter
@@ -300,17 +335,30 @@ class MainActivity : AppCompatActivity() {
         return when ( type ) {
             EcuType.GUI -> buildEcuGuiConfig(address, name)
             EcuType.SCRIPT -> {
-                val handler = object : EcuByteArrayHandler {
-                    override fun response(request: ByteArray): ByteArray {
-                        return byteArrayOf(0x33, 0x33)
-                    }
-                }
+                val script = """
+                    function response(req)
+                        -- Mode 01 PID 0C (engine RPM)
+                        if req[1] == 0x01 and req[2] == 0x0C then
+                            local rpm = 3000
+                            local value = rpm * 4
+                            return {
+                                0x41, 0x0C,
+                                math.floor(value / 256),
+                                value % 256
+                            }
+                        end
+
+                        return {0x7F, req[1] or 0x00, 0x11} -- negative response
+                    end
+                """
+                val handler = LuaJEcuHandler(script)
                 libautodiag.setResponseByteArrayByAddress(address.toByte(), handler)
                 val ecu = EcuConfig(
                     id = address,
                     name = name,
                     type = EcuType.SCRIPT,
-                    screen = View(this)
+                    screen = View(this),
+                    handler = handler
                 )
                 ecu
             }
