@@ -370,9 +370,18 @@ class MainActivity : AppCompatActivity() {
         return selected as EcuType
     }
 
+    private fun buildAddECUToGUI(address: Int, name: String, type: EcuType) {
+        val ecu = buildEcuConfig(address, name, type);
+
+        ecus.add(ecu)
+        addEcuRow(ecu)
+    }
+
     private fun setupSimView(simView: View) {
         ecuListView = simView.findViewById<ViewGroup>(R.id.ecu_list)
         val addEcuBtn = simView.findViewById<Button>(R.id.add_ecu)
+        addEcuBtn.isEnabled = false
+        addEcuBtn.alpha = 0.3f
         ecuAddSelect = simView.findViewById(R.id.ecu_type_spinner)
         val types = EcuType.values().toList()
 
@@ -388,10 +397,7 @@ class MainActivity : AppCompatActivity() {
         addEcuBtn.setOnClickListener {
             val type = selectedType()
 
-            val ecu = buildEcuConfig(0xE8, "name", type);
-
-            ecus.add(ecu)
-            addEcuRow(ecu)
+            buildAddECUToGUI(0xE8, "name", type)
         }
     }
 
@@ -566,6 +572,7 @@ class MainActivity : AppCompatActivity() {
         statsView = StatsView(this)
 
         // Default screen
+        buildAddECUToGUI(0xE8, "default", EcuType.GUI)
         show(simView)
 
         // ---- Navigation drawer handling ----
@@ -620,7 +627,7 @@ class MainActivity : AppCompatActivity() {
 
         appendLog("Bluetooth server stopped", LogLevel.INFO)
     }
-    
+
     public fun clearSocketFiles() {
         val dir = filesDir
         dir.listFiles()?.forEach { f ->
