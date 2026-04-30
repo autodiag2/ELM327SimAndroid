@@ -74,4 +74,9 @@ object libautodiag {
     @JvmStatic external fun getProtocol(): Int
 
     @JvmStatic external fun getSimSignals(): Array<SimSignal>
+    @JvmStatic
+    external fun setResponseByteArrayByAddress(
+        address: Byte,
+        callback: EcuByteArrayHandler
+    )
 }

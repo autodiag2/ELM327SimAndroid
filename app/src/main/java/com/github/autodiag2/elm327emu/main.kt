@@ -46,7 +46,9 @@ data class EcuConfig(
     var type: EcuType,
     var screen: View
 )
-
+interface EcuByteArrayHandler {
+    fun response(request: ByteArray): ByteArray
+}
 class MainActivity : AppCompatActivity() {
     private lateinit var btAdapter: BluetoothAdapter
 
@@ -118,7 +120,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun buildEcuConfig(address: Int, name: String, type: EcuType): EcuConfig {
+    fun buildEcuGuiConfig(address: Int, name: String): EcuConfig {
         val view = layoutInflater.inflate(R.layout.sim_main_ecu_config_gui, contentFrame, false)
         val allSignals = libautodiag.getSimSignals().sortedBy { it.name.lowercase() }
         val addedSignalPaths = linkedSetOf<String>()
@@ -289,10 +291,30 @@ class MainActivity : AppCompatActivity() {
         val ecu = EcuConfig(
             id = address,
             name = name,
-            type = type,
+            type = EcuType.GUI,
             screen = view
         )
         return ecu
+    }
+    fun buildEcuConfig(address: Int, name: String, type: EcuType): EcuConfig {
+        return when ( type ) {
+            EcuType.GUI -> buildEcuGuiConfig(address, name)
+            EcuType.SCRIPT -> {
+                val handler = object : EcuByteArrayHandler {
+                    override fun response(request: ByteArray): ByteArray {
+                        return byteArrayOf(0x33, 0x33)
+                    }
+                }
+                libautodiag.setResponseByteArrayByAddress(address.toByte(), handler)
+                val ecu = EcuConfig(
+                    id = address,
+                    name = name,
+                    type = EcuType.GUI,
+                    screen = View(this)
+                )
+                ecu
+            }
+        }
     }
 
     fun openEcuConfig(ecu: EcuConfig) {
