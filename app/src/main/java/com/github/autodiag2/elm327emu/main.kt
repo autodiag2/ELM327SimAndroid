@@ -134,15 +134,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
-            if (screenStack.isNotEmpty()) {
-                show(screenStack.removeLast())
-
-                if (screenStack.isEmpty()) {
-                    supportActionBar?.setDisplayHomeAsUpEnabled(false)
-                }
-            } else {
-                drawer.openDrawer(Gravity.LEFT)
-            }
+            drawer.openDrawer(Gravity.LEFT)
             return true
         }
         return super.onOptionsItemSelected(item)
@@ -356,7 +348,6 @@ class MainActivity : AppCompatActivity() {
     fun openEcuConfig(ecu: EcuConfig) {
         screenStack.addLast(simView)
         show(ecu.screen)
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
     }
 
     fun addEcuRow(ecu: EcuConfig) {
@@ -529,9 +520,6 @@ class MainActivity : AppCompatActivity() {
                 override fun handleOnBackPressed() {
                     if (screenStack.isNotEmpty()) {
                         show(screenStack.removeLast())
-                        if ( screenStack.isEmpty() ) {
-                            supportActionBar?.setDisplayHomeAsUpEnabled(false)
-                        }
                     } else {
                         isEnabled = false
                         onBackPressedDispatcher.onBackPressed()
