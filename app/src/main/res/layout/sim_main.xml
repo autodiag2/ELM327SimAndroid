@@ -34,6 +34,19 @@
                     android:orientation="horizontal"
                     android:padding="16dp">
 
+                    <EditText
+                        android:id="@+id/ecu_id_input"
+                        android:layout_width="80dp"
+                        android:layout_height="wrap_content"
+                        android:hint="E8"
+                        android:maxLength="2"
+                        android:inputType="textCapCharacters|textNoSuggestions"
+                        android:ems="2"
+                        android:gravity="center"
+                        android:layout_marginStart="8dp"
+                        android:background="@android:drawable/edit_text"
+                        android:text="E8" />
+
                     <Spinner
                         android:id="@+id/ecu_type_spinner"
                         android:layout_width="wrap_content"

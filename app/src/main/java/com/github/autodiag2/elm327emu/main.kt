@@ -415,6 +415,7 @@ class MainActivity : AppCompatActivity() {
     private fun setupSimView(view: View) {
         ecuListView = view.findViewById<ViewGroup>(R.id.ecu_list)
         val addEcuBtn = view.findViewById<Button>(R.id.add_ecu)
+        val ecuIdInput = simView.findViewById<EditText>(R.id.ecu_id_input)
         ecuAddSelect = view.findViewById(R.id.ecu_type_spinner)
         val types = EcuType.values().toList()
 
@@ -429,8 +430,16 @@ class MainActivity : AppCompatActivity() {
         ecuAddSelect.adapter = adapter
         addEcuBtn.setOnClickListener {
             val type = selectedType()
+            val hexStr = ecuIdInput.text.toString().trim()
 
-            buildAddECUToGUI(0xE8, "override (${type})", type)
+            val address = try {
+                hexStr.toInt(16) and 0xFF
+            } catch (e: Exception) {
+                Toast.makeText(this, "Invalid hex ID", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            buildAddECUToGUI(address, "from ${type}", type)
         }
 
         var running = false
@@ -618,7 +627,7 @@ class MainActivity : AppCompatActivity() {
         statsView = StatsView(this)
 
         // Default screen
-        buildAddECUToGUI(0xE8, "default (gui)", EcuType.GUI)
+        buildAddECUToGUI(0xE8, "from GUI", EcuType.GUI)
         show(simView)
 
         // ---- Navigation drawer handling ----
