@@ -394,7 +394,19 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun buildAddECUToGUI(address: Int, name: String, type: EcuType) {
-        val ecu = buildEcuConfig(address, name, type);
+
+        // iterate backwards to safely remove
+        val offset_in_layout = 1
+        for (i in ecus.indices.reversed()) {
+            val ecu = ecus[i]
+
+            if (ecu.id.toByte() == address.toByte()) {
+                ecuListView.removeViewAt(i + offset_in_layout)
+                ecus.removeAt(i)
+            }
+        }
+
+        val ecu = buildEcuConfig(address, name, type)
 
         ecus.add(ecu)
         addEcuRow(ecu)
