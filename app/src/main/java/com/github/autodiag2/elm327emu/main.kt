@@ -55,6 +55,7 @@ import android.text.Spannable
 import android.text.Spanned
 import android.text.style.ForegroundColorSpan
 import android.view.ViewGroup
+import androidx.activity.OnBackPressedCallback
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.paging.PagingData
@@ -113,6 +114,8 @@ class MainActivity : AppCompatActivity() {
     lateinit var logView: LogView
     lateinit var statsView: StatsView
 
+    private val screenStack = ArrayDeque<View>()
+
     public val prefs by lazy { getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
 
     val saveLogLauncher =
@@ -131,7 +134,15 @@ class MainActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
-            drawer.openDrawer(Gravity.LEFT)
+            if (screenStack.isNotEmpty()) {
+                show(screenStack.removeLast())
+
+                if (screenStack.isEmpty()) {
+                    supportActionBar?.setDisplayHomeAsUpEnabled(false)
+                }
+            } else {
+                drawer.openDrawer(Gravity.LEFT)
+            }
             return true
         }
         return super.onOptionsItemSelected(item)
@@ -343,9 +354,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun openEcuConfig(ecu: EcuConfig) {
-
+        screenStack.addLast(simView)
         show(ecu.screen)
-
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
     }
 
@@ -512,6 +522,23 @@ class MainActivity : AppCompatActivity() {
 
         // Use XML layout instead of building everything in code
         setContentView(R.layout.activity_main)
+
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    if (screenStack.isNotEmpty()) {
+                        show(screenStack.removeLast())
+                        if ( screenStack.isEmpty() ) {
+                            supportActionBar?.setDisplayHomeAsUpEnabled(false)
+                        }
+                    } else {
+                        isEnabled = false
+                        onBackPressedDispatcher.onBackPressed()
+                    }
+                }
+            }
+        )
 
         // ---- System services ----
         val manager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
