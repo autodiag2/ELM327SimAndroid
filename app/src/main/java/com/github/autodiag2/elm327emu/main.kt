@@ -531,7 +531,7 @@ end
     private fun setupSimView(view: View) {
         ecuListView = view.findViewById<ViewGroup>(R.id.ecu_list)
         val addEcuBtn = view.findViewById<Button>(R.id.add_ecu)
-        val ecuIdInput = simView.findViewById<EditText>(R.id.ecu_id_input)
+        val ecuIdInput = view.findViewById<EditText>(R.id.ecu_id_input)
         ecuAddSelect = view.findViewById(R.id.ecu_type_spinner)
         val types = EcuType.values().toList()
 
