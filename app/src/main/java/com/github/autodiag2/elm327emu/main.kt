@@ -166,6 +166,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var contentFrame: FrameLayout
     private lateinit var drawer: DrawerLayout
     lateinit var toggle: ActionBarDrawerToggle
+    lateinit var toolbar: Toolbar
 
     lateinit var simView: View
     private lateinit var dtcClearedCheck: CheckBox
@@ -468,26 +469,25 @@ class MainActivity : AppCompatActivity() {
         if (screenStack.isNotEmpty()) {
             show(screenStack.removeLast())
 
-            if (screenStack.isEmpty()) {
-                showHamburger()
-            }
+            showHamburger()
         } else {
+            showHamburger()
             drawer.openDrawer(Gravity.LEFT)
-        }
-    }
-
-    fun showBackArrow() {
-        toggle.isDrawerIndicatorEnabled = false   // disable hamburger
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        toggle.toolbarNavigationClickListener = View.OnClickListener {
-            handleBack()
         }
     }
 
     fun showHamburger() {
         toggle.isDrawerIndicatorEnabled = true
         toggle.syncState()
-        supportActionBar?.setDisplayHomeAsUpEnabled(false)
+    }
+
+    fun showBackArrow() {
+        toggle.isDrawerIndicatorEnabled = false
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        toolbar.setNavigationOnClickListener {
+            handleBack()
+        }
+        toggle.syncState()
     }
 
     fun openEcuConfig(ecu: EcuConfig) {
@@ -748,7 +748,7 @@ class MainActivity : AppCompatActivity() {
         drawer = findViewById(R.id.drawer)
         contentFrame = findViewById(R.id.contentFrame)
         val navView: NavigationView = findViewById(R.id.navView)
-        val toolbar: Toolbar = findViewById(R.id.toolbar)
+        toolbar = findViewById(R.id.toolbar)
 
         // ---- Toolbar setup ----
         setSupportActionBar(toolbar)
