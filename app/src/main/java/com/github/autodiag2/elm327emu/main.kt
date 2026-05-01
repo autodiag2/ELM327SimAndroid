@@ -31,6 +31,7 @@ import android.content.ClipboardManager
 import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.cardview.widget.CardView
 import androidx.lifecycle.lifecycleScope
 import org.luaj.vm2.*
@@ -164,6 +165,7 @@ class MainActivity : AppCompatActivity() {
 
     lateinit var contentFrame: FrameLayout
     private lateinit var drawer: DrawerLayout
+    lateinit var toggle: ActionBarDrawerToggle
 
     lateinit var simView: View
     private lateinit var dtcClearedCheck: CheckBox
@@ -195,7 +197,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
-            drawer.openDrawer(Gravity.LEFT)
+            handleBack()
             return true
         }
         return super.onOptionsItemSelected(item)
@@ -462,9 +464,36 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    fun handleBack() {
+        if (screenStack.isNotEmpty()) {
+            show(screenStack.removeLast())
+
+            if (screenStack.isEmpty()) {
+                showHamburger()
+            }
+        } else {
+            drawer.openDrawer(Gravity.LEFT)
+        }
+    }
+
+    fun showBackArrow() {
+        toggle.isDrawerIndicatorEnabled = false   // disable hamburger
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        toggle.toolbarNavigationClickListener = View.OnClickListener {
+            handleBack()
+        }
+    }
+
+    fun showHamburger() {
+        toggle.isDrawerIndicatorEnabled = true
+        toggle.syncState()
+        supportActionBar?.setDisplayHomeAsUpEnabled(false)
+    }
+
     fun openEcuConfig(ecu: EcuConfig) {
         screenStack.addLast(simView)
         show(ecu.screen)
+        showBackArrow()
     }
 
     fun addEcuRow(ecu: EcuConfig) {
@@ -694,8 +723,8 @@ class MainActivity : AppCompatActivity() {
             this,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
-                    if (screenStack.isNotEmpty()) {
-                        show(screenStack.removeLast())
+                    if ( screenStack.isNotEmpty() ) {
+                        handleBack()
                     } else {
                         isEnabled = false
                         onBackPressedDispatcher.onBackPressed()
@@ -723,16 +752,16 @@ class MainActivity : AppCompatActivity() {
 
         // ---- Toolbar setup ----
         setSupportActionBar(toolbar)
-        val toggle = androidx.appcompat.app.ActionBarDrawerToggle(
+        val toggleLocal = androidx.appcompat.app.ActionBarDrawerToggle(
             this,
             drawer,
             toolbar,
             R.string.open,
             R.string.close
         )
-
-        drawer.addDrawerListener(toggle)
-        toggle.syncState()
+        toggle = toggleLocal
+        drawer.addDrawerListener(toggleLocal)
+        toggleLocal.syncState()
 
         // ---- Inflate screens ----
         simView = layoutInflater.inflate(R.layout.sim_main, contentFrame, false)
