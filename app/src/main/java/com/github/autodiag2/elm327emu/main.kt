@@ -451,11 +451,11 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
                 clearBtn.setOnClickListener {
-                    luaEditor.setText("""
-function response(req)
-    
-end
-                    """)
+                    luaEditor.setText(
+                        "function response(req)\n" +
+                        "    return {}\n" +
+                        "end"
+                    )
                 }
                 ecu
             }
