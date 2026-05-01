@@ -7,12 +7,14 @@
     android:clickable="true"
     android:focusable="true"
     android:id="@+id/ecu_row_cardview"
+    android:background="@drawable/border"
     android:foreground="?attr/selectableItemBackground"
     android:elevation="4dp">
 
     <LinearLayout
         android:orientation="horizontal"
         android:padding="16dp"
+        android:background="@drawable/border"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
