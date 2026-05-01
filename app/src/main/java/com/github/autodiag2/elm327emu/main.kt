@@ -53,36 +53,95 @@ data class EcuConfig(
     var type: EcuType,
     var screen: View
 )
-class LuaJEcuHandler(script: String) : EcuByteArrayHandler {
+class LuaJEcuHandler(
+    script: String,
+    private val errorView: TextView
+) : EcuByteArrayHandler {
 
     private var globals = JsePlatform.standardGlobals()
-    private val chunk = globals.load(script)
+    private var responseFunc: LuaValue = LuaValue.NIL
 
     init {
-        chunk.call()
+        loadScript(script)
     }
 
     fun reload(script: String) {
-        globals = JsePlatform.standardGlobals()
-        globals.load(script).call()
+        loadScript(script)
+    }
+
+    private fun appendError(msg: String) {
+        errorView.post {
+            errorView.append(msg + "\n")
+        }
+    }
+
+    private fun loadScript(script: String) {
+        try {
+            globals = JsePlatform.standardGlobals()
+
+            val chunk = globals.load(script)
+            chunk.call()
+
+            val func = globals.get("response")
+
+            if (!func.isfunction()) {
+                appendError("Lua error: missing function 'response(req)'")
+                responseFunc = LuaValue.NIL
+                return
+            }
+
+            responseFunc = func
+
+        } catch (e: Exception) {
+            appendError("Lua load error: ${e.message}")
+            responseFunc = LuaValue.NIL
+        }
     }
 
     override fun response(request: ByteArray): ByteArray {
 
-        val luaReq = LuaTable()
-
-        for (i in request.indices) {
-            luaReq.set(i + 1, LuaValue.valueOf(request[i].toInt() and 0xFF))
+        if (!responseFunc.isfunction()) {
+            appendError("Lua error: response function not available")
+            return byteArrayOf()
         }
 
-        val func = globals.get("response")
+        return try {
+            val luaReq = LuaTable()
 
-        val result = func.call(luaReq)
+            for (i in request.indices) {
+                luaReq.set(i + 1, LuaValue.valueOf(request[i].toInt() and 0xFF))
+            }
 
-        val len = result.length()
+            val result = responseFunc.call(luaReq)
 
-        return ByteArray(len) { i ->
-            result.get(i + 1).toint().toByte()
+            if (!result.istable()) {
+                appendError("Lua error: response must return a table")
+                return byteArrayOf()
+            }
+
+            val len = result.length()
+
+            ByteArray(len) { i ->
+                val v = result.get(i + 1)
+
+                if (!v.isnumber()) {
+                    appendError("Lua error: non-number at index ${i + 1}")
+                    return byteArrayOf()
+                }
+
+                val value = v.toint()
+
+                if (value !in 0..255) {
+                    appendError("Lua error: value out of range at index ${i + 1}")
+                    return byteArrayOf()
+                }
+
+                value.toByte()
+            }
+
+        } catch (e: Exception) {
+            appendError("Lua runtime error: ${e.message}")
+            byteArrayOf()
         }
     }
 }
@@ -336,7 +395,7 @@ class MainActivity : AppCompatActivity() {
     private fun updateScript(script: String, ecu: EcuConfig) {
         val errorReturn = ecu.screen.findViewById<TextView>(R.id.error_return)
         try {
-            val handler = LuaJEcuHandler(script)
+            val handler = LuaJEcuHandler(script, errorReturn)
 
             // bind to ECU (native side)
             libautodiag.setResponseByteArrayByAddress(
