@@ -72,20 +72,6 @@ class MainActivity : AppCompatActivity() {
 
     public val prefs by lazy { getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
 
-    val saveLogLauncher =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == RESULT_OK) {
-                val uri = result.data?.data ?: return@registerForActivityResult
-                lifecycleScope.launch(Dispatchers.IO) {
-                    contentResolver.openOutputStream(uri)?.use { out ->
-                        val text = logRepo.snapshotUnsafe()
-                            .joinToString("\n") { it.text }
-                        out.write(text.toByteArray())
-                    }
-                }
-            }
-        }
-
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) {
             handleBack()
@@ -140,8 +126,6 @@ class MainActivity : AppCompatActivity() {
         showBackArrow()
     }
 
-    public lateinit var logRepo: LogRepository
-
     private fun show(view: View) {
         contentFrame.removeAllViews()
         contentFrame.addView(view)
@@ -176,7 +160,6 @@ class MainActivity : AppCompatActivity() {
         bleBridge = BLEBridge(this, btAdapter)
         btBridge = BluetoothBridge(this, btAdapter)
         ntBridge = NetworkBridge(this)
-        logRepo = LogRepository(this)
 
         // ---- Bind views from XML ----
         drawer = findViewById(R.id.drawer)
@@ -277,61 +260,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun hexDumpPretty(
-        data: ByteArray,
-        length: Int
-    ): String {
-        val charsPerLine = logView.charsPerLine
-        val sb = StringBuilder()
-
-        // fixed layout parts
-        val indent = 1
-        val hexByteWidth = 3      // "FF "
-        val asciiSeparator = 2    // "  "
-
-        // reserve space for ASCII area (~1 char per byte)
-        val usable = charsPerLine - indent - asciiSeparator
-
-        // each byte takes ~4 chars in total (hex + space)
-        val bytesPerLine = (usable / 4).coerceIn(4, 64)
-
-        for (i in 0 until length step bytesPerLine) {
-
-            sb.append(" ")
-
-            val lineEnd = minOf(i + bytesPerLine, length)
-
-            // HEX PART
-            for (j in i until i + bytesPerLine) {
-                if (j < lineEnd) {
-                    sb.append(String.format("%02X ", data[j]))
-                } else {
-                    sb.append("   ")
-                }
-            }
-
-            sb.append("  ")
-
-            // ASCII PART
-            for (j in i until lineEnd) {
-                val b = data[j].toInt() and 0xFF
-                val c = if (b in 32..126) b.toChar() else '.'
-                sb.append(c)
-            }
-
-            sb.append("\n")
-        }
-
-        return sb.toString()
-    }
-
     fun onDataReceived(data: ByteArray, size_used: Int) {
-        appendLog("recv : \n" + hexDumpPretty(data, size_used), LogLevel.DEBUG)
+        appendLog("recv : \n" + logView.dataLogFormat(data, size_used), LogLevel.DEBUG)
         statsView.onDataReceived(data, size_used)
     }
 
     fun onDataSent(data: ByteArray, size_used: Int) {
-        appendLog("send : \n" + hexDumpPretty(data, size_used), LogLevel.DEBUG)
+        appendLog("send : \n" + logView.dataLogFormat(data, size_used), LogLevel.DEBUG)
         statsView.onDataSent(data, size_used)
     }
 

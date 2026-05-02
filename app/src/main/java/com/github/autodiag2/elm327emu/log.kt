@@ -44,82 +44,12 @@ public enum class LogLevel(val value: Int) {
     DEBUG(2)
 }
 
-public fun hexDump(buffer: ByteArray, size: Int): String {
-    val colSize = 20
-    val result = StringBuilder()
-    var byteI = 0
-
-    while (byteI < size) {
-        val hexCollector = StringBuilder()
-        val asciiCollector = StringBuilder()
-        var col = 0
-
-        while (col < colSize && byteI < size) {
-            val b = buffer[byteI].toInt() and 0xFF
-
-            if (col > 0) hexCollector.append(' ')
-            hexCollector.append(String.format("%02x", b))
-
-            asciiCollector.append(
-                if (b in 0x20..0x7E) b.toChar() else '.'
-            )
-
-            col += 1
-            byteI += 1
-        }
-
-        result.append(
-            String.format(
-                "%59s | %20s\n",
-                hexCollector.toString(),
-                asciiCollector.toString()
-            )
-        )
-    }
-
-    return result.toString()
-}
-
 data class LogEntry(
     val id: Long,
     val text: String,
     val level: LogLevel
 )
 
-class LogPagingSource(
-    private val snapshot: List<LogEntry>
-) : PagingSource<Int, LogEntry>() {
-
-    override fun getRefreshKey(state: PagingState<Int, LogEntry>): Int? =
-        state.anchorPosition?.let { it / PAGE_SIZE }
-
-    override suspend fun load(
-        params: LoadParams<Int>
-    ): PagingSource.LoadResult<Int, LogEntry> {
-
-        val page = params.key ?: 0
-        val from = page * PAGE_SIZE
-        if (from >= snapshot.size) {
-            return PagingSource.LoadResult.Page(
-                data = emptyList(),
-                prevKey = null,
-                nextKey = null
-            )
-        }
-
-        val to = minOf(from + PAGE_SIZE, snapshot.size)
-
-        return PagingSource.LoadResult.Page(
-            data = snapshot.subList(from, to),
-            prevKey = if (page == 0) null else page - 1,
-            nextKey = if (to >= snapshot.size) null else page + 1
-        )
-    }
-
-    companion object {
-        const val PAGE_SIZE = 200
-    }
-}
 class LogRepository(private val context: Context) {
 
     private val buffer = ArrayList<LogEntry>()
@@ -224,10 +154,25 @@ class LogView(
     private val activity: MainActivity
 ) : FrameLayout(activity) {
 
+    val logRepo: LogRepository = LogRepository(activity)
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val mainScope = CoroutineScope(Dispatchers.Main)
 
     private val logAdapter = LogAdapter()
+
+    val saveLogLauncher =
+        activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                val uri = result.data?.data ?: return@registerForActivityResult
+                activity.lifecycleScope.launch(Dispatchers.IO) {
+                    activity.contentResolver.openOutputStream(uri)?.use { out ->
+                        val text = logRepo.snapshotUnsafe()
+                            .joinToString("\n") { it.text }
+                        out.write(text.toByteArray())
+                    }
+                }
+            }
+        }
 
     private var stickToBottom = true
     private var userTouching = false
@@ -237,6 +182,54 @@ class LogView(
     init {
         LayoutInflater.from(context).inflate(R.layout.log, this, true)
         setupLogsView()
+    }
+
+    fun dataLogFormat(
+        data: ByteArray,
+        length: Int = data.size
+    ): String {
+        val charsPerLine = charsPerLine
+        val sb = StringBuilder()
+
+        // fixed layout parts
+        val indent = 1
+        val hexByteWidth = 3      // "FF "
+        val asciiSeparator = 2    // "  "
+
+        // reserve space for ASCII area (~1 char per byte)
+        val usable = charsPerLine - indent - asciiSeparator
+
+        // each byte takes ~4 chars in total (hex + space)
+        val bytesPerLine = (usable / 4).coerceIn(4, 64)
+
+        for (i in 0 until length step bytesPerLine) {
+
+            sb.append(" ")
+
+            val lineEnd = minOf(i + bytesPerLine, length)
+
+            // HEX PART
+            for (j in i until i + bytesPerLine) {
+                if (j < lineEnd) {
+                    sb.append(String.format("%02X ", data[j]))
+                } else {
+                    sb.append("   ")
+                }
+            }
+
+            sb.append("  ")
+
+            // ASCII PART
+            for (j in i until lineEnd) {
+                val b = data[j].toInt() and 0xFF
+                val c = if (b in 32..126) b.toChar() else '.'
+                sb.append(c)
+            }
+
+            sb.append("\n")
+        }
+
+        return sb.toString()
     }
 
     private fun updateLayoutMetrics(rv: RecyclerView) {
@@ -291,7 +284,7 @@ class LogView(
         // ---- Buttons ----
         btnClear.setOnClickListener {
             scope.launch {
-                activity.logRepo.clear()
+                logRepo.clear()
                 mainScope.launch {
                     logAdapter.clear()
                 }
@@ -328,7 +321,7 @@ class LogView(
 
         scope.launch {
 
-            val entry = activity.logRepo.append(text, level)
+            val entry = logRepo.append(text, level)
 
             mainScope.launch {
 
@@ -372,6 +365,6 @@ class LogView(
             putExtra(Intent.EXTRA_TITLE, "elm327emu_log.txt")
         }
 
-        activity.saveLogLauncher.launch(intent)
+        saveLogLauncher.launch(intent)
     }
 }
