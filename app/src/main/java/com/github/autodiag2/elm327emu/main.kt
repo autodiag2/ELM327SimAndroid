@@ -61,12 +61,9 @@ class MainActivity : AppCompatActivity() {
     lateinit var toggle: ActionBarDrawerToggle
     lateinit var toolbar: Toolbar
 
-    lateinit var simView: View
-    private lateinit var dtcClearedCheck: CheckBox
-    lateinit var ecuListView: ViewGroup
-    val ecus = mutableListOf<EcuConfig>()
-    lateinit var ecuAddSelect: Spinner
+    lateinit var dtcClearedCheck: CheckBox
 
+    lateinit var simView: SimView
     lateinit var settingsView: View
     lateinit var logView: LogView
     lateinit var statsView: StatsView
@@ -97,7 +94,7 @@ class MainActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    private fun isPermissionsGranted(): Boolean {
+    fun isPermissionsGranted(): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             return (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) &&
                 (checkSelfPermission(Manifest.permission.BLUETOOTH_ADVERTISE) == PackageManager.PERMISSION_GRANTED)
@@ -106,193 +103,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun requestPermissions() {
+    fun requestPermissions() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             requestPermissions(arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_ADVERTISE), REQUEST_CODE)
-        }
-    }
-
-    fun buildEcuGuiConfig(address: Int, name: String): EcuConfig {
-        val view = layoutInflater.inflate(R.layout.sim_main_ecu_config_gui, contentFrame, false)
-        val allSignals = libautodiag.getSimSignals().sortedBy { it.name.lowercase() }
-        val addedSignalPaths = linkedSetOf<String>()
-        val dynamicSignalsContainer = view.findViewById<LinearLayout>(R.id.signal_container)
-
-        fun getSignalInitialValue(signal: SimSignal): Double {
-            val v = libautodiag.getSignalValue(signal.path)
-            if (!v.isNaN()) {
-                return v
-            }
-            return signal.min
-        }
-
-        fun setSignalValue(signal: SimSignal, value: Double) {
-            SimGeneratorGui.setSignalValue(signal.path, value)
-        }
-
-        fun addSignalWidget(signal: SimSignal) {
-            if (addedSignalPaths.contains(signal.path)) {
-                return
-            }
-            addedSignalPaths.add(signal.path)
-
-            val title = TextView(this).apply {
-                text = if (signal.unit.isNullOrBlank()) signal.name else "${signal.name} (${signal.unit})"
-            }
-
-            val step = if (signal.step <= 0.0) 1.0 else signal.step
-            val scale = (1.0 / step).toInt().coerceAtLeast(1)
-            val minI = (signal.min * scale).toInt()
-            val maxI = (signal.max * scale).toInt()
-            val initialI = (((getSignalInitialValue(signal)).coerceIn(signal.min, signal.max)) * scale).toInt()
-
-            val valueText = TextView(this).apply {
-                val shown = initialI.toDouble() / scale
-                text = if (signal.unit.isNullOrBlank()) "$shown" else "$shown ${signal.unit}"
-            }
-
-            val seek = SeekBar(this).apply {
-                max = (maxI - minI).coerceAtLeast(0)
-                progress = (initialI - minI).coerceIn(0, max)
-                setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                    override fun onProgressChanged(s: SeekBar, p: Int, fromUser: Boolean) {
-                        val v = (p + minI).toDouble() / scale
-                        valueText.text = if (signal.unit.isNullOrBlank()) "$v" else "$v ${signal.unit}"
-                        setSignalValue(signal, v)
-                    }
-                    override fun onStartTrackingTouch(s: SeekBar) {}
-                    override fun onStopTrackingTouch(s: SeekBar) {}
-                })
-            }
-
-            setSignalValue(signal, initialI.toDouble() / scale)
-
-            val removeBtn = Button(this).apply {
-                text = "Remove"
-            }
-
-            val headerRow = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                addView(title, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-                addView(removeBtn)
-            }
-
-            val block = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(0, 12, 0, 12)
-                addView(headerRow)
-                addView(valueText)
-                addView(seek)
-            }
-
-            removeBtn.setOnClickListener {
-                addedSignalPaths.remove(signal.path)
-                dynamicSignalsContainer.removeView(block)
-            }
-
-            dynamicSignalsContainer.addView(block)
-        }
-
-        val signalSpinner = view.findViewById<Spinner>(R.id.signal_choice)
-        val spinnerSignals = allSignals
-        val spinnerAdapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_item,
-            spinnerSignals.map { it.name }
-        ).apply {
-            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        }
-        signalSpinner.adapter = spinnerAdapter
-
-        view.findViewById<Button>(R.id.signal_add).apply {
-            setOnClickListener {
-                val index = signalSpinner.selectedItemPosition
-
-                if (index in spinnerSignals.indices) {
-                    val signal = spinnerSignals[index]
-                    addSignalWidget(signal)
-                }
-            }
-        }
-
-        allSignals.firstOrNull { it.path == "SAEJ1979.engine_speed" }?.let { addSignalWidget(it) }
-        allSignals.firstOrNull { it.path == "SAEJ1979.vehicle_speed" }?.let { addSignalWidget(it) }
-        allSignals.firstOrNull { it.path == "SAEJ1979.coolant_temp" }?.let { addSignalWidget(it) }
-
-        val dtcs = mutableListOf<String>()
-        val dtcContainer = view.findViewById<LinearLayout>(R.id.dtc_list)
-
-        fun addDtcRow(code: String) {
-            if (code.isBlank()) return
-
-            dtcs.add(code)
-            SimGeneratorGui.dtcs.add(code)
-
-            val text = TextView(this).apply {
-                text = code
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            }
-
-            val removeBtn = Button(this)
-            removeBtn.text = "X"
-
-            val row = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                setPadding(0, 8, 0, 8)
-                addView(text)
-                addView(removeBtn)
-            }
-
-            removeBtn.setOnClickListener {
-                dtcContainer.removeView(row)
-                dtcs.remove(code)
-                SimGeneratorGui.dtcs.remove(code)
-            }
-
-            dtcContainer.addView(row)
-        }
-
-        val dtcInput = view.findViewById<EditText>(R.id.dtc_entry)
-
-        view.findViewById<Button>(R.id.dtc_entery_validate).apply {
-            setOnClickListener {
-                val v = dtcInput.text.toString().uppercase()
-                if (v.isNotEmpty()) {
-                    addDtcRow(v)
-                    dtcInput.text.clear()
-                }
-            }
-        }
-
-        view.findViewById<CheckBox>(R.id.mil_state).apply {
-            setOnCheckedChangeListener { _, v -> SimGeneratorGui.mil = v }
-        }
-
-        dtcClearedCheck = view.findViewById<CheckBox>(R.id.dtcs_cleared).apply {
-            setOnCheckedChangeListener { _, v -> SimGeneratorGui.dtcCleared = v }
-        }
-
-        view.findViewById<EditText>(R.id.ecu_name).apply {
-            addTextChangedListener { SimGeneratorGui.ecuName = it.toString() }
-        }
-
-        view.findViewById<EditText>(R.id.vin).apply {
-            addTextChangedListener { SimGeneratorGui.vin = it.toString() }
-        }
-        libautodiag.setResponseGuiByAddress(address.toByte())
-        val ecu = EcuConfig(
-            id = address,
-            name = name,
-            type = EcuType.GUI,
-            screen = view
-        )
-        return ecu
-    }
-
-    fun buildEcuConfig(address: Int, name: String, type: EcuType): EcuConfig {
-        return when ( type ) {
-            EcuType.GUI -> buildEcuGuiConfig(address, name)
-            EcuType.SCRIPT -> buildSimScriptView(address, name, this)
         }
     }
 
@@ -325,111 +138,6 @@ class MainActivity : AppCompatActivity() {
         screenStack.addLast(simView)
         show(ecu.screen)
         showBackArrow()
-    }
-
-    fun addEcuRow(ecu: EcuConfig) {
-        val row = layoutInflater.inflate(R.layout.sim_main_ecu_row, ecuListView, false)
-        val cardView = row.findViewById<CardView>(R.id.ecu_row_cardview)
-        val title = row.findViewById<TextView>(R.id.ecu_title)
-
-        title.text = "ECU 0x${ecu.id.toString(16).uppercase()} (${ecu.name})"
-
-        row.setOnClickListener {
-            openEcuConfig(ecu)
-        }
-
-        cardView.setOnLongClickListener {
-
-            val popup = PopupMenu(this, cardView)
-            popup.menuInflater.inflate(R.menu.main_ecu_row, popup.menu)
-
-            popup.setOnMenuItemClickListener { item ->
-                when (item.itemId) {
-                    R.id.action_delete -> {
-                        ecuRemoveByAddress(ecu.id)
-                        true
-                    }
-                    else -> false
-                }
-            }
-
-            popup.show()
-            true
-        }
-
-        ecuListView.addView(row)
-    }
-
-
-    private fun selectedType(): EcuType {
-        val selected = ecuAddSelect.selectedItem
-        return selected as EcuType
-    }
-
-    private fun ecuRemoveByAddress(address: Int) {
-        // iterate backwards to safely remove
-        val offset_in_layout = 1
-        for (i in ecus.indices.reversed()) {
-            val ecu = ecus[i]
-
-            if (ecu.id.toByte() == address.toByte()) {
-                ecuListView.removeViewAt(i + offset_in_layout)
-                ecus.removeAt(i)
-            }
-        }
-    }
-    private fun buildAddECUToGUI(address: Int, name: String, type: EcuType) {
-
-        ecuRemoveByAddress(address)
-
-        val ecu = buildEcuConfig(address, name, type)
-
-        ecus.add(ecu)
-        addEcuRow(ecu)
-    }
-
-    private fun setupSimView(view: View) {
-        ecuListView = view.findViewById<ViewGroup>(R.id.ecu_list)
-        val addEcuBtn = view.findViewById<Button>(R.id.add_ecu)
-        val ecuIdInput = view.findViewById<EditText>(R.id.ecu_id_input)
-        ecuAddSelect = view.findViewById(R.id.ecu_type_spinner)
-        val types = EcuType.values().toList()
-
-        val adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_item,
-            types
-        )
-
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-
-        ecuAddSelect.adapter = adapter
-        addEcuBtn.setOnClickListener {
-            val type = selectedType()
-            val hexStr = ecuIdInput.text.toString().trim()
-
-            val address = try {
-                hexStr.toInt(16) and 0xFF
-            } catch (e: Exception) {
-                Toast.makeText(this, "Invalid hex ID", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            buildAddECUToGUI(address, "from ${type}", type)
-        }
-
-        var running = false
-        view.findViewById<Button>(R.id.sim_state).apply {
-            setOnClickListener {
-                if (isPermissionsGranted()) {
-                    running = !running
-                    text = if (running) "Stop Sim" else "Start Sim"
-                    if (running) startServer() else stopServer()
-                } else {
-                    requestPermissions()
-                }
-            }
-        }
     }
 
     public lateinit var logRepo: LogRepository
@@ -594,16 +302,12 @@ class MainActivity : AppCompatActivity() {
         drawer.addDrawerListener(toggleLocal)
         toggleLocal.syncState()
 
-        // ---- Inflate screens ----
-        simView = layoutInflater.inflate(R.layout.sim_main, contentFrame, false)
-        setupSimView(simView)
-
+        simView = SimView(this)
         logView = LogView(this)
         settingsView = buildSettingsView()
         statsView = StatsView(this)
 
         // Default screen
-        buildAddECUToGUI(0xE8, "from GUI", EcuType.GUI)
         show(simView)
 
         // ---- Navigation drawer handling ----
@@ -648,7 +352,7 @@ class MainActivity : AppCompatActivity() {
         return (dp * resources.displayMetrics.density).toInt()
     }
 
-    private fun stopServer() {
+    fun stopServer() {
 
         bleBridge.stop()
         btBridge.stop()
@@ -673,7 +377,7 @@ class MainActivity : AppCompatActivity() {
         enableBtLauncher.launch(intent)
     }
 
-    private fun startServer() {
+    fun startServer() {
         when (prefs.getInt("network_mode", NETWORK_BT)) {
             NETWORK_BT  -> btBridge.start()
             NETWORK_BLE -> bleBridge.start()
