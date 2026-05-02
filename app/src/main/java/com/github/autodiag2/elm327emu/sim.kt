@@ -146,6 +146,7 @@ class SimView(
             val ecu = ecus[i]
 
             if (ecu.id.toByte() == address.toByte()) {
+                libautodiag.removeEcuByAddress(ecu.id.toByte())
                 ecuListView.removeViewAt(i + offset_in_layout)
                 ecus.removeAt(i)
             }
