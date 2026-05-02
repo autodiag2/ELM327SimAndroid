@@ -40,15 +40,15 @@ import org.luaj.vm2.lib.jse.*
 private const val REQUEST_CODE = 1
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var btAdapter: BluetoothAdapter
+    lateinit var btAdapter: BluetoothAdapter
 
     private val enableBtLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { }
 
     // Order in the settings screen
-    private val NETWORK_BT = 0
-    private val NETWORK_BLE = 1
-    private val NETWORK_IP = 2
+    val NETWORK_BT = 0
+    val NETWORK_BLE = 1
+    val NETWORK_IP = 2
 
     lateinit var bleBridge: BLEBridge
     lateinit var btBridge: BluetoothBridge
@@ -142,111 +142,6 @@ class MainActivity : AppCompatActivity() {
 
     public lateinit var logRepo: LogRepository
 
-    private fun buildSettingsView(): View {
-        val view = layoutInflater.inflate(R.layout.settings, null)
-
-        val prefs = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-
-        val btContainer = view.findViewById<LinearLayout>(R.id.btContainer)
-        val btNameEdit = view.findViewById<EditText>(R.id.btNameEdit)
-        val btApplyBtn = view.findViewById<Button>(R.id.btApplyBtn)
-
-        val logLevelSpinner = view.findViewById<Spinner>(R.id.logLevelSpinner)
-
-        val networkSpinner = view.findViewById<Spinner>(R.id.networkSpinner)
-        val protocolSpinner = view.findViewById<Spinner>(R.id.protocolSpinner)
-
-        // ---------- Bluetooth ----------
-        val adapterName = if (isPermissionsGranted()) btAdapter.name ?: "" else "Missing permission"
-        btNameEdit.setText(adapterName)
-
-        btApplyBtn.setOnClickListener {
-            val newName = btNameEdit.text.toString().trim()
-            if (newName.isNotEmpty()) {
-                if (isPermissionsGranted()) btAdapter.name = newName
-                else requestPermissions()
-            }
-        }
-
-        // ---------- Log level ----------
-        val logLevels = LogLevel.values().toList()
-
-        logLevelSpinner.adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_item,
-            logLevels
-        ).apply {
-            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        }
-
-        val savedLogLevel = prefs.getInt("log_level", LogLevel.INFO.ordinal)
-        logLevelSpinner.setSelection(savedLogLevel)
-
-        logLevelSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: View?, pos: Int, id: Long) {
-                prefs.edit().putInt("log_level", pos).apply()
-            }
-            override fun onNothingSelected(parent: AdapterView<*>) {}
-        }
-
-        // ---------- Network ----------
-        val networks = listOf("Bluetooth", "Bluetooth LE (4.0+)", "Network")
-
-        networkSpinner.adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_item,
-            networks
-        ).apply {
-            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        }
-
-        val savedNetwork = prefs.getInt("network_mode", NETWORK_BT)
-        networkSpinner.setSelection(savedNetwork)
-
-        btContainer.visibility =
-            if (savedNetwork == NETWORK_BT || savedNetwork == NETWORK_BLE) View.VISIBLE else View.GONE
-
-        networkSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: View?, pos: Int, id: Long) {
-                prefs.edit().putInt("network_mode", pos).apply()
-
-                btContainer.visibility =
-                    if (pos == NETWORK_BT || pos == NETWORK_BLE) View.VISIBLE else View.GONE
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>) {}
-        }
-
-        // ---------- ELM ----------
-        val protocols = libautodiag.getProtocols()
-        val currentProto = libautodiag.getProtocol()
-        val offset = 1
-
-        protocolSpinner.adapter = ArrayAdapter(
-            this,
-            android.R.layout.simple_spinner_item,
-            protocols
-        ).apply {
-            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        }
-
-        val index = currentProto - offset
-        if (index in protocols.indices) {
-            protocolSpinner.setSelection(index)
-        }
-
-        protocolSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: View?, pos: Int, id: Long) {
-                libautodiag.setProtocol(pos + offset)
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>) {}
-        }
-
-        return view
-    }
-
-
     private fun show(view: View) {
         contentFrame.removeAllViews()
         contentFrame.addView(view)
@@ -304,7 +199,7 @@ class MainActivity : AppCompatActivity() {
 
         simView = SimView(this)
         logView = LogView(this)
-        settingsView = buildSettingsView()
+        settingsView = SettingsView(this)
         statsView = StatsView(this)
 
         // Default screen
@@ -346,10 +241,6 @@ class MainActivity : AppCompatActivity() {
 
     fun setDtcClearedUi(value: Boolean) {
         dtcClearedCheck.isChecked = value
-    }
-
-    public fun dpToPx(dp: Int): Int {
-        return (dp * resources.displayMetrics.density).toInt()
     }
 
     fun stopServer() {
