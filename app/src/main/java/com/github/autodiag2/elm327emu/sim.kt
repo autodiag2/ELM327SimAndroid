@@ -27,15 +27,15 @@ data class EcuConfig(
 )
 class SimView(
     private val activity: MainActivity
-) : View(activity) {
+) : FrameLayout(activity) {
 
     lateinit var ecuListView: ViewGroup
     val ecus = mutableListOf<EcuConfig>()
     lateinit var ecuAddSelect: Spinner
-    val root: View = activity.layoutInflater.inflate(R.layout.sim_main, activity.contentFrame, false)
 
     init {
-        setupSimView(root)
+        LayoutInflater.from(context).inflate(R.layout.sim_main, this, true)
+        setupSimView(this)
         buildAddECUToGUI(0xE8, "from GUI", EcuType.GUI)
     }
 

@@ -1,6 +1,7 @@
 package com.github.autodiag2.elm327emu
 
 import android.content.Context
+import android.view.LayoutInflater
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
@@ -12,24 +13,24 @@ import android.widget.Spinner
 
 class SettingsView(
     private val activity: MainActivity
-) : View(activity) {
-    val root: View = activity.layoutInflater.inflate(R.layout.settings, activity.contentFrame, false)
+) : FrameLayout(activity) {
     
     init {
+        LayoutInflater.from(context).inflate(R.layout.settings, this, true)
         setup()
     }
     
     private fun setup() {
         val prefs = activity.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
 
-        val btContainer = root.findViewById<LinearLayout>(R.id.btContainer)
-        val btNameEdit = root.findViewById<EditText>(R.id.btNameEdit)
-        val btApplyBtn = root.findViewById<Button>(R.id.btApplyBtn)
+        val btContainer = findViewById<LinearLayout>(R.id.btContainer)
+        val btNameEdit = findViewById<EditText>(R.id.btNameEdit)
+        val btApplyBtn = findViewById<Button>(R.id.btApplyBtn)
 
-        val logLevelSpinner = root.findViewById<Spinner>(R.id.logLevelSpinner)
+        val logLevelSpinner = findViewById<Spinner>(R.id.logLevelSpinner)
 
-        val networkSpinner = root.findViewById<Spinner>(R.id.networkSpinner)
-        val protocolSpinner = root.findViewById<Spinner>(R.id.protocolSpinner)
+        val networkSpinner = findViewById<Spinner>(R.id.networkSpinner)
+        val protocolSpinner = findViewById<Spinner>(R.id.protocolSpinner)
 
         // ---------- Bluetooth ----------
         val adapterName = if (activity.isPermissionsGranted()) activity.btAdapter.name ?: "" else "Missing permission"
