@@ -5,41 +5,25 @@ import androidx.appcompat.app.AppCompatActivity
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.widget.TextView
 import kotlinx.coroutines.*
 import android.bluetooth.BluetoothAdapter
 import android.view.Gravity
 import android.widget.FrameLayout
 import androidx.drawerlayout.widget.DrawerLayout
 import com.google.android.material.navigation.NavigationView
-import android.view.MenuItem
 import android.content.Intent
 import androidx.appcompat.widget.Toolbar
 import android.content.Context
-import android.widget.LinearLayout
-import android.widget.SeekBar
-import android.widget.ArrayAdapter
-import android.widget.EditText
-import android.widget.Button
-import android.widget.CheckBox
-import androidx.core.widget.addTextChangedListener
 import android.view.View
-import android.widget.*
 import android.bluetooth.BluetoothManager
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.view.ViewGroup
+import android.widget.CheckBox
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.ActionBarDrawerToggle
-import androidx.cardview.widget.CardView
-import androidx.lifecycle.lifecycleScope
-import org.luaj.vm2.*
-import org.luaj.vm2.lib.jse.*
 
 private const val REQUEST_CODE = 1
 
 class MainActivity : AppCompatActivity() {
+
     lateinit var btAdapter: BluetoothAdapter
 
     private val enableBtLauncher =
@@ -58,7 +42,6 @@ class MainActivity : AppCompatActivity() {
 
     lateinit var contentFrame: FrameLayout
     private lateinit var drawer: DrawerLayout
-    lateinit var toggle: ActionBarDrawerToggle
     lateinit var toolbar: Toolbar
 
     lateinit var dtcClearedCheck: CheckBox
@@ -72,52 +55,42 @@ class MainActivity : AppCompatActivity() {
 
     public val prefs by lazy { getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        if (item.itemId == android.R.id.home) {
+    // -------------------------------
+    // Navigation handling
+    // -------------------------------
+
+    fun onToolbarClicked() {
+        if (screenStack.isNotEmpty()) {
             handleBack()
-            return true
-        }
-        return super.onOptionsItemSelected(item)
-    }
-
-    fun isPermissionsGranted(): Boolean {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            return (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) &&
-                (checkSelfPermission(Manifest.permission.BLUETOOTH_ADVERTISE) == PackageManager.PERMISSION_GRANTED)
         } else {
-            return true
+            if (drawer.isDrawerOpen(Gravity.LEFT)) {
+                drawer.closeDrawer(Gravity.LEFT)
+            } else {
+                drawer.openDrawer(Gravity.LEFT)
+            }
         }
     }
 
-    fun requestPermissions() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            requestPermissions(arrayOf(Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH_ADVERTISE), REQUEST_CODE)
-        }
+    fun showHamburger() {
+        toolbar.setNavigationIcon(android.R.drawable.ic_menu_sort_by_size)
+    }
+
+    fun showBackArrow() {
+        toolbar.setNavigationIcon(android.R.drawable.ic_media_previous)
     }
 
     fun handleBack() {
         if (screenStack.isNotEmpty()) {
             show(screenStack.removeLast())
 
-            showHamburger()
+            if (screenStack.isEmpty()) {
+                showHamburger()
+            } else {
+                showBackArrow()
+            }
         } else {
-            showHamburger()
             drawer.openDrawer(Gravity.LEFT)
         }
-    }
-
-    fun showHamburger() {
-        toggle.isDrawerIndicatorEnabled = true
-        toggle.syncState()
-    }
-
-    fun showBackArrow() {
-        toggle.isDrawerIndicatorEnabled = false
-        supportActionBar?.setDisplayHomeAsUpEnabled(true)
-        toolbar.setNavigationOnClickListener {
-            handleBack()
-        }
-        toggle.syncState()
     }
 
     fun openEcuConfig(ecu: EcuConfig) {
@@ -131,17 +104,20 @@ class MainActivity : AppCompatActivity() {
         contentFrame.addView(view)
     }
 
+    // -------------------------------
+    // Lifecycle
+    // -------------------------------
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Use XML layout instead of building everything in code
         setContentView(R.layout.activity_main)
 
         onBackPressedDispatcher.addCallback(
             this,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
-                    if ( screenStack.isNotEmpty() ) {
+                    if (screenStack.isNotEmpty()) {
                         handleBack()
                     } else {
                         isEnabled = false
@@ -161,25 +137,22 @@ class MainActivity : AppCompatActivity() {
         btBridge = BluetoothBridge(this, btAdapter)
         ntBridge = NetworkBridge(this)
 
-        // ---- Bind views from XML ----
+        // ---- Bind views ----
         drawer = findViewById(R.id.drawer)
         contentFrame = findViewById(R.id.contentFrame)
         val navView: NavigationView = findViewById(R.id.navView)
         toolbar = findViewById(R.id.toolbar)
 
-        // ---- Toolbar setup ----
+        // ---- Toolbar ----
         setSupportActionBar(toolbar)
-        val toggleLocal = androidx.appcompat.app.ActionBarDrawerToggle(
-            this,
-            drawer,
-            toolbar,
-            R.string.open,
-            R.string.close
-        )
-        toggle = toggleLocal
-        drawer.addDrawerListener(toggleLocal)
-        toggleLocal.syncState()
 
+        toolbar.setNavigationOnClickListener {
+            onToolbarClicked()
+        }
+
+        showHamburger()
+
+        // ---- Views ----
         simView = SimView(this)
         logView = LogView(this)
         settingsView = SettingsView(this)
@@ -188,19 +161,23 @@ class MainActivity : AppCompatActivity() {
         // Default screen
         show(simView)
 
-        // ---- Navigation drawer handling ----
+        // ---- Drawer navigation ----
         navView.setNavigationItemSelectedListener { item ->
+            screenStack.clear() // reset stack when using drawer
+
             when (item.itemId) {
                 R.id.nav_sim -> show(simView)
                 R.id.nav_log -> show(logView)
                 R.id.nav_stats -> show(statsView)
                 R.id.nav_settings -> show(settingsView)
             }
+
+            showHamburger()
             drawer.closeDrawer(Gravity.LEFT)
             true
         }
 
-        // ---- Handle system bars (status + navigation) ----
+        // ---- Insets ----
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(contentFrame) { v, insets ->
             val systemBars = insets.getInsets(
                 androidx.core.view.WindowInsetsCompat.Type.systemBars()
@@ -222,27 +199,56 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // -------------------------------
+    // Permissions
+    // -------------------------------
+
+    fun isPermissionsGranted(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            (checkSelfPermission(Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) &&
+                    (checkSelfPermission(Manifest.permission.BLUETOOTH_ADVERTISE) == PackageManager.PERMISSION_GRANTED)
+        } else true
+    }
+
+    fun requestPermissions() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            requestPermissions(
+                arrayOf(
+                    Manifest.permission.BLUETOOTH_CONNECT,
+                    Manifest.permission.BLUETOOTH_ADVERTISE
+                ),
+                REQUEST_CODE
+            )
+        }
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
+
+    // -------------------------------
+    // Logic
+    // -------------------------------
+
     fun setDtcClearedUi(value: Boolean) {
         dtcClearedCheck.isChecked = value
     }
 
     fun stopServer() {
-
         bleBridge.stop()
         btBridge.stop()
         ntBridge.stop()
-
         scope.coroutineContext.cancelChildren()
-
         appendLog("Bluetooth server stopped", LogLevel.INFO)
     }
 
     public fun clearSocketFiles() {
-        val dir = filesDir
-        dir.listFiles()?.forEach { f ->
-            if (f.name.startsWith("socket")) {
-                f.delete()
-            }
+        filesDir.listFiles()?.forEach {
+            if (it.name.startsWith("socket")) it.delete()
         }
     }
 
@@ -255,7 +261,7 @@ class MainActivity : AppCompatActivity() {
         when (prefs.getInt("network_mode", NETWORK_BT)) {
             NETWORK_BT  -> btBridge.start()
             NETWORK_BLE -> bleBridge.start()
-            NETWORK_IP -> ntBridge.start()
+            NETWORK_IP  -> ntBridge.start()
             else -> appendLog("Network mode not implemented", LogLevel.DEBUG)
         }
     }
@@ -277,12 +283,5 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         MainActivityRef.activity = null
         super.onDestroy()
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == REQUEST_CODE && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            // Add logic here
-        }
     }
 }
