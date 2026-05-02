@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/nav_sim" android:title="Sim"/>
-    <item android:id="@+id/nav_log" android:title="Log"/>
-    <item android:id="@+id/nav_stats" android:title="Stats" />
-    <item android:id="@+id/nav_settings" android:title="Settings"/>
+    <item android:id="@+id/nav_sim" android:title="@string/main_drawer_sim"/>
+    <item android:id="@+id/nav_log" android:title="@string/main_drawer_log"/>
+    <item android:id="@+id/nav_stats" android:title="@string/main_drawer_stats" />
+    <item android:id="@+id/nav_settings" android:title="@string/main_drawer_settings"/>
 </menu>

@@ -8,24 +8,24 @@
         android:id="@+id/stats_requests"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Requests: 0"/>
+        android:text="@string/stats_requests"/>
 
     <TextView
         android:id="@+id/stats_responses"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Responses: 0"/>
+        android:text="@string/stats_responses"/>
 
     <TextView
         android:id="@+id/stats_qps"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="QPS: 0"/>
+        android:text="@string/stats_qps"/>
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Top requests:"
+        android:text="@string/stats_top_requests"
         android:paddingTop="12dp"/>
 
     <LinearLayout

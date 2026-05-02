@@ -22,13 +22,13 @@
             android:id="@+id/ecu_title"
             android:layout_width="0dp"
             android:layout_weight="1"
-            android:text="ECU 0xE8 (name)"
+            android:text="@string/sim_main_ecu_row_title"
             android:textSize="16sp"
             android:layout_height="wrap_content" />
 
         <TextView
             android:id="@+id/ecu_open"
-            android:text="→"
+            android:text="@string/sim_main_ecu_row_open"
             android:textSize="18sp"
             android:layout_height="wrap_content"
             android:layout_width="wrap_content" />

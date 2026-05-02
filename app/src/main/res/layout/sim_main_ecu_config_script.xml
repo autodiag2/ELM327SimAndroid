@@ -20,7 +20,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Lua ECU Script"
+            android:text="@string/sim_main_ecu_config_script_title"
             android:textSize="18sp"
             android:textStyle="bold" />
 
@@ -99,28 +99,28 @@ end\n
                     android:id="@+id/copy_script"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Copy" />
+                    android:text="@string/sim_main_ecu_config_script_copy" />
 
                 <Button
                     android:id="@+id/paste_script"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:text="Paste" />
+                    android:text="@string/sim_main_ecu_config_script_paste" />
 
                 <Button
                     android:id="@+id/apply_script"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:text="Apply Script" />
+                    android:text="@string/sim_main_ecu_config_script_apply" />
 
                 <Button
                     android:id="@+id/clear_script"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
-                    android:text="Clear" />
+                    android:text="@string/sim_main_ecu_config_script_clear" />
 
             </LinearLayout>
 
@@ -132,7 +132,7 @@ end\n
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text=""
-            android:textColor="#FF4444"
+            android:textColor="?attr/android:textColor"
             android:textSize="12sp"
             android:paddingTop="8dp"
             android:maxLines="3" />

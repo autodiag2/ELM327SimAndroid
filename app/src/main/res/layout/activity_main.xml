@@ -22,7 +22,7 @@
             android:fitsSystemWindows="true"
             app:titleTextColor="?attr/colorOnPrimary"
             android:background="@drawable/toolbar_with_border"
-            app:title="ELM327 Emulator"/>
+            app:title="@string/app_title"/>
 
         <!-- Content container -->
         <FrameLayout

@@ -58,7 +58,7 @@
                         android:id="@+id/add_ecu"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Add ECU (+)" />
+                        android:text="@string/sim_main_add_ecu" />
 
                 </LinearLayout>
 
@@ -85,7 +85,7 @@
             android:id="@+id/sim_state"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Start Sim" />
+            android:text="@string/sim_main_start_sim" />
 
     </LinearLayout>
 

@@ -24,19 +24,19 @@
                 android:id="@+id/btnDownload"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Download log" />
+                android:text="@string/log_btnDownload" />
 
             <Button
                 android:id="@+id/btnSave"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Save as..." />
+                android:text="@string/log_btnSave" />
 
             <Button
                 android:id="@+id/btnClear"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Clear log" />
+                android:text="@string/log_btnClear" />
         </LinearLayout>
 
         <!-- RecyclerView -->
@@ -65,13 +65,13 @@
             android:id="@+id/btnUp"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="↑" />
+            android:text="@string/log_btnUp" />
 
         <Button
             android:id="@+id/btnDown"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="↓" />
+            android:text="@string/log_btnDown" />
     </LinearLayout>
 
 </FrameLayout>

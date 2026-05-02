@@ -24,19 +24,19 @@
                 android:id="@+id/btLabel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Bluetooth device name" />
+                android:text="@string/settings_btLabel" />
 
             <EditText
                 android:id="@+id/btNameEdit"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:hint="OBD II" />
+                android:hint="@string/settings_btHint" />
 
             <Button
                 android:id="@+id/btApplyBtn"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Set" />
+                android:text="@string/settings_btApply" />
         </LinearLayout>
 
         <!-- Log level -->
@@ -44,7 +44,7 @@
             android:id="@+id/logLevelLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Log level"
+            android:text="@string/settings_logLevelLabel"
             android:paddingTop="16dp" />
 
         <Spinner
@@ -57,7 +57,7 @@
             android:id="@+id/networkLabel"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Networking mode"
+            android:text="@string/settings_networkLabel"
             android:paddingTop="16dp" />
 
         <Spinner
@@ -70,7 +70,7 @@
             android:id="@+id/elmTitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="ELM327 parameters"
+            android:text="@string/settings_elmTitle"
             android:textSize="18sp"
             android:paddingTop="32dp" />
 

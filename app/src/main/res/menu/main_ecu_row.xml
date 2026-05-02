@@ -1,5 +1,5 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item
         android:id="@+id/action_delete"
-        android:title="Delete ECU" />
+        android:title="@string/sim_main_ecu_row_delete" />
 </menu>
