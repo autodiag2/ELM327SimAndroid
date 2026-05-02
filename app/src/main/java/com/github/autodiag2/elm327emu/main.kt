@@ -19,6 +19,7 @@ import android.bluetooth.BluetoothManager
 import android.widget.CheckBox
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.content.res.AppCompatResources
 
 private const val REQUEST_CODE = 1
 
@@ -72,11 +73,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun showHamburger() {
-        toolbar.setNavigationIcon(android.R.drawable.ic_menu_sort_by_size)
+        toolbar.navigationIcon =
+            AppCompatResources.getDrawable(this, com.google.android.material.R.drawable.abc_ic_menu_overflow_material)
     }
 
     fun showBackArrow() {
-        toolbar.setNavigationIcon(android.R.drawable.ic_media_previous)
+        toolbar.navigationIcon =
+            AppCompatResources.getDrawable(this, com.google.android.material.R.drawable.abc_ic_ab_back_material)
     }
 
     fun handleBack() {
