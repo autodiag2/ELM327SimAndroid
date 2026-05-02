@@ -91,6 +91,10 @@ class BLEBridge(
         }
     }
 
+    fun getString(resId: Int, vararg formatArgs: Any?): String {
+        return activity.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
+    }
+
     private val gattCallback = object : BluetoothGattServerCallback() {
 
         override fun onDescriptorWriteRequest(
@@ -126,22 +130,22 @@ class BLEBridge(
             status: Int,
             newState: Int
         ) {
-            val addr = device.address ?: "unknown"
+            val addr = device.address ?: getString(R.string.log_ble_unknown_device_address)
             if (newState == BluetoothProfile.STATE_CONNECTED) {
-                appendLog("$addr: connected", LogLevel.DEBUG)
+                appendLog(getString(R.string.log_ble_connected, addr), LogLevel.DEBUG)
                 connectedDevice = device
             } else {
-                appendLog("$addr: disconnected", LogLevel.DEBUG)
+                appendLog(getString(R.string.log_ble_disconnected, addr), LogLevel.DEBUG)
                 connectedDevice = null
             }
         }
-
+        
         override fun onServiceAdded(status: Int, service: BluetoothGattService) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 gattReady = true
-                appendLog("GATT service added", LogLevel.DEBUG)
+                appendLog(getString(R.string.log_ble_gatt_service_added), LogLevel.DEBUG)
             } else {
-                appendLog("Service add failed: $status", LogLevel.DEBUG)
+                appendLog(getString(R.string.log_ble_gatt_service_add_failed, status), LogLevel.DEBUG)
             }
         }
 
@@ -160,7 +164,7 @@ class BLEBridge(
                     loopbackOutput?.flush()
                     activity.onDataReceived(value, value.size)
                 } catch(e: Exception) {
-                    appendLog("exiting btToLoop: ${e.message}")
+                    appendLog(getString(R.string.log_ble_gatt_characteristic_write_failed, e.message), LogLevel.DEBUG)
                 }
             }
 
@@ -178,11 +182,11 @@ class BLEBridge(
 
     private val advertiseCallback = object : AdvertiseCallback() {
         override fun onStartSuccess(settingsInEffect: AdvertiseSettings) {
-            appendLog("BLE advertising started", LogLevel.DEBUG)
+            appendLog(getString(R.string.log_ble_advertising_started), LogLevel.DEBUG)
         }
 
         override fun onStartFailure(errorCode: Int) {
-            appendLog("BLE advertising failed: $errorCode", LogLevel.DEBUG)
+            appendLog(getString(R.string.log_ble_advertising_failed, errorCode), LogLevel.DEBUG)
         }
     }
 
@@ -222,7 +226,7 @@ class BLEBridge(
         }
 
         val payload = bytes.toByteArray()
-        appendLog("ADV length = ${payload.size}", LogLevel.DEBUG)
+        appendLog(getString(R.string.log_ble_advertising_data, payload.size), LogLevel.DEBUG)
         appendLog(payload.joinToString(" ") { "%02X".format(it) }, LogLevel.DEBUG)
     }
 
@@ -247,12 +251,12 @@ class BLEBridge(
                 .build()
             
             if (!btAdapter.isMultipleAdvertisementSupported) {
-                appendLog("BLE advertising not supported", LogLevel.DEBUG)
+                appendLog(getString(R.string.log_ble_advertising_not_supported), LogLevel.DEBUG)
                 return@launch
             }
 
             advertiser = btAdapter.bluetoothLeAdvertiser ?: run {
-                appendLog("bluetoothLeAdvertiser == null", LogLevel.DEBUG)
+                appendLog(getString(R.string.log_ble_advertiser_null), LogLevel.DEBUG)
                 return@launch
             }
             val scanResp = AdvertiseData.Builder()
@@ -313,7 +317,7 @@ class BLEBridge(
                             gattServer.notifyCharacteristicChanged(it, txChar, false)
                         }
                     } catch(e: Exception) {
-                        appendLog("exiting loopToBt: ${e.message}")
+                        appendLog(getString(R.string.log_ble_loopback_failed, e.message), LogLevel.DEBUG)
                         break
                     }
                 }
@@ -325,13 +329,13 @@ class BLEBridge(
         try {
             advertiser.stopAdvertising(advertiseCallback)
         } catch (e: Exception) {
-            appendLog("Error: ${e.message}", LogLevel.DEBUG)
+            appendLog(getString(R.string.log_ble_stop_advertising_failed, e.message), LogLevel.DEBUG)
         }
 
         try {
             gattServer.close()
         } catch (e: Exception) {
-            appendLog("Error: ${e.message}", LogLevel.DEBUG)
+            appendLog(getString(R.string.log_ble_gatt_server_close_failed, e.message), LogLevel.DEBUG)
         }
 
         connectedDevice = null

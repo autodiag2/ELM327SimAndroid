@@ -61,6 +61,10 @@ class BluetoothBridge(
         activity.appendLog(text, level)
     }
 
+    fun getString(resId: Int, vararg formatArgs: Any?): String {
+        return activity.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
+    }
+
     public fun start() {
         if (!btAdapter.isEnabled) {
             activity.showBluetoothEnablePopup()
@@ -73,25 +77,25 @@ class BluetoothBridge(
             while (true) {
                 try {
 
-                    server = btAdapter.listenUsingRfcommWithServiceRecord("ELM327 Emulator", classicalBtUUID)
-                    appendLog("Waiting for connection...", LogLevel.INFO)
+                    server = btAdapter.listenUsingRfcommWithServiceRecord(getString(R.string.app_name), classicalBtUUID)
+                    appendLog(getString(R.string.log_bt_waiting_for_connection), LogLevel.INFO)
 
                     socket = server?.accept()
-                    appendLog("Client connected: ${socket?.remoteDevice?.address}", LogLevel.INFO)
+                    appendLog(getString(R.string.log_bt_client_connected, socket?.remoteDevice?.address), LogLevel.INFO)
 
                     bt_input = socket?.inputStream
                     bt_output = socket?.outputStream
 
                     val filesDirPath = activity.filesDir.absolutePath
                     val location = libautodiag.launchEmu(filesDirPath)
-                    appendLog("Native sim location: $location", LogLevel.DEBUG)
+                    appendLog(getString(R.string.log_bt_native_sim_location, location), LogLevel.DEBUG)
 
                     val loopbackSocket = LocalSocket()
                     loopbackSocket.connect(
                         LocalSocketAddress(location, LocalSocketAddress.Namespace.FILESYSTEM)
                     )
 
-                    appendLog("Loopback socket connected", LogLevel.DEBUG)
+                    appendLog(getString(R.string.log_bt_loopback_connected), LogLevel.DEBUG)
 
                     val loopbackInput = loopbackSocket.inputStream
                     val loopbackOutput = loopbackSocket.outputStream
@@ -108,7 +112,7 @@ class BluetoothBridge(
                                 loopbackOutput.flush()
                                 activity.onDataReceived(bufferBT, n)
                             } catch(e: Exception) {
-                                appendLog("exiting btToLoop: ${e.message}")
+                                appendLog(getString(R.string.log_bt_btToLoop_failed, e.message), LogLevel.DEBUG)
                                 break
                             }
                         }
@@ -123,7 +127,7 @@ class BluetoothBridge(
                                 bt_output?.flush()
                                 activity.onDataSent(bufferLoop, n)
                             } catch(e: Exception) {
-                                appendLog("exiting loopToBt: ${e.message}", LogLevel.DEBUG)
+                                appendLog(getString(R.string.log_bt_loopToBt_failed, e.message), LogLevel.DEBUG)
                                 break
                             }
                         }
@@ -136,16 +140,16 @@ class BluetoothBridge(
                     loopbackOutput.close()
                     loopbackSocket.close()
                 } catch (e: CancellationException) {
-                    appendLog("Cancelled", LogLevel.DEBUG)
+                    appendLog(getString(R.string.log_bt_cancelled), LogLevel.DEBUG)
                     throw e
                 } catch (e: Exception) {
-                    appendLog("Error: ${e.message}", LogLevel.DEBUG)
+                    appendLog(getString(R.string.log_bt_error, e.message), LogLevel.DEBUG)
                 } finally {
                     bt_input?.close()
                     bt_output?.close()
                     socket?.close()
                     server?.close()
-                    appendLog("Bluetooth connection closed", LogLevel.INFO)
+                    appendLog(getString(R.string.log_bt_connection_closed), LogLevel.INFO)
                 }
             }
         }

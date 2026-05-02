@@ -9,6 +9,11 @@ import android.widget.SeekBar
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.core.widget.addTextChangedListener
+import android.content.Context
+
+fun getString(context: Context,resId: Int, vararg formatArgs: Any?): String {
+    return context.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
+}
 
 fun buildEcuGuiConfig(address: Int, name: String, activity: MainActivity): EcuConfig {
     val view = activity.layoutInflater.inflate(R.layout.sim_main_ecu_config_gui, activity.contentFrame, false)
@@ -66,7 +71,7 @@ fun buildEcuGuiConfig(address: Int, name: String, activity: MainActivity): EcuCo
         setSignalValue(signal, initialI.toDouble() / scale)
 
         val removeBtn = Button(activity).apply {
-            text = "Remove"
+            text = getString(activity, R.string.sim_main_ecu_config_gui_remove_signal)
         }
 
         val headerRow = LinearLayout(activity).apply {
@@ -132,7 +137,7 @@ fun buildEcuGuiConfig(address: Int, name: String, activity: MainActivity): EcuCo
         }
 
         val removeBtn = Button(activity)
-        removeBtn.text = "X"
+        removeBtn.text = getString(activity, R.string.sim_main_ecu_config_gui_remove_dtc)
 
         val row = LinearLayout(activity).apply {
             orientation = LinearLayout.HORIZONTAL

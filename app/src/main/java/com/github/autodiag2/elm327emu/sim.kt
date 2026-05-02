@@ -15,7 +15,7 @@ import androidx.cardview.widget.CardView
 
 enum class EcuType(val label: String) {
     GUI("GUI"),
-    SCRIPT("Data Script");
+    SCRIPT("Script");
 
     override fun toString() = label
 }
@@ -36,7 +36,7 @@ class SimView(
     init {
         LayoutInflater.from(context).inflate(R.layout.sim_main, this, true)
         setupSimView(this)
-        buildAddECUToGUI(0xE8, "from GUI", EcuType.GUI)
+        buildAddECUToGUI(0xE8, getString(R.string.sim_main_ecu_config_gui_ecu_name), EcuType.GUI)
     }
 
     fun buildEcuConfig(address: Int, name: String, type: EcuType): EcuConfig {
@@ -44,6 +44,10 @@ class SimView(
             EcuType.GUI -> buildEcuGuiConfig(address, name, activity)
             EcuType.SCRIPT -> buildSimScriptView(address, name, activity)
         }
+    }
+
+    fun getString(resId: Int, vararg formatArgs: Any?): String {
+        return activity.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
     }
 
     private fun buildAddECUToGUI(address: Int, name: String, type: EcuType) {
@@ -79,11 +83,11 @@ class SimView(
             val address = try {
                 hexStr.toInt(16) and 0xFF
             } catch (e: Exception) {
-                Toast.makeText(activity, "Invalid hex ID", Toast.LENGTH_SHORT).show()
+                Toast.makeText(activity, getString(R.string.sim_main_ecu_config_invalid_hex_id), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            buildAddECUToGUI(address, "from ${type}", type)
+            buildAddECUToGUI(address, getString(R.string.sim_main_ecu_config_ecu_name), type)
         }
 
         var running = false
@@ -91,7 +95,7 @@ class SimView(
             setOnClickListener {
                 if (activity.isPermissionsGranted()) {
                     running = !running
-                    text = if (running) "Stop Sim" else "Start Sim"
+                    text = if (running) getString(R.string.sim_main_stop_sim) else getString(R.string.sim_main_start_sim)
                     if (running) activity.startServer() else activity.stopServer()
                 } else {
                     activity.requestPermissions()

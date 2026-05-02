@@ -21,6 +21,10 @@ class StatsView(
     // count per command
     private val requestStats = mutableMapOf<String, Int>()
 
+    fun getString(resId: Int, vararg formatArgs: Any?): String {
+        return context.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
+    }
+
     init {
         inflate(context, R.layout.view_stats, this)
 
@@ -68,14 +72,14 @@ class StatsView(
     // --- INTERNALS ---
 
     private fun updateUI() {
-        requestsText.text = "Requests: $requestCount"
-        responsesText.text = "Responses: $responseCount"
+        requestsText.text = getString(R.string.stats_requests, requestCount)
+        responsesText.text = getString(R.string.stats_responses, responseCount)
 
         val elapsedSec = ((System.currentTimeMillis() - startTime) / 1000f)
             .coerceAtLeast(1f)
 
         val qps = requestCount / elapsedSec
-        qpsText.text = "Queries/s: %.2f".format(qps)
+        qpsText.text = getString(R.string.stats_qps, qps)
 
         updateTopRequests()
     }

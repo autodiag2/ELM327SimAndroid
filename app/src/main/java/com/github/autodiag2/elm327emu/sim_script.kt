@@ -29,6 +29,10 @@ class LuaJEcuHandler(
         loadScript(script)
     }
 
+    fun getString(resId: Int, vararg formatArgs: Any?): String {
+        return errorView.context.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
+    }
+
     fun reload(script: String) {
         loadScript(script)
     }
@@ -49,7 +53,7 @@ class LuaJEcuHandler(
             val func = globals.get("response")
 
             if (!func.isfunction()) {
-                appendError("Lua error: missing function 'response(req)'")
+                appendError(getString(R.string.sim_main_ecu_config_script_lua_missing_function))
                 responseFunc = LuaValue.NIL
                 return
             }
@@ -57,7 +61,7 @@ class LuaJEcuHandler(
             responseFunc = func
 
         } catch (e: Exception) {
-            appendError("Lua load error: ${e.message}")
+            appendError(getString(R.string.sim_main_ecu_config_script_lua_load_error, e.message))
             responseFunc = LuaValue.NIL
         }
     }
@@ -65,7 +69,7 @@ class LuaJEcuHandler(
     override fun response(request: ByteArray): ByteArray {
 
         if (!responseFunc.isfunction()) {
-            appendError("Lua error: response function not available")
+            appendError(getString(R.string.sim_main_ecu_config_script_lua_response_error))
             return byteArrayOf()
         }
 
@@ -79,7 +83,7 @@ class LuaJEcuHandler(
             val result = responseFunc.call(luaReq)
 
             if (!result.istable()) {
-                appendError("Lua error: response must return a table")
+                appendError(getString(R.string.sim_main_ecu_config_script_lua_response_error_missing_table))
                 return byteArrayOf()
             }
 
@@ -89,14 +93,14 @@ class LuaJEcuHandler(
                 val v = result.get(i + 1)
 
                 if (!v.isnumber()) {
-                    appendError("Lua error: non-number at index ${i + 1}")
+                    appendError(getString(R.string.sim_main_ecu_config_script_lua_response_error_non_number, i + 1))
                     return byteArrayOf()
                 }
 
                 val value = v.toint()
 
                 if (value !in 0..255) {
-                    appendError("Lua error: value out of range at index ${i + 1}")
+                    appendError(getString(R.string.sim_main_ecu_config_script_lua_response_error_out_of_range, i + 1))
                     return byteArrayOf()
                 }
 
@@ -104,7 +108,7 @@ class LuaJEcuHandler(
             }
 
         } catch (e: Exception) {
-            appendError("Lua runtime error: ${e.message}")
+            appendError(getString(R.string.sim_main_ecu_config_script_lua_runtime_error, e.message))
             byteArrayOf()
         }
     }
@@ -119,9 +123,9 @@ fun updateScript(script: String, ecu: EcuConfig) {
             ecu.id.toByte(),
             handler
         )
-        errorReturn.setText("parsing success")
+        errorReturn.setText(getString(ecu.screen.context, R.string.sim_main_ecu_config_script_lua_parse_success))
     } catch (e: Exception) {
-        errorReturn.setText("lua parsing error : ${e.message}")
+        errorReturn.setText(getString(ecu.screen.context, R.string.sim_main_ecu_config_script_lua_load_parse_error, e.message))
     }
 }
 fun buildSimScriptView(address: Int, name: String, activity: MainActivity): EcuConfig {
@@ -150,7 +154,7 @@ fun buildSimScriptView(address: Int, name: String, activity: MainActivity): EcuC
         if (text.isNotEmpty()) {
             val clip = ClipData.newPlainText("lua_script", text)
             clipboard.setPrimaryClip(clip)
-            Toast.makeText(activity, "Copied", Toast.LENGTH_SHORT).show()
+            Toast.makeText(activity, getString(activity, R.string.sim_main_ecu_config_script_copy_success), Toast.LENGTH_SHORT).show()
         }
     }
     pasteBtn.setOnClickListener {

@@ -20,6 +20,10 @@ class SettingsView(
         setup()
     }
     
+    fun getString(resId: Int, vararg formatArgs: Any?): String {
+        return activity.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
+    }
+
     private fun setup() {
         val prefs = activity.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
 
@@ -33,7 +37,7 @@ class SettingsView(
         val protocolSpinner = findViewById<Spinner>(R.id.protocolSpinner)
 
         // ---------- Bluetooth ----------
-        val adapterName = if (activity.isPermissionsGranted()) activity.btAdapter.name ?: "" else "Missing permission"
+        val adapterName = if (activity.isPermissionsGranted()) activity.btAdapter.name ?: "" else getString(R.string.settings_missing_permission)
         btNameEdit.setText(adapterName)
 
         btApplyBtn.setOnClickListener {
@@ -66,7 +70,11 @@ class SettingsView(
         }
 
         // ---------- Network ----------
-        val networks = listOf("Bluetooth", "Bluetooth LE (4.0+)", "Network")
+        val networks = listOf(
+            getString(R.string.settings_network_bluetooth),
+            getString(R.string.settings_network_ble),
+            getString(R.string.settings_network_network)
+        )
 
         networkSpinner.adapter = ArrayAdapter(
             activity,

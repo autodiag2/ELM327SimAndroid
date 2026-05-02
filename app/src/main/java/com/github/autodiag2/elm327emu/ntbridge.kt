@@ -74,12 +74,16 @@ class NetworkBridge(
         while (true) {
             try {
                 return ServerSocket(port).also {
-                    appendLog("Network server listening on port $port", LogLevel.INFO)
+                    appendLog(getString(R.string.log_network_server_listening, port), LogLevel.INFO)
                 }
             } catch (_: IOException) {
                 port++
             }
         }
+    }
+
+    fun getString(resId: Int, vararg formatArgs: Any?): String {
+        return activity.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
     }
 
     fun start() {
@@ -91,7 +95,7 @@ class NetworkBridge(
                     serverSocket = openServer()
                     clientSocket = serverSocket!!.accept()
                     appendLog(
-                        "Client connected: ${clientSocket!!.inetAddress.hostAddress}:${clientSocket!!.port}",
+                        getString(R.string.log_network_client_connected, clientSocket!!.inetAddress.hostAddress, clientSocket!!.port),
                         LogLevel.INFO
                     )
 
@@ -100,13 +104,13 @@ class NetworkBridge(
 
                     val filesDirPath = activity.filesDir.absolutePath
                     val location = libautodiag.launchEmu(filesDirPath)
-                    appendLog("Native sim location: $location", LogLevel.DEBUG)
+                    appendLog(getString(R.string.log_network_native_sim_location, location), LogLevel.DEBUG)
 
                     val loopbackSocket = LocalSocket()
                     loopbackSocket.connect(
                         LocalSocketAddress(location, LocalSocketAddress.Namespace.FILESYSTEM)
                     )
-                    appendLog("Loopback socket connected", LogLevel.DEBUG)
+                    appendLog(getString(R.string.log_network_loopback_connected), LogLevel.DEBUG)
 
                     val loopbackInput = loopbackSocket.inputStream
                     val loopbackOutput = loopbackSocket.outputStream
@@ -123,7 +127,7 @@ class NetworkBridge(
                                 loopbackOutput.flush()
                                 activity.onDataReceived(bufferNet, n)
                             } catch (e: Exception) {
-                                appendLog("exiting netToLoop: ${e.message}", LogLevel.DEBUG)
+                                appendLog(getString(R.string.log_network_netToLoop_failed, e.message), LogLevel.DEBUG)
                                 break
                             }
                         }
@@ -138,7 +142,7 @@ class NetworkBridge(
                                 netOutput?.flush()
                                 activity.onDataSent(bufferLoop, n)
                             } catch (e: Exception) {
-                                appendLog("exiting loopToNet: ${e.message}", LogLevel.DEBUG)
+                                appendLog(getString(R.string.log_network_loopToNet_failed, e.message), LogLevel.DEBUG)
                                 break
                             }
                         }
@@ -152,10 +156,10 @@ class NetworkBridge(
                     loopbackSocket.close()
 
                 } catch (e: CancellationException) {
-                    appendLog("Cancelled", LogLevel.DEBUG)
+                    appendLog(getString(R.string.log_network_cancelled), LogLevel.DEBUG)
                     throw e
                 } catch (e: Exception) {
-                    appendLog("Error: ${e.message}", LogLevel.DEBUG)
+                    appendLog(getString(R.string.log_network_error, e.message), LogLevel.DEBUG)
                 } finally {
                     netInput?.close()
                     netOutput?.close()
@@ -167,7 +171,7 @@ class NetworkBridge(
                     clientSocket = null
                     serverSocket = null
 
-                    appendLog("Network connection closed", LogLevel.INFO)
+                    appendLog(getString(R.string.log_network_connection_closed), LogLevel.INFO)
                 }
             }
         }

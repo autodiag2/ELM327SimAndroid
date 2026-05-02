@@ -246,7 +246,7 @@ class MainActivity : AppCompatActivity() {
         btBridge.stop()
         ntBridge.stop()
         scope.coroutineContext.cancelChildren()
-        appendLog("Bluetooth server stopped", LogLevel.INFO)
+        appendLog(getString(R.string.log_main_bluetooth_server_stopped), LogLevel.INFO)
     }
 
     public fun clearSocketFiles() {
@@ -265,17 +265,17 @@ class MainActivity : AppCompatActivity() {
             NETWORK_BT  -> btBridge.start()
             NETWORK_BLE -> bleBridge.start()
             NETWORK_IP  -> ntBridge.start()
-            else -> appendLog("Network mode not implemented", LogLevel.DEBUG)
+            else -> appendLog(getString(R.string.log_main_network_mode_not_implemented), LogLevel.DEBUG)
         }
     }
 
     fun onDataReceived(data: ByteArray, size_used: Int) {
-        appendLog("recv : \n" + logView.dataLogFormat(data, size_used), LogLevel.DEBUG)
+        appendLog(getString(R.string.log_main_data_received, logView.dataLogFormat(data, size_used)), LogLevel.DEBUG)
         statsView.onDataReceived(data, size_used)
     }
 
     fun onDataSent(data: ByteArray, size_used: Int) {
-        appendLog("send : \n" + logView.dataLogFormat(data, size_used), LogLevel.DEBUG)
+        appendLog(getString(R.string.log_main_data_sent, logView.dataLogFormat(data, size_used)), LogLevel.DEBUG)
         statsView.onDataSent(data, size_used)
     }
 
