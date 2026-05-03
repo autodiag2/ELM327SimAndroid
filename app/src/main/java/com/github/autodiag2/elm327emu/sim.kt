@@ -71,12 +71,15 @@ class ConfigAdapter(
 
         activity.exportLauncher.launch(intent)
     }
+    private fun updateListState() {
+        selectedItems.clear()
+        notifyDataSetChanged()
+    }
 
     fun onExportFile() {
         val config = selectedItems.firstOrNull() ?: return
         exportConfigToFile(config)
-        selectedItems.clear()
-        refresh()
+        updateListState()
     }
 
     fun onDelete() {
@@ -84,7 +87,7 @@ class ConfigAdapter(
             config.file.delete()
         }
         Toast.makeText(activity, getString(activity, R.string.sim_config_deleted), Toast.LENGTH_SHORT).show()
-        selectedItems.clear()
+        updateListState()
         refresh()
     }
     fun onExport() {
@@ -98,8 +101,7 @@ class ConfigAdapter(
         clipboard.setPrimaryClip(clip)
 
         Toast.makeText(activity, getString(activity, R.string.sim_config_exported), Toast.LENGTH_SHORT).show()
-        selectedItems.clear()
-        refresh()
+        updateListState()
     }
     class VH(view: View) : RecyclerView.ViewHolder(view) {
         val name: TextView = view.findViewById(R.id.config_name)
@@ -119,6 +121,11 @@ class ConfigAdapter(
 
         holder.name.text = item.name
         holder.ecus.text = "ECUs: ${item.ecuCount}"
+
+        val isSelected = selectedItems.contains(item)
+
+        holder.itemView.isActivated = isSelected
+        holder.itemView.alpha = if (isSelected) 0.6f else 1f
 
         holder.itemView.setOnClickListener {
             if (selectedItems.isNotEmpty()) {
