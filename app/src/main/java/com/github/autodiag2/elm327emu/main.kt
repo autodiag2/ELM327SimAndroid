@@ -17,6 +17,7 @@ import android.content.Context
 import android.view.View
 import android.bluetooth.BluetoothManager
 import android.widget.CheckBox
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.content.res.AppCompatResources
@@ -54,8 +55,28 @@ class MainActivity : AppCompatActivity() {
     lateinit var statsView: StatsView
 
     private val screenStack = ArrayDeque<View>()
-
+    var pendingExportConfig: CarConfigSummary? = null
     public val prefs by lazy { getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
+
+    val exportLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+
+            val uri = result.data?.data ?: return@registerForActivityResult
+            val config = pendingExportConfig ?: return@registerForActivityResult
+
+            contentResolver.openOutputStream(uri)?.use { output ->
+                val data = config.file.readBytes()
+                output.write(data)
+            }
+
+            Toast.makeText(
+                this,
+                getString(R.string.sim_config_exported_file),
+                Toast.LENGTH_SHORT
+            ).show()
+
+            pendingExportConfig = null
+        }
 
     // -------------------------------
     // Navigation handling

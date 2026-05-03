@@ -1,5 +1,6 @@
 package com.github.autodiag2.elm327emu
 
+import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -44,19 +45,21 @@ class ConfigAdapter(
         return onClick(config)
     }
 
+    fun exportConfigToFile(config: CarConfigSummary) {
+        activity.pendingExportConfig = config
+
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "application/json"
+            putExtra(Intent.EXTRA_TITLE, config.file.name)
+        }
+
+        activity.exportLauncher.launch(intent)
+    }
+
     fun onExportFile() {
         val config = selectedItems.first()
-        val exportDir = File(activity.getExternalFilesDir(null), "exports")
-        if (!exportDir.exists()) exportDir.mkdirs()
-
-        val outFile = File(exportDir, config.file.name)
-        config.file.copyTo(outFile, overwrite = true)
-
-        Toast.makeText(
-            activity,
-            getString(activity, R.string.sim_config_exported_file),
-            Toast.LENGTH_SHORT
-        ).show()
+        exportConfigToFile(config)
         selectedItems.clear()
         refresh()
     }
@@ -127,7 +130,7 @@ class ConfigAdapter(
         }
     }
     fun refresh() {
-        val configs = items as MutableList<CarConfigSummary>
+        val configs = items
         items.clear()
 
         val dir = File(activity.filesDir, "config")
