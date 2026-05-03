@@ -87,7 +87,7 @@ class SimView(
                 return@setOnClickListener
             }
 
-            buildAddECUToGUI(address, getString(R.string.sim_main_ecu_config_ecu_name), type)
+            buildAddECUToGUI(address, getString(R.string.sim_main_ecu_config_ecu_name, type), type)
         }
 
         var running = false
