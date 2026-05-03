@@ -125,6 +125,10 @@ class SimView(
     }
 
     fun saveConfig(path: String) {
+        File(path).writeText(saveConfigAsJson())
+    }
+
+    fun saveConfigAsJson(): String {
         val root = JSONArray()
 
         for (ecu in ecus) {
@@ -171,15 +175,17 @@ class SimView(
 
             root.put(obj)
         }
-
-        File(path).writeText(root.toString(2))
+        return root.toString(2)
     }
 
     fun loadConfig(path: String) {
         val file = File(path)
         if (!file.exists()) return
+        loadConfigJSON(file.readText())
+    }
 
-        val root = JSONArray(file.readText())
+    fun loadConfigJSON(json_text: String) {
+        val root = JSONArray(json_text)
 
         // reset current state
         ecuClear()

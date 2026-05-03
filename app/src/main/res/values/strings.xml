@@ -57,6 +57,8 @@
     <string name="sim_load_config_menu_load_latest">Load latest</string>
     <string name="sim_load_config_menu_load">Load</string>
     <string name="sim_load_config_menu_save_as">Save as ...</string>
+    <string name="sim_load_config_menu_import_clipboard">Import from clipboard</string>
+    <string name="sim_load_config_menu_export_clipboard">Export to clipboard</string>
     <string name="sim_load_config_title">Load Car Configuration</string>
     <string name="sim_load_config_load_latest_success">Loaded latest config: %1$s</string>
     <string name="sim_load_config_load_latest_no_config">No config found</string>

@@ -21,4 +21,14 @@
         android:title="@string/sim_load_config_menu_save_as"
         android:showAsAction="never" />
 
+    <item
+        android:id="@+id/action_import_clipboard"
+        android:title="@string/sim_load_config_menu_import_clipboard"
+        android:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_export_clipboard"
+        android:title="@string/sim_load_config_menu_export_clipboard"
+        android:showAsAction="never" />
+
 </menu>

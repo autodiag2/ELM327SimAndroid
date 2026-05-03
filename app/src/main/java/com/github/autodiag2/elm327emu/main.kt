@@ -117,7 +117,7 @@ class MainActivity : AppCompatActivity() {
         contentFrame.addView(view)
     }
 
-    lateinit var lastConfigName: String
+    var lastConfigName: String = "car"
 
     fun showSaveAsDialog() {
         val input = android.widget.EditText(this).apply {
@@ -265,6 +265,41 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     appendLog(getString(R.string.sim_load_config_load_latest_no_config), LogLevel.ERROR)
                 }
+                true
+            }
+
+            R.id.action_import_clipboard -> {
+
+                val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                val clip = clipboard.primaryClip
+
+                val text = clip?.getItemAt(0)?.text?.toString()
+
+                if (text.isNullOrBlank()) {
+                    return true
+                }
+
+                try {
+                    simView.loadConfigJSON(text)
+                } catch (e: Exception) {
+                }
+
+                true
+            }
+
+            R.id.action_export_clipboard -> {
+
+                try {
+                    val json = simView.saveConfigAsJson()
+
+                    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+                    val clip = android.content.ClipData.newPlainText("ECU Config", json)
+
+                    clipboard.setPrimaryClip(clip)
+
+                } catch (e: Exception) {
+                }
+
                 true
             }
 
