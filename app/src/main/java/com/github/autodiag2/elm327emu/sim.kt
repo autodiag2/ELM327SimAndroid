@@ -93,15 +93,26 @@ class SimView(
 
         val configs = mutableListOf<CarConfigSummary>()
 
+        val adapter = ConfigAdapter(configs) { config ->
+            onConfigSelected(config.file)
+        }
+
+        recycler.adapter = adapter
+
         fun refresh() {
             configs.clear()
 
             val dir = File(activity.filesDir, "config")
             if (!dir.exists()) dir.mkdirs()
 
-            dir.listFiles { f -> f.extension == "json" }?.forEach { file ->
+            val files = dir.listFiles { f -> f.extension == "json" }
+                ?.sortedByDescending { it.lastModified() } // latest first
+
+            files?.forEach { file ->
                 try {
-                    val json = JSONArray(file.readText())
+                    val text = file.readText()
+                    val json = JSONArray(text)
+
                     val ecuCount = json.length()
                     val name = file.nameWithoutExtension
 
@@ -112,15 +123,22 @@ class SimView(
                             ecuCount = ecuCount
                         )
                     )
-                } catch (_: Exception) {}
+
+                } catch (e: Exception) {
+                    // visible feedback instead of silent failure
+                    e.printStackTrace()
+                    Toast.makeText(
+                        activity,
+                        getString(R.string.sim_load_config_error_invalid, file.name),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
+
+            adapter.notifyDataSetChanged()
         }
 
         refresh()
-
-        recycler.adapter = ConfigAdapter(configs) { config ->
-            onConfigSelected(config.file)
-        }
 
         return view
     }
