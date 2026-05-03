@@ -32,6 +32,7 @@ class StatsView(
         responsesText = findViewById(R.id.stats_responses)
         qpsText = findViewById(R.id.stats_qps)
         topContainer = findViewById(R.id.stats_top_requests)
+        maybeUpdateUI()
     }
 
     private fun runOnUi(block: () -> Unit) {
