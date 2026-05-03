@@ -158,4 +158,6 @@
     <string name="signal_SAEJ1979_abs_switch_present">Présence interrupteur ABS</string>
     <string name="signal_SAEJ1979_abs_switch">Interrupteur ABS</string>
     <string name="sim_load_config_item_name">Nom ECU :</string>
+    <string name="sim_load_config_menu_clear">Effacer</string>
+    <string name="sim_load_config_menu_save_as">Enregistrer sous...</string>
 </resources>
