@@ -1,0 +1,120 @@
+<resources>
+    <string name="app_name">ELM327模拟器</string>
+    <string name="open">打开</string>
+    <string name="close">关闭</string>
+    <string name="app_title">ELM327模拟器</string>
+
+    <string name="log_btnDownload">下载日志</string>
+    <string name="log_btnSave">另存为...</string>
+    <string name="log_btnClear">清空日志</string>
+    <string name="log_btnUp">↑</string>
+    <string name="log_btnDown">↓</string>
+
+    <string name="settings_btLabel">蓝牙设备名称</string>
+    <string name="settings_btHint">OBD II</string>
+    <string name="settings_btApply">设置</string>
+    <string name="settings_logLevelLabel">日志级别</string>
+    <string name="settings_networkLabel">网络模式</string>
+    <string name="settings_elmTitle">ELM327参数</string>
+    <string name="settings_missing_permission">缺少权限</string>
+
+    <string name="settings_network_bluetooth">蓝牙</string>
+    <string name="settings_network_ble">蓝牙低功耗 (4.0+)</string>
+    <string name="settings_network_network">网络</string>
+
+    <string name="sim_main_ecu_config_gui_add_signal">添加</string>
+    <string name="sim_main_ecu_config_gui_dtc_entry_validate">添加</string>
+    <string name="sim_main_ecu_config_gui_mil_state">MIL状态</string>
+    <string name="sim_main_ecu_config_gui_dtcs_cleared">故障码已清除</string>
+
+    <string name="sim_main_ecu_config_gui_vin">VIN：</string>
+    <string name="sim_main_ecu_config_gui_ecu_name_label">ECU名称：</string>
+    <string name="sim_main_ecu_config_gui_ecu_name">来自GUI的ECU</string>
+
+    <string name="sim_main_ecu_config_gui_vin_entry">VF7RD5FV8FL507366</string>
+    <string name="sim_main_ecu_config_gui_dtc_entry">P0103</string>
+
+    <string name="sim_main_ecu_config_gui_remove_signal">删除</string>
+    <string name="sim_main_ecu_config_gui_remove_dtc">X</string>
+
+    <string name="sim_main_ecu_config_script_copy">复制</string>
+    <string name="sim_main_ecu_config_script_paste">粘贴</string>
+    <string name="sim_main_ecu_config_script_apply">应用脚本</string>
+    <string name="sim_main_ecu_config_script_clear">清空</string>
+    <string name="sim_main_ecu_config_script_title">Lua ECU脚本</string>
+
+    <string name="sim_main_ecu_config_script_lua_missing_function">Lua错误：缺少函数 "response(req)"</string>
+    <string name="sim_main_ecu_config_script_lua_load_error">Lua加载错误：%1$s</string>
+    <string name="sim_main_ecu_config_script_lua_response_error">Lua错误：response函数不可用</string>
+    <string name="sim_main_ecu_config_script_lua_response_error_missing_table">Lua错误：response必须返回表</string>
+    <string name="sim_main_ecu_config_script_lua_response_error_non_number">Lua错误：索引%1$d处非数字</string>
+    <string name="sim_main_ecu_config_script_lua_response_error_out_of_range">Lua错误：索引%1$d超出范围</string>
+    <string name="sim_main_ecu_config_script_lua_runtime_error">Lua运行时错误：%1$s</string>
+    <string name="sim_main_ecu_config_script_lua_load_parse_error">Lua解析错误：%1$s</string>
+    <string name="sim_main_ecu_config_script_lua_parse_success">Lua解析成功</string>
+    <string name="sim_main_ecu_config_script_copy_success">已复制</string>
+
+    <string name="sim_main_ecu_config_ecu_name">来自 %1$s</string>
+    <string name="sim_main_ecu_row_title">ECU 0xE8（名称）</string>
+    <string name="sim_main_ecu_row_open">→</string>
+
+    <string name="sim_main_add_ecu">添加ECU (+)</string>
+    <string name="sim_main_start_sim">启动模拟</string>
+    <string name="sim_main_stop_sim">停止模拟</string>
+
+    <string name="sim_main_ecu_config_invalid_hex_id">无效的十六进制ID</string>
+
+    <string name="stats_requests">请求：%1$d</string>
+    <string name="stats_responses">响应：%1$d</string>
+    <string name="stats_qps">查询/秒：%.2f</string>
+    <string name="stats_top_requests">热门请求：</string>
+
+    <string name="main_drawer_sim">模拟</string>
+    <string name="main_drawer_log">日志</string>
+    <string name="main_drawer_stats">统计</string>
+    <string name="main_drawer_settings">设置</string>
+
+    <string name="sim_main_ecu_row_delete">删除ECU</string>
+
+    <string name="log_ble_connected">%1$s 已连接</string>
+    <string name="log_ble_disconnected">%1$s 已断开</string>
+    <string name="log_ble_unknown_device_address">未知设备地址</string>
+    <string name="log_ble_gatt_service_added">已添加GATT服务</string>
+    <string name="log_ble_gatt_service_add_failed">GATT服务添加失败：%1$d</string>
+    <string name="log_ble_gatt_characteristic_write_failed">GATT写入失败：%1$s</string>
+
+    <string name="log_ble_advertising_started">BLE广播已启动</string>
+    <string name="log_ble_advertising_failed">BLE广播失败：%1$d</string>
+    <string name="log_ble_advertising_data">广播数据（%1$d字节）</string>
+    <string name="log_ble_advertising_not_supported">不支持BLE广播</string>
+
+    <string name="log_bt_waiting_for_connection">等待连接...</string>
+    <string name="log_bt_client_connected">客户端已连接：%1$s</string>
+    <string name="log_bt_loopback_connected">回环连接成功</string>
+
+    <string name="log_bt_cancelled">已取消</string>
+    <string name="log_bt_error">错误：%1$s</string>
+    <string name="log_bt_connection_closed">蓝牙连接已关闭</string>
+
+    <string name="log_main_bluetooth_server_stopped">蓝牙服务器已停止</string>
+    <string name="log_main_network_mode_not_implemented">网络模式未实现</string>
+
+    <string name="log_main_data_received">接收：\n%1$s</string>
+    <string name="log_main_data_sent">发送：\n%1$s</string>
+
+    <string name="log_network_server_listening">服务器监听端口 %1$d</string>
+    <string name="log_network_client_connected">客户端连接：%1$s:%2$d</string>
+
+    <string name="log_network_error">错误：%1$s</string>
+    <string name="log_network_connection_closed">网络连接已关闭</string>
+
+    <!-- Signals -->
+    <string name="signal_SAEJ1979_number_of_dtc">故障码数量</string>
+    <string name="signal_SAEJ1979_mil_status">MIL状态</string>
+    <string name="signal_SAEJ1979_engine_load">发动机负荷</string>
+    <string name="signal_SAEJ1979_coolant_temp">冷却液温度</string>
+    <string name="signal_SAEJ1979_engine_speed">发动机转速</string>
+    <string name="signal_SAEJ1979_vehicle_speed">车速</string>
+    <string name="signal_SAEJ1979_throttle_position">节气门位置</string>
+    <string name="signal_SAEJ1979_odometer">里程表</string>
+</resources>
