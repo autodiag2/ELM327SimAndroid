@@ -11,6 +11,18 @@ import android.widget.TextView
 import androidx.core.widget.addTextChangedListener
 import android.content.Context
 
+fun getName(context: Context, signal: SimSignal): String {
+    val key = "signal_" + signal.path.replace(".", "_")
+
+    val resId = context.resources.getIdentifier(
+        key,
+        "string",
+        context.packageName
+    )
+
+    return if (resId != 0) context.getString(resId) else signal.path
+}
+
 fun getString(context: Context,resId: Int, vararg formatArgs: Any?): String {
     return context.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
 }
@@ -40,7 +52,7 @@ fun buildEcuGuiConfig(address: Int, name: String, activity: MainActivity): EcuCo
         addedSignalPaths.add(signal.path)
 
         val title = TextView(activity).apply {
-            text = if (signal.unit.isNullOrBlank()) signal.name else "${signal.name} (${signal.unit})"
+            text = if (signal.unit.isNullOrBlank()) getName(activity, signal) else "${getName(activity, signal)} (${signal.unit})"
         }
 
         val step = if (signal.step <= 0.0) 1.0 else signal.step
@@ -101,7 +113,7 @@ fun buildEcuGuiConfig(address: Int, name: String, activity: MainActivity): EcuCo
     val spinnerAdapter = ArrayAdapter(
         activity,
         android.R.layout.simple_spinner_item,
-        spinnerSignals.map { it.name }
+        spinnerSignals.map { getName(activity, it) }
     ).apply {
         setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
     }
