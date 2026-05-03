@@ -370,6 +370,11 @@ class MainActivity : AppCompatActivity() {
                 simsViewAdapter.onOpenSimConfig()
                 true
             }
+            R.id.action_share -> {
+                val simsViewAdapter = simView.recycler.adapter as ConfigAdapter
+                simsViewAdapter.shareConfigAsText()
+                true
+            }
 
             else -> super.onOptionsItemSelected(item)
         }

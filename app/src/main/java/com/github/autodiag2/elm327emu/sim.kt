@@ -45,6 +45,21 @@ class ConfigAdapter(
         return onClick(config)
     }
 
+    fun shareConfigAsText() {
+        val config = selectedItems.firstOrNull() ?: return
+        val text = config.file.readText()
+
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, config.name)
+            putExtra(Intent.EXTRA_TEXT, text)
+        }
+
+        activity.startActivity(
+            Intent.createChooser(intent, "Share config")
+        )
+    }
+
     fun exportConfigToFile(config: CarConfigSummary) {
         activity.pendingExportConfig = config
 

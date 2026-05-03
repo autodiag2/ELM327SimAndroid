@@ -4,33 +4,27 @@
     <group android:id="@+id/action_menu_group_sim_config">
         <item
             android:id="@+id/action_clear"
-            android:title="@string/sim_load_config_menu_clear"
-            android:showAsAction="never" />
+            android:title="@string/sim_load_config_menu_clear" />
 
         <item
             android:id="@+id/action_load_latest"
-            android:title="@string/sim_load_config_menu_load_latest"
-            android:showAsAction="never" />
+            android:title="@string/sim_load_config_menu_load_latest" />
 
         <item
             android:id="@+id/action_load"
-            android:title="@string/sim_load_config_menu_load"
-            android:showAsAction="never" />
+            android:title="@string/sim_load_config_menu_load" />
 
         <item
             android:id="@+id/action_save_as"
-            android:title="@string/sim_load_config_menu_save_as"
-            android:showAsAction="never" />
+            android:title="@string/sim_load_config_menu_save_as" />
 
         <item
             android:id="@+id/action_import_clipboard"
-            android:title="@string/sim_load_config_menu_import_clipboard"
-            android:showAsAction="never" />
+            android:title="@string/sim_load_config_menu_import_clipboard" />
 
         <item
             android:id="@+id/action_export_clipboard"
-            android:title="@string/sim_load_config_menu_export_clipboard"
-            android:showAsAction="never" />
+            android:title="@string/sim_load_config_menu_export_clipboard" />
     </group>
 
     <group android:id="@+id/action_menu_group_sims">
@@ -49,6 +43,10 @@
         <item
             android:id="@+id/action_open"
             android:title="@string/sim_config_open_config" />
+
+        <item
+            android:id="@+id/action_share"
+            android:title="@string/sim_config_share" />
 
     </group>
 
