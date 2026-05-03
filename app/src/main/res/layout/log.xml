@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -10,34 +9,41 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <!-- Top buttons -->
-        <LinearLayout
-            android:id="@+id/buttonsRow"
+        <!-- Scrollable top buttons -->
+        <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center"
-            android:background="@drawable/toolbar_with_border"
-            android:padding="5dp">
+            android:fillViewport="true"
+            android:scrollbars="none">
 
-            <Button
-                android:id="@+id/btnDownload"
+            <LinearLayout
+                android:id="@+id/buttonsRow"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/log_btnDownload" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="@drawable/toolbar_with_border"
+                android:padding="5dp">
 
-            <Button
-                android:id="@+id/btnSave"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_btnSave" />
+                <Button
+                    android:id="@+id/btnDownload"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/log_btnDownload" />
 
-            <Button
-                android:id="@+id/btnClear"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/log_btnClear" />
-        </LinearLayout>
+                <Button
+                    android:id="@+id/btnSave"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/log_btnSave" />
+
+                <Button
+                    android:id="@+id/btnClear"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/log_btnClear" />
+            </LinearLayout>
+        </HorizontalScrollView>
 
         <!-- RecyclerView -->
         <androidx.recyclerview.widget.RecyclerView
