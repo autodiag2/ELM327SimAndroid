@@ -113,16 +113,21 @@ class MainActivity : AppCompatActivity() {
     }
 
     private var isSimScreenActive = true
+    private var isSimsScreenActive = false
+
     private fun show(view: View) {
         contentFrame.removeAllViews()
         contentFrame.addView(view)
         isSimScreenActive = (view == simView)
+        isSimsScreenActive = (view.findViewById<View>(R.id.load_config_root) != null)
 
         invalidateOptionsMenu()
     }
+
     override fun onPrepareOptionsMenu(menu: android.view.Menu): Boolean {
 
         menu.setGroupVisible(R.id.action_menu_group_sim_config, isSimScreenActive)
+        menu.setGroupVisible(R.id.action_menu_group_sims, isSimsScreenActive)
 
         return super.onPrepareOptionsMenu(menu)
     }

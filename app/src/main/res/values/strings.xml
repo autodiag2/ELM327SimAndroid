@@ -67,6 +67,12 @@
     <string name="sim_load_config_save_cancel">Cancel</string>
     <string name="sim_load_config_log_save_success">Saved config: %1$s</string>
     <string name="sim_load_config_error_invalid">Invalid config: %1$s</string>
+    <string name="sim_config_delete">Delete</string>
+    <string name="sim_config_export">Export (clipboard)</string>
+    <string name="sim_config_export_file">Export as file</string>
+    <string name="sim_config_deleted">Config deleted</string>
+    <string name="sim_config_exported">Exported to clipboard</string>
+    <string name="sim_config_exported_file">File exported</string>
     <string name="stats_requests">Requests: %1$d</string>
     <string name="stats_responses">Responses: %1$d</string>
     <string name="stats_qps">Queries/s: %.2f</string>

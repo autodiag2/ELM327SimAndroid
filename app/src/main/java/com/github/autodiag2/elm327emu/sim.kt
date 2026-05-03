@@ -33,7 +33,11 @@ data class CarConfigSummary(
 )
 class ConfigAdapter(
     private val items: List<CarConfigSummary>,
-    private val onClick: (CarConfigSummary) -> Unit
+    private val activity: MainActivity,
+    private val onClick: (CarConfigSummary) -> Unit,
+    private val onDelete: (CarConfigSummary) -> Unit,
+    private val onExport: (CarConfigSummary) -> Unit,
+    private val onExportFile: (CarConfigSummary) -> Unit
 ) : RecyclerView.Adapter<ConfigAdapter.VH>() {
 
     class VH(view: View) : RecyclerView.ViewHolder(view) {
@@ -58,6 +62,50 @@ class ConfigAdapter(
         holder.itemView.setOnClickListener {
             onClick(item)
         }
+
+        holder.itemView.setOnLongClickListener { view ->
+            // TODO
+            true
+        }
+    }
+    fun refresh() {
+        val configs = items as MutableList<CarConfigSummary>
+        items.clear()
+
+        val dir = File(activity.filesDir, "config")
+        if (!dir.exists()) dir.mkdirs()
+
+        val files = dir.listFiles { f -> f.extension == "json" }
+            ?.sortedByDescending { it.lastModified() } // latest first
+
+        files?.forEach { file ->
+            try {
+                val text = file.readText()
+                val json = JSONArray(text)
+
+                val ecuCount = json.length()
+                val name = file.nameWithoutExtension
+
+                configs.add(
+                    CarConfigSummary(
+                        file = file,
+                        name = name,
+                        ecuCount = ecuCount
+                    )
+                )
+
+            } catch (e: Exception) {
+                // visible feedback instead of silent failure
+                e.printStackTrace()
+                Toast.makeText(
+                    activity,
+                    getString(activity, R.string.sim_load_config_error_invalid, file.name),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+
+        notifyDataSetChanged()
     }
 }
 data class EcuConfig(
@@ -73,6 +121,7 @@ class SimView(
     lateinit var ecuListView: ViewGroup
     val ecus = mutableListOf<EcuConfig>()
     lateinit var ecuAddSelect: Spinner
+    lateinit var recycler: RecyclerView
 
     init {
         LayoutInflater.from(context).inflate(R.layout.sim_main, this, true)
@@ -88,57 +137,50 @@ class SimView(
             false
         )
 
-        val recycler = view.findViewById<RecyclerView>(R.id.config_list)
+        recycler = view.findViewById(R.id.config_list)
         recycler.layoutManager = LinearLayoutManager(activity)
 
         val configs = mutableListOf<CarConfigSummary>()
 
-        val adapter = ConfigAdapter(configs) { config ->
-            onConfigSelected(config.file)
-        }
+        val adapter = ConfigAdapter(configs, activity,
+            onDelete = { config ->
+                config.file.delete()
+                Toast.makeText(activity, getString(R.string.sim_config_deleted), Toast.LENGTH_SHORT).show()
+                val adapter = recycler.adapter as ConfigAdapter
+                adapter.refresh()
+            },
+            onClick = { config ->
+                onConfigSelected(config.file)
+            },
+            onExport = { config ->
+                val text = config.file.readText()
+
+                val clipboard = activity.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
+                        as android.content.ClipboardManager
+
+                val clip = android.content.ClipData.newPlainText(config.name, text)
+                clipboard.setPrimaryClip(clip)
+
+                Toast.makeText(activity, getString(R.string.sim_config_exported), Toast.LENGTH_SHORT).show()
+            },
+            onExportFile = { config ->
+                val exportDir = File(activity.getExternalFilesDir(null), "exports")
+                if (!exportDir.exists()) exportDir.mkdirs()
+
+                val outFile = File(exportDir, config.file.name)
+                config.file.copyTo(outFile, overwrite = true)
+
+                Toast.makeText(
+                    activity,
+                    getString(R.string.sim_config_exported_file),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        )
 
         recycler.adapter = adapter
 
-        fun refresh() {
-            configs.clear()
-
-            val dir = File(activity.filesDir, "config")
-            if (!dir.exists()) dir.mkdirs()
-
-            val files = dir.listFiles { f -> f.extension == "json" }
-                ?.sortedByDescending { it.lastModified() } // latest first
-
-            files?.forEach { file ->
-                try {
-                    val text = file.readText()
-                    val json = JSONArray(text)
-
-                    val ecuCount = json.length()
-                    val name = file.nameWithoutExtension
-
-                    configs.add(
-                        CarConfigSummary(
-                            file = file,
-                            name = name,
-                            ecuCount = ecuCount
-                        )
-                    )
-
-                } catch (e: Exception) {
-                    // visible feedback instead of silent failure
-                    e.printStackTrace()
-                    Toast.makeText(
-                        activity,
-                        getString(R.string.sim_load_config_error_invalid, file.name),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-
-            adapter.notifyDataSetChanged()
-        }
-
-        refresh()
+        adapter.refresh()
 
         return view
     }
