@@ -112,9 +112,19 @@ class MainActivity : AppCompatActivity() {
         showBackArrow()
     }
 
+    private var isSimScreenActive = true
     private fun show(view: View) {
         contentFrame.removeAllViews()
         contentFrame.addView(view)
+        isSimScreenActive = (view == simView)
+
+        invalidateOptionsMenu()
+    }
+    override fun onPrepareOptionsMenu(menu: android.view.Menu): Boolean {
+
+        menu.setGroupVisible(R.id.action_menu_group_sim_config, isSimScreenActive)
+
+        return super.onPrepareOptionsMenu(menu)
     }
 
     var lastConfigName: String = "car"
