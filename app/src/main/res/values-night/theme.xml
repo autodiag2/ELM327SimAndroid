@@ -15,6 +15,11 @@
         <item name="android:editTextStyle">@style/Solarized.EditText.Dark</item>
         <item name="android:buttonStyle">@style/Solarized.Button.Dark</item>
         <item name="android:checkboxStyle">@style/Solarized.CheckBox.Dark</item>
+        <item name="android:alertDialogTheme">@style/Solarized.TextView.AlertDialog.Dark</item>
+    </style>
+
+    <style name="Solarized.TextView.AlertDialog.Dark" parent="Theme.AppCompat.Dialog.Alert">
+        <item name="android:background">@color/sol_base02</item>
     </style>
 
     <style name="Solarized.TextView.Dark" parent="TextAppearance.AppCompat">
