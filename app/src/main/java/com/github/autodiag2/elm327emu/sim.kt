@@ -83,6 +83,9 @@ class ConfigAdapter(
     }
 
     fun onDelete() {
+        if ( selectedItems.firstOrNull() == null ) {
+            return
+        }
         for(config in selectedItems) {
             config.file.delete()
         }
