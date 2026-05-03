@@ -42,8 +42,8 @@
     <string name="sim_main_ecu_config_script_lua_load_error">Errore caricamento Lua: %1$s</string>
     <string name="sim_main_ecu_config_script_lua_response_error">Errore Lua: funzione response non disponibile</string>
     <string name="sim_main_ecu_config_script_lua_response_error_missing_table">Errore Lua: response deve restituire una tabella</string>
-    <string name="sim_main_ecu_config_script_lua_response_error_non_number">Errore Lua: valore non numerico all'indice %1$d</string>
-    <string name="sim_main_ecu_config_script_lua_response_error_out_of_range">Errore Lua: valore fuori range all'indice %1$d</string>
+    <string name="sim_main_ecu_config_script_lua_response_error_non_number">Errore Lua: valore non numerico all indice %1$d</string>
+    <string name="sim_main_ecu_config_script_lua_response_error_out_of_range">Errore Lua: valore fuori range all indice %1$d</string>
     <string name="sim_main_ecu_config_script_lua_runtime_error">Errore runtime Lua: %1$s</string>
     <string name="sim_main_ecu_config_script_lua_load_parse_error">Errore parsing Lua: %1$s</string>
     <string name="sim_main_ecu_config_script_lua_parse_success">Parsing Lua riuscito</string>
