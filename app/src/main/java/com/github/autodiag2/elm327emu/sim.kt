@@ -39,6 +39,11 @@ class ConfigAdapter(
 
     private val selectedItems = mutableSetOf<CarConfigSummary>()
 
+    fun onOpenSimConfig() {
+        val config = selectedItems.first()
+        return onClick(config)
+    }
+
     fun onExportFile() {
         val config = selectedItems.first()
         val exportDir = File(activity.getExternalFilesDir(null), "exports")

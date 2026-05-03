@@ -344,6 +344,11 @@ class MainActivity : AppCompatActivity() {
                 simsViewAdapter.onExportFile()
                 true
             }
+            R.id.action_open -> {
+                val simsViewAdapter = simView.recycler.adapter as ConfigAdapter
+                simsViewAdapter.onOpenSimConfig()
+                true
+            }
 
             else -> super.onOptionsItemSelected(item)
         }

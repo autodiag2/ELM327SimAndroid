@@ -73,6 +73,7 @@
     <string name="sim_config_deleted">Config deleted</string>
     <string name="sim_config_exported">Exported to clipboard</string>
     <string name="sim_config_exported_file">File exported</string>
+    <string name="sim_config_open_config">Load</string>
     <string name="stats_requests">Requests: %1$d</string>
     <string name="stats_responses">Responses: %1$d</string>
     <string name="stats_qps">Queries/s: %.2f</string>
