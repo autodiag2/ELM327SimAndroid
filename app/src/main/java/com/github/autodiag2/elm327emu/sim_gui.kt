@@ -10,6 +10,8 @@ import android.widget.Spinner
 import android.widget.TextView
 import androidx.core.widget.addTextChangedListener
 import android.content.Context
+import android.view.LayoutInflater
+import androidx.constraintlayout.widget.ConstraintLayout
 
 fun getName(context: Context, signal: SimSignal): String {
     val key = "signal_" + signal.path.replace(".", "_")
@@ -26,12 +28,22 @@ fun getName(context: Context, signal: SimSignal): String {
 fun getString(context: Context,resId: Int, vararg formatArgs: Any?): String {
     return context.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
 }
+class EcuGuiView(
+    private val activity: MainActivity
+) : ConstraintLayout(activity) {
 
-fun buildEcuGuiConfig(address: Int, name: String, activity: MainActivity): EcuConfig {
-    val view = activity.layoutInflater.inflate(R.layout.sim_main_ecu_config_gui, activity.contentFrame, false)
     val allSignals = libautodiag.getSimSignals().sortedBy { it.name.lowercase() }
     val addedSignalPaths = linkedSetOf<String>()
-    val dynamicSignalsContainer = view.findViewById<LinearLayout>(R.id.signal_container)
+    var dynamicSignalsContainer: LinearLayout
+    val dtcs = mutableListOf<String>()
+    var dtcContainer: LinearLayout
+
+    init {
+        LayoutInflater.from(activity).inflate(R.layout.sim_main_ecu_config_gui, this, true)
+        dynamicSignalsContainer = findViewById(R.id.signal_container)
+        dtcContainer = findViewById(R.id.dtc_list)
+        addDefaultSignals()
+    }
 
     fun getSignalInitialValue(signal: SimSignal): Double {
         val v = libautodiag.getSignalValue(signal.path)
@@ -41,8 +53,9 @@ fun buildEcuGuiConfig(address: Int, name: String, activity: MainActivity): EcuCo
         return signal.min
     }
 
-    fun setSignalValue(signal: SimSignal, value: Double) {
-        SimGeneratorGui.setSignalValue(signal.path, value)
+    fun setSignalValue(path: String, value: Double) {
+        SimGeneratorGui.setSignalValue(path, value)
+        libautodiag.setSignalValue(path, value)
     }
 
     fun addSignalWidget(signal: SimSignal) {
@@ -73,14 +86,14 @@ fun buildEcuGuiConfig(address: Int, name: String, activity: MainActivity): EcuCo
                 override fun onProgressChanged(s: SeekBar, p: Int, fromUser: Boolean) {
                     val v = (p + minI).toDouble() / scale
                     valueText.text = if (signal.unit.isNullOrBlank()) "$v" else "$v ${signal.unit}"
-                    setSignalValue(signal, v)
+                    setSignalValue(signal.path, v)
                 }
                 override fun onStartTrackingTouch(s: SeekBar) {}
                 override fun onStopTrackingTouch(s: SeekBar) {}
             })
         }
 
-        setSignalValue(signal, initialI.toDouble() / scale)
+        setSignalValue(signal.path, initialI.toDouble() / scale)
 
         val removeBtn = Button(activity).apply {
             text = getString(activity, R.string.sim_main_ecu_config_gui_remove_signal)
@@ -108,36 +121,27 @@ fun buildEcuGuiConfig(address: Int, name: String, activity: MainActivity): EcuCo
         dynamicSignalsContainer.addView(block)
     }
 
-    val signalSpinner = view.findViewById<Spinner>(R.id.signal_choice)
-    val spinnerSignals = allSignals
-    val spinnerAdapter = ArrayAdapter(
-        activity,
-        android.R.layout.simple_spinner_item,
-        spinnerSignals.map { getName(activity, it) }
-    ).apply {
-        setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-    }
-    signalSpinner.adapter = spinnerAdapter
-
-    view.findViewById<Button>(R.id.signal_add).apply {
-        setOnClickListener {
-            val index = signalSpinner.selectedItemPosition
-
-            if (index in spinnerSignals.indices) {
-                val signal = spinnerSignals[index]
-                addSignalWidget(signal)
-            }
-        }
+    fun addSignalByPath(path: String) {
+        allSignals.firstOrNull { it.path == path }?.let { addSignalWidget(it) }
     }
 
-    allSignals.firstOrNull { it.path == "SAEJ1979.engine_speed" }?.let { addSignalWidget(it) }
-    allSignals.firstOrNull { it.path == "SAEJ1979.vehicle_speed" }?.let { addSignalWidget(it) }
-    allSignals.firstOrNull { it.path == "SAEJ1979.coolant_temp" }?.let { addSignalWidget(it) }
+    fun addDefaultSignals() {
+        addSignalByPath("SAEJ1979.engine_speed")
+        addSignalByPath("SAEJ1979.vehicle_speed")
+        addSignalByPath("SAEJ1979.coolant_temp")
+    }
+    fun clearSignals() {
+        dynamicSignalsContainer.removeAllViews()
+        addedSignalPaths.clear()
+    }
 
-    val dtcs = mutableListOf<String>()
-    val dtcContainer = view.findViewById<LinearLayout>(R.id.dtc_list)
+    fun clearDTCs() {
+        dtcs.clear()
+        SimGeneratorGui.dtcs.clear()
+        dtcContainer.removeAllViews()
+    }
 
-    fun addDtcRow(code: String) {
+    fun addDtcByCode(code: String) {
         if (code.isBlank()) return
 
         dtcs.add(code)
@@ -166,6 +170,32 @@ fun buildEcuGuiConfig(address: Int, name: String, activity: MainActivity): EcuCo
 
         dtcContainer.addView(row)
     }
+}
+
+fun buildEcuGuiConfig(address: Int, name: String, activity: MainActivity): EcuConfig {
+    val view = EcuGuiView(activity)
+
+    val signalSpinner = view.findViewById<Spinner>(R.id.signal_choice)
+    val spinnerSignals = view.allSignals
+    val spinnerAdapter = ArrayAdapter(
+        activity,
+        android.R.layout.simple_spinner_item,
+        spinnerSignals.map { getName(activity, it) }
+    ).apply {
+        setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+    }
+    signalSpinner.adapter = spinnerAdapter
+
+    view.findViewById<Button>(R.id.signal_add).apply {
+        setOnClickListener {
+            val index = signalSpinner.selectedItemPosition
+
+            if (index in spinnerSignals.indices) {
+                val signal = spinnerSignals[index]
+                view.addSignalWidget(signal)
+            }
+        }
+    }
 
     val dtcInput = view.findViewById<EditText>(R.id.dtc_entry)
 
@@ -173,7 +203,7 @@ fun buildEcuGuiConfig(address: Int, name: String, activity: MainActivity): EcuCo
         setOnClickListener {
             val v = dtcInput.text.toString().uppercase()
             if (v.isNotEmpty()) {
-                addDtcRow(v)
+                view.addDtcByCode(v)
                 dtcInput.text.clear()
             }
         }

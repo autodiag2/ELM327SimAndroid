@@ -5,6 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.PopupMenu
@@ -142,6 +143,7 @@ class SimView(
                 EcuType.GUI -> {
                     // GUI state extraction from SimGeneratorGui (global state)
                     val gui = JSONObject()
+                    val ecuGuiView = ecu.screen as EcuGuiView
 
                     gui.put("ecuName", SimGeneratorGui.ecuName)
                     gui.put("vin", SimGeneratorGui.vin)
@@ -154,11 +156,11 @@ class SimView(
 
                     // signals
                     val signals = JSONArray()
-                    libautodiag.getSimSignals().forEach { signal ->
-                        val value = libautodiag.getSignalValue(signal.path)
+                    ecuGuiView.addedSignalPaths.forEach { path ->
+                        val value = libautodiag.getSignalValue(path)
                         if (!value.isNaN()) {
                             val s = JSONObject()
-                            s.put("path", signal.path)
+                            s.put("path", path)
                             s.put("value", value)
                             signals.put(s)
                         }
@@ -209,21 +211,27 @@ class SimView(
                 EcuType.GUI -> {
                     val gui = obj.optJSONObject("gui") ?: continue
 
-                    // restore ECU globals
-                    SimGeneratorGui.ecuName = gui.optString("ecuName", "")
-                    SimGeneratorGui.vin = gui.optString("vin", "")
-                    SimGeneratorGui.mil = gui.optBoolean("mil", false)
-                    SimGeneratorGui.dtcCleared = gui.optBoolean("dtcCleared", false)
+                    val ecuGuiView: EcuGuiView = ecu.screen as EcuGuiView
+                    val ecu_name = ecuGuiView.findViewById<EditText>(R.id.ecu_name)
+                    ecu_name.setText(gui.optString("ecuName", ""))
+                    val vin = ecuGuiView.findViewById<EditText>(R.id.vin)
+                    vin.setText(gui.optString("vin", ""))
+                    val mil = ecuGuiView.findViewById<CheckBox>(R.id.mil_state)
+                    mil.isChecked = gui.optBoolean("mil", false)
+                    val dtcCleared = ecuGuiView.findViewById<CheckBox>(R.id.dtcs_cleared)
+                    dtcCleared.isChecked = gui.optBoolean("dtcCleared", false)
 
                     // dtcs
+                    ecuGuiView.clearDTCs()
                     val dtcs = gui.optJSONArray("dtcs")
                     if (dtcs != null) {
                         for (j in 0 until dtcs.length()) {
-                            SimGeneratorGui.dtcs.add(dtcs.getString(j))
+                            ecuGuiView.addDtcByCode(dtcs.getString(j))
                         }
                     }
 
                     // signals
+                    ecuGuiView.clearSignals()
                     val signals = gui.optJSONArray("signals")
                     if (signals != null) {
                         for (j in 0 until signals.length()) {
@@ -231,15 +239,17 @@ class SimView(
                             val path = s.getString("path")
                             val value = s.getDouble("value")
 
-                            SimGeneratorGui.setSignalValue(path, value)
-                            libautodiag.setSignalValue(path, value)
+                            ecuGuiView.addSignalByPath(path)
+                            ecuGuiView.setSignalValue(path, value)
                         }
                     }
                 }
 
                 EcuType.SCRIPT -> {
                     val script = obj.optString("script", "")
+                    val editor = ecu.screen.findViewById<EditText>(R.id.lua_editor)
                     updateScript(script, ecu)
+                    editor.setText(script)
                 }
             }
         }
