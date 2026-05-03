@@ -75,12 +75,12 @@ class MainActivity : AppCompatActivity() {
 
     fun showHamburger() {
         toolbar.navigationIcon =
-            AppCompatResources.getDrawable(this, com.google.android.material.R.drawable.abc_ic_menu_overflow_material)
+            AppCompatResources.getDrawable(this, R.drawable.baseline_menu_24)
     }
 
     fun showBackArrow() {
         toolbar.navigationIcon =
-            AppCompatResources.getDrawable(this, com.google.android.material.R.drawable.abc_ic_ab_back_material)
+            AppCompatResources.getDrawable(this, R.drawable.arrow_back_24dp)
     }
 
     fun handleBack() {
