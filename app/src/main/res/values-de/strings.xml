@@ -1,15 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ELM327-Emulator</string>
     <string name="open">Öffnen</string>
     <string name="close">Schließen</string>
     <string name="app_title">ELM327-Emulator</string>
-
     <string name="log_btnDownload">Protokoll herunterladen</string>
     <string name="log_btnSave">Speichern unter...</string>
     <string name="log_btnClear">Protokoll löschen</string>
     <string name="log_btnUp">↑</string>
     <string name="log_btnDown">↓</string>
-
     <string name="settings_btLabel">Bluetooth-Gerätename</string>
     <string name="settings_btHint">OBD II</string>
     <string name="settings_btApply">Übernehmen</string>
@@ -20,7 +19,6 @@
     <string name="settings_network_bluetooth">Bluetooth</string>
     <string name="settings_network_ble">Bluetooth LE (4.0+)</string>
     <string name="settings_network_network">Netzwerk</string>
-
     <string name="sim_main_ecu_config_gui_add_signal">Hinzufügen</string>
     <string name="sim_main_ecu_config_gui_dtc_entry_validate">Hinzufügen</string>
     <string name="sim_main_ecu_config_gui_mil_state">MIL-Status</string>
@@ -32,13 +30,11 @@
     <string name="sim_main_ecu_config_gui_dtc_entry">P0103</string>
     <string name="sim_main_ecu_config_gui_remove_signal">Entfernen</string>
     <string name="sim_main_ecu_config_gui_remove_dtc">X</string>
-
     <string name="sim_main_ecu_config_script_copy">Kopieren</string>
     <string name="sim_main_ecu_config_script_paste">Einfügen</string>
     <string name="sim_main_ecu_config_script_apply">Skript anwenden</string>
     <string name="sim_main_ecu_config_script_clear">Löschen</string>
     <string name="sim_main_ecu_config_script_title">Lua-ECU-Skript</string>
-
     <string name="sim_main_ecu_config_script_lua_missing_function">Lua-Fehler: fehlende Funktion "response(req)"</string>
     <string name="sim_main_ecu_config_script_lua_load_error">Lua-Ladefehler: %1$s</string>
     <string name="sim_main_ecu_config_script_lua_response_error">Lua-Fehler: response-Funktion nicht verfügbar</string>
@@ -49,7 +45,6 @@
     <string name="sim_main_ecu_config_script_lua_load_parse_error">Lua-Parsingfehler: %1$s</string>
     <string name="sim_main_ecu_config_script_lua_parse_success">Lua-Parsing erfolgreich</string>
     <string name="sim_main_ecu_config_script_copy_success">Kopiert</string>
-
     <string name="sim_main_ecu_config_ecu_name">von %1$s</string>
     <string name="sim_main_ecu_row_title">ECU 0xE8 (Name)</string>
     <string name="sim_main_ecu_row_open">→</string>
@@ -57,19 +52,15 @@
     <string name="sim_main_start_sim">Simulation starten</string>
     <string name="sim_main_stop_sim">Simulation stoppen</string>
     <string name="sim_main_ecu_config_invalid_hex_id">Ungültige Hex-ID</string>
-
     <string name="stats_requests">Anfragen: %1$d</string>
     <string name="stats_responses">Antworten: %1$d</string>
     <string name="stats_qps">Anfragen/s: %.2f</string>
     <string name="stats_top_requests">Top-Anfragen:</string>
-
     <string name="main_drawer_sim">Sim</string>
     <string name="main_drawer_log">Protokoll</string>
     <string name="main_drawer_stats">Statistik</string>
     <string name="main_drawer_settings">Einstellungen</string>
-
     <string name="sim_main_ecu_row_delete">ECU löschen</string>
-
     <string name="log_ble_connected">%1$s verbunden</string>
     <string name="log_ble_disconnected">%1$s getrennt</string>
     <string name="log_ble_unknown_device_address">Unbekannte Geräteadresse</string>
@@ -84,7 +75,6 @@
     <string name="log_ble_loopback_failed">Loopback fehlgeschlagen: %1$s</string>
     <string name="log_ble_stop_advertising_failed">Fehler beim Stoppen der Werbung: %1$s</string>
     <string name="log_ble_gatt_server_close_failed">Fehler beim Schließen des GATT-Servers: %1$s</string>
-
     <string name="log_bt_waiting_for_connection">Warte auf Verbindung...</string>
     <string name="log_bt_client_connected">Client verbunden: %1$s</string>
     <string name="log_bt_native_sim_location">Native Sim-Position: %1$s</string>
@@ -94,12 +84,10 @@
     <string name="log_bt_cancelled">Abgebrochen</string>
     <string name="log_bt_error">Fehler: %1$s</string>
     <string name="log_bt_connection_closed">Bluetooth-Verbindung geschlossen</string>
-
     <string name="log_main_bluetooth_server_stopped">Bluetooth-Server gestoppt</string>
     <string name="log_main_network_mode_not_implemented">Netzwerkmodus nicht implementiert</string>
     <string name="log_main_data_received">empfangen : \n%1$s</string>
     <string name="log_main_data_sent">gesendet : \n%1$s</string>
-
     <string name="log_network_server_listening">Netzwerkserver lauscht auf Port %1$d</string>
     <string name="log_network_client_connected">Client verbunden: %1$s:%2$d</string>
     <string name="log_network_native_sim_location">Native Sim-Position: %1$s</string>
@@ -109,7 +97,6 @@
     <string name="log_network_cancelled">Abgebrochen</string>
     <string name="log_network_error">Fehler: %1$s</string>
     <string name="log_network_connection_closed">Netzwerkverbindung geschlossen</string>
-
     <string name="signal_SAEJ1979_mil_status">MIL-Status</string>
     <string name="signal_SAEJ1979_engine_spark_or_compression">Motortyp</string>
     <string name="signal_SAEJ1979_engine_load">Motorlast</string>
@@ -170,4 +157,7 @@
     <string name="signal_SAEJ1979_odometer">Kilometerstand</string>
     <string name="signal_SAEJ1979_abs_switch_present">ABS-Schalter vorhanden</string>
     <string name="signal_SAEJ1979_abs_switch">ABS-Schalter</string>
+    <string name="sim_load_config_item_name">ECU-Name :</string>
+    <string name="sim_load_config_menu_clear">Löschen</string>
+    <string name="sim_load_config_menu_save_as">Speichern unter...</string>
 </resources>
