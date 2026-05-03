@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/action_clear"
+        android:title="@string/sim_load_config_menu_clear"
+        android:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_load_latest"
+        android:title="@string/sim_load_config_menu_load_latest"
+        android:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_load"
+        android:title="@string/sim_load_config_menu_load"
+        android:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_save_as"
+        android:title="@string/sim_load_config_menu_save_as"
+        android:showAsAction="never" />
+
+</menu>

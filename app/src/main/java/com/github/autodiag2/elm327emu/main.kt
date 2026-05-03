@@ -20,6 +20,7 @@ import android.widget.CheckBox
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.content.res.AppCompatResources
+import java.io.File
 
 private const val REQUEST_CODE = 1
 
@@ -102,9 +103,42 @@ class MainActivity : AppCompatActivity() {
         showBackArrow()
     }
 
+    fun openConfigSelection() {
+        screenStack.addLast(simView)
+        show(simView.buildLoadConfigView{ file ->
+            simView.loadConfig(file.absolutePath)
+            handleBack()
+        })
+        showBackArrow()
+    }
+
     private fun show(view: View) {
         contentFrame.removeAllViews()
         contentFrame.addView(view)
+    }
+
+    lateinit var lastConfigName: String
+
+    fun showSaveAsDialog() {
+        val input = android.widget.EditText(this).apply {
+            setText(lastConfigName)
+        }
+
+        android.app.AlertDialog.Builder(this)
+            .setTitle(R.string.sim_load_config_save_title)
+            .setView(input)
+            .setPositiveButton(getString(R.string.sim_load_config_save_validate)) { _, _ ->
+                val name = input.text.toString().trim()
+                if (name.isNotEmpty()) {
+                    lastConfigName = name
+                    val file = File(filesDir, "config/${name}.json")
+                    file.parentFile?.mkdirs()
+                    simView.saveConfig(file.absolutePath)
+                    appendLog(getString(R.string.sim_load_config_log_save_success, name), LogLevel.INFO)
+                }
+            }
+            .setNegativeButton(R.string.sim_load_config_save_cancel, null)
+            .show()
     }
 
     // -------------------------------
@@ -199,6 +233,52 @@ class MainActivity : AppCompatActivity() {
         // ---- Permissions ----
         if (!isPermissionsGranted()) {
             requestPermissions()
+        }
+    }
+
+    override fun onCreateOptionsMenu(menu: android.view.Menu): Boolean {
+        menuInflater.inflate(R.menu.sim_config, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
+        return when (item.itemId) {
+
+            R.id.action_clear -> {
+                simView.ecuClear()
+                SimGeneratorGui.dtcs.clear()
+                SimGeneratorGui.mil = false
+                SimGeneratorGui.ecuName = ""
+                SimGeneratorGui.vin = ""
+                true
+            }
+
+            R.id.action_load_latest -> {
+                val dir = File(filesDir, "config")
+                val latest = dir.listFiles()
+                    ?.filter { it.extension == "json" }
+                    ?.maxByOrNull { it.lastModified() }
+
+                if (latest != null) {
+                    simView.loadConfig(latest.absolutePath)
+                    appendLog(getString(R.string.sim_load_config_load_latest_success, latest.name), LogLevel.INFO)
+                } else {
+                    appendLog(getString(R.string.sim_load_config_load_latest_no_config), LogLevel.ERROR)
+                }
+                true
+            }
+
+            R.id.action_load -> {
+                openConfigSelection()
+                true
+            }
+
+            R.id.action_save_as -> {
+                showSaveAsDialog()
+                true
+            }
+
+            else -> super.onOptionsItemSelected(item)
         }
     }
 

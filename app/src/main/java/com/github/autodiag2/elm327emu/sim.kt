@@ -12,12 +12,52 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.cardview.widget.CardView
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.File
 
 enum class EcuType(val label: String) {
     GUI("GUI"),
     SCRIPT("Script");
 
     override fun toString() = label
+}
+
+data class CarConfigSummary(
+    val file: File,
+    val name: String,
+    val ecuCount: Int
+)
+class ConfigAdapter(
+    private val items: List<CarConfigSummary>,
+    private val onClick: (CarConfigSummary) -> Unit
+) : RecyclerView.Adapter<ConfigAdapter.VH>() {
+
+    class VH(view: View) : RecyclerView.ViewHolder(view) {
+        val name: TextView = view.findViewById(R.id.config_name)
+        val ecus: TextView = view.findViewById(R.id.config_ecu_count)
+    }
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
+        val view = LayoutInflater.from(parent.context)
+            .inflate(R.layout.sim_load_config_item, parent, false)
+        return VH(view)
+    }
+
+    override fun getItemCount() = items.size
+
+    override fun onBindViewHolder(holder: VH, position: Int) {
+        val item = items[position]
+
+        holder.name.text = item.name
+        holder.ecus.text = "ECUs: ${item.ecuCount}"
+
+        holder.itemView.setOnClickListener {
+            onClick(item)
+        }
+    }
 }
 data class EcuConfig(
     val id: Int,
@@ -37,6 +77,166 @@ class SimView(
         LayoutInflater.from(context).inflate(R.layout.sim_main, this, true)
         setupSimView(this)
         buildAddECUToGUI(0xE8, getString(R.string.sim_main_ecu_config_gui_ecu_name), EcuType.GUI)
+    }
+
+    fun buildLoadConfigView(onConfigSelected: (File) -> Unit): View {
+
+        val view = activity.layoutInflater.inflate(
+            R.layout.sim_load_config,
+            activity.contentFrame,
+            false
+        )
+
+        val recycler = view.findViewById<RecyclerView>(R.id.config_list)
+        recycler.layoutManager = LinearLayoutManager(activity)
+
+        val configs = mutableListOf<CarConfigSummary>()
+
+        fun refresh() {
+            configs.clear()
+
+            val dir = File(activity.filesDir, "config")
+            if (!dir.exists()) dir.mkdirs()
+
+            dir.listFiles { f -> f.extension == "json" }?.forEach { file ->
+                try {
+                    val json = JSONArray(file.readText())
+                    val ecuCount = json.length()
+                    val name = file.nameWithoutExtension
+
+                    configs.add(
+                        CarConfigSummary(
+                            file = file,
+                            name = name,
+                            ecuCount = ecuCount
+                        )
+                    )
+                } catch (_: Exception) {}
+            }
+        }
+
+        refresh()
+
+        recycler.adapter = ConfigAdapter(configs) { config ->
+            onConfigSelected(config.file)
+        }
+
+        return view
+    }
+
+    fun saveConfig(path: String) {
+        val root = JSONArray()
+
+        for (ecu in ecus) {
+            val obj = JSONObject()
+
+            obj.put("id", ecu.id)
+            obj.put("name", ecu.name)
+            obj.put("type", ecu.type.name)
+
+            when (ecu.type) {
+                EcuType.GUI -> {
+                    // GUI state extraction from SimGeneratorGui (global state)
+                    val gui = JSONObject()
+
+                    gui.put("ecuName", SimGeneratorGui.ecuName)
+                    gui.put("vin", SimGeneratorGui.vin)
+                    gui.put("mil", SimGeneratorGui.mil)
+                    gui.put("dtcCleared", SimGeneratorGui.dtcCleared)
+
+                    val dtcs = JSONArray()
+                    SimGeneratorGui.dtcs.forEach { dtcs.put(it) }
+                    gui.put("dtcs", dtcs)
+
+                    // signals
+                    val signals = JSONArray()
+                    libautodiag.getSimSignals().forEach { signal ->
+                        val value = libautodiag.getSignalValue(signal.path)
+                        if (!value.isNaN()) {
+                            val s = JSONObject()
+                            s.put("path", signal.path)
+                            s.put("value", value)
+                            signals.put(s)
+                        }
+                    }
+
+                    gui.put("signals", signals)
+                    obj.put("gui", gui)
+                }
+
+                EcuType.SCRIPT -> {
+                    obj.put("script", getScript(ecu))
+                }
+            }
+
+            root.put(obj)
+        }
+
+        File(path).writeText(root.toString(2))
+    }
+
+    fun loadConfig(path: String) {
+        val file = File(path)
+        if (!file.exists()) return
+
+        val root = JSONArray(file.readText())
+
+        // reset current state
+        ecuClear()
+        SimGeneratorGui.dtcs.clear()
+        SimGeneratorGui.mil = false
+        SimGeneratorGui.ecuName = ""
+        SimGeneratorGui.vin = ""
+
+        for (i in 0 until root.length()) {
+            val obj = root.getJSONObject(i)
+
+            val id = obj.getInt("id")
+            val name = obj.getString("name")
+            val type = EcuType.valueOf(obj.getString("type"))
+
+            val ecu = buildEcuConfig(id, name, type)
+            ecus.add(ecu)
+            addEcuRow(ecu)
+
+            when (type) {
+                EcuType.GUI -> {
+                    val gui = obj.optJSONObject("gui") ?: continue
+
+                    // restore ECU globals
+                    SimGeneratorGui.ecuName = gui.optString("ecuName", "")
+                    SimGeneratorGui.vin = gui.optString("vin", "")
+                    SimGeneratorGui.mil = gui.optBoolean("mil", false)
+                    SimGeneratorGui.dtcCleared = gui.optBoolean("dtcCleared", false)
+
+                    // dtcs
+                    val dtcs = gui.optJSONArray("dtcs")
+                    if (dtcs != null) {
+                        for (j in 0 until dtcs.length()) {
+                            SimGeneratorGui.dtcs.add(dtcs.getString(j))
+                        }
+                    }
+
+                    // signals
+                    val signals = gui.optJSONArray("signals")
+                    if (signals != null) {
+                        for (j in 0 until signals.length()) {
+                            val s = signals.getJSONObject(j)
+                            val path = s.getString("path")
+                            val value = s.getDouble("value")
+
+                            SimGeneratorGui.setSignalValue(path, value)
+                            libautodiag.setSignalValue(path, value)
+                        }
+                    }
+                }
+
+                EcuType.SCRIPT -> {
+                    val script = obj.optString("script", "")
+                    updateScript(script, ecu)
+                }
+            }
+        }
     }
 
     fun buildEcuConfig(address: Int, name: String, type: EcuType): EcuConfig {
@@ -142,8 +342,18 @@ class SimView(
         val selected = ecuAddSelect.selectedItem
         return selected as EcuType
     }
+    fun ecuClear() {
+        // iterate backwards to safely remove
+        val offset_in_layout = 1
+        for (i in ecus.indices.reversed()) {
+            val ecu = ecus[i]
 
-    private fun ecuRemoveByAddress(address: Int) {
+            libautodiag.removeEcuByAddress(ecu.id.toByte())
+            ecuListView.removeViewAt(i + offset_in_layout)
+            ecus.removeAt(i)
+        }
+    }
+    fun ecuRemoveByAddress(address: Int) {
         // iterate backwards to safely remove
         val offset_in_layout = 1
         for (i in ecus.indices.reversed()) {

@@ -113,6 +113,10 @@ class LuaJEcuHandler(
         }
     }
 }
+fun getScript(ecu: EcuConfig): String {
+    val luaEditor = ecu.screen.findViewById<EditText>(R.id.lua_editor)
+    return luaEditor.text.toString()
+}
 fun updateScript(script: String, ecu: EcuConfig) {
     val errorReturn = ecu.screen.findViewById<TextView>(R.id.error_return)
     try {
