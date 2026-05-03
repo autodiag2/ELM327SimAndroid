@@ -41,7 +41,7 @@ class ConfigAdapter(
     private val selectedItems = mutableSetOf<CarConfigSummary>()
 
     fun onOpenSimConfig() {
-        val config = selectedItems.first()
+        val config = selectedItems.firstOrNull() ?: return
         return onClick(config)
     }
 
@@ -58,7 +58,7 @@ class ConfigAdapter(
     }
 
     fun onExportFile() {
-        val config = selectedItems.first()
+        val config = selectedItems.firstOrNull() ?: return
         exportConfigToFile(config)
         selectedItems.clear()
         refresh()
@@ -73,7 +73,7 @@ class ConfigAdapter(
         refresh()
     }
     fun onExport() {
-        val config = selectedItems.first()
+        val config = selectedItems.firstOrNull() ?: return
         val text = config.file.readText()
 
         val clipboard = activity.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
