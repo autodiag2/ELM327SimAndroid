@@ -32,14 +32,52 @@ data class CarConfigSummary(
     val ecuCount: Int
 )
 class ConfigAdapter(
-    private val items: List<CarConfigSummary>,
+    private val items: MutableList<CarConfigSummary>,
     private val activity: MainActivity,
     private val onClick: (CarConfigSummary) -> Unit,
-    private val onDelete: (CarConfigSummary) -> Unit,
-    private val onExport: (CarConfigSummary) -> Unit,
-    private val onExportFile: (CarConfigSummary) -> Unit
 ) : RecyclerView.Adapter<ConfigAdapter.VH>() {
 
+    private val selectedItems = mutableSetOf<CarConfigSummary>()
+
+    fun onExportFile() {
+        val config = selectedItems.first()
+        val exportDir = File(activity.getExternalFilesDir(null), "exports")
+        if (!exportDir.exists()) exportDir.mkdirs()
+
+        val outFile = File(exportDir, config.file.name)
+        config.file.copyTo(outFile, overwrite = true)
+
+        Toast.makeText(
+            activity,
+            getString(activity, R.string.sim_config_exported_file),
+            Toast.LENGTH_SHORT
+        ).show()
+        selectedItems.clear()
+        refresh()
+    }
+
+    fun onDelete() {
+        for(config in selectedItems) {
+            config.file.delete()
+        }
+        Toast.makeText(activity, getString(activity, R.string.sim_config_deleted), Toast.LENGTH_SHORT).show()
+        selectedItems.clear()
+        refresh()
+    }
+    fun onExport() {
+        val config = selectedItems.first()
+        val text = config.file.readText()
+
+        val clipboard = activity.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
+                as android.content.ClipboardManager
+
+        val clip = android.content.ClipData.newPlainText(config.name, text)
+        clipboard.setPrimaryClip(clip)
+
+        Toast.makeText(activity, getString(activity, R.string.sim_config_exported), Toast.LENGTH_SHORT).show()
+        selectedItems.clear()
+        refresh()
+    }
     class VH(view: View) : RecyclerView.ViewHolder(view) {
         val name: TextView = view.findViewById(R.id.config_name)
         val ecus: TextView = view.findViewById(R.id.config_ecu_count)
@@ -60,12 +98,27 @@ class ConfigAdapter(
         holder.ecus.text = "ECUs: ${item.ecuCount}"
 
         holder.itemView.setOnClickListener {
-            onClick(item)
+            if (selectedItems.isNotEmpty()) {
+                toggleSelection(item, holder)
+            } else {
+                onClick(item)
+            }
         }
 
-        holder.itemView.setOnLongClickListener { view ->
-            // TODO
+        holder.itemView.setOnLongClickListener {
+            toggleSelection(item, holder)
             true
+        }
+    }
+    private fun toggleSelection(item: CarConfigSummary, holder: VH) {
+        if (selectedItems.contains(item)) {
+            selectedItems.remove(item)
+            holder.itemView.isActivated = false
+            holder.itemView.alpha = 1f
+        } else {
+            selectedItems.add(item)
+            holder.itemView.isActivated = true
+            holder.itemView.alpha = 0.6f
         }
     }
     fun refresh() {
@@ -121,6 +174,7 @@ class SimView(
     lateinit var ecuListView: ViewGroup
     val ecus = mutableListOf<EcuConfig>()
     lateinit var ecuAddSelect: Spinner
+    // sims screen
     lateinit var recycler: RecyclerView
 
     init {
@@ -143,38 +197,8 @@ class SimView(
         val configs = mutableListOf<CarConfigSummary>()
 
         val adapter = ConfigAdapter(configs, activity,
-            onDelete = { config ->
-                config.file.delete()
-                Toast.makeText(activity, getString(R.string.sim_config_deleted), Toast.LENGTH_SHORT).show()
-                val adapter = recycler.adapter as ConfigAdapter
-                adapter.refresh()
-            },
             onClick = { config ->
                 onConfigSelected(config.file)
-            },
-            onExport = { config ->
-                val text = config.file.readText()
-
-                val clipboard = activity.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
-                        as android.content.ClipboardManager
-
-                val clip = android.content.ClipData.newPlainText(config.name, text)
-                clipboard.setPrimaryClip(clip)
-
-                Toast.makeText(activity, getString(R.string.sim_config_exported), Toast.LENGTH_SHORT).show()
-            },
-            onExportFile = { config ->
-                val exportDir = File(activity.getExternalFilesDir(null), "exports")
-                if (!exportDir.exists()) exportDir.mkdirs()
-
-                val outFile = File(exportDir, config.file.name)
-                config.file.copyTo(outFile, overwrite = true)
-
-                Toast.makeText(
-                    activity,
-                    getString(R.string.sim_config_exported_file),
-                    Toast.LENGTH_SHORT
-                ).show()
             }
         )
 

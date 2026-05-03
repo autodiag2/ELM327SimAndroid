@@ -328,6 +328,23 @@ class MainActivity : AppCompatActivity() {
                 true
             }
 
+            // sims screen actions
+            R.id.action_delete -> {
+                val simsViewAdapter = simView.recycler.adapter as ConfigAdapter
+                simsViewAdapter.onDelete()
+                true
+            }
+            R.id.action_export -> {
+                val simsViewAdapter = simView.recycler.adapter as ConfigAdapter
+                simsViewAdapter.onExport()
+                true
+            }
+            R.id.action_export_file -> {
+                val simsViewAdapter = simView.recycler.adapter as ConfigAdapter
+                simsViewAdapter.onExportFile()
+                true
+            }
+
             else -> super.onOptionsItemSelected(item)
         }
     }
