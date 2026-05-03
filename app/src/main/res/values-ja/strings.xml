@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ELM327 エミュレーター</string>
     <string name="open">開く</string>
@@ -8,7 +9,6 @@
     <string name="log_btnClear">ログをクリア</string>
     <string name="log_btnUp">↑</string>
     <string name="log_btnDown">↓</string>
-
     <string name="settings_btLabel">Bluetooth デバイス名</string>
     <string name="settings_btHint">OBD II</string>
     <string name="settings_btApply">設定</string>
@@ -19,7 +19,6 @@
     <string name="settings_network_bluetooth">Bluetooth</string>
     <string name="settings_network_ble">Bluetooth LE (4.0+)</string>
     <string name="settings_network_network">ネットワーク</string>
-
     <string name="sim_main_ecu_config_gui_add_signal">追加</string>
     <string name="sim_main_ecu_config_gui_dtc_entry_validate">追加</string>
     <string name="sim_main_ecu_config_gui_mil_state">MIL 状態</string>
@@ -31,13 +30,11 @@
     <string name="sim_main_ecu_config_gui_dtc_entry">P0103</string>
     <string name="sim_main_ecu_config_gui_remove_signal">削除</string>
     <string name="sim_main_ecu_config_gui_remove_dtc">X</string>
-
     <string name="sim_main_ecu_config_script_copy">コピー</string>
     <string name="sim_main_ecu_config_script_paste">貼り付け</string>
     <string name="sim_main_ecu_config_script_apply">スクリプト適用</string>
     <string name="sim_main_ecu_config_script_clear">クリア</string>
     <string name="sim_main_ecu_config_script_title">Lua ECU スクリプト</string>
-
     <string name="sim_main_ecu_config_script_lua_missing_function">Lua エラー: 関数 "response(req)" がありません</string>
     <string name="sim_main_ecu_config_script_lua_load_error">Lua 読み込みエラー: %1$s</string>
     <string name="sim_main_ecu_config_script_lua_response_error">Lua エラー: response 関数が利用できません</string>
@@ -48,7 +45,6 @@
     <string name="sim_main_ecu_config_script_lua_load_parse_error">Lua 解析エラー: %1$s</string>
     <string name="sim_main_ecu_config_script_lua_parse_success">Lua 解析成功</string>
     <string name="sim_main_ecu_config_script_copy_success">コピーしました</string>
-
     <string name="sim_main_ecu_config_ecu_name">%1$s から</string>
     <string name="sim_main_ecu_row_title">ECU 0xE8 (名前)</string>
     <string name="sim_main_ecu_row_open">→</string>
@@ -56,19 +52,15 @@
     <string name="sim_main_start_sim">シミュレーション開始</string>
     <string name="sim_main_stop_sim">シミュレーション停止</string>
     <string name="sim_main_ecu_config_invalid_hex_id">無効な16進数ID</string>
-
     <string name="stats_requests">リクエスト: %1$d</string>
     <string name="stats_responses">レスポンス: %1$d</string>
     <string name="stats_qps">クエリ/秒: %.2f</string>
     <string name="stats_top_requests">主なリクエスト:</string>
-
     <string name="main_drawer_sim">シミュレーション</string>
     <string name="main_drawer_log">ログ</string>
     <string name="main_drawer_stats">統計</string>
     <string name="main_drawer_settings">設定</string>
-
     <string name="sim_main_ecu_row_delete">ECU を削除</string>
-
     <string name="log_ble_connected">%1$s に接続しました</string>
     <string name="log_ble_disconnected">%1$s から切断されました</string>
     <string name="log_ble_unknown_device_address">不明なデバイスアドレス</string>
@@ -83,7 +75,6 @@
     <string name="log_ble_loopback_failed">ループバック失敗: %1$s</string>
     <string name="log_ble_stop_advertising_failed">広告停止エラー: %1$s</string>
     <string name="log_ble_gatt_server_close_failed">GATT サーバー終了エラー: %1$s</string>
-
     <string name="log_bt_waiting_for_connection">接続待機中...</string>
     <string name="log_bt_client_connected">クライアント接続: %1$s</string>
     <string name="log_bt_native_sim_location">ネイティブシミュレーション位置: %1$s</string>
@@ -93,12 +84,10 @@
     <string name="log_bt_cancelled">キャンセルされました</string>
     <string name="log_bt_error">エラー: %1$s</string>
     <string name="log_bt_connection_closed">Bluetooth 接続が閉じられました</string>
-
     <string name="log_main_bluetooth_server_stopped">Bluetooth サーバーを停止しました</string>
     <string name="log_main_network_mode_not_implemented">ネットワークモードは未実装です</string>
     <string name="log_main_data_received">受信 : \n%1$s</string>
     <string name="log_main_data_sent">送信 : \n%1$s</string>
-
     <string name="log_network_server_listening">ポート %1$d でサーバー待機中</string>
     <string name="log_network_client_connected">クライアント接続: %1$s:%2$d</string>
     <string name="log_network_native_sim_location">ネイティブシミュレーション位置: %1$s</string>
@@ -108,7 +97,6 @@
     <string name="log_network_cancelled">キャンセルされました</string>
     <string name="log_network_error">エラー: %1$s</string>
     <string name="log_network_connection_closed">ネットワーク接続が閉じられました</string>
-
     <!-- Signals -->
     <string name="signal_SAEJ1979_number_of_dtc">DTC 数</string>
     <string name="signal_SAEJ1979_mil_status">MIL 状態</string>
@@ -118,4 +106,7 @@
     <string name="signal_SAEJ1979_vehicle_speed">車速</string>
     <string name="signal_SAEJ1979_throttle_position">スロットル位置</string>
     <string name="signal_SAEJ1979_odometer">走行距離計</string>
+    <string name="sim_load_config_item_name">ECU 名 :</string>
+    <string name="sim_load_config_menu_clear">クリア</string>
+    <string name="sim_load_config_menu_save_as">名前を付けて保存...</string>
 </resources>
