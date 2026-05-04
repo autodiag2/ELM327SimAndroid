@@ -22,6 +22,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.content.res.AppCompatResources
 import com.github.autodiag2.elm327emu.com.BLEBridge
 import com.github.autodiag2.elm327emu.com.BluetoothBridge
+import com.github.autodiag2.elm327emu.com.Bridge
 import com.github.autodiag2.elm327emu.com.NetworkBridge
 import java.io.File
 
@@ -39,9 +40,7 @@ class MainActivity : AppCompatActivity() {
     val NETWORK_BLE = 1
     val NETWORK_IP = 2
 
-    lateinit var bleBridge: BLEBridge
-    lateinit var btBridge: BluetoothBridge
-    lateinit var ntBridge: NetworkBridge
+    private val bridges: Array<Bridge> = emptyArray()
 
     public val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -198,9 +197,9 @@ class MainActivity : AppCompatActivity() {
 
         // ---- Init core components ----
         MainActivityRef.activity = this
-        bleBridge = BLEBridge(this, btAdapter)
-        btBridge = BluetoothBridge(this, btAdapter)
-        ntBridge = NetworkBridge(this)
+        bridges[NETWORK_BT] = BluetoothBridge(this, btAdapter)
+        bridges[NETWORK_BLE] = BLEBridge(this, btAdapter)
+        bridges[NETWORK_IP] = NetworkBridge(this)
 
         // ---- Bind views ----
         drawer = findViewById(R.id.drawer)
@@ -404,31 +403,26 @@ class MainActivity : AppCompatActivity() {
     // -------------------------------
 
     fun stopServer() {
-        bleBridge.stop()
-        btBridge.stop()
-        ntBridge.stop()
+        for(bridge in bridges) {
+            bridge.stop()
+        }
         scope.coroutineContext.cancelChildren()
         appendLog(getString(R.string.log_main_bluetooth_server_stopped), LogLevel.INFO)
     }
 
-    public fun clearSocketFiles() {
+    fun clearSocketFiles() {
         filesDir.listFiles()?.forEach {
             if (it.name.startsWith("socket")) it.delete()
         }
     }
 
-    public fun showBluetoothEnablePopup() {
+    fun showBluetoothEnablePopup() {
         val intent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
         enableBtLauncher.launch(intent)
     }
 
     fun startServer() {
-        when (prefs.getInt("network_mode", NETWORK_BT)) {
-            NETWORK_BT  -> btBridge.start()
-            NETWORK_BLE -> bleBridge.start()
-            NETWORK_IP  -> ntBridge.start()
-            else -> appendLog(getString(R.string.log_main_network_mode_not_implemented), LogLevel.DEBUG)
-        }
+        bridges[prefs.getInt("network_mode", NETWORK_BT)].start()
     }
 
     fun onDataReceived(data: ByteArray, size_used: Int) {
