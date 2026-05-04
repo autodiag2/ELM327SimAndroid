@@ -40,7 +40,7 @@ class MainActivity : AppCompatActivity() {
     val NETWORK_BLE = 1
     val NETWORK_IP = 2
 
-    private val bridges: Array<Bridge> = emptyArray()
+    private lateinit var bridges: List<Bridge>
 
     public val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -197,9 +197,11 @@ class MainActivity : AppCompatActivity() {
 
         // ---- Init core components ----
         MainActivityRef.activity = this
-        bridges[NETWORK_BT] = BluetoothBridge(this, btAdapter)
-        bridges[NETWORK_BLE] = BLEBridge(this, btAdapter)
-        bridges[NETWORK_IP] = NetworkBridge(this)
+        bridges = listOf(
+            BluetoothBridge(this, btAdapter), // NETWORK_BT
+            BLEBridge(this, btAdapter),       // NETWORK_BLE
+            NetworkBridge(this)               // NETWORK_IP
+        )
 
         // ---- Bind views ----
         drawer = findViewById(R.id.drawer)
