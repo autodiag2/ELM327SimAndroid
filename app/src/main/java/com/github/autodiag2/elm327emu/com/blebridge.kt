@@ -1,59 +1,24 @@
-package com.github.autodiag2.elm327emu
+package com.github.autodiag2.elm327emu.com
 
-import android.Manifest
-import androidx.appcompat.app.AppCompatActivity
-import android.content.pm.PackageManager
-import android.os.Build
-import android.os.Bundle
-import android.widget.TextView
 import kotlinx.coroutines.*
 import java.io.*
-import java.net.Socket
 import java.util.UUID
 import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothServerSocket
-import android.bluetooth.BluetoothSocket
-import android.net.LocalSocket
-import android.net.LocalSocketAddress
-import com.github.autodiag2.elm327emu.libautodiag
-import android.util.Log
-import android.text.method.ScrollingMovementMethod
-import android.view.Gravity
-import android.widget.FrameLayout
-import androidx.drawerlayout.widget.DrawerLayout
-import com.google.android.material.navigation.NavigationView
-import android.view.MenuItem
-import android.content.Intent
-import androidx.appcompat.widget.Toolbar
 import android.content.Context
-import android.widget.LinearLayout
-import android.widget.SeekBar
-import android.widget.ListView
-import android.widget.ArrayAdapter
-import android.widget.EditText
-import android.widget.Button
-import android.widget.CheckBox
-import android.widget.ScrollView
-import androidx.core.widget.addTextChangedListener
 import com.github.autodiag2.elm327emu.R
-import android.view.ViewGroup.LayoutParams
-import android.view.View
-import android.content.SharedPreferences
-import android.widget.*
-import android.view.MotionEvent
 import android.bluetooth.*
 import android.bluetooth.le.*
 import android.os.ParcelUuid
-import java.io.InputStream
-import java.io.OutputStream
 import android.bluetooth.BluetoothManager
+import com.github.autodiag2.elm327emu.LogLevel
+import com.github.autodiag2.elm327emu.MainActivity
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 class BLEBridge(
     private val activity: MainActivity,
     private val btAdapter: BluetoothAdapter
-    ) {
+    ) : Bridge(activity) {
     private val ELM_SERVICE_UUID = UUID.fromString("6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
     private val ELM_RX_UUID      = UUID.fromString("6E400002-B5A3-F393-E0A9-E50E24DCCA9E")
     private val ELM_TX_UUID      = UUID.fromString("6E400003-B5A3-F393-E0A9-E50E24DCCA9E")
@@ -65,15 +30,6 @@ class BLEBridge(
 
     private lateinit var rxChar: BluetoothGattCharacteristic
     private lateinit var txChar: BluetoothGattCharacteristic
-
-    private var loopbackInput: InputStream? = null
-    private var loopbackOutput: OutputStream? = null
-
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-
-    private fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {
-        activity.appendLog(text, level)
-    }
     
     private fun sendTx(device: BluetoothDevice, text: String) {
         if (!txNotificationsEnabled) return
@@ -88,10 +44,6 @@ class BLEBridge(
             gattServer.notifyCharacteristicChanged(device, txChar, false)
             i = end
         }
-    }
-
-    fun getString(resId: Int, vararg formatArgs: Any?): String {
-        return activity.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
     }
 
     private val gattCallback = object : BluetoothGattServerCallback() {
@@ -144,7 +96,9 @@ class BLEBridge(
                 gattReady = true
                 appendLog(getString(R.string.log_ble_gatt_service_added), LogLevel.DEBUG)
             } else {
-                appendLog(getString(R.string.log_ble_gatt_service_add_failed, status), LogLevel.DEBUG)
+                appendLog(getString(R.string.log_ble_gatt_service_add_failed, status),
+                    LogLevel.DEBUG
+                )
             }
         }
 
@@ -163,7 +117,9 @@ class BLEBridge(
                     loopbackOutput?.flush()
                     activity.onDataReceived(value, value.size)
                 } catch(e: Exception) {
-                    appendLog(getString(R.string.log_ble_gatt_characteristic_write_failed, e.message), LogLevel.DEBUG)
+                    appendLog(getString(R.string.log_ble_gatt_characteristic_write_failed, e.message),
+                        LogLevel.DEBUG
+                    )
                 }
             }
 
@@ -229,7 +185,7 @@ class BLEBridge(
         appendLog(payload.joinToString(" ") { "%02X".format(it) }, LogLevel.DEBUG)
     }
 
-    public fun start() {
+    override fun start() {
         if (!btAdapter.isEnabled) {
             activity.showBluetoothEnablePopup()
             return
@@ -298,11 +254,7 @@ class BLEBridge(
             }
             advertiser.startAdvertising(settings, advData, scanResp, advertiseCallback)
 
-            val location = libautodiag.launchEmu(activity.filesDir.absolutePath)
-            val loopSock = LocalSocket()
-            loopSock.connect(LocalSocketAddress(location, LocalSocketAddress.Namespace.FILESYSTEM))
-            loopbackInput = loopSock.inputStream
-            loopbackOutput = loopSock.outputStream
+            emuStart()
 
             launch {
                 val bufferLoop = ByteArray(512)
@@ -316,7 +268,9 @@ class BLEBridge(
                             gattServer.notifyCharacteristicChanged(it, txChar, false)
                         }
                     } catch(e: Exception) {
-                        appendLog(getString(R.string.log_ble_loopback_failed, e.message), LogLevel.DEBUG)
+                        appendLog(getString(R.string.log_ble_loopback_failed, e.message),
+                            LogLevel.DEBUG
+                        )
                         break
                     }
                 }
@@ -324,21 +278,27 @@ class BLEBridge(
         }
     }
 
-    public fun stop() {
+    override fun stop() {
         try {
             advertiser.stopAdvertising(advertiseCallback)
         } catch (e: Exception) {
-            appendLog(getString(R.string.log_ble_stop_advertising_failed, e.message), LogLevel.DEBUG)
+            appendLog(getString(R.string.log_ble_stop_advertising_failed, e.message),
+                LogLevel.DEBUG
+            )
         }
 
         try {
             gattServer.close()
         } catch (e: Exception) {
-            appendLog(getString(R.string.log_ble_gatt_server_close_failed, e.message), LogLevel.DEBUG)
+            appendLog(getString(R.string.log_ble_gatt_server_close_failed, e.message),
+                LogLevel.DEBUG
+            )
         }
 
         connectedDevice = null
         txNotificationsEnabled = false
+
+        super.stop()
     }
 
 }

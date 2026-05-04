@@ -188,7 +188,7 @@ class SimsConfig(
     private val adapter: ConfigAdapter
 
     init {
-        LayoutInflater.from(context).inflate(R.layout.sim_load_config, activity.contentFrame, true)
+        LayoutInflater.from(context).inflate(R.layout.sim_load_config, this, true)
 
 
         recycler = findViewById(R.id.config_list)

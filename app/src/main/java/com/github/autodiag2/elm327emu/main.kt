@@ -16,11 +16,13 @@ import androidx.appcompat.widget.Toolbar
 import android.content.Context
 import android.view.View
 import android.bluetooth.BluetoothManager
-import android.widget.CheckBox
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.content.res.AppCompatResources
+import com.github.autodiag2.elm327emu.com.BLEBridge
+import com.github.autodiag2.elm327emu.com.BluetoothBridge
+import com.github.autodiag2.elm327emu.com.NetworkBridge
 import java.io.File
 
 private const val REQUEST_CODE = 1
