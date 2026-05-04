@@ -10,28 +10,32 @@ data class SimSignal(
     val category: String?
 )
 
-object SimGeneratorGui {
-    @Volatile var mil = false
-    @Volatile var dtcCleared = false
-    @Volatile var ecuName = "ECU from gui"
-    @Volatile var vin = "VF7RD5FV8FL507366"
-    val dtcs = mutableListOf<String>()
+object SimGeneratorGuiManager {
 
-    private val numericSignals = linkedMapOf<String, Double>()
+    data class EcuState(
+        val address: Byte,
+        var mil: Boolean = false,
+        var dtcCleared: Boolean = false,
+        var ecuName: String = "ECU from gui",
+        var vin: String = "VF7RD5FV8FL507366",
+        val dtcs: MutableList<String> = mutableListOf(),
+        val signals: MutableMap<String, Double> = linkedMapOf(),
+    )
 
-    @Synchronized
-    fun setSignalValue(path: String, value: Double) {
-        numericSignals[path] = value
+    private val ecus = mutableMapOf<Byte, EcuState>()
+
+    fun clear() {
+        ecus.clear()
     }
 
     @Synchronized
-    fun getSignalValue(path: String): Double? {
-        return numericSignals[path]
+    fun getOrCreate(address: Byte): EcuState {
+        return ecus.getOrPut(address) { EcuState(address) }
     }
 
     @Synchronized
-    fun clearDynamicSignals() {
-        numericSignals.clear()
+    fun remove(address: Byte) {
+        ecus.remove(address)
     }
 }
 
@@ -44,31 +48,44 @@ object libautodiag {
         System.loadLibrary("autodiag")
     }
 
-    @JvmStatic external fun launchEmu(tmpDirPath: String, kind: String = "socket"): String
-    @JvmStatic fun getMil(): Boolean = SimGeneratorGui.mil
-    @JvmStatic fun getDtcCleared(): Boolean = SimGeneratorGui.dtcCleared
-    @JvmStatic fun getEcuName(): String = SimGeneratorGui.ecuName
-    @JvmStatic fun getVin(): String = SimGeneratorGui.vin
-    @JvmStatic fun getDtcs(): Array<String> = SimGeneratorGui.dtcs.toTypedArray()
-
-    @JvmStatic
-    fun getSignalValue(path: String): Double {
-        return SimGeneratorGui.getSignalValue(path) ?: Double.NaN
+    @JvmStatic fun getMil(address: Byte): Boolean {
+        return SimGeneratorGuiManager.getOrCreate(address).mil
+    }
+    @JvmStatic fun getDtcCleared(address: Byte): Boolean {
+        return SimGeneratorGuiManager.getOrCreate(address).dtcCleared
+    }
+    @JvmStatic fun getEcuName(address: Byte): String {
+        return SimGeneratorGuiManager.getOrCreate(address).ecuName
+    }
+    @JvmStatic fun getVin(address: Byte): String {
+        return SimGeneratorGuiManager.getOrCreate(address).vin
+    }
+    @JvmStatic fun getDtcs(address: Byte): Array<String> {
+        return SimGeneratorGuiManager.getOrCreate(address).dtcs.toTypedArray()
     }
 
     @JvmStatic
-    fun setSignalValue(path: String, value: Double) {
-        SimGeneratorGui.setSignalValue(path, value)
+    fun getSignalValue(address: Byte, path: String): Double {
+        return SimGeneratorGuiManager.getOrCreate(address)
+            .signals[path] ?: Double.NaN
     }
 
     @JvmStatic
-    fun setDtcCleared(value: Boolean) {
-        SimGeneratorGui.dtcCleared = value
+    fun setSignalValue(address: Byte, path: String, value: Double) {
+        SimGeneratorGuiManager.getOrCreate(address)
+            .signals[path] = value
+    }
+
+    @JvmStatic
+    fun setDtcCleared(address: Byte, value: Boolean) {
+        SimGeneratorGuiManager.getOrCreate(address)
+            .dtcCleared = value
         MainActivityRef.activity?.runOnUiThread {
-            MainActivityRef.activity?.setDtcClearedUi(value)
+            MainActivityRef.activity?.setDtcClearedUi(address, value)
         }
     }
 
+    @JvmStatic external fun launchEmu(tmpDirPath: String, kind: String = "socket"): String
     @JvmStatic external fun getProtocols(): Array<String>
     @JvmStatic external fun setProtocol(protocol: Int)
     @JvmStatic external fun getProtocol(): Int

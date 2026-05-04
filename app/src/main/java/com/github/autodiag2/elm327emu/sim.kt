@@ -252,6 +252,7 @@ class SimView(
         for (ecu in ecus) {
             val obj = JSONObject()
 
+            val address: Byte = ecu.id.toByte()
             obj.put("id", ecu.id)
             obj.put("name", ecu.name)
             obj.put("type", ecu.type.name)
@@ -262,19 +263,19 @@ class SimView(
                     val gui = JSONObject()
                     val ecuGuiView = ecu.screen as EcuGuiView
 
-                    gui.put("ecuName", SimGeneratorGui.ecuName)
-                    gui.put("vin", SimGeneratorGui.vin)
-                    gui.put("mil", SimGeneratorGui.mil)
-                    gui.put("dtcCleared", SimGeneratorGui.dtcCleared)
+                    gui.put("ecuName", SimGeneratorGuiManager.getOrCreate(address).ecuName)
+                    gui.put("vin", SimGeneratorGuiManager.getOrCreate(address).vin)
+                    gui.put("mil", SimGeneratorGuiManager.getOrCreate(address).mil)
+                    gui.put("dtcCleared", SimGeneratorGuiManager.getOrCreate(address).dtcCleared)
 
                     val dtcs = JSONArray()
-                    SimGeneratorGui.dtcs.forEach { dtcs.put(it) }
+                    SimGeneratorGuiManager.getOrCreate(address).dtcs.forEach { dtcs.put(it) }
                     gui.put("dtcs", dtcs)
 
                     // signals
                     val signals = JSONArray()
                     ecuGuiView.addedSignalPaths.forEach { path ->
-                        val value = libautodiag.getSignalValue(path)
+                        val value = libautodiag.getSignalValue(address, path)
                         if (!value.isNaN()) {
                             val s = JSONObject()
                             s.put("path", path)
@@ -308,10 +309,6 @@ class SimView(
 
         // reset current state
         ecuClear()
-        SimGeneratorGui.dtcs.clear()
-        SimGeneratorGui.mil = false
-        SimGeneratorGui.ecuName = ""
-        SimGeneratorGui.vin = ""
 
         for (i in 0 until root.length()) {
             val obj = root.getJSONObject(i)

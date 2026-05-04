@@ -24,7 +24,6 @@ import androidx.drawerlayout.widget.DrawerLayout
 import com.google.android.material.navigation.NavigationView
 import android.view.MenuItem
 import android.content.Intent
-import com.github.autodiag2.elm327emu.SimGeneratorGui
 import androidx.appcompat.widget.Toolbar
 import android.content.Context
 import android.widget.LinearLayout

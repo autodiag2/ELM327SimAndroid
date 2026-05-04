@@ -47,8 +47,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var drawer: DrawerLayout
     lateinit var toolbar: Toolbar
 
-    lateinit var dtcClearedCheck: CheckBox
-
     lateinit var simView: SimView
     lateinit var settingsView: View
     lateinit var logView: LogView
@@ -282,10 +280,7 @@ class MainActivity : AppCompatActivity() {
 
             R.id.action_clear -> {
                 simView.ecuClear()
-                SimGeneratorGui.dtcs.clear()
-                SimGeneratorGui.mil = false
-                SimGeneratorGui.ecuName = ""
-                SimGeneratorGui.vin = ""
+                SimGeneratorGuiManager.clear()
                 true
             }
 
@@ -415,8 +410,10 @@ class MainActivity : AppCompatActivity() {
     // Logic
     // -------------------------------
 
-    fun setDtcClearedUi(value: Boolean) {
-        dtcClearedCheck.isChecked = value
+    fun setDtcClearedUi(address: Byte, value: Boolean) {
+        val config = simView.ecus.find { config -> config.id.toByte() == address } ?: return
+        val simGui = config.screen as EcuGuiView
+        simGui.dtcClearedCheck.isChecked = value
     }
 
     fun stopServer() {
