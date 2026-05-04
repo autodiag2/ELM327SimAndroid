@@ -27,173 +27,6 @@ enum class EcuType(val label: String) {
     override fun toString() = label
 }
 
-data class CarConfigSummary(
-    val file: File,
-    val name: String,
-    val ecuCount: Int
-)
-class ConfigAdapter(
-    private val items: MutableList<CarConfigSummary>,
-    private val activity: MainActivity,
-    private val onClick: (CarConfigSummary) -> Unit,
-) : RecyclerView.Adapter<ConfigAdapter.VH>() {
-
-    private val selectedItems = mutableSetOf<CarConfigSummary>()
-
-    fun onOpenSimConfig() {
-        val config = selectedItems.firstOrNull() ?: return
-        return onClick(config)
-    }
-
-    fun shareConfigAsText() {
-        val config = selectedItems.firstOrNull() ?: return
-        val text = config.file.readText()
-
-        val intent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_SUBJECT, config.name)
-            putExtra(Intent.EXTRA_TEXT, text)
-        }
-
-        activity.startActivity(
-            Intent.createChooser(intent, "Share config")
-        )
-    }
-
-    fun exportConfigToFile(config: CarConfigSummary) {
-        activity.pendingExportConfig = config
-
-        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            type = "application/json"
-            putExtra(Intent.EXTRA_TITLE, config.file.name)
-        }
-
-        activity.exportLauncher.launch(intent)
-    }
-    private fun updateListState() {
-        selectedItems.clear()
-        notifyDataSetChanged()
-    }
-
-    fun onExportFile() {
-        val config = selectedItems.firstOrNull() ?: return
-        exportConfigToFile(config)
-        updateListState()
-    }
-
-    fun onDelete() {
-        if ( selectedItems.firstOrNull() == null ) {
-            return
-        }
-        for(config in selectedItems) {
-            config.file.delete()
-        }
-        Toast.makeText(activity, getString(activity, R.string.sim_config_deleted), Toast.LENGTH_SHORT).show()
-        updateListState()
-        refresh()
-    }
-    fun onExport() {
-        val config = selectedItems.firstOrNull() ?: return
-        val text = config.file.readText()
-
-        val clipboard = activity.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
-                as android.content.ClipboardManager
-
-        val clip = android.content.ClipData.newPlainText(config.name, text)
-        clipboard.setPrimaryClip(clip)
-
-        Toast.makeText(activity, getString(activity, R.string.sim_config_exported), Toast.LENGTH_SHORT).show()
-        updateListState()
-    }
-    class VH(view: View) : RecyclerView.ViewHolder(view) {
-        val name: TextView = view.findViewById(R.id.config_name)
-        val ecus: TextView = view.findViewById(R.id.config_ecu_count)
-    }
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.sim_load_config_item, parent, false)
-        return VH(view)
-    }
-
-    override fun getItemCount() = items.size
-
-    override fun onBindViewHolder(holder: VH, position: Int) {
-        val item = items[position]
-
-        holder.name.text = item.name
-        holder.ecus.text = "ECUs: ${item.ecuCount}"
-
-        val isSelected = selectedItems.contains(item)
-
-        holder.itemView.isActivated = isSelected
-        holder.itemView.alpha = if (isSelected) 0.6f else 1f
-
-        holder.itemView.setOnClickListener {
-            if (selectedItems.isNotEmpty()) {
-                toggleSelection(item, holder)
-            } else {
-                onClick(item)
-            }
-        }
-
-        holder.itemView.setOnLongClickListener {
-            toggleSelection(item, holder)
-            true
-        }
-    }
-    private fun toggleSelection(item: CarConfigSummary, holder: VH) {
-        if (selectedItems.contains(item)) {
-            selectedItems.remove(item)
-            holder.itemView.isActivated = false
-            holder.itemView.alpha = 1f
-        } else {
-            selectedItems.add(item)
-            holder.itemView.isActivated = true
-            holder.itemView.alpha = 0.6f
-        }
-    }
-    fun refresh() {
-        val configs = items
-        items.clear()
-
-        val dir = File(activity.filesDir, "config")
-        if (!dir.exists()) dir.mkdirs()
-
-        val files = dir.listFiles { f -> f.extension == "json" }
-            ?.sortedByDescending { it.lastModified() } // latest first
-
-        files?.forEach { file ->
-            try {
-                val text = file.readText()
-                val json = JSONArray(text)
-
-                val ecuCount = json.length()
-                val name = file.nameWithoutExtension
-
-                configs.add(
-                    CarConfigSummary(
-                        file = file,
-                        name = name,
-                        ecuCount = ecuCount
-                    )
-                )
-
-            } catch (e: Exception) {
-                // visible feedback instead of silent failure
-                e.printStackTrace()
-                Toast.makeText(
-                    activity,
-                    getString(activity, R.string.sim_load_config_error_invalid, file.name),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-
-        notifyDataSetChanged()
-    }
-}
 data class EcuConfig(
     val id: Int,
     var name: String,
@@ -204,42 +37,54 @@ class SimView(
     private val activity: MainActivity
 ) : FrameLayout(activity) {
 
-    lateinit var ecuListView: ViewGroup
+    private val ecuListView: ViewGroup
     val ecus = mutableListOf<EcuConfig>()
-    lateinit var ecuAddSelect: Spinner
-    // sims screen
-    lateinit var recycler: RecyclerView
+    private val ecuAddSelect: Spinner
 
     init {
         LayoutInflater.from(context).inflate(R.layout.sim_main, this, true)
-        setupSimView(this)
-        buildAddECUToGUI(0xE8, getString(R.string.sim_main_ecu_config_gui_ecu_name), EcuType.GUI)
-    }
+        ecuListView = findViewById(R.id.ecu_list)
+        val addEcuBtn = findViewById<Button>(R.id.add_ecu)
+        val ecuIdInput = findViewById<EditText>(R.id.ecu_id_input)
+        ecuAddSelect = findViewById(R.id.ecu_type_spinner)
+        val types = EcuType.values().toList()
 
-    fun buildLoadConfigView(onConfigSelected: (File) -> Unit): View {
-
-        val view = activity.layoutInflater.inflate(
-            R.layout.sim_load_config,
-            activity.contentFrame,
-            false
+        val adapter = ArrayAdapter(
+            activity,
+            android.R.layout.simple_spinner_item,
+            types
         )
 
-        recycler = view.findViewById(R.id.config_list)
-        recycler.layoutManager = LinearLayoutManager(activity)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
 
-        val configs = mutableListOf<CarConfigSummary>()
+        ecuAddSelect.adapter = adapter
+        addEcuBtn.setOnClickListener {
+            val type = selectedType()
+            val hexStr = ecuIdInput.text.toString().trim()
 
-        val adapter = ConfigAdapter(configs, activity,
-            onClick = { config ->
-                onConfigSelected(config.file)
+            val address = try {
+                hexStr.toInt(16) and 0xFF
+            } catch (e: Exception) {
+                Toast.makeText(activity, getString(R.string.sim_main_ecu_config_invalid_hex_id), Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
             }
-        )
 
-        recycler.adapter = adapter
+            buildAddECUToGUI(address, getString(R.string.sim_main_ecu_config_ecu_name, type), type)
+        }
 
-        adapter.refresh()
-
-        return view
+        var running = false
+        findViewById<Button>(R.id.sim_state).apply {
+            setOnClickListener {
+                if (activity.isPermissionsGranted()) {
+                    running = !running
+                    text = if (running) getString(R.string.sim_main_stop_sim) else getString(R.string.sim_main_start_sim)
+                    if (running) activity.startServer() else activity.stopServer()
+                } else {
+                    activity.requestPermissions()
+                }
+            }
+        }
+        buildAddECUToGUI(0xE8, getString(R.string.sim_main_ecu_config_gui_ecu_name), EcuType.GUI)
     }
 
     fun saveConfig(path: String) {
@@ -390,50 +235,6 @@ class SimView(
         addEcuRow(ecu)
     }
 
-    private fun setupSimView(view: View) {
-        ecuListView = view.findViewById<ViewGroup>(R.id.ecu_list)
-        val addEcuBtn = view.findViewById<Button>(R.id.add_ecu)
-        val ecuIdInput = view.findViewById<EditText>(R.id.ecu_id_input)
-        ecuAddSelect = view.findViewById(R.id.ecu_type_spinner)
-        val types = EcuType.values().toList()
-
-        val adapter = ArrayAdapter(
-            activity,
-            android.R.layout.simple_spinner_item,
-            types
-        )
-
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-
-        ecuAddSelect.adapter = adapter
-        addEcuBtn.setOnClickListener {
-            val type = selectedType()
-            val hexStr = ecuIdInput.text.toString().trim()
-
-            val address = try {
-                hexStr.toInt(16) and 0xFF
-            } catch (e: Exception) {
-                Toast.makeText(activity, getString(R.string.sim_main_ecu_config_invalid_hex_id), Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            buildAddECUToGUI(address, getString(R.string.sim_main_ecu_config_ecu_name, type), type)
-        }
-
-        var running = false
-        view.findViewById<Button>(R.id.sim_state).apply {
-            setOnClickListener {
-                if (activity.isPermissionsGranted()) {
-                    running = !running
-                    text = if (running) getString(R.string.sim_main_stop_sim) else getString(R.string.sim_main_start_sim)
-                    if (running) activity.startServer() else activity.stopServer()
-                } else {
-                    activity.requestPermissions()
-                }
-            }
-        }
-    }
-
     fun addEcuRow(ecu: EcuConfig) {
         val row = activity.layoutInflater.inflate(R.layout.sim_main_ecu_row, ecuListView, false)
         val cardView = row.findViewById<CardView>(R.id.ecu_row_cardview)
@@ -442,7 +243,7 @@ class SimView(
         title.text = "ECU 0x${ecu.id.toString(16).uppercase()} (${ecu.name})"
 
         row.setOnClickListener {
-            activity.openEcuConfig(ecu)
+            activity.showNestedScreen(ecu.screen)
         }
 
         cardView.setOnLongClickListener {

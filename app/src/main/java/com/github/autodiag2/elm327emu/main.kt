@@ -51,8 +51,10 @@ class MainActivity : AppCompatActivity() {
     lateinit var settingsView: View
     lateinit var logView: LogView
     lateinit var statsView: StatsView
+    lateinit var simsView: SimsConfig
+    private var activeScreen: View? = null
 
-    private val screenStack = ArrayDeque<View>()
+    private val screenStack = ArrayDeque<View?>()
     var pendingExportConfig: CarConfigSummary? = null
     public val prefs by lazy { getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
 
@@ -104,7 +106,10 @@ class MainActivity : AppCompatActivity() {
 
     fun handleBack() {
         if (screenStack.isNotEmpty()) {
-            show(screenStack.removeLast())
+            val previousScreen: View? = screenStack.removeLast()
+            if ( previousScreen != null ) {
+                show(previousScreen)
+            }
 
             if (screenStack.isEmpty()) {
                 showHamburger()
@@ -116,37 +121,24 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun openEcuConfig(ecu: EcuConfig) {
-        screenStack.addLast(simView)
-        show(ecu.screen)
+    fun showNestedScreen(view: View) {
+        screenStack.addLast(activeScreen)
+        show(view)
         showBackArrow()
     }
-
-    fun openConfigSelection() {
-        screenStack.addLast(simView)
-        show(simView.buildLoadConfigView{ file ->
-            simView.loadConfig(file.absolutePath)
-            handleBack()
-        })
-        showBackArrow()
-    }
-
-    private var isSimScreenActive = true
-    private var isSimsScreenActive = false
 
     private fun show(view: View) {
         contentFrame.removeAllViews()
         contentFrame.addView(view)
-        isSimScreenActive = (view == simView)
-        isSimsScreenActive = (view.findViewById<View>(R.id.load_config_root) != null)
+        activeScreen = view
 
         invalidateOptionsMenu()
     }
 
     override fun onPrepareOptionsMenu(menu: android.view.Menu): Boolean {
 
-        menu.setGroupVisible(R.id.action_menu_group_sim_config, isSimScreenActive)
-        menu.setGroupVisible(R.id.action_menu_group_sims, isSimsScreenActive)
+        menu.setGroupVisible(R.id.action_menu_group_sim_config, activeScreen == simView)
+        menu.setGroupVisible(R.id.action_menu_group_sims, activeScreen == simsView)
 
         return super.onPrepareOptionsMenu(menu)
     }
@@ -228,6 +220,10 @@ class MainActivity : AppCompatActivity() {
         logView = LogView(this)
         settingsView = SettingsView(this)
         statsView = StatsView(this)
+        simsView = SimsConfig(this) { file ->
+            simView.loadConfig(file.absolutePath)
+            handleBack()
+        }
 
         // Default screen
         show(simView)
@@ -335,7 +331,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             R.id.action_load -> {
-                openConfigSelection()
+                showNestedScreen(simsView)
                 true
             }
 
@@ -346,28 +342,23 @@ class MainActivity : AppCompatActivity() {
 
             // sims screen actions
             R.id.action_delete -> {
-                val simsViewAdapter = simView.recycler.adapter as ConfigAdapter
-                simsViewAdapter.onDelete()
+                simsView.onDelete()
                 true
             }
             R.id.action_export -> {
-                val simsViewAdapter = simView.recycler.adapter as ConfigAdapter
-                simsViewAdapter.onExport()
+                simsView.onExport()
                 true
             }
             R.id.action_export_file -> {
-                val simsViewAdapter = simView.recycler.adapter as ConfigAdapter
-                simsViewAdapter.onExportFile()
+                simsView.onExportFile()
                 true
             }
             R.id.action_open -> {
-                val simsViewAdapter = simView.recycler.adapter as ConfigAdapter
-                simsViewAdapter.onOpenSimConfig()
+                simsView.onOpenSimConfig()
                 true
             }
             R.id.action_share -> {
-                val simsViewAdapter = simView.recycler.adapter as ConfigAdapter
-                simsViewAdapter.shareConfigAsText()
+                simsView.shareConfigAsText()
                 true
             }
 
