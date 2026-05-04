@@ -46,19 +46,28 @@ object libautodiag {
         System.loadLibrary("autodiag")
     }
 
-    @JvmStatic fun getMil(address: Byte): Boolean {
+    @JvmStatic
+    fun getMil(address: Byte): Boolean {
         return SimGeneratorGuiManager.getBy(address)?.getMILState() ?: false
     }
-    @JvmStatic fun getDtcCleared(address: Byte): Boolean {
+
+    @JvmStatic
+    fun getDtcCleared(address: Byte): Boolean {
         return SimGeneratorGuiManager.getBy(address)?.areDTCsCleared() ?: false
     }
-    @JvmStatic fun getEcuName(address: Byte): String {
+
+    @JvmStatic
+    fun getEcuName(address: Byte): String {
         return SimGeneratorGuiManager.getBy(address)?.getECUName() ?: "error"
     }
-    @JvmStatic fun getVin(address: Byte): String {
+
+    @JvmStatic
+    fun getVin(address: Byte): String {
         return SimGeneratorGuiManager.getBy(address)?.getVIN() ?: "error"
     }
-    @JvmStatic fun getDtcs(address: Byte): Array<String> {
+
+    @JvmStatic
+    fun getDtcs(address: Byte): Array<String> {
         return SimGeneratorGuiManager.getBy(address)?.dtcs?.toTypedArray() ?: emptyArray()
     }
 
@@ -72,17 +81,32 @@ object libautodiag {
         SimGeneratorGuiManager.getBy(address)?.setDTCsCleared(value)
     }
 
-    @JvmStatic external fun launchEmu(tmpDirPath: String, kind: String = "socket"): String
-    @JvmStatic external fun getProtocols(): Array<String>
-    @JvmStatic external fun setProtocol(protocol: Int)
-    @JvmStatic external fun getProtocol(): Int
+    @JvmStatic
+    external fun launchEmu(tmpDirPath: String, kind: String = "socket"): String
+    @JvmStatic
+    external fun getProtocols(): Array<String>
+    @JvmStatic
+    external fun setProtocol(protocol: Int)
+    @JvmStatic
+    external fun getProtocol(): Int
 
-    @JvmStatic external fun getSimSignals(): Array<SimSignal>
+    @JvmStatic
+    external fun getSimSignals(): Array<SimSignal>
+
     @JvmStatic
     external fun setResponseByteArrayByAddress(
         address: Byte,
         callback: EcuByteArrayHandler
     )
-    @JvmStatic external fun removeEcuByAddress(address: Byte)
-    @JvmStatic external fun setResponseGuiByAddress(address: Byte)
+
+    @JvmStatic
+    external fun removeEcuByAddress(address: Byte)
+    @JvmStatic
+    external fun setResponseGuiByAddress(address: Byte)
+    @JvmStatic
+    external fun setResponseTypeContextByAddress(
+        address: Byte,
+        type: String,
+        context: String
+    )
 }
