@@ -8,7 +8,6 @@ import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.Spinner
 import android.widget.TextView
-import androidx.core.widget.addTextChangedListener
 import android.content.Context
 import android.view.LayoutInflater
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -30,24 +29,51 @@ fun getString(context: Context,resId: Int, vararg formatArgs: Any?): String {
 }
 
 class EcuGuiView(
-    private val activity: MainActivity,
-    val ecuState: SimGeneratorGuiManager.EcuState
+    val address: Byte,
+    private val activity: MainActivity
 ) : ConstraintLayout(activity) {
 
     val allSignals = libautodiag.getSimSignals().sortedBy { it.name.lowercase() }
     var dynamicSignalsContainer: LinearLayout
     var dtcContainer: LinearLayout
     lateinit var dtcClearedCheck: CheckBox
+    private val ecuName: EditText
+    private val vin: EditText
+    private val mil_state: CheckBox
+    private val dtcs_cleared: CheckBox
+    val dtcs: MutableList<String> = mutableListOf()
+    val signals: MutableMap<String, Double> = linkedMapOf()
 
     init {
         LayoutInflater.from(activity).inflate(R.layout.sim_main_ecu_config_gui, this, true)
         dynamicSignalsContainer = findViewById(R.id.signal_container)
         dtcContainer = findViewById(R.id.dtc_list)
+        ecuName = findViewById(R.id.ecu_name)
+        vin = findViewById(R.id.vin)
+        mil_state = findViewById(R.id.mil_state)
+        dtcs_cleared = findViewById(R.id.dtcs_cleared)
         addDefaultSignals()
+        SimGeneratorGuiManager.add(address, this)
+    }
+
+    fun getECUName(): String {
+        return ecuName.text.toString()
+    }
+
+    fun getVIN(): String {
+        return vin.text.toString()
+    }
+
+    fun getMILState(): Boolean {
+        return mil_state.isChecked
+    }
+
+    fun areDTCsCleared(): Boolean {
+        return dtcs_cleared.isChecked
     }
 
     fun getSignalInitialValue(signal: SimSignal): Double {
-        val v = libautodiag.getSignalValue(ecuState.address, signal.path)
+        val v = libautodiag.getSignalValue(address, signal.path)
         if (!v.isNaN()) {
             return v
         }
@@ -55,14 +81,14 @@ class EcuGuiView(
     }
 
     fun setSignalValue(path: String, value: Double) {
-        libautodiag.setSignalValue(ecuState.address, path, value)
+        libautodiag.setSignalValue(address, path, value)
     }
 
     fun addSignalWidget(signal: SimSignal) {
-        if (ecuState.signals.containsKey(signal.path)) {
+        if (signals.containsKey(signal.path)) {
             return
         }
-        ecuState.signals.put(signal.path, 0.0)
+        signals.put(signal.path, 0.0)
 
         val title = TextView(activity).apply {
             text = if (signal.unit.isNullOrBlank()) getName(activity, signal) else "${getName(activity, signal)} (${signal.unit})"
@@ -114,7 +140,7 @@ class EcuGuiView(
         }
 
         removeBtn.setOnClickListener {
-            ecuState.signals.remove(signal.path)
+            signals.remove(signal.path)
             dynamicSignalsContainer.removeView(block)
         }
 
@@ -132,18 +158,18 @@ class EcuGuiView(
     }
     fun clearSignals() {
         dynamicSignalsContainer.removeAllViews()
-        ecuState.signals.clear()
+        signals.clear()
     }
 
     fun clearDTCs() {
-        ecuState.dtcs.clear()
+        dtcs.clear()
         dtcContainer.removeAllViews()
     }
 
     fun addDtcByCode(code: String) {
         if (code.isBlank()) return
 
-        ecuState.dtcs.add(code)
+        dtcs.add(code)
 
         val text = TextView(activity).apply {
             text = code
@@ -162,7 +188,7 @@ class EcuGuiView(
 
         removeBtn.setOnClickListener {
             dtcContainer.removeView(row)
-            ecuState.dtcs.remove(code)
+            dtcs.remove(code)
         }
 
         dtcContainer.addView(row)
@@ -170,7 +196,7 @@ class EcuGuiView(
 }
 
 fun buildEcuGuiConfig(address: Int, name: String, activity: MainActivity): EcuConfig {
-    val view = EcuGuiView(activity, SimGeneratorGuiManager.getOrCreate(address.toByte()))
+    val view = EcuGuiView(address.toByte(), activity)
 
     val signalSpinner = view.findViewById<Spinner>(R.id.signal_choice)
     val spinnerSignals = view.allSignals
@@ -206,21 +232,6 @@ fun buildEcuGuiConfig(address: Int, name: String, activity: MainActivity): EcuCo
         }
     }
 
-    view.findViewById<CheckBox>(R.id.mil_state).apply {
-        setOnCheckedChangeListener { _, v -> SimGeneratorGuiManager.getOrCreate(address.toByte()).mil = v }
-    }
-
-    view.dtcClearedCheck = view.findViewById<CheckBox>(R.id.dtcs_cleared).apply {
-        setOnCheckedChangeListener { _, v -> SimGeneratorGuiManager.getOrCreate(address.toByte()).dtcCleared = v }
-    }
-
-    view.findViewById<EditText>(R.id.ecu_name).apply {
-        addTextChangedListener { SimGeneratorGuiManager.getOrCreate(address.toByte()).ecuName = it.toString() }
-    }
-
-    view.findViewById<EditText>(R.id.vin).apply {
-        addTextChangedListener { SimGeneratorGuiManager.getOrCreate(address.toByte()).vin = it.toString() }
-    }
     libautodiag.setResponseGuiByAddress(address.toByte())
     val ecu = EcuConfig(
         id = address,

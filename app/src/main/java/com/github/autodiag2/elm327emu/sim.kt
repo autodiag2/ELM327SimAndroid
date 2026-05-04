@@ -263,18 +263,18 @@ class SimView(
                     val gui = JSONObject()
                     val ecuGuiView = ecu.screen as EcuGuiView
 
-                    gui.put("ecuName", SimGeneratorGuiManager.getOrCreate(address).ecuName)
-                    gui.put("vin", SimGeneratorGuiManager.getOrCreate(address).vin)
-                    gui.put("mil", SimGeneratorGuiManager.getOrCreate(address).mil)
-                    gui.put("dtcCleared", SimGeneratorGuiManager.getOrCreate(address).dtcCleared)
+                    gui.put("ecuName", ecuGuiView.getECUName())
+                    gui.put("vin", ecuGuiView.getVIN())
+                    gui.put("mil", ecuGuiView.getMILState())
+                    gui.put("dtcCleared", ecuGuiView.dtcClearedCheck.isChecked)
 
                     val dtcs = JSONArray()
-                    SimGeneratorGuiManager.getOrCreate(address).dtcs.forEach { dtcs.put(it) }
+                    ecuGuiView.dtcs.forEach { dtcs.put(it) }
                     gui.put("dtcs", dtcs)
 
                     // signals
                     val signals = JSONArray()
-                    ecuGuiView.ecuState.signals.forEach { entry ->
+                    ecuGuiView.signals.forEach { entry ->
                         val value = libautodiag.getSignalValue(address, entry.key)
                         if (!value.isNaN()) {
                             val s = JSONObject()

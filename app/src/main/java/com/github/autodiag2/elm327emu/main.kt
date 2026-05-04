@@ -410,12 +410,6 @@ class MainActivity : AppCompatActivity() {
     // Logic
     // -------------------------------
 
-    fun setDtcClearedUi(address: Byte, value: Boolean) {
-        val config = simView.ecus.find { config -> config.id.toByte() == address } ?: return
-        val simGui = config.screen as EcuGuiView
-        simGui.dtcClearedCheck.isChecked = value
-    }
-
     fun stopServer() {
         bleBridge.stop()
         btBridge.stop()
