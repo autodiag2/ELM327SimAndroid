@@ -274,11 +274,11 @@ class SimView(
 
                     // signals
                     val signals = JSONArray()
-                    ecuGuiView.addedSignalPaths.forEach { path ->
-                        val value = libautodiag.getSignalValue(address, path)
+                    ecuGuiView.ecuState.signals.forEach { entry ->
+                        val value = libautodiag.getSignalValue(address, entry.key)
                         if (!value.isNaN()) {
                             val s = JSONObject()
-                            s.put("path", path)
+                            s.put("path", entry.key)
                             s.put("value", value)
                             signals.put(s)
                         }

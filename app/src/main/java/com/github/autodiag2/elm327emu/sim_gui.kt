@@ -28,13 +28,13 @@ fun getName(context: Context, signal: SimSignal): String {
 fun getString(context: Context,resId: Int, vararg formatArgs: Any?): String {
     return context.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
 }
+
 class EcuGuiView(
     private val activity: MainActivity,
-    private val ecuState: SimGeneratorGuiManager.EcuState
+    val ecuState: SimGeneratorGuiManager.EcuState
 ) : ConstraintLayout(activity) {
 
     val allSignals = libautodiag.getSimSignals().sortedBy { it.name.lowercase() }
-    val addedSignalPaths = linkedSetOf<String>()
     var dynamicSignalsContainer: LinearLayout
     var dtcContainer: LinearLayout
     lateinit var dtcClearedCheck: CheckBox
@@ -59,10 +59,10 @@ class EcuGuiView(
     }
 
     fun addSignalWidget(signal: SimSignal) {
-        if (addedSignalPaths.contains(signal.path)) {
+        if (ecuState.signals.containsKey(signal.path)) {
             return
         }
-        addedSignalPaths.add(signal.path)
+        ecuState.signals.put(signal.path, 0.0)
 
         val title = TextView(activity).apply {
             text = if (signal.unit.isNullOrBlank()) getName(activity, signal) else "${getName(activity, signal)} (${signal.unit})"
@@ -114,7 +114,7 @@ class EcuGuiView(
         }
 
         removeBtn.setOnClickListener {
-            addedSignalPaths.remove(signal.path)
+            ecuState.signals.remove(signal.path)
             dynamicSignalsContainer.removeView(block)
         }
 
@@ -132,7 +132,7 @@ class EcuGuiView(
     }
     fun clearSignals() {
         dynamicSignalsContainer.removeAllViews()
-        addedSignalPaths.clear()
+        ecuState.signals.clear()
     }
 
     fun clearDTCs() {
