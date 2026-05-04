@@ -33,14 +33,13 @@ class EcuGuiView(
     private val activity: MainActivity
 ) : ConstraintLayout(activity) {
 
-    val allSignals = libautodiag.getSimSignals().sortedBy { it.name.lowercase() }
-    var dynamicSignalsContainer: LinearLayout
-    var dtcContainer: LinearLayout
-    lateinit var dtcClearedCheck: CheckBox
+    private val dynamicSignalsContainer: LinearLayout
+    private val dtcContainer: LinearLayout
+    private val dtcClearedCheck: CheckBox
     private val ecuName: EditText
     private val vin: EditText
-    private val mil_state: CheckBox
-    private val dtcs_cleared: CheckBox
+    private val milState: CheckBox
+    val allSignals = libautodiag.getSimSignals().sortedBy { it.name.lowercase() }
     val dtcs: MutableList<String> = mutableListOf()
     val signals: MutableMap<String, Double> = linkedMapOf()
 
@@ -50,8 +49,8 @@ class EcuGuiView(
         dtcContainer = findViewById(R.id.dtc_list)
         ecuName = findViewById(R.id.ecu_name)
         vin = findViewById(R.id.vin)
-        mil_state = findViewById(R.id.mil_state)
-        dtcs_cleared = findViewById(R.id.dtcs_cleared)
+        milState = findViewById(R.id.mil_state)
+        dtcClearedCheck = findViewById(R.id.dtcs_cleared)
         addDefaultSignals()
         SimGeneratorGuiManager.add(address, this)
     }
@@ -65,11 +64,17 @@ class EcuGuiView(
     }
 
     fun getMILState(): Boolean {
-        return mil_state.isChecked
+        return milState.isChecked
     }
 
     fun areDTCsCleared(): Boolean {
-        return dtcs_cleared.isChecked
+        return dtcClearedCheck.isChecked
+    }
+
+    fun setDTCsCleared(state: Boolean) {
+        activity.runOnUiThread {
+            dtcClearedCheck.isChecked = state
+        }
     }
 
     fun getSignalInitialValue(signal: SimSignal): Double {
@@ -81,7 +86,7 @@ class EcuGuiView(
     }
 
     fun setSignalValue(path: String, value: Double) {
-        libautodiag.setSignalValue(address, path, value)
+        signals[path] = value
     }
 
     fun addSignalWidget(signal: SimSignal) {

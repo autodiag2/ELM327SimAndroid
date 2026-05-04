@@ -65,13 +65,8 @@ object libautodiag {
     }
 
     @JvmStatic
-    fun setSignalValue(address: Byte, path: String, value: Double) {
-        SimGeneratorGuiManager.getBy(address)?.signals?.set(path, value)
-    }
-
-    @JvmStatic
     fun setDtcCleared(address: Byte, value: Boolean) {
-        SimGeneratorGuiManager.getBy(address)?.dtcClearedCheck?.isChecked = value
+        SimGeneratorGuiManager.getBy(address)?.setDTCsCleared(value)
     }
 
     @JvmStatic external fun launchEmu(tmpDirPath: String, kind: String = "socket"): String

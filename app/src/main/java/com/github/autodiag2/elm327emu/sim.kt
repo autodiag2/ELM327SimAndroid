@@ -266,7 +266,7 @@ class SimView(
                     gui.put("ecuName", ecuGuiView.getECUName())
                     gui.put("vin", ecuGuiView.getVIN())
                     gui.put("mil", ecuGuiView.getMILState())
-                    gui.put("dtcCleared", ecuGuiView.dtcClearedCheck.isChecked)
+                    gui.put("dtcCleared", ecuGuiView.areDTCsCleared())
 
                     val dtcs = JSONArray()
                     ecuGuiView.dtcs.forEach { dtcs.put(it) }
