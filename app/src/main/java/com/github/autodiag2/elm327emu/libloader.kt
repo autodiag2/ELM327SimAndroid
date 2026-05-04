@@ -1,5 +1,8 @@
 package com.github.autodiag2.elm327emu
 
+import com.github.autodiag2.elm327emu.sim.ecu.EcuByteArrayHandler
+import com.github.autodiag2.elm327emu.sim.ecu.EcuGuiView
+
 data class SimSignal(
     val path: String,
     val name: String,

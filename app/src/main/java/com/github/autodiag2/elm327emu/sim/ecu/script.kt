@@ -1,4 +1,4 @@
-package com.github.autodiag2.elm327emu
+package com.github.autodiag2.elm327emu.sim.ecu
 
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -7,6 +7,11 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
+import com.github.autodiag2.elm327emu.EcuConfig
+import com.github.autodiag2.elm327emu.EcuType
+import com.github.autodiag2.elm327emu.MainActivity
+import com.github.autodiag2.elm327emu.R
+import com.github.autodiag2.elm327emu.libautodiag
 import org.luaj.vm2.LuaTable
 import org.luaj.vm2.LuaValue
 import org.luaj.vm2.lib.jse.JsePlatform
@@ -127,9 +132,12 @@ fun updateScript(script: String, ecu: EcuConfig) {
             ecu.id.toByte(),
             handler
         )
-        errorReturn.setText(getString(ecu.screen.context, R.string.sim_main_ecu_config_script_lua_parse_success))
+        errorReturn.setText(getString(ecu.screen.context,
+            R.string.sim_main_ecu_config_script_lua_parse_success
+        ))
     } catch (e: Exception) {
-        errorReturn.setText(getString(ecu.screen.context, R.string.sim_main_ecu_config_script_lua_load_parse_error, e.message))
+        errorReturn.setText(getString(ecu.screen.context,
+            R.string.sim_main_ecu_config_script_lua_load_parse_error, e.message))
     }
 }
 fun buildSimScriptView(address: Int, name: String, activity: MainActivity): EcuConfig {
@@ -158,7 +166,9 @@ fun buildSimScriptView(address: Int, name: String, activity: MainActivity): EcuC
         if (text.isNotEmpty()) {
             val clip = ClipData.newPlainText("lua_script", text)
             clipboard.setPrimaryClip(clip)
-            Toast.makeText(activity, getString(activity, R.string.sim_main_ecu_config_script_copy_success), Toast.LENGTH_SHORT).show()
+            Toast.makeText(activity, getString(activity,
+                R.string.sim_main_ecu_config_script_copy_success
+            ), Toast.LENGTH_SHORT).show()
         }
     }
     pasteBtn.setOnClickListener {

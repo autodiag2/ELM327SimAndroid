@@ -1,4 +1,4 @@
-package com.github.autodiag2.elm327emu
+package com.github.autodiag2.elm327emu.sim.ecu
 
 import android.widget.ArrayAdapter
 import android.widget.Button
@@ -11,6 +11,13 @@ import android.widget.TextView
 import android.content.Context
 import android.view.LayoutInflater
 import androidx.constraintlayout.widget.ConstraintLayout
+import com.github.autodiag2.elm327emu.EcuConfig
+import com.github.autodiag2.elm327emu.EcuType
+import com.github.autodiag2.elm327emu.MainActivity
+import com.github.autodiag2.elm327emu.R
+import com.github.autodiag2.elm327emu.SimGeneratorGuiManager
+import com.github.autodiag2.elm327emu.SimSignal
+import com.github.autodiag2.elm327emu.libautodiag
 
 fun getName(context: Context, signal: SimSignal): String {
     val key = "signal_" + signal.path.replace(".", "_")

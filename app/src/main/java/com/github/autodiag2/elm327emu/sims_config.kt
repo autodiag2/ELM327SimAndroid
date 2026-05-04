@@ -8,6 +8,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.github.autodiag2.elm327emu.sim.ecu.getString
 import org.json.JSONArray
 import java.io.File
 

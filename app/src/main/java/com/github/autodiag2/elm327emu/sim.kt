@@ -1,6 +1,5 @@
 package com.github.autodiag2.elm327emu
 
-import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,8 +13,11 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.cardview.widget.CardView
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
+import com.github.autodiag2.elm327emu.sim.ecu.EcuGuiView
+import com.github.autodiag2.elm327emu.sim.ecu.buildEcuGuiConfig
+import com.github.autodiag2.elm327emu.sim.ecu.buildSimScriptView
+import com.github.autodiag2.elm327emu.sim.ecu.getScript
+import com.github.autodiag2.elm327emu.sim.ecu.updateScript
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File

@@ -42,7 +42,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var bridges: List<Bridge>
 
-    public val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     lateinit var contentFrame: FrameLayout
     private lateinit var drawer: DrawerLayout
@@ -57,7 +57,7 @@ class MainActivity : AppCompatActivity() {
 
     private val screenStack = ArrayDeque<View?>()
     var pendingExportConfig: CarConfigSummary? = null
-    public val prefs by lazy { getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
+    val prefs by lazy { getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
 
     val exportLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
