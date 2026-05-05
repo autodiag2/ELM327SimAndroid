@@ -45,7 +45,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/sim_main_ecu_config_gui_add_signal" />
+                        android:text="@string/sim_ecu_gui_add_signal" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -88,14 +88,14 @@
                         android:imeOptions="flagNoPersonalizedLearning"
                         android:importantForAutofill="no"
                         android:autofillHints=""
-                        android:text="@string/sim_main_ecu_config_gui_dtc_entry" />
+                        android:text="@string/sim_ecu_gui_dtc_entry" />
 
                     <Button
                         android:id="@+id/dtc_entery_validate"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/sim_main_ecu_config_gui_dtc_entry_validate" />
+                        android:text="@string/sim_ecu_gui_dtc_entry_validate" />
 
                 </LinearLayout>
 
@@ -109,7 +109,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/sim_main_ecu_config_gui_mil_state" />
+                        android:text="@string/sim_ecu_gui_mil_state" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -122,7 +122,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="@string/sim_main_ecu_config_gui_dtcs_cleared" />
+                        android:text="@string/sim_ecu_gui_dtcs_cleared" />
                 </LinearLayout>
             </LinearLayout>
 
@@ -138,7 +138,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="@string/sim_main_ecu_config_gui_vin" />
+                    android:text="@string/sim_ecu_gui_vin" />
 
                 <EditText
                     android:id="@+id/vin"
@@ -150,7 +150,7 @@
                     android:imeOptions="flagNoPersonalizedLearning"
                     android:importantForAutofill="no"
                     android:autofillHints=""
-                    android:text="@string/sim_main_ecu_config_gui_vin_entry" />
+                    android:text="@string/sim_ecu_gui_vin_entry" />
             </LinearLayout>
 
             <LinearLayout
@@ -165,7 +165,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="@string/sim_main_ecu_config_gui_ecu_name_label" />
+                    android:text="@string/sim_ecu_gui_ecu_name_label" />
 
                 <EditText
                     android:id="@+id/ecu_name"
@@ -177,7 +177,7 @@
                     android:imeOptions="flagNoPersonalizedLearning"
                     android:importantForAutofill="no"
                     android:autofillHints=""
-                    android:text="@string/sim_main_ecu_config_gui_ecu_name" />
+                    android:text="@string/sim_ecu_gui_ecu_name" />
             </LinearLayout>
         </LinearLayout>
     </ScrollView>

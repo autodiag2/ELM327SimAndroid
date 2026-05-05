@@ -51,7 +51,7 @@ class EcuGuiView(
     val signals: MutableMap<String, Double> = linkedMapOf()
 
     init {
-        LayoutInflater.from(activity).inflate(R.layout.sim_main_ecu_config_gui, this, true)
+        LayoutInflater.from(activity).inflate(R.layout.sim_ecu_gui, this, true)
         dynamicSignalsContainer = findViewById(R.id.signal_container)
         dtcContainer = findViewById(R.id.dtc_list)
         ecuName = findViewById(R.id.ecu_name)
@@ -134,7 +134,7 @@ class EcuGuiView(
         setSignalValue(signal.path, initialI.toDouble() / scale)
 
         val removeBtn = Button(activity).apply {
-            text = getString(activity, R.string.sim_main_ecu_config_gui_remove_signal)
+            text = getString(activity, R.string.sim_ecu_gui_remove_signal)
         }
 
         val headerRow = LinearLayout(activity).apply {
@@ -189,7 +189,7 @@ class EcuGuiView(
         }
 
         val removeBtn = Button(activity)
-        removeBtn.text = getString(activity, R.string.sim_main_ecu_config_gui_remove_dtc)
+        removeBtn.text = getString(activity, R.string.sim_ecu_gui_remove_dtc)
 
         val row = LinearLayout(activity).apply {
             orientation = LinearLayout.HORIZONTAL

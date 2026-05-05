@@ -90,7 +90,7 @@ class SimView(
                 }
             }
         }
-        buildAddECUToGUI(0xE8, getString(R.string.sim_main_ecu_config_gui_ecu_name), EcuType.GUI)
+        buildAddECUToGUI(0xE8, getString(R.string.sim_ecu_gui_ecu_name), EcuType.GUI)
     }
 
     fun saveConfig(path: String) {
