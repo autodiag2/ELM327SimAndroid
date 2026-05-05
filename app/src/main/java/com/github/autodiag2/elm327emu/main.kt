@@ -16,8 +16,10 @@ import androidx.appcompat.widget.Toolbar
 import android.content.Context
 import android.view.View
 import android.bluetooth.BluetoothManager
+import android.net.Uri
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.content.res.AppCompatResources
 import com.github.autodiag2.elm327emu.com.BLEBridge
@@ -78,6 +80,14 @@ class MainActivity : AppCompatActivity() {
 
             pendingExportConfig = null
         }
+
+    private lateinit var filePickerLauncher: ActivityResultLauncher<String>
+    private var pendingFileCallback: ((String) -> Unit)? = null
+
+    fun launchJsonPicker(callback: (String) -> Unit) {
+        pendingFileCallback = callback
+        filePickerLauncher.launch("application/json")
+    }
 
     // -------------------------------
     // Navigation handling
@@ -176,6 +186,22 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_main)
+
+        filePickerLauncher = registerForActivityResult(
+            ActivityResultContracts.GetContent()
+        ) { uri: Uri? ->
+            val callback = pendingFileCallback
+            pendingFileCallback = null  // avoid reuse / leaks
+
+            if (uri != null && callback != null) {
+                val text = contentResolver.openInputStream(uri)
+                    ?.bufferedReader()
+                    ?.use { it.readText() }
+                    ?: ""
+
+                callback(text)
+            }
+        }
 
         onBackPressedDispatcher.addCallback(
             this,

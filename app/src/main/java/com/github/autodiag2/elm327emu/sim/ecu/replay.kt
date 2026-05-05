@@ -19,22 +19,7 @@ class ECUConfigReplay(
     activity: MainActivity
 ): EcuConfig(address, name, EcuType.REPLAY, LinearLayout(activity)) {
 
-    private lateinit var jsonInput: EditText
-
-    private val filePicker = activity.registerForActivityResult(
-        androidx.activity.result.contract.ActivityResultContracts.GetContent()
-    ) { uri ->
-        if (uri != null) {
-            val text = activity.contentResolver.openInputStream(uri)?.bufferedReader()?.use {
-                it.readText()
-            }
-
-            if (text != null) {
-                setJson(text)
-                updateFromContent()
-            }
-        }
-    }
+    private val jsonInput: EditText
 
     init {
         LayoutInflater.from(activity).inflate(R.layout.sim_ecu_replay, this.screen as ViewGroup, true)
@@ -66,7 +51,10 @@ class ECUConfigReplay(
             }
         }
         this.screen.findViewById<Button>(R.id.sim_ecu_replay_import_file).setOnClickListener {
-            filePicker.launch("application/json")
+            activity.launchJsonPicker { text ->
+                setJson(text)
+                updateFromContent()
+            }
         }
         this.screen.findViewById<Button>(R.id.sim_ecu_replay_format).setOnClickListener {
             setJson(jsonInput.text.toString())
