@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <TextView
+        android:id="@+id/sim_ecu_replay_editor_label"
+        android:layout_width="match_parent"
+        android:text="@string/sim_ecu_replay_editor_label"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/sim_ecu_replay_json_scroll"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_height="wrap_content" />
+
+    <ScrollView
+        android:id="@+id/sim_ecu_replay_json_scroll"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintTop_toBottomOf="@id/sim_ecu_replay_editor_label"
+        app:layout_constraintBottom_toTopOf="@id/sim_ecu_replay_controls"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <EditText
+            android:id="@+id/sim_ecu_replay_json_input"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fontFamily="monospace"
+            android:gravity="top|start"
+            android:imeOptions="flagNoExtractUi"
+            android:inputType="textMultiLine|textNoSuggestions"
+            android:overScrollMode="always"
+            android:padding="16dp"
+            android:scrollbars="vertical"
+            android:textColor="?attr/android:textColor"
+            android:textSize="14sp" />
+
+    </ScrollView>
+
+    <HorizontalScrollView
+        android:id="@+id/sim_ecu_replay_controls"
+        android:layout_width="match_parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/sim_ecu_replay_controls_error_return"
+        app:layout_constraintTop_toBottomOf="@id/sim_ecu_replay_json_scroll"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/sim_ecu_replay_validate"
+                android:text="@string/sim_ecu_replay_validate"/>
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/sim_ecu_replay_copy"
+                android:text="@string/sim_ecu_replay_copy"/>
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/sim_ecu_replay_paste"
+                android:text="@string/sim_ecu_replay_paste"/>
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/sim_ecu_replay_format"
+                android:text="@string/sim_ecu_replay_format"/>
+
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:id="@+id/sim_ecu_replay_import_file"
+                android:text="@string/sim_ecu_replay_import_file"/>
+
+        </LinearLayout>
+
+    </HorizontalScrollView>
+
+    <TextView
+        android:id="@+id/sim_ecu_replay_controls_error_return"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/sim_ecu_replay_controls"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:text=""
+        android:textColor="?attr/android:textColor"
+        android:textSize="12sp"
+        android:paddingTop="8dp"
+        android:maxLines="3" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>

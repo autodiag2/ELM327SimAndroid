@@ -15,6 +15,7 @@ import android.widget.Toast
 import androidx.cardview.widget.CardView
 import com.github.autodiag2.elm327emu.sim.ecu.ECUConfigCycle
 import com.github.autodiag2.elm327emu.sim.ecu.ECUConfigRandom
+import com.github.autodiag2.elm327emu.sim.ecu.ECUConfigReplay
 import com.github.autodiag2.elm327emu.sim.ecu.EcuGuiView
 import com.github.autodiag2.elm327emu.sim.ecu.buildEcuGuiConfig
 import com.github.autodiag2.elm327emu.sim.ecu.buildSimScriptView
@@ -28,6 +29,7 @@ enum class EcuType(val label: String) {
     GUI("GUI"),
     RANDOM("random"),
     CYCLE("cycle"),
+    REPLAY("replay"),
     SCRIPT("Script");
 
     override fun toString() = label
@@ -150,6 +152,10 @@ class SimView(
                 EcuType.CYCLE -> {
 
                 }
+
+                EcuType.REPLAY -> {
+
+                }
             }
 
             root.put(obj)
@@ -232,6 +238,10 @@ class SimView(
                 EcuType.CYCLE -> {
 
                 }
+
+                EcuType.REPLAY -> {
+
+                }
             }
         }
     }
@@ -242,6 +252,7 @@ class SimView(
             EcuType.SCRIPT -> buildSimScriptView(address, name, activity)
             EcuType.RANDOM -> ECUConfigRandom(address, name, activity)
             EcuType.CYCLE -> ECUConfigCycle(address, name, activity)
+            EcuType.REPLAY -> ECUConfigReplay(address, name, activity)
         }
     }
 
