@@ -22,13 +22,13 @@ class ECUConfigRandom(
         LayoutInflater.from(activity).inflate(R.layout.sim_ecu_random, this.screen as ViewGroup, true)
         val seed: EditText = this.screen.findViewById(R.id.sim_ecu_random_seed_input)
         this.screen.findViewById<Button>(R.id.sim_ecu_random_validate).setOnClickListener {
-            setByAddressWithContext(address.toByte(), seed.text.toString())
+            setByAddressWithContext(seed.text.toString())
         }
-        setByAddressWithContext(address.toByte())
+        setByAddressWithContext(seed.text.toString())
     }
 
-    private fun setByAddressWithContext(address: Byte, context: String = "0") {
-        libautodiag.setResponseTypeContextByAddress(address.toByte(), "random", context)
+    private fun setByAddressWithContext(context: String) {
+        libautodiag.setResponseTypeContextByAddress(id.toByte(), "random", context)
     }
 
 }

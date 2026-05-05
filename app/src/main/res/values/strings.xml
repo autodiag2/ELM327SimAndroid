@@ -18,6 +18,8 @@
     <string name="settings_network_bluetooth">Bluetooth</string>
     <string name="settings_network_ble">Bluetooth LE (4.0+)</string>
     <string name="settings_network_network">Network</string>
+    <string name="sim_ecu_cycle_gears_label">gears per byte</string>
+    <string name="sim_ecu_cycle_validate">Validate</string>
     <string name="sim_ecu_random_seed_label">Seed value</string>
     <string name="sim_ecu_random_seed_validate">Validate</string>
     <string name="sim_ecu_gui_add_signal">Add</string>
