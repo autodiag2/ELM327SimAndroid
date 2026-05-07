@@ -63,7 +63,7 @@ class SimView(
                 return@setOnClickListener
             }
 
-            buildAddECUToGUI(address.toUByte(), getString(R.string.sim_main_ecu_config_ecu_name, type), type)
+            buildAddECUToGUI(address.toByte(), getString(R.string.sim_main_ecu_config_ecu_name, type), type)
         }
 
         var running = false
@@ -78,7 +78,7 @@ class SimView(
                 }
             }
         }
-        buildAddECUToGUI(Ecu.DEFAULT_ADDRESS.toUByte(), getString(R.string.sim_ecu_gui_ecu_name), EcuType.GUI)
+        buildAddECUToGUI(Ecu.DEFAULT_ADDRESS, getString(R.string.sim_ecu_gui_ecu_name), EcuType.GUI)
     }
 
     fun saveConfig(path: String) {

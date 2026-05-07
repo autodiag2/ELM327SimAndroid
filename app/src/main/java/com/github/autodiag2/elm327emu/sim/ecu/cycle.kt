@@ -8,7 +8,7 @@ import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.libautodiag
 
 class EcuCycle(
-    address: EcuAddress = DEFAULT_ADDRESS.toUByte(),
+    address: EcuAddress = DEFAULT_ADDRESS,
     name: String = EcuType.CYCLE.toString(),
     activity: MainActivity
 ): Ecu(EcuType.CYCLE, address, name, activity) {

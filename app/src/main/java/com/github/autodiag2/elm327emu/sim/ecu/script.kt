@@ -141,7 +141,7 @@ fun updateScript(script: String, ecu: Ecu) {
     }
 }
 class EcuScript(
-    address: EcuAddress = DEFAULT_ADDRESS.toUByte(),
+    address: EcuAddress = DEFAULT_ADDRESS,
     name: String = EcuType.SCRIPT.toString(),
     private val activity: MainActivity
 ): Ecu(EcuType.SCRIPT, address, name, activity) {

@@ -8,20 +8,20 @@ import com.github.autodiag2.elm327emu.MainActivityRef.activity
 import com.github.autodiag2.elm327emu.R
 import org.json.JSONObject
 
-typealias EcuAddress = UByte
+typealias EcuAddress = Byte
 
 abstract class Ecu(
     val type: EcuType,
-    var address: EcuAddress = DEFAULT_ADDRESS.toUByte(),
+    var address: EcuAddress = DEFAULT_ADDRESS,
     var displayName: String = type.toString(),
     context: Context
 ) : ConstraintLayout(context) {
 
     companion object {
 
-        const val DEFAULT_ADDRESS = 0xE8
+        const val DEFAULT_ADDRESS: EcuAddress = 0xE8.toByte()
 
-        fun create(type: EcuType, activity: MainActivity, address: EcuAddress = DEFAULT_ADDRESS.toUByte(), displayName: String = type.toString()) : Ecu {
+        fun create(type: EcuType, activity: MainActivity, address: EcuAddress = DEFAULT_ADDRESS, displayName: String = type.toString()) : Ecu {
             return when ( type ) {
                 EcuType.GUI -> EcuGui(address, displayName, activity)
                 EcuType.SCRIPT -> EcuScript(address, displayName, activity)
@@ -57,7 +57,7 @@ abstract class Ecu(
                 return create(EcuType.RANDOM, activity)
             }
 
-            val address = obj.optInt("address", DEFAULT_ADDRESS).toUByte()
+            val address = obj.optInt("address", DEFAULT_ADDRESS.toInt()).toByte()
             val displayName = obj.optString("displayName", type.toString())
             val ecu = create(type, activity, address, displayName)
 
@@ -95,7 +95,7 @@ abstract class Ecu(
             return
         }
 
-        val address = obj.optInt("address", DEFAULT_ADDRESS).toByte()
+        val address = obj.optInt("address", DEFAULT_ADDRESS.toInt()).toByte()
         val displayName = obj.optString("displayName", type.toString())
         // TODO
 

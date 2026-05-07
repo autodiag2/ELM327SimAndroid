@@ -9,7 +9,7 @@ import com.github.autodiag2.elm327emu.libautodiag
 import org.json.JSONObject
 
 class EcuReplay(
-    address: EcuAddress = DEFAULT_ADDRESS.toUByte(),
+    address: EcuAddress = DEFAULT_ADDRESS,
     name: String = EcuType.REPLAY.toString(),
     activity: MainActivity
 ): Ecu(EcuType.REPLAY, address, name, activity) {
