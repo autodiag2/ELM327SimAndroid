@@ -31,17 +31,17 @@ abstract class Ecu(
                 EcuType.CitroenC5X7 -> EcuCitroenC5X7(address, displayName, activity)
             }
         }
-        fun createFromJSON(obj: JSONObject, activity: MainActivity): Ecu {
+        fun createFromJSON(obj: JSONObject, activity: MainActivity): Ecu? {
 
-            val schema = obj.getString("schema")
+            val schema = obj.optString("schema")
             val prefix = "autodiag/sim/ecu/"
 
-            if(!schema.startsWith(prefix)) {
+            if(schema.isEmpty() || !schema.startsWith(prefix)) {
                 activity.appendLog(
                     activity.getString(R.string.sim_ecu_invalid_ecu_schema, schema),
                     LogLevel.ERROR
                 )
-                return create(EcuType.RANDOM, activity)
+                return null
             }
 
             val typeName = schema.removePrefix(prefix)
@@ -54,7 +54,7 @@ abstract class Ecu(
                     LogLevel.ERROR
                 )
                 activity.appendLog("", LogLevel.ERROR)
-                return create(EcuType.RANDOM, activity)
+                return null
             }
 
             val address = obj.optInt("address", DEFAULT_ADDRESS.toInt()).toByte()
@@ -68,10 +68,10 @@ abstract class Ecu(
     }
 
     fun stateFromJson(obj: JSONObject) {
-        val schema = obj.getString("schema")
+        val schema = obj.optString("schema")
         val prefix = "autodiag/sim/ecu/"
 
-        if(!schema.startsWith(prefix)) {
+        if(schema.isEmpty() || !schema.startsWith(prefix)) {
             activity?.getString(R.string.sim_ecu_invalid_ecu_schema, schema)?.let {
                 activity?.appendLog(
                     it,

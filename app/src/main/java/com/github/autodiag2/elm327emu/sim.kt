@@ -110,8 +110,10 @@ class SimView(
             val obj = root.getJSONObject(i)
 
             val ecu = Ecu.createFromJSON(obj, activity)
-            ecus.add(ecu)
-            addEcuRow(ecu)
+            if ( ecu != null ) {
+                ecus.add(ecu)
+                addEcuRow(ecu)
+            }
         }
     }
 
