@@ -1,5 +1,6 @@
 package com.github.autodiag2.elm327emu
 
+import com.github.autodiag2.elm327emu.sim.ecu.EcuAddress
 import com.github.autodiag2.elm327emu.sim.ecu.EcuByteArrayHandler
 import com.github.autodiag2.elm327emu.sim.ecu.EcuGui
 
@@ -15,24 +16,24 @@ data class SimSignal(
 
 object SimGeneratorGuiManager {
 
-    private val ecus = mutableMapOf<Byte, EcuGui>()
+    private val ecus = mutableMapOf<EcuAddress, EcuGui>()
 
     fun clear() {
         ecus.clear()
     }
 
     @Synchronized
-    fun add(address: Byte, view: EcuGui) {
+    fun add(address: EcuAddress, view: EcuGui) {
         ecus[address] = view
     }
 
     @Synchronized
-    fun getBy(address: Byte): EcuGui? {
+    fun getBy(address: EcuAddress): EcuGui? {
         return ecus[address]
     }
 
     @Synchronized
-    fun remove(address: Byte) {
+    fun remove(address: EcuAddress) {
         ecus.remove(address)
     }
 }
@@ -47,37 +48,37 @@ object libautodiag {
     }
 
     @JvmStatic
-    fun getMil(address: Byte): Boolean {
+    fun getMil(address: EcuAddress): Boolean {
         return SimGeneratorGuiManager.getBy(address)?.getMILState() ?: false
     }
 
     @JvmStatic
-    fun getDtcCleared(address: Byte): Boolean {
+    fun getDtcCleared(address: EcuAddress): Boolean {
         return SimGeneratorGuiManager.getBy(address)?.areDTCsCleared() ?: false
     }
 
     @JvmStatic
-    fun getEcuName(address: Byte): String {
+    fun getEcuName(address: EcuAddress): String {
         return SimGeneratorGuiManager.getBy(address)?.getECUName() ?: "error"
     }
 
     @JvmStatic
-    fun getVin(address: Byte): String {
+    fun getVin(address: EcuAddress): String {
         return SimGeneratorGuiManager.getBy(address)?.getVIN() ?: "error"
     }
 
     @JvmStatic
-    fun getDtcs(address: Byte): Array<String> {
+    fun getDtcs(address: EcuAddress): Array<String> {
         return SimGeneratorGuiManager.getBy(address)?.dtcs?.toTypedArray() ?: emptyArray()
     }
 
     @JvmStatic
-    fun getSignalValue(address: Byte, path: String): Double {
+    fun getSignalValue(address: EcuAddress, path: String): Double {
         return SimGeneratorGuiManager.getBy(address)?.signals?.get(path) ?: Double.NaN
     }
 
     @JvmStatic
-    fun setDtcCleared(address: Byte, value: Boolean) {
+    fun setDtcCleared(address: EcuAddress, value: Boolean) {
         SimGeneratorGuiManager.getBy(address)?.setDTCsCleared(value)
     }
 
@@ -95,17 +96,17 @@ object libautodiag {
 
     @JvmStatic
     external fun setResponseByteArrayByAddress(
-        address: Byte,
+        address: EcuAddress,
         callback: EcuByteArrayHandler
     )
 
     @JvmStatic
-    external fun removeEcuByAddress(address: Byte)
+    external fun removeEcuByAddress(address: EcuAddress)
     @JvmStatic
-    external fun setResponseGuiByAddress(address: Byte)
+    external fun setResponseGuiByAddress(address: EcuAddress)
     @JvmStatic
     external fun setResponseTypeContextByAddress(
-        address: Byte,
+        address: EcuAddress,
         type: String,
         context: String
     )

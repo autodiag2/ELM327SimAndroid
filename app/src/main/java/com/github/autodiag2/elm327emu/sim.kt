@@ -13,6 +13,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.cardview.widget.CardView
 import com.github.autodiag2.elm327emu.sim.ecu.Ecu
+import com.github.autodiag2.elm327emu.sim.ecu.EcuAddress
 import com.github.autodiag2.elm327emu.sim.ecu.EcuCitroenC5X7
 import com.github.autodiag2.elm327emu.sim.ecu.EcuCycle
 import com.github.autodiag2.elm327emu.sim.ecu.EcuRandom
@@ -62,7 +63,7 @@ class SimView(
                 return@setOnClickListener
             }
 
-            buildAddECUToGUI(address.toByte(), getString(R.string.sim_main_ecu_config_ecu_name, type), type)
+            buildAddECUToGUI(address.toUByte(), getString(R.string.sim_main_ecu_config_ecu_name, type), type)
         }
 
         var running = false
@@ -77,8 +78,7 @@ class SimView(
                 }
             }
         }
-        val address = 0xE8
-        buildAddECUToGUI(address.toByte(), getString(R.string.sim_ecu_gui_ecu_name), EcuType.GUI)
+        buildAddECUToGUI(Ecu.DEFAULT_ADDRESS.toUByte(), getString(R.string.sim_ecu_gui_ecu_name), EcuType.GUI)
     }
 
     fun saveConfig(path: String) {
@@ -115,7 +115,7 @@ class SimView(
         }
     }
 
-    fun buildEcuConfig(address: Byte, name: String, type: EcuType): Ecu {
+    fun buildEcuConfig(address: EcuAddress, name: String, type: EcuType): Ecu {
         return when ( type ) {
             EcuType.GUI -> EcuGui(address, name, activity)
             EcuType.SCRIPT -> EcuScript(address, name, activity)
@@ -130,7 +130,7 @@ class SimView(
         return activity.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
     }
 
-    private fun buildAddECUToGUI(address: Byte, name: String, type: EcuType) {
+    private fun buildAddECUToGUI(address: EcuAddress, name: String, type: EcuType) {
 
         ecuRemoveByAddress(address)
 
@@ -184,19 +184,19 @@ class SimView(
         for (i in ecus.indices.reversed()) {
             val ecu = ecus[i]
 
-            libautodiag.removeEcuByAddress(ecu.address.toByte())
+            libautodiag.removeEcuByAddress(ecu.address)
             ecuListView.removeViewAt(i + offset_in_layout)
             ecus.removeAt(i)
         }
     }
-    fun ecuRemoveByAddress(address: Byte) {
+    fun ecuRemoveByAddress(address: EcuAddress) {
         // iterate backwards to safely remove
         val offset_in_layout = 1
         for (i in ecus.indices.reversed()) {
             val ecu = ecus[i]
 
             if (ecu.address.toByte() == address.toByte()) {
-                libautodiag.removeEcuByAddress(ecu.address.toByte())
+                libautodiag.removeEcuByAddress(ecu.address)
                 ecuListView.removeViewAt(i + offset_in_layout)
                 ecus.removeAt(i)
             }

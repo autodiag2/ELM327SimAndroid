@@ -35,7 +35,7 @@ fun getString(context: Context,resId: Int, vararg formatArgs: Any?): String {
 }
 
 class EcuGui(
-    address: Byte = Ecu.DEFAULT_ADDRESS.toByte(),
+    address: EcuAddress = DEFAULT_ADDRESS.toUByte(),
     name: String = EcuType.GUI.toString(),
     private val activity: MainActivity,
 ) : Ecu(EcuType.GUI, address, name, activity) {
@@ -94,7 +94,7 @@ class EcuGui(
             }
         }
 
-        libautodiag.setResponseGuiByAddress(address.toByte())
+        libautodiag.setResponseGuiByAddress(address)
     }
 
     fun getECUName(): String {
