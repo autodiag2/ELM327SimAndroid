@@ -1,7 +1,7 @@
 package com.github.autodiag2.elm327emu
 
 import com.github.autodiag2.elm327emu.sim.ecu.EcuByteArrayHandler
-import com.github.autodiag2.elm327emu.sim.ecu.EcuGuiView
+import com.github.autodiag2.elm327emu.sim.ecu.EcuGui
 
 data class SimSignal(
     val path: String,
@@ -15,19 +15,19 @@ data class SimSignal(
 
 object SimGeneratorGuiManager {
 
-    private val ecus = mutableMapOf<Byte, EcuGuiView>()
+    private val ecus = mutableMapOf<Byte, EcuGui>()
 
     fun clear() {
         ecus.clear()
     }
 
     @Synchronized
-    fun add(address: Byte, view: EcuGuiView) {
+    fun add(address: Byte, view: EcuGui) {
         ecus[address] = view
     }
 
     @Synchronized
-    fun getBy(address: Byte): EcuGuiView? {
+    fun getBy(address: Byte): EcuGui? {
         return ecus[address]
     }
 

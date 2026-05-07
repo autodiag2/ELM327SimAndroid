@@ -13,12 +13,11 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.cardview.widget.CardView
-import com.github.autodiag2.elm327emu.sim.ecu.ECUConfigCycle
-import com.github.autodiag2.elm327emu.sim.ecu.ECUConfigRandom
-import com.github.autodiag2.elm327emu.sim.ecu.ECUConfigReplay
-import com.github.autodiag2.elm327emu.sim.ecu.EcuGuiView
-import com.github.autodiag2.elm327emu.sim.ecu.buildEcuGuiConfig
-import com.github.autodiag2.elm327emu.sim.ecu.buildSimScriptView
+import com.github.autodiag2.elm327emu.sim.ecu.EcuCycle
+import com.github.autodiag2.elm327emu.sim.ecu.EcuRandom
+import com.github.autodiag2.elm327emu.sim.ecu.EcuReplay
+import com.github.autodiag2.elm327emu.sim.ecu.EcuGui
+import com.github.autodiag2.elm327emu.sim.ecu.EcuScript
 import com.github.autodiag2.elm327emu.sim.ecu.getScript
 import com.github.autodiag2.elm327emu.sim.ecu.updateScript
 import org.json.JSONArray
@@ -36,7 +35,7 @@ enum class EcuType(val label: String) {
 }
 
 open class EcuConfig(
-    val id: Int,
+    val address: Byte,
     var name: String,
     var type: EcuType,
     var screen: View
@@ -77,7 +76,7 @@ class SimView(
                 return@setOnClickListener
             }
 
-            buildAddECUToGUI(address, getString(R.string.sim_main_ecu_config_ecu_name, type), type)
+            buildAddECUToGUI(address.toByte(), getString(R.string.sim_main_ecu_config_ecu_name, type), type)
         }
 
         var running = false
@@ -92,7 +91,8 @@ class SimView(
                 }
             }
         }
-        buildAddECUToGUI(0xE8, getString(R.string.sim_ecu_gui_ecu_name), EcuType.GUI)
+        val address = 0xE8
+        buildAddECUToGUI(address.toByte(), getString(R.string.sim_ecu_gui_ecu_name), EcuType.GUI)
     }
 
     fun saveConfig(path: String) {
@@ -105,8 +105,8 @@ class SimView(
         for (ecu in ecus) {
             val obj = JSONObject()
 
-            val address: Byte = ecu.id.toByte()
-            obj.put("id", ecu.id)
+            val address: Byte = ecu.address.toByte()
+            obj.put("id", ecu.address)
             obj.put("name", ecu.name)
             obj.put("type", ecu.type.name)
 
@@ -114,20 +114,20 @@ class SimView(
                 EcuType.GUI -> {
                     // GUI state extraction from SimGeneratorGui (global state)
                     val gui = JSONObject()
-                    val ecuGuiView = ecu.screen as EcuGuiView
+                    val ecuGui = ecu as EcuGui
 
-                    gui.put("ecuName", ecuGuiView.getECUName())
-                    gui.put("vin", ecuGuiView.getVIN())
-                    gui.put("mil", ecuGuiView.getMILState())
-                    gui.put("dtcCleared", ecuGuiView.areDTCsCleared())
+                    gui.put("ecuName", ecuGui.getECUName())
+                    gui.put("vin", ecuGui.getVIN())
+                    gui.put("mil", ecuGui.getMILState())
+                    gui.put("dtcCleared", ecuGui.areDTCsCleared())
 
                     val dtcs = JSONArray()
-                    ecuGuiView.dtcs.forEach { dtcs.put(it) }
+                    ecuGui.dtcs.forEach { dtcs.put(it) }
                     gui.put("dtcs", dtcs)
 
                     // signals
                     val signals = JSONArray()
-                    ecuGuiView.signals.forEach { entry ->
+                    ecuGui.signals.forEach { entry ->
                         val value = libautodiag.getSignalValue(address, entry.key)
                         if (!value.isNaN()) {
                             val s = JSONObject()
@@ -182,7 +182,7 @@ class SimView(
             val name = obj.getString("name")
             val type = EcuType.valueOf(obj.getString("type"))
 
-            val ecu = buildEcuConfig(id, name, type)
+            val ecu = buildEcuConfig(id.toByte(), name, type)
             ecus.add(ecu)
             addEcuRow(ecu)
 
@@ -190,27 +190,27 @@ class SimView(
                 EcuType.GUI -> {
                     val gui = obj.optJSONObject("gui") ?: continue
 
-                    val ecuGuiView: EcuGuiView = ecu.screen as EcuGuiView
-                    val ecu_name = ecuGuiView.findViewById<EditText>(R.id.ecu_name)
+                    val ecuGui: EcuGui = ecu as EcuGui
+                    val ecu_name = ecuGui.screen.findViewById<EditText>(R.id.ecu_name)
                     ecu_name.setText(gui.optString("ecuName", ""))
-                    val vin = ecuGuiView.findViewById<EditText>(R.id.vin)
+                    val vin = ecuGui.screen.findViewById<EditText>(R.id.vin)
                     vin.setText(gui.optString("vin", ""))
-                    val mil = ecuGuiView.findViewById<CheckBox>(R.id.mil_state)
+                    val mil = ecuGui.screen.findViewById<CheckBox>(R.id.mil_state)
                     mil.isChecked = gui.optBoolean("mil", false)
-                    val dtcCleared = ecuGuiView.findViewById<CheckBox>(R.id.dtcs_cleared)
+                    val dtcCleared = ecuGui.screen.findViewById<CheckBox>(R.id.dtcs_cleared)
                     dtcCleared.isChecked = gui.optBoolean("dtcCleared", false)
 
                     // dtcs
-                    ecuGuiView.clearDTCs()
+                    ecuGui.clearDTCs()
                     val dtcs = gui.optJSONArray("dtcs")
                     if (dtcs != null) {
                         for (j in 0 until dtcs.length()) {
-                            ecuGuiView.addDtcByCode(dtcs.getString(j))
+                            ecuGui.addDtcByCode(dtcs.getString(j))
                         }
                     }
 
                     // signals
-                    ecuGuiView.clearSignals()
+                    ecuGui.clearSignals()
                     val signals = gui.optJSONArray("signals")
                     if (signals != null) {
                         for (j in 0 until signals.length()) {
@@ -218,8 +218,8 @@ class SimView(
                             val path = s.getString("path")
                             val value = s.getDouble("value")
 
-                            ecuGuiView.addSignalByPath(path)
-                            ecuGuiView.setSignalValue(path, value)
+                            ecuGui.addSignalByPath(path)
+                            ecuGui.setSignalValue(path, value)
                         }
                     }
                 }
@@ -246,13 +246,13 @@ class SimView(
         }
     }
 
-    fun buildEcuConfig(address: Int, name: String, type: EcuType): EcuConfig {
+    fun buildEcuConfig(address: Byte, name: String, type: EcuType): EcuConfig {
         return when ( type ) {
-            EcuType.GUI -> buildEcuGuiConfig(address, name, activity)
-            EcuType.SCRIPT -> buildSimScriptView(address, name, activity)
-            EcuType.RANDOM -> ECUConfigRandom(address, name, activity)
-            EcuType.CYCLE -> ECUConfigCycle(address, name, activity)
-            EcuType.REPLAY -> ECUConfigReplay(address, name, activity)
+            EcuType.GUI -> EcuGui(address, name, activity)
+            EcuType.SCRIPT -> EcuScript(address, name, activity)
+            EcuType.RANDOM -> EcuRandom(address, name, activity)
+            EcuType.CYCLE -> EcuCycle(address, name, activity)
+            EcuType.REPLAY -> EcuReplay(address, name, activity)
         }
     }
 
@@ -260,7 +260,7 @@ class SimView(
         return activity.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
     }
 
-    private fun buildAddECUToGUI(address: Int, name: String, type: EcuType) {
+    private fun buildAddECUToGUI(address: Byte, name: String, type: EcuType) {
 
         ecuRemoveByAddress(address)
 
@@ -275,7 +275,7 @@ class SimView(
         val cardView = row.findViewById<CardView>(R.id.ecu_row_cardview)
         val title = row.findViewById<TextView>(R.id.ecu_title)
 
-        title.text = "ECU 0x${ecu.id.toString(16).uppercase()} (${ecu.name})"
+        title.text = "ECU 0x${ecu.address.toString(16).uppercase()} (${ecu.name})"
 
         row.setOnClickListener {
             activity.showNestedScreen(ecu.screen)
@@ -289,7 +289,7 @@ class SimView(
             popup.setOnMenuItemClickListener { item ->
                 when (item.itemId) {
                     R.id.action_delete -> {
-                        ecuRemoveByAddress(ecu.id)
+                        ecuRemoveByAddress(ecu.address)
                         true
                     }
                     else -> false
@@ -314,19 +314,19 @@ class SimView(
         for (i in ecus.indices.reversed()) {
             val ecu = ecus[i]
 
-            libautodiag.removeEcuByAddress(ecu.id.toByte())
+            libautodiag.removeEcuByAddress(ecu.address.toByte())
             ecuListView.removeViewAt(i + offset_in_layout)
             ecus.removeAt(i)
         }
     }
-    fun ecuRemoveByAddress(address: Int) {
+    fun ecuRemoveByAddress(address: Byte) {
         // iterate backwards to safely remove
         val offset_in_layout = 1
         for (i in ecus.indices.reversed()) {
             val ecu = ecus[i]
 
-            if (ecu.id.toByte() == address.toByte()) {
-                libautodiag.removeEcuByAddress(ecu.id.toByte())
+            if (ecu.address.toByte() == address.toByte()) {
+                libautodiag.removeEcuByAddress(ecu.address.toByte())
                 ecuListView.removeViewAt(i + offset_in_layout)
                 ecus.removeAt(i)
             }

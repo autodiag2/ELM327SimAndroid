@@ -3,10 +3,13 @@ package com.github.autodiag2.elm327emu.sim.ecu
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.view.LayoutInflater
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
+import androidx.constraintlayout.widget.ConstraintLayout
 import com.github.autodiag2.elm327emu.EcuConfig
 import com.github.autodiag2.elm327emu.EcuType
 import com.github.autodiag2.elm327emu.MainActivity
@@ -129,7 +132,7 @@ fun updateScript(script: String, ecu: EcuConfig) {
 
         // bind to ECU (native side)
         libautodiag.setResponseByteArrayByAddress(
-            ecu.id.toByte(),
+            ecu.address,
             handler
         )
         errorReturn.setText(getString(ecu.screen.context,
@@ -140,54 +143,53 @@ fun updateScript(script: String, ecu: EcuConfig) {
             R.string.sim_ecu_script_lua_load_parse_error, e.message))
     }
 }
-fun buildSimScriptView(address: Int, name: String, activity: MainActivity): EcuConfig {
-    val view = activity.layoutInflater.inflate(R.layout.sim_ecu_script, activity.contentFrame, false)
-    val luaEditor = view.findViewById<EditText>(R.id.lua_editor)
+class EcuScript(
+    address: Byte,
+    name: String,
+    private val activity: MainActivity
+): EcuConfig(address, name, EcuType.SCRIPT, ConstraintLayout(activity)) {
+    init {
+        LayoutInflater.from(activity).inflate(R.layout.sim_ecu_script, this.screen as ViewGroup, true)
+        val luaEditor = screen.findViewById<EditText>(R.id.lua_editor)
 
-    val ecu = EcuConfig(
-        id = address,
-        name = name,
-        type = EcuType.SCRIPT,
-        screen = view
-    )
-    val applyScript = view.findViewById<Button>(R.id.apply_script)
-    applyScript.setOnClickListener {
-        updateScript(luaEditor.text.toString(), ecu)
-    }
-    updateScript(luaEditor.text.toString(), ecu)
-    val copyBtn = view.findViewById<Button>(R.id.copy_script)
-    val pasteBtn = view.findViewById<Button>(R.id.paste_script)
-    val clearBtn = view.findViewById<Button>(R.id.clear_script)
-
-    val clipboard = activity.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    copyBtn.setOnClickListener {
-        val text = luaEditor.text.toString()
-
-        if (text.isNotEmpty()) {
-            val clip = ClipData.newPlainText("lua_script", text)
-            clipboard.setPrimaryClip(clip)
-            Toast.makeText(activity, getString(activity,
-                R.string.sim_ecu_script_copy_success
-            ), Toast.LENGTH_SHORT).show()
+        val applyScript = screen.findViewById<Button>(R.id.apply_script)
+        applyScript.setOnClickListener {
+            updateScript(luaEditor.text.toString(), this)
         }
-    }
-    pasteBtn.setOnClickListener {
-        if (clipboard.hasPrimaryClip()) {
-            val item = clipboard.primaryClip?.getItemAt(0)
-            val pasted = item?.coerceToText(activity)?.toString()
+        updateScript(luaEditor.text.toString(), this)
+        val copyBtn = screen.findViewById<Button>(R.id.copy_script)
+        val pasteBtn = screen.findViewById<Button>(R.id.paste_script)
+        val clearBtn = screen.findViewById<Button>(R.id.clear_script)
 
-            if (!pasted.isNullOrEmpty()) {
-                luaEditor.setText(pasted)
-                luaEditor.setSelection(pasted.length) // move cursor to end
+        val clipboard = activity.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        copyBtn.setOnClickListener {
+            val text = luaEditor.text.toString()
+
+            if (text.isNotEmpty()) {
+                val clip = ClipData.newPlainText("lua_script", text)
+                clipboard.setPrimaryClip(clip)
+                Toast.makeText(activity, getString(activity,
+                    R.string.sim_ecu_script_copy_success
+                ), Toast.LENGTH_SHORT).show()
             }
         }
+        pasteBtn.setOnClickListener {
+            if (clipboard.hasPrimaryClip()) {
+                val item = clipboard.primaryClip?.getItemAt(0)
+                val pasted = item?.coerceToText(activity)?.toString()
+
+                if (!pasted.isNullOrEmpty()) {
+                    luaEditor.setText(pasted)
+                    luaEditor.setSelection(pasted.length) // move cursor to end
+                }
+            }
+        }
+        clearBtn.setOnClickListener {
+            luaEditor.setText(
+                "function response(req)\n" +
+                        "    return {}\n" +
+                        "end"
+            )
+        }
     }
-    clearBtn.setOnClickListener {
-        luaEditor.setText(
-            "function response(req)\n" +
-                    "    return {}\n" +
-                    "end"
-        )
-    }
-    return ecu
 }

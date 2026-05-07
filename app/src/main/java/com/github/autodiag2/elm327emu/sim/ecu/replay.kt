@@ -1,7 +1,6 @@
 package com.github.autodiag2.elm327emu.sim.ecu
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
@@ -13,8 +12,8 @@ import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.libautodiag
 import org.json.JSONObject
 
-class ECUConfigReplay(
-    address: Int,
+class EcuReplay(
+    address: Byte,
     name: String,
     activity: MainActivity
 ): EcuConfig(address, name, EcuType.REPLAY, LinearLayout(activity)) {
@@ -72,7 +71,7 @@ class ECUConfigReplay(
     }
 
     private fun setByAddressWithContext(context: String) {
-        libautodiag.setResponseTypeContextByAddress(id.toByte(), "replay", context)
+        libautodiag.setResponseTypeContextByAddress(address.toByte(), "replay", context)
     }
 
 }

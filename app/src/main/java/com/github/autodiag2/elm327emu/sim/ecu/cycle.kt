@@ -1,7 +1,6 @@
 package com.github.autodiag2.elm327emu.sim.ecu
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
@@ -12,8 +11,8 @@ import com.github.autodiag2.elm327emu.MainActivity
 import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.libautodiag
 
-class ECUConfigCycle(
-    address: Int,
+class EcuCycle(
+    address: Byte,
     name: String,
     activity: MainActivity
 ): EcuConfig(address, name, EcuType.CYCLE, LinearLayout(activity)) {
@@ -28,7 +27,7 @@ class ECUConfigCycle(
     }
 
     private fun setByAddressWithContext(context: String) {
-        libautodiag.setResponseTypeContextByAddress(id.toByte(), "cycle", context)
+        libautodiag.setResponseTypeContextByAddress(address.toByte(), "cycle", context)
     }
 
 }
