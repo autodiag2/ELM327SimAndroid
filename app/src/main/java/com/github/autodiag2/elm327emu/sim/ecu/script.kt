@@ -4,14 +4,10 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.view.LayoutInflater
-import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
-import androidx.constraintlayout.widget.ConstraintLayout
-import com.github.autodiag2.elm327emu.EcuConfig
-import com.github.autodiag2.elm327emu.EcuType
 import com.github.autodiag2.elm327emu.MainActivity
 import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.libautodiag
@@ -121,12 +117,12 @@ class LuaJEcuHandler(
         }
     }
 }
-fun getScript(ecu: EcuConfig): String {
-    val luaEditor = ecu.screen.findViewById<EditText>(R.id.lua_editor)
+fun getScript(ecu: Ecu): String {
+    val luaEditor = ecu.findViewById<EditText>(R.id.lua_editor)
     return luaEditor.text.toString()
 }
-fun updateScript(script: String, ecu: EcuConfig) {
-    val errorReturn = ecu.screen.findViewById<TextView>(R.id.error_return)
+fun updateScript(script: String, ecu: Ecu) {
+    val errorReturn = ecu.findViewById<TextView>(R.id.error_return)
     try {
         val handler = LuaJEcuHandler(script, errorReturn)
 
@@ -135,11 +131,11 @@ fun updateScript(script: String, ecu: EcuConfig) {
             ecu.address,
             handler
         )
-        errorReturn.setText(getString(ecu.screen.context,
+        errorReturn.setText(getString(ecu.context,
             R.string.sim_ecu_script_lua_parse_success
         ))
     } catch (e: Exception) {
-        errorReturn.setText(getString(ecu.screen.context,
+        errorReturn.setText(getString(ecu.context,
             R.string.sim_ecu_script_lua_load_parse_error, e.message))
     }
 }
@@ -147,19 +143,19 @@ class EcuScript(
     address: Byte,
     name: String,
     private val activity: MainActivity
-): EcuConfig(address, name, EcuType.SCRIPT, ConstraintLayout(activity)) {
+): Ecu(address, name, EcuType.SCRIPT, activity) {
     init {
-        LayoutInflater.from(activity).inflate(R.layout.sim_ecu_script, this.screen as ViewGroup, true)
-        val luaEditor = screen.findViewById<EditText>(R.id.lua_editor)
+        LayoutInflater.from(activity).inflate(R.layout.sim_ecu_script, this, true)
+        val luaEditor = findViewById<EditText>(R.id.lua_editor)
 
-        val applyScript = screen.findViewById<Button>(R.id.apply_script)
+        val applyScript = findViewById<Button>(R.id.apply_script)
         applyScript.setOnClickListener {
             updateScript(luaEditor.text.toString(), this)
         }
         updateScript(luaEditor.text.toString(), this)
-        val copyBtn = screen.findViewById<Button>(R.id.copy_script)
-        val pasteBtn = screen.findViewById<Button>(R.id.paste_script)
-        val clearBtn = screen.findViewById<Button>(R.id.clear_script)
+        val copyBtn = findViewById<Button>(R.id.copy_script)
+        val pasteBtn = findViewById<Button>(R.id.paste_script)
+        val clearBtn = findViewById<Button>(R.id.clear_script)
 
         val clipboard = activity.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         copyBtn.setOnClickListener {

@@ -10,10 +10,6 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.content.Context
 import android.view.LayoutInflater
-import android.view.ViewGroup
-import androidx.constraintlayout.widget.ConstraintLayout
-import com.github.autodiag2.elm327emu.EcuConfig
-import com.github.autodiag2.elm327emu.EcuType
 import com.github.autodiag2.elm327emu.MainActivity
 import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.SimGeneratorGuiManager
@@ -40,7 +36,7 @@ class EcuGui(
     address: Byte,
     name: String,
     private val activity: MainActivity,
-) : EcuConfig(address, name, EcuType.GUI, ConstraintLayout(activity)) {
+) : Ecu(address, name, EcuType.GUI, activity) {
 
     private val dynamicSignalsContainer: LinearLayout
     private val dtcContainer: LinearLayout
@@ -53,16 +49,16 @@ class EcuGui(
     val signals: MutableMap<String, Double> = linkedMapOf()
 
     init {
-        LayoutInflater.from(activity).inflate(R.layout.sim_ecu_gui, this.screen as ViewGroup, true)
-        dynamicSignalsContainer = screen.findViewById(R.id.signal_container)
-        dtcContainer = screen.findViewById(R.id.dtc_list)
-        ecuName = screen.findViewById(R.id.ecu_name)
-        vin = screen.findViewById(R.id.vin)
-        milState = screen.findViewById(R.id.mil_state)
-        dtcClearedCheck = screen.findViewById(R.id.dtcs_cleared)
+        LayoutInflater.from(activity).inflate(R.layout.sim_ecu_gui, this, true)
+        dynamicSignalsContainer = findViewById(R.id.signal_container)
+        dtcContainer = findViewById(R.id.dtc_list)
+        ecuName = findViewById(R.id.ecu_name)
+        vin = findViewById(R.id.vin)
+        milState = findViewById(R.id.mil_state)
+        dtcClearedCheck = findViewById(R.id.dtcs_cleared)
         addDefaultSignals()
         SimGeneratorGuiManager.add(address, this)
-        val signalSpinner = screen.findViewById<Spinner>(R.id.signal_choice)
+        val signalSpinner = findViewById<Spinner>(R.id.signal_choice)
         val spinnerSignals = allSignals
         val spinnerAdapter = ArrayAdapter(
             activity,
@@ -73,7 +69,7 @@ class EcuGui(
         }
         signalSpinner.adapter = spinnerAdapter
 
-        screen.findViewById<Button>(R.id.signal_add).apply {
+        findViewById<Button>(R.id.signal_add).apply {
             setOnClickListener {
                 val index = signalSpinner.selectedItemPosition
 
@@ -84,9 +80,9 @@ class EcuGui(
             }
         }
 
-        val dtcInput = screen.findViewById<EditText>(R.id.dtc_entry)
+        val dtcInput = findViewById<EditText>(R.id.dtc_entry)
 
-        screen.findViewById<Button>(R.id.dtc_entery_validate).apply {
+        findViewById<Button>(R.id.dtc_entery_validate).apply {
             setOnClickListener {
                 val v = dtcInput.text.toString().uppercase()
                 if (v.isNotEmpty()) {

@@ -1,7 +1,6 @@
 package com.github.autodiag2.elm327emu
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Button
@@ -13,39 +12,25 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.cardview.widget.CardView
+import com.github.autodiag2.elm327emu.sim.ecu.Ecu
 import com.github.autodiag2.elm327emu.sim.ecu.EcuCycle
 import com.github.autodiag2.elm327emu.sim.ecu.EcuRandom
 import com.github.autodiag2.elm327emu.sim.ecu.EcuReplay
 import com.github.autodiag2.elm327emu.sim.ecu.EcuGui
 import com.github.autodiag2.elm327emu.sim.ecu.EcuScript
+import com.github.autodiag2.elm327emu.sim.ecu.EcuType
 import com.github.autodiag2.elm327emu.sim.ecu.getScript
 import com.github.autodiag2.elm327emu.sim.ecu.updateScript
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 
-enum class EcuType(val label: String) {
-    GUI("GUI"),
-    RANDOM("random"),
-    CYCLE("cycle"),
-    REPLAY("replay"),
-    SCRIPT("Script");
-
-    override fun toString() = label
-}
-
-open class EcuConfig(
-    val address: Byte,
-    var name: String,
-    var type: EcuType,
-    var screen: View
-)
 class SimView(
     private val activity: MainActivity
 ) : FrameLayout(activity) {
 
     private val ecuListView: ViewGroup
-    val ecus = mutableListOf<EcuConfig>()
+    val ecus = mutableListOf<Ecu>()
     private val ecuAddSelect: Spinner
 
     init {
@@ -105,9 +90,8 @@ class SimView(
         for (ecu in ecus) {
             val obj = JSONObject()
 
-            val address: Byte = ecu.address.toByte()
             obj.put("id", ecu.address)
-            obj.put("name", ecu.name)
+            obj.put("name", ecu.displayName)
             obj.put("type", ecu.type.name)
 
             when (ecu) {
@@ -127,7 +111,7 @@ class SimView(
                     // signals
                     val signals = JSONArray()
                     ecu.signals.forEach { entry ->
-                        val value = libautodiag.getSignalValue(address, entry.key)
+                        val value = libautodiag.getSignalValue(ecu.address, entry.key)
                         if (!value.isNaN()) {
                             val s = JSONObject()
                             s.put("path", entry.key)
@@ -189,13 +173,13 @@ class SimView(
                 is EcuGui -> {
                     val gui = obj.optJSONObject("gui") ?: continue
 
-                    val ecu_name = ecu.screen.findViewById<EditText>(R.id.ecu_name)
+                    val ecu_name = ecu.findViewById<EditText>(R.id.ecu_name)
                     ecu_name.setText(gui.optString("ecuName", ""))
-                    val vin = ecu.screen.findViewById<EditText>(R.id.vin)
+                    val vin = ecu.findViewById<EditText>(R.id.vin)
                     vin.setText(gui.optString("vin", ""))
-                    val mil = ecu.screen.findViewById<CheckBox>(R.id.mil_state)
+                    val mil = ecu.findViewById<CheckBox>(R.id.mil_state)
                     mil.isChecked = gui.optBoolean("mil", false)
-                    val dtcCleared = ecu.screen.findViewById<CheckBox>(R.id.dtcs_cleared)
+                    val dtcCleared = ecu.findViewById<CheckBox>(R.id.dtcs_cleared)
                     dtcCleared.isChecked = gui.optBoolean("dtcCleared", false)
 
                     // dtcs
@@ -224,7 +208,7 @@ class SimView(
 
                 is EcuScript -> {
                     val script = obj.optString("script", "")
-                    val editor = ecu.screen.findViewById<EditText>(R.id.lua_editor)
+                    val editor = ecu.findViewById<EditText>(R.id.lua_editor)
                     updateScript(script, ecu)
                     editor.setText(script)
                 }
@@ -244,7 +228,7 @@ class SimView(
         }
     }
 
-    fun buildEcuConfig(address: Byte, name: String, type: EcuType): EcuConfig {
+    fun buildEcuConfig(address: Byte, name: String, type: EcuType): Ecu {
         return when ( type ) {
             EcuType.GUI -> EcuGui(address, name, activity)
             EcuType.SCRIPT -> EcuScript(address, name, activity)
@@ -268,15 +252,15 @@ class SimView(
         addEcuRow(ecu)
     }
 
-    fun addEcuRow(ecu: EcuConfig) {
+    fun addEcuRow(ecu: Ecu) {
         val row = activity.layoutInflater.inflate(R.layout.sim_main_ecu_row, ecuListView, false)
         val cardView = row.findViewById<CardView>(R.id.ecu_row_cardview)
         val title = row.findViewById<TextView>(R.id.ecu_title)
 
-        title.text = "ECU 0x${ecu.address.toString(16).uppercase()} (${ecu.name})"
+        title.text = "ECU 0x${ecu.address.toString(16).uppercase()} (${ecu.displayName})"
 
         row.setOnClickListener {
-            activity.showNestedScreen(ecu.screen)
+            activity.showNestedScreen(ecu)
         }
 
         cardView.setOnLongClickListener {
