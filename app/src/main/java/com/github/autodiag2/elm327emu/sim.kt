@@ -145,7 +145,7 @@ class SimView(
         val cardView = row.findViewById<CardView>(R.id.ecu_row_cardview)
         val title = row.findViewById<TextView>(R.id.ecu_title)
 
-        title.text = "ECU 0x${ecu.address.toString(16).uppercase()} (${ecu.displayName})"
+        title.text = "ECU 0x${ecu.address.toUByte().toString(16).uppercase()} (${ecu.displayName})"
 
         row.setOnClickListener {
             activity.showNestedScreen(ecu)
