@@ -110,24 +110,23 @@ class SimView(
             obj.put("name", ecu.name)
             obj.put("type", ecu.type.name)
 
-            when (ecu.type) {
-                EcuType.GUI -> {
+            when (ecu) {
+                is EcuGui -> {
                     // GUI state extraction from SimGeneratorGui (global state)
                     val gui = JSONObject()
-                    val ecuGui = ecu as EcuGui
 
-                    gui.put("ecuName", ecuGui.getECUName())
-                    gui.put("vin", ecuGui.getVIN())
-                    gui.put("mil", ecuGui.getMILState())
-                    gui.put("dtcCleared", ecuGui.areDTCsCleared())
+                    gui.put("ecuName", ecu.getECUName())
+                    gui.put("vin", ecu.getVIN())
+                    gui.put("mil", ecu.getMILState())
+                    gui.put("dtcCleared", ecu.areDTCsCleared())
 
                     val dtcs = JSONArray()
-                    ecuGui.dtcs.forEach { dtcs.put(it) }
+                    ecu.dtcs.forEach { dtcs.put(it) }
                     gui.put("dtcs", dtcs)
 
                     // signals
                     val signals = JSONArray()
-                    ecuGui.signals.forEach { entry ->
+                    ecu.signals.forEach { entry ->
                         val value = libautodiag.getSignalValue(address, entry.key)
                         if (!value.isNaN()) {
                             val s = JSONObject()
@@ -141,19 +140,19 @@ class SimView(
                     obj.put("gui", gui)
                 }
 
-                EcuType.SCRIPT -> {
+                is EcuScript -> {
                     obj.put("script", getScript(ecu))
                 }
 
-                EcuType.RANDOM -> {
+                is EcuRandom -> {
 
                 }
 
-                EcuType.CYCLE -> {
+                is EcuCycle -> {
 
                 }
 
-                EcuType.REPLAY -> {
+                is EcuReplay -> {
 
                 }
             }
@@ -186,31 +185,30 @@ class SimView(
             ecus.add(ecu)
             addEcuRow(ecu)
 
-            when (type) {
-                EcuType.GUI -> {
+            when (ecu) {
+                is EcuGui -> {
                     val gui = obj.optJSONObject("gui") ?: continue
 
-                    val ecuGui: EcuGui = ecu as EcuGui
-                    val ecu_name = ecuGui.screen.findViewById<EditText>(R.id.ecu_name)
+                    val ecu_name = ecu.screen.findViewById<EditText>(R.id.ecu_name)
                     ecu_name.setText(gui.optString("ecuName", ""))
-                    val vin = ecuGui.screen.findViewById<EditText>(R.id.vin)
+                    val vin = ecu.screen.findViewById<EditText>(R.id.vin)
                     vin.setText(gui.optString("vin", ""))
-                    val mil = ecuGui.screen.findViewById<CheckBox>(R.id.mil_state)
+                    val mil = ecu.screen.findViewById<CheckBox>(R.id.mil_state)
                     mil.isChecked = gui.optBoolean("mil", false)
-                    val dtcCleared = ecuGui.screen.findViewById<CheckBox>(R.id.dtcs_cleared)
+                    val dtcCleared = ecu.screen.findViewById<CheckBox>(R.id.dtcs_cleared)
                     dtcCleared.isChecked = gui.optBoolean("dtcCleared", false)
 
                     // dtcs
-                    ecuGui.clearDTCs()
+                    ecu.clearDTCs()
                     val dtcs = gui.optJSONArray("dtcs")
                     if (dtcs != null) {
                         for (j in 0 until dtcs.length()) {
-                            ecuGui.addDtcByCode(dtcs.getString(j))
+                            ecu.addDtcByCode(dtcs.getString(j))
                         }
                     }
 
                     // signals
-                    ecuGui.clearSignals()
+                    ecu.clearSignals()
                     val signals = gui.optJSONArray("signals")
                     if (signals != null) {
                         for (j in 0 until signals.length()) {
@@ -218,28 +216,28 @@ class SimView(
                             val path = s.getString("path")
                             val value = s.getDouble("value")
 
-                            ecuGui.addSignalByPath(path)
-                            ecuGui.setSignalValue(path, value)
+                            ecu.addSignalByPath(path)
+                            ecu.setSignalValue(path, value)
                         }
                     }
                 }
 
-                EcuType.SCRIPT -> {
+                is EcuScript -> {
                     val script = obj.optString("script", "")
                     val editor = ecu.screen.findViewById<EditText>(R.id.lua_editor)
                     updateScript(script, ecu)
                     editor.setText(script)
                 }
 
-                EcuType.RANDOM -> {
+                is EcuRandom -> {
 
                 }
 
-                EcuType.CYCLE -> {
+                is EcuCycle -> {
 
                 }
 
-                EcuType.REPLAY -> {
+                is EcuReplay -> {
 
                 }
             }
