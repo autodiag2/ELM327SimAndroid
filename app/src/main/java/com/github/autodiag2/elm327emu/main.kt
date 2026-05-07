@@ -146,10 +146,19 @@ class MainActivity : AppCompatActivity() {
         invalidateOptionsMenu()
     }
 
+    var isSimItemSelectedMode = false
+        set(value) {
+            field = value
+            invalidateOptionsMenu() // forces onPrepareOptionsMenu refresh
+        }
+
     override fun onPrepareOptionsMenu(menu: android.view.Menu): Boolean {
 
         menu.setGroupVisible(R.id.action_menu_group_sim_config, activeScreen == simView)
-        menu.setGroupVisible(R.id.action_menu_group_sims, activeScreen == simsView)
+        menu.setGroupVisible(R.id.action_menu_group_sims,
+            activeScreen == simsView &&
+            isSimItemSelectedMode
+        )
 
         return super.onPrepareOptionsMenu(menu)
     }

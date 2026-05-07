@@ -135,10 +135,12 @@ private class ConfigAdapter(
             selectedItems.remove(item)
             holder.itemView.isActivated = false
             holder.itemView.alpha = 1f
+            activity.isSimItemSelectedMode = false
         } else {
             selectedItems.add(item)
             holder.itemView.isActivated = true
             holder.itemView.alpha = 0.6f
+            activity.isSimItemSelectedMode = true
         }
     }
     fun refresh() {
