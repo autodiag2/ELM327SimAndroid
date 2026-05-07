@@ -115,17 +115,6 @@ class SimView(
         }
     }
 
-    fun buildEcuConfig(address: EcuAddress, name: String, type: EcuType): Ecu {
-        return when ( type ) {
-            EcuType.GUI -> EcuGui(address, name, activity)
-            EcuType.SCRIPT -> EcuScript(address, name, activity)
-            EcuType.RANDOM -> EcuRandom(address, name, activity)
-            EcuType.CYCLE -> EcuCycle(address, name, activity)
-            EcuType.REPLAY -> EcuReplay(address, name, activity)
-            EcuType.CitroenC5X7 -> EcuCitroenC5X7(address, name, activity)
-        }
-    }
-
     fun getString(resId: Int, vararg formatArgs: Any?): String {
         return activity.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
     }
