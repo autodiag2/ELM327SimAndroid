@@ -8,7 +8,7 @@ import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.libautodiag
 
 class EcuRandom(
-    address: Byte = EcuDefaultAddress.toByte(),
+    address: Byte = Ecu.DEFAULT_ADDRESS.toByte(),
     name: String = EcuType.RANDOM.toString(),
     activity: MainActivity
 ): Ecu(EcuType.RANDOM, address, name, activity) {

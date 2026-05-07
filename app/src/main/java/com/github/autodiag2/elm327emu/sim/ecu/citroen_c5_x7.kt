@@ -8,7 +8,7 @@ import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.libautodiag
 
 class EcuCitroenC5X7(
-    address: Byte = EcuDefaultAddress.toByte(),
+    address: Byte = Ecu.DEFAULT_ADDRESS.toByte(),
     name: String = EcuType.CitroenC5X7.toString(),
     activity: MainActivity
 ): Ecu(EcuType.CitroenC5X7, address, name, activity) {

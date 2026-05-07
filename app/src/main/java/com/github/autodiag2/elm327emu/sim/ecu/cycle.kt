@@ -1,16 +1,14 @@
 package com.github.autodiag2.elm327emu.sim.ecu
 
 import android.view.LayoutInflater
-import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
-import android.widget.LinearLayout
 import com.github.autodiag2.elm327emu.MainActivity
 import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.libautodiag
 
 class EcuCycle(
-    address: Byte = EcuDefaultAddress.toByte(),
+    address: Byte = Ecu.DEFAULT_ADDRESS.toByte(),
     name: String = EcuType.CYCLE.toString(),
     activity: MainActivity
 ): Ecu(EcuType.CYCLE, address, name, activity) {

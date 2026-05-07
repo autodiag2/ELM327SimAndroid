@@ -35,7 +35,7 @@ fun getString(context: Context,resId: Int, vararg formatArgs: Any?): String {
 }
 
 class EcuGui(
-    address: Byte = EcuDefaultAddress.toByte(),
+    address: Byte = Ecu.DEFAULT_ADDRESS.toByte(),
     name: String = EcuType.GUI.toString(),
     private val activity: MainActivity,
 ) : Ecu(EcuType.GUI, address, name, activity) {
