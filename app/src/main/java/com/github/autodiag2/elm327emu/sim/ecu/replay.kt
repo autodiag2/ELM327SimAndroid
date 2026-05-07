@@ -9,10 +9,10 @@ import com.github.autodiag2.elm327emu.libautodiag
 import org.json.JSONObject
 
 class EcuReplay(
-    address: Byte,
-    name: String,
+    address: Byte = EcuDefaultAddress.toByte(),
+    name: String = EcuType.REPLAY.toString(),
     activity: MainActivity
-): Ecu(address, name, EcuType.REPLAY, activity) {
+): Ecu(EcuType.REPLAY, address, name, activity) {
 
     private val jsonInput: EditText
 

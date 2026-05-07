@@ -8,10 +8,10 @@ import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.libautodiag
 
 class EcuCitroenC5X7(
-    address: Byte,
-    name: String,
+    address: Byte = EcuDefaultAddress.toByte(),
+    name: String = EcuType.CitroenC5X7.toString(),
     activity: MainActivity
-): Ecu(address, name, EcuType.CitroenC5X7, activity) {
+): Ecu(EcuType.CitroenC5X7, address, name, activity) {
 
     init {
         LayoutInflater.from(activity).inflate(R.layout.sim_ecu_citroen_c5_x7, this, true)

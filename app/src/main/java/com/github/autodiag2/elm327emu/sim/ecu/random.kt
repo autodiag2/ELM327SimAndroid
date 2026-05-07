@@ -8,10 +8,10 @@ import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.libautodiag
 
 class EcuRandom(
-    address: Byte,
-    name: String,
+    address: Byte = EcuDefaultAddress.toByte(),
+    name: String = EcuType.RANDOM.toString(),
     activity: MainActivity
-): Ecu(address, name, EcuType.RANDOM, activity) {
+): Ecu(EcuType.RANDOM, address, name, activity) {
 
     init {
         LayoutInflater.from(activity).inflate(R.layout.sim_ecu_random, this, true)

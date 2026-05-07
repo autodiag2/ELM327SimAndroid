@@ -11,6 +11,7 @@ import android.widget.Toast
 import com.github.autodiag2.elm327emu.MainActivity
 import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.libautodiag
+import org.json.JSONObject
 import org.luaj.vm2.LuaTable
 import org.luaj.vm2.LuaValue
 import org.luaj.vm2.lib.jse.JsePlatform
@@ -140,10 +141,10 @@ fun updateScript(script: String, ecu: Ecu) {
     }
 }
 class EcuScript(
-    address: Byte,
-    name: String,
+    address: Byte = EcuDefaultAddress.toByte(),
+    name: String = EcuType.SCRIPT.toString(),
     private val activity: MainActivity
-): Ecu(address, name, EcuType.SCRIPT, activity) {
+): Ecu(EcuType.SCRIPT, address, name, activity) {
     init {
         LayoutInflater.from(activity).inflate(R.layout.sim_ecu_script, this, true)
         val luaEditor = findViewById<EditText>(R.id.lua_editor)
@@ -188,4 +189,19 @@ class EcuScript(
             )
         }
     }
+
+    override fun stateFromJsonInternal(obj: JSONObject) {
+        val script = obj.optString("script", "")
+        val editor = findViewById<EditText>(R.id.lua_editor)
+        updateScript(script, this)
+        editor.setText(script)
+    }
+
+    override fun stateAsJsonInternal(): JSONObject {
+        val obj = JSONObject()
+        obj.put("script", getScript(this))
+        return obj
+    }
+
+
 }

@@ -10,10 +10,10 @@ import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.libautodiag
 
 class EcuCycle(
-    address: Byte,
-    name: String,
+    address: Byte = EcuDefaultAddress.toByte(),
+    name: String = EcuType.CYCLE.toString(),
     activity: MainActivity
-): Ecu(address, name, EcuType.CYCLE, activity) {
+): Ecu(EcuType.CYCLE, address, name, activity) {
 
     init {
         LayoutInflater.from(activity).inflate(R.layout.sim_ecu_cycle, this, true)

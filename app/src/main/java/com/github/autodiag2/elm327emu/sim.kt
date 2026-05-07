@@ -89,64 +89,7 @@ class SimView(
         val root = JSONArray()
 
         for (ecu in ecus) {
-            val obj = JSONObject()
-
-            obj.put("id", ecu.address)
-            obj.put("name", ecu.displayName)
-            obj.put("type", ecu.type.name)
-
-            when (ecu) {
-                is EcuGui -> {
-                    // GUI state extraction from SimGeneratorGui (global state)
-                    val gui = JSONObject()
-
-                    gui.put("ecuName", ecu.getECUName())
-                    gui.put("vin", ecu.getVIN())
-                    gui.put("mil", ecu.getMILState())
-                    gui.put("dtcCleared", ecu.areDTCsCleared())
-
-                    val dtcs = JSONArray()
-                    ecu.dtcs.forEach { dtcs.put(it) }
-                    gui.put("dtcs", dtcs)
-
-                    // signals
-                    val signals = JSONArray()
-                    ecu.signals.forEach { entry ->
-                        val value = libautodiag.getSignalValue(ecu.address, entry.key)
-                        if (!value.isNaN()) {
-                            val s = JSONObject()
-                            s.put("path", entry.key)
-                            s.put("value", value)
-                            signals.put(s)
-                        }
-                    }
-
-                    gui.put("signals", signals)
-                    obj.put("gui", gui)
-                }
-
-                is EcuScript -> {
-                    obj.put("script", getScript(ecu))
-                }
-
-                is EcuRandom -> {
-
-                }
-
-                is EcuCycle -> {
-
-                }
-
-                is EcuReplay -> {
-
-                }
-
-                is EcuCitroenC5X7 -> {
-
-                }
-            }
-
-            root.put(obj)
+            root.put(ecu.stateAsJson())
         }
         return root.toString(2)
     }
@@ -166,74 +109,9 @@ class SimView(
         for (i in 0 until root.length()) {
             val obj = root.getJSONObject(i)
 
-            val id = obj.getInt("id")
-            val name = obj.getString("name")
-            val type = EcuType.valueOf(obj.getString("type"))
-
-            val ecu = buildEcuConfig(id.toByte(), name, type)
+            val ecu = Ecu.createFromJSON(obj, activity)
             ecus.add(ecu)
             addEcuRow(ecu)
-
-            when (ecu) {
-                is EcuGui -> {
-                    val gui = obj.optJSONObject("gui") ?: continue
-
-                    val ecu_name = ecu.findViewById<EditText>(R.id.ecu_name)
-                    ecu_name.setText(gui.optString("ecuName", ""))
-                    val vin = ecu.findViewById<EditText>(R.id.vin)
-                    vin.setText(gui.optString("vin", ""))
-                    val mil = ecu.findViewById<CheckBox>(R.id.mil_state)
-                    mil.isChecked = gui.optBoolean("mil", false)
-                    val dtcCleared = ecu.findViewById<CheckBox>(R.id.dtcs_cleared)
-                    dtcCleared.isChecked = gui.optBoolean("dtcCleared", false)
-
-                    // dtcs
-                    ecu.clearDTCs()
-                    val dtcs = gui.optJSONArray("dtcs")
-                    if (dtcs != null) {
-                        for (j in 0 until dtcs.length()) {
-                            ecu.addDtcByCode(dtcs.getString(j))
-                        }
-                    }
-
-                    // signals
-                    ecu.clearSignals()
-                    val signals = gui.optJSONArray("signals")
-                    if (signals != null) {
-                        for (j in 0 until signals.length()) {
-                            val s = signals.getJSONObject(j)
-                            val path = s.getString("path")
-                            val value = s.getDouble("value")
-
-                            ecu.addSignalByPath(path)
-                            ecu.setSignalValue(path, value)
-                        }
-                    }
-                }
-
-                is EcuScript -> {
-                    val script = obj.optString("script", "")
-                    val editor = ecu.findViewById<EditText>(R.id.lua_editor)
-                    updateScript(script, ecu)
-                    editor.setText(script)
-                }
-
-                is EcuRandom -> {
-
-                }
-
-                is EcuCycle -> {
-
-                }
-
-                is EcuReplay -> {
-
-                }
-
-                is EcuCitroenC5X7 -> {
-
-                }
-            }
         }
     }
 
@@ -256,7 +134,7 @@ class SimView(
 
         ecuRemoveByAddress(address)
 
-        val ecu = buildEcuConfig(address, name, type)
+        val ecu = Ecu.create(type, activity, address, name)
 
         ecus.add(ecu)
         addEcuRow(ecu)

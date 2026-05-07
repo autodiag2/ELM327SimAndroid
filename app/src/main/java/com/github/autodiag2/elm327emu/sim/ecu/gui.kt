@@ -15,6 +15,8 @@ import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.SimGeneratorGuiManager
 import com.github.autodiag2.elm327emu.SimSignal
 import com.github.autodiag2.elm327emu.libautodiag
+import org.json.JSONArray
+import org.json.JSONObject
 
 fun getName(context: Context, signal: SimSignal): String {
     val key = "signal_" + signal.path.replace(".", "_")
@@ -33,10 +35,10 @@ fun getString(context: Context,resId: Int, vararg formatArgs: Any?): String {
 }
 
 class EcuGui(
-    address: Byte,
-    name: String,
+    address: Byte = EcuDefaultAddress.toByte(),
+    name: String = EcuType.GUI.toString(),
     private val activity: MainActivity,
-) : Ecu(address, name, EcuType.GUI, activity) {
+) : Ecu(EcuType.GUI, address, name, activity) {
 
     private val dynamicSignalsContainer: LinearLayout
     private val dtcContainer: LinearLayout
@@ -237,5 +239,67 @@ class EcuGui(
         }
 
         dtcContainer.addView(row)
+    }
+
+    override fun stateFromJsonInternal(obj: JSONObject) {
+        val ecu_name = findViewById<EditText>(R.id.ecu_name)
+        ecu_name.setText(obj.optString("ecuName", ""))
+        val vin = findViewById<EditText>(R.id.vin)
+        vin.setText(obj.optString("vin", ""))
+        val mil = findViewById<CheckBox>(R.id.mil_state)
+        mil.isChecked = obj.optBoolean("mil", false)
+        val dtcCleared = findViewById<CheckBox>(R.id.dtcs_cleared)
+        dtcCleared.isChecked = obj.optBoolean("dtcCleared", false)
+
+        // dtcs
+        clearDTCs()
+        val dtcs = obj.optJSONArray("dtcs")
+        if (dtcs != null) {
+            for (j in 0 until dtcs.length()) {
+                addDtcByCode(dtcs.getString(j))
+            }
+        }
+
+        // signals
+        clearSignals()
+        val signals = obj.optJSONArray("signals")
+        if (signals != null) {
+            for (j in 0 until signals.length()) {
+                val s = signals.getJSONObject(j)
+                val path = s.getString("path")
+                val value = s.getDouble("value")
+
+                addSignalByPath(path)
+                setSignalValue(path, value)
+            }
+        }
+    }
+
+    override fun stateAsJsonInternal(): JSONObject {
+        val state = JSONObject()
+
+        state.put("ecuName", getECUName())
+        state.put("vin", getVIN())
+        state.put("mil", getMILState())
+        state.put("dtcCleared", areDTCsCleared())
+
+        val dtcs = JSONArray()
+        this.dtcs.forEach { dtcs.put(it) }
+        state.put("dtcs", dtcs)
+
+        // signals
+        val signals = JSONArray()
+        this.signals.forEach { entry ->
+            val value = libautodiag.getSignalValue(address, entry.key)
+            if (!value.isNaN()) {
+                val s = JSONObject()
+                s.put("path", entry.key)
+                s.put("value", value)
+                signals.put(s)
+            }
+        }
+
+        state.put("signals", signals)
+        return state
     }
 }
