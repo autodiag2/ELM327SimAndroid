@@ -15,6 +15,7 @@ enum class EcuType(val label: String) {
     RANDOM("random"),
     CYCLE("cycle"),
     REPLAY("replay"),
+    CitroenC5X7("Citroen C5 X7"),
     SCRIPT("Script");
 
     override fun toString() = label

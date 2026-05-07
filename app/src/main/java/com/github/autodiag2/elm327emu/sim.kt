@@ -13,6 +13,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.cardview.widget.CardView
 import com.github.autodiag2.elm327emu.sim.ecu.Ecu
+import com.github.autodiag2.elm327emu.sim.ecu.EcuCitroenC5X7
 import com.github.autodiag2.elm327emu.sim.ecu.EcuCycle
 import com.github.autodiag2.elm327emu.sim.ecu.EcuRandom
 import com.github.autodiag2.elm327emu.sim.ecu.EcuReplay
@@ -139,6 +140,10 @@ class SimView(
                 is EcuReplay -> {
 
                 }
+
+                is EcuCitroenC5X7 -> {
+
+                }
             }
 
             root.put(obj)
@@ -224,6 +229,10 @@ class SimView(
                 is EcuReplay -> {
 
                 }
+
+                is EcuCitroenC5X7 -> {
+
+                }
             }
         }
     }
@@ -235,6 +244,7 @@ class SimView(
             EcuType.RANDOM -> EcuRandom(address, name, activity)
             EcuType.CYCLE -> EcuCycle(address, name, activity)
             EcuType.REPLAY -> EcuReplay(address, name, activity)
+            EcuType.CitroenC5X7 -> EcuCitroenC5X7(address, name, activity)
         }
     }
 

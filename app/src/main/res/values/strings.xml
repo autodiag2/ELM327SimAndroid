@@ -18,6 +18,8 @@
     <string name="settings_network_bluetooth">Bluetooth</string>
     <string name="settings_network_ble">Bluetooth LE (4.0+)</string>
     <string name="settings_network_network">Network</string>
+    <string name="sim_ecu_citroen_c5_x7_seed_label">Random seed</string>
+    <string name="sim_ecu_citroen_c5_x7_validate">Validate</string>
     <string name="sim_ecu_replay_editor_label">JSON trace</string>
     <string name="sim_ecu_replay_validate">Load</string>
     <string name="sim_ecu_replay_format">Format</string>
