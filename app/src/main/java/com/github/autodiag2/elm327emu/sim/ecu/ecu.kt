@@ -5,6 +5,7 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import com.github.autodiag2.elm327emu.LogLevel
 import com.github.autodiag2.elm327emu.MainActivity
 import com.github.autodiag2.elm327emu.MainActivityRef.activity
+import com.github.autodiag2.elm327emu.R
 import org.json.JSONObject
 
 val EcuDefaultAddress = 0xE8
@@ -33,7 +34,10 @@ abstract class Ecu(
             val prefix = "autodiag/sim/ecu/"
 
             if(!schema.startsWith(prefix)) {
-                activity.appendLog("Invalid ECU schema: $schema", LogLevel.ERROR)
+                activity.appendLog(
+                    activity.getString(R.string.sim_ecu_invalid_ecu_schema, schema),
+                    LogLevel.ERROR
+                )
                 return create(EcuType.RANDOM, activity)
             }
 
@@ -42,7 +46,11 @@ abstract class Ecu(
             val type = try {
                 EcuType.valueOf(typeName)
             } catch (e: IllegalArgumentException) {
-                activity.appendLog("Unknown ECU type: $typeName", LogLevel.ERROR)
+                activity.appendLog(
+                    activity.getString(R.string.sim_ecu_unknown_ecu_type, typeName),
+                    LogLevel.ERROR
+                )
+                activity.appendLog("", LogLevel.ERROR)
                 return create(EcuType.RANDOM, activity)
             }
 
@@ -61,7 +69,12 @@ abstract class Ecu(
         val prefix = "autodiag/sim/ecu/"
 
         if(!schema.startsWith(prefix)) {
-            activity?.appendLog("Invalid ECU schema: $schema", LogLevel.ERROR)
+            activity?.getString(R.string.sim_ecu_invalid_ecu_schema, schema)?.let {
+                activity?.appendLog(
+                    it,
+                    LogLevel.ERROR
+                )
+            }
             return
         }
 
@@ -70,7 +83,12 @@ abstract class Ecu(
         val type = try {
             EcuType.valueOf(typeName)
         } catch (e: IllegalArgumentException) {
-            activity?.appendLog("Unknown ECU type: $typeName", LogLevel.ERROR)
+            activity?.getString(R.string.sim_ecu_unknown_ecu_type, typeName)?.let {
+                activity?.appendLog(
+                    it,
+                    LogLevel.ERROR
+                )
+            }
             return
         }
 
