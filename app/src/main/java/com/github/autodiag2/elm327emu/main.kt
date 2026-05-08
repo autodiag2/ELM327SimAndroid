@@ -77,7 +77,7 @@ class MainActivity : AppCompatActivity() {
 
             Toast.makeText(
                 this,
-                getString(R.string.sim_config_exported_file),
+                getString(R.string.sim_list_exported_file),
                 Toast.LENGTH_SHORT
             ).show()
 
@@ -157,8 +157,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPrepareOptionsMenu(menu: android.view.Menu): Boolean {
 
-        menu.setGroupVisible(R.id.action_menu_group_sim_config, activeScreen == simView)
-        menu.setGroupVisible(R.id.action_menu_group_sims,
+        menu.setGroupVisible(R.id.action_menu_group_sim, activeScreen == simView)
+        menu.setGroupVisible(R.id.action_menu_group_sim_list,
             activeScreen == simListView &&
             isSimItemSelectedMode
         )
@@ -174,19 +174,19 @@ class MainActivity : AppCompatActivity() {
         }
 
         android.app.AlertDialog.Builder(this)
-            .setTitle(R.string.sim_load_config_save_title)
+            .setTitle(R.string.sim_list_save_title)
             .setView(input)
-            .setPositiveButton(getString(R.string.sim_load_config_save_validate)) { _, _ ->
+            .setPositiveButton(getString(R.string.sim_list_save_validate)) { _, _ ->
                 val name = input.text.toString().trim()
                 if (name.isNotEmpty()) {
                     lastConfigName = name
                     val file = File(filesDir, "config/${name}.json")
                     file.parentFile?.mkdirs()
                     simView.saveConfig(file.absolutePath)
-                    appendLog(getString(R.string.sim_load_config_log_save_success, name), LogLevel.INFO)
+                    appendLog(getString(R.string.sim_list_log_save_success, name), LogLevel.INFO)
                 }
             }
-            .setNegativeButton(R.string.sim_load_config_save_cancel, null)
+            .setNegativeButton(R.string.sim_list_save_cancel, null)
             .show()
     }
 
@@ -308,20 +308,20 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreateOptionsMenu(menu: android.view.Menu): Boolean {
-        menuInflater.inflate(R.menu.sim_config, menu)
+        menuInflater.inflate(R.menu.menu, menu)
         return true
     }
 
     override fun onOptionsItemSelected(item: android.view.MenuItem): Boolean {
         return when (item.itemId) {
 
-            R.id.action_clear -> {
+            R.id.sim_menu_clear -> {
                 simView.ecuClear()
                 SimGeneratorGuiManager.clear()
                 true
             }
 
-            R.id.action_load_latest -> {
+            R.id.sim_menu_load_latest -> {
                 val dir = File(filesDir, "config")
                 val latest = dir.listFiles()
                     ?.filter { it.extension == "json" }
@@ -329,14 +329,14 @@ class MainActivity : AppCompatActivity() {
 
                 if (latest != null) {
                     simView.loadConfig(latest.absolutePath)
-                    appendLog(getString(R.string.sim_load_config_load_latest_success, latest.name), LogLevel.INFO)
+                    appendLog(getString(R.string.sim_list_load_latest_success, latest.name), LogLevel.INFO)
                 } else {
-                    appendLog(getString(R.string.sim_load_config_load_latest_no_config), LogLevel.ERROR)
+                    appendLog(getString(R.string.sim_list_load_latest_no_config), LogLevel.ERROR)
                 }
                 true
             }
 
-            R.id.action_import_clipboard -> {
+            R.id.sim_menu_import_clipboard -> {
 
                 val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                 val clip = clipboard.primaryClip
@@ -355,7 +355,7 @@ class MainActivity : AppCompatActivity() {
                 true
             }
 
-            R.id.action_export_clipboard -> {
+            R.id.sim_menu_export_clipboard -> {
 
                 try {
                     val json = simView.saveConfigAsJson()
@@ -371,34 +371,34 @@ class MainActivity : AppCompatActivity() {
                 true
             }
 
-            R.id.action_load -> {
+            R.id.sim_menu_load -> {
                 showNestedScreen(simListView)
                 true
             }
 
-            R.id.action_save_as -> {
+            R.id.sim_menu_save_as -> {
                 showSaveAsDialog()
                 true
             }
 
             // sims screen actions
-            R.id.action_delete -> {
+            R.id.sim_list_menu_delete -> {
                 simListView.onDelete()
                 true
             }
-            R.id.action_export -> {
+            R.id.sim_list_menu_export -> {
                 simListView.onExport()
                 true
             }
-            R.id.action_export_file -> {
+            R.id.sim_list_menu_export_file -> {
                 simListView.onExportFile()
                 true
             }
-            R.id.action_open -> {
+            R.id.sim_list_menu_open -> {
                 simListView.onOpenSimConfig()
                 true
             }
-            R.id.action_share -> {
+            R.id.sim_list_menu_share -> {
                 simListView.shareConfigAsText()
                 true
             }

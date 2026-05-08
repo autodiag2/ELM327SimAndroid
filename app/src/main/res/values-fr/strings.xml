@@ -45,13 +45,13 @@
     <string name="sim_ecu_script_lua_load_parse_error">Erreur de parsing Lua : %1$s</string>
     <string name="sim_ecu_script_lua_parse_success">Parsing Lua réussi</string>
     <string name="sim_ecu_script_copy_success">Copié</string>
-    <string name="sim_main_ecu_config_ecu_name">depuis %1$s</string>
-    <string name="sim_main_ecu_row_title">ECU 0xE8 (nom)</string>
-    <string name="sim_main_ecu_row_open">→</string>
-    <string name="sim_main_add_ecu">Ajouter ECU (+)</string>
-    <string name="sim_main_start_sim">Démarrer simulation</string>
-    <string name="sim_main_stop_sim">Arrêter simulation</string>
-    <string name="sim_main_ecu_config_invalid_hex_id">ID hex invalide</string>
+    <string name="sim_ecu_config_ecu_name">depuis %1$s</string>
+    <string name="sim_ecu_row_title">ECU 0xE8 (nom)</string>
+    <string name="sim_ecu_row_open">→</string>
+    <string name="sim_add_ecu">Ajouter ECU (+)</string>
+    <string name="sim_start_sim">Démarrer simulation</string>
+    <string name="sim_stop_sim">Arrêter simulation</string>
+    <string name="sim_ecu_config_invalid_hex_id">ID hex invalide</string>
     <string name="stats_requests">Requêtes : %1$d</string>
     <string name="stats_responses">Réponses : %1$d</string>
     <string name="stats_qps">Requêtes/s : %.2f</string>
@@ -60,7 +60,7 @@
     <string name="main_drawer_log">Journal</string>
     <string name="main_drawer_stats">Stats</string>
     <string name="main_drawer_settings">Paramètres</string>
-    <string name="sim_main_ecu_row_delete">Supprimer ECU</string>
+    <string name="sim_ecu_row_delete">Supprimer ECU</string>
     <string name="log_ble_connected">%1$s connecté</string>
     <string name="log_ble_disconnected">%1$s déconnecté</string>
     <string name="log_ble_unknown_device_address">Adresse de périphérique inconnue</string>
@@ -157,7 +157,7 @@
     <string name="signal_SAEJ1979_odometer">Odomètre</string>
     <string name="signal_SAEJ1979_abs_switch_present">Présence interrupteur ABS</string>
     <string name="signal_SAEJ1979_abs_switch">Interrupteur ABS</string>
-    <string name="sim_load_config_item_name">Nom ECU :</string>
-    <string name="sim_load_config_menu_clear">Effacer</string>
-    <string name="sim_load_config_menu_save_as">Enregistrer sous...</string>
+    <string name="sim_list_item_name">Nom ECU :</string>
+    <string name="sim_menu_clear">Effacer</string>
+    <string name="sim_menu_save_as">Enregistrer sous...</string>
 </resources>

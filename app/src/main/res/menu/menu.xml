@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <group android:id="@+id/action_menu_group_sim">
+        <item
+            android:id="@+id/sim_menu_clear"
+            android:title="@string/sim_menu_clear" />
+
+        <item
+            android:id="@+id/sim_menu_load_latest"
+            android:title="@string/sim_menu_load_latest" />
+
+        <item
+            android:id="@+id/sim_menu_load"
+            android:title="@string/sim_menu_load" />
+
+        <item
+            android:id="@+id/sim_menu_save_as"
+            android:title="@string/sim_menu_save_as" />
+
+        <item
+            android:id="@+id/sim_menu_import_clipboard"
+            android:title="@string/sim_menu_import_clipboard" />
+
+        <item
+            android:id="@+id/sim_menu_export_clipboard"
+            android:title="@string/sim_menu_export_clipboard" />
+    </group>
+
+    <group android:id="@+id/action_menu_group_sim_list">
+        <item
+            android:id="@+id/sim_list_menu_delete"
+            android:title="@string/sim_list_menu_delete" />
+
+        <item
+            android:id="@+id/sim_list_menu_export"
+            android:title="@string/sim_list_menu_export" />
+
+        <item
+            android:id="@+id/sim_list_menu_export_file"
+            android:title="@string/sim_list_menu_export_file" />
+
+        <item
+            android:id="@+id/sim_list_menu_open"
+            android:title="@string/sim_list_menu_open_config" />
+
+        <item
+            android:id="@+id/sim_list_menu_share"
+            android:title="@string/sim_list_menu_share" />
+
+    </group>
+
+</menu>

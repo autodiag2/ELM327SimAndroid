@@ -81,7 +81,7 @@ private class SimListAdapter(
         for(config in selectedItems) {
             config.file.delete()
         }
-        Toast.makeText(activity, getString(activity, R.string.sim_config_deleted), Toast.LENGTH_SHORT).show()
+        Toast.makeText(activity, getString(activity, R.string.sim_list_deleted), Toast.LENGTH_SHORT).show()
         updateListState()
         refresh()
     }
@@ -95,7 +95,7 @@ private class SimListAdapter(
         val clip = android.content.ClipData.newPlainText(config.name, text)
         clipboard.setPrimaryClip(clip)
 
-        Toast.makeText(activity, getString(activity, R.string.sim_config_exported), Toast.LENGTH_SHORT).show()
+        Toast.makeText(activity, getString(activity, R.string.sim_list_exported), Toast.LENGTH_SHORT).show()
         updateListState()
     }
     class VH(view: View) : RecyclerView.ViewHolder(view) {
@@ -207,7 +207,7 @@ private class SimListAdapter(
                 e.printStackTrace()
                 Toast.makeText(
                     activity,
-                    getString(activity, R.string.sim_load_config_error_invalid, file.name),
+                    getString(activity, R.string.sim_list_error_invalid, file.name),
                     Toast.LENGTH_SHORT
                 ).show()
             }

@@ -62,11 +62,11 @@ class Sim(
             val address = try {
                 hexStr.toInt(16) and 0xFF
             } catch (e: Exception) {
-                Toast.makeText(activity, getString(R.string.sim_main_ecu_config_invalid_hex_id), Toast.LENGTH_SHORT).show()
+                Toast.makeText(activity, getString(R.string.sim_ecu_config_invalid_hex_id), Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            buildAddECUToGUI(address.toByte(), getString(R.string.sim_main_ecu_config_ecu_name, type), type)
+            buildAddECUToGUI(address.toByte(), getString(R.string.sim_ecu_config_ecu_name, type), type)
         }
 
         var running = false
@@ -74,7 +74,7 @@ class Sim(
             setOnClickListener {
                 if (activity.isPermissionsGranted()) {
                     running = !running
-                    text = if (running) getString(R.string.sim_main_stop_sim) else getString(R.string.sim_main_start_sim)
+                    text = if (running) getString(R.string.sim_stop_sim) else getString(R.string.sim_start_sim)
                     if (running) activity.startServer() else activity.stopServer()
                 } else {
                     activity.requestPermissions()
@@ -178,7 +178,7 @@ class Sim(
     }
 
     fun addEcuRow(ecu: Ecu) {
-        val row = activity.layoutInflater.inflate(R.layout.sim_ecu_row, ecuListView, false)
+        val row = activity.layoutInflater.inflate(R.layout.sim_item, ecuListView, false)
         val cardView = row.findViewById<CardView>(R.id.ecu_row_cardview)
         val title = row.findViewById<TextView>(R.id.ecu_title)
 
@@ -191,11 +191,11 @@ class Sim(
         cardView.setOnLongClickListener {
 
             val popup = PopupMenu(activity, cardView)
-            popup.menuInflater.inflate(R.menu.main_ecu_row, popup.menu)
+            popup.menuInflater.inflate(R.menu.sim_ecu_row, popup.menu)
 
             popup.setOnMenuItemClickListener { item ->
                 when (item.itemId) {
-                    R.id.action_delete -> {
+                    R.id.sim_list_menu_delete -> {
                         ecuRemoveByAddress(ecu.address)
                         true
                     }

@@ -45,13 +45,13 @@
     <string name="sim_ecu_script_lua_load_parse_error">Lua 解析エラー: %1$s</string>
     <string name="sim_ecu_script_lua_parse_success">Lua 解析成功</string>
     <string name="sim_ecu_script_copy_success">コピーしました</string>
-    <string name="sim_main_ecu_config_ecu_name">%1$s から</string>
-    <string name="sim_main_ecu_row_title">ECU 0xE8 (名前)</string>
-    <string name="sim_main_ecu_row_open">→</string>
-    <string name="sim_main_add_ecu">ECU を追加 (+)</string>
-    <string name="sim_main_start_sim">シミュレーション開始</string>
-    <string name="sim_main_stop_sim">シミュレーション停止</string>
-    <string name="sim_main_ecu_config_invalid_hex_id">無効な16進数ID</string>
+    <string name="sim_ecu_config_ecu_name">%1$s から</string>
+    <string name="sim_ecu_row_title">ECU 0xE8 (名前)</string>
+    <string name="sim_ecu_row_open">→</string>
+    <string name="sim_add_ecu">ECU を追加 (+)</string>
+    <string name="sim_start_sim">シミュレーション開始</string>
+    <string name="sim_stop_sim">シミュレーション停止</string>
+    <string name="sim_ecu_config_invalid_hex_id">無効な16進数ID</string>
     <string name="stats_requests">リクエスト: %1$d</string>
     <string name="stats_responses">レスポンス: %1$d</string>
     <string name="stats_qps">クエリ/秒: %.2f</string>
@@ -60,7 +60,7 @@
     <string name="main_drawer_log">ログ</string>
     <string name="main_drawer_stats">統計</string>
     <string name="main_drawer_settings">設定</string>
-    <string name="sim_main_ecu_row_delete">ECU を削除</string>
+    <string name="sim_ecu_row_delete">ECU を削除</string>
     <string name="log_ble_connected">%1$s に接続しました</string>
     <string name="log_ble_disconnected">%1$s から切断されました</string>
     <string name="log_ble_unknown_device_address">不明なデバイスアドレス</string>
@@ -106,7 +106,7 @@
     <string name="signal_SAEJ1979_vehicle_speed">車速</string>
     <string name="signal_SAEJ1979_throttle_position">スロットル位置</string>
     <string name="signal_SAEJ1979_odometer">走行距離計</string>
-    <string name="sim_load_config_item_name">ECU 名 :</string>
-    <string name="sim_load_config_menu_clear">クリア</string>
-    <string name="sim_load_config_menu_save_as">名前を付けて保存...</string>
+    <string name="sim_list_item_name">ECU 名 :</string>
+    <string name="sim_menu_clear">クリア</string>
+    <string name="sim_menu_save_as">名前を付けて保存...</string>
 </resources>

@@ -1,0 +1,5 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/sim_list_menu_delete"
+        android:title="@string/sim_ecu_row_delete" />
+</menu>

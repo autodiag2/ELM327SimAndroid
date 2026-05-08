@@ -17,7 +17,7 @@
             android:id="@+id/config_name"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/sim_load_config_item_name"
+            android:text="@string/sim_list_item_name"
             android:textSize="18sp"
             android:textStyle="bold" />
 
@@ -25,7 +25,7 @@
             android:id="@+id/config_ecu_count"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/sim_load_config_item_ecu_count"
+            android:text="@string/sim_list_item_ecu_count"
             android:paddingTop="4dp" />
 
     </LinearLayout>
