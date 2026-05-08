@@ -122,9 +122,8 @@ class Sim(
 
     override fun fromJson(desc: JSONObject) {
         val schema = desc.optString("schema")
-        val prefix = "$SCHEMA/"
 
-        if(schema.isEmpty() || !schema.startsWith(prefix)) {
+        if(schema.isEmpty() || !schema.startsWith(SCHEMA)) {
             activity.appendLog(
                 getString(R.string.sim_invalid_ecu_schema, schema),
                 LogLevel.ERROR

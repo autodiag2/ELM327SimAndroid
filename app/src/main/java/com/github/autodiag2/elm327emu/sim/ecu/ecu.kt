@@ -37,9 +37,8 @@ abstract class Ecu(
         fun createFromJSON(desc: JSONObject, activity: MainActivity): Ecu? {
 
             val schema = desc.optString("schema")
-            val prefix = "${SCHEMA}/"
 
-            if(schema.isEmpty() || !schema.startsWith(prefix)) {
+            if(schema.isEmpty() || !schema.startsWith(SCHEMA)) {
                 activity.appendLog(
                     activity.getString(R.string.sim_ecu_invalid_ecu_schema, schema),
                     LogLevel.ERROR
@@ -55,7 +54,7 @@ abstract class Ecu(
                 return null
             }
 
-            val typeName = schema.removePrefix(prefix)
+            val typeName = schema.removePrefix("${SCHEMA}/")
 
             val type = try {
                 EcuType.valueOf(typeName)
@@ -87,9 +86,8 @@ abstract class Ecu(
 
     override fun fromJson(desc: JSONObject) {
         val schema = desc.optString("schema")
-        val prefix = "${SCHEMA}/"
 
-        if(schema.isEmpty() || !schema.startsWith(prefix)) {
+        if(schema.isEmpty() || !schema.startsWith(SCHEMA)) {
             activity?.getString(R.string.sim_ecu_invalid_ecu_schema, schema)?.let {
                 activity?.appendLog(
                     it,
@@ -109,7 +107,8 @@ abstract class Ecu(
             }
             return
         }
-        val typeName = schema.removePrefix(prefix)
+
+        val typeName = schema.removePrefix("${SCHEMA}/")
 
         val type = try {
             EcuType.valueOf(typeName)

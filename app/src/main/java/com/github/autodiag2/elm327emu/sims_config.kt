@@ -9,8 +9,10 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.github.autodiag2.elm327emu.sim.Sim.Companion.SCHEMA
+import com.github.autodiag2.elm327emu.sim.Sim.Companion.SCHEMA_VERSION
 import com.github.autodiag2.elm327emu.sim.ecu.getString
-import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
 
 
@@ -156,9 +158,36 @@ private class ConfigAdapter(
         files?.forEach { file ->
             try {
                 val text = file.readText()
-                val json = JSONArray(text)
+                val desc = JSONObject(text)
+                val schema = desc.optString("schema")
 
-                val ecuCount = json.length()
+                if(schema.isEmpty() || !schema.startsWith(SCHEMA)) {
+                    activity.appendLog(
+                        getString(activity, R.string.sim_invalid_ecu_schema, schema),
+                        LogLevel.ERROR
+                    )
+                    return
+                }
+
+                val schemaVersion = desc.optDouble("version")
+                if ( schemaVersion != SCHEMA_VERSION ) {
+                    activity.appendLog(
+                        getString(activity, R.string.sim_unsupported_ecu_schema_version, schemaVersion),
+                        LogLevel.ERROR
+                    )
+                    return
+                }
+
+                val content = desc.optJSONArray("content")
+                if ( content == null ) {
+                    activity.appendLog(
+                        getString(activity, R.string.sim_no_content, schemaVersion),
+                        LogLevel.ERROR
+                    )
+                    return
+                }
+
+                val ecuCount = content.length()
                 val name = file.nameWithoutExtension
 
                 configs.add(
@@ -193,7 +222,6 @@ class SimsConfig(
 
     init {
         LayoutInflater.from(context).inflate(R.layout.sim_load_config, this, true)
-
 
         recycler = findViewById(R.id.config_list)
         recycler.layoutManager = LinearLayoutManager(activity)
