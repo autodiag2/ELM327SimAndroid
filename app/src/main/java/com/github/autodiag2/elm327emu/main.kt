@@ -26,6 +26,7 @@ import com.github.autodiag2.elm327emu.com.BLEBridge
 import com.github.autodiag2.elm327emu.com.BluetoothBridge
 import com.github.autodiag2.elm327emu.com.Bridge
 import com.github.autodiag2.elm327emu.com.NetworkBridge
+import com.github.autodiag2.elm327emu.sim.Sim
 import java.io.File
 
 private const val REQUEST_CODE = 1

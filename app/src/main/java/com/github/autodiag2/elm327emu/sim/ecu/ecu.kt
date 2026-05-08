@@ -6,6 +6,7 @@ import com.github.autodiag2.elm327emu.LogLevel
 import com.github.autodiag2.elm327emu.MainActivity
 import com.github.autodiag2.elm327emu.MainActivityRef.activity
 import com.github.autodiag2.elm327emu.R
+import com.github.autodiag2.elm327emu.ui.JsonConfigurable
 import org.json.JSONObject
 
 typealias EcuAddress = Byte
@@ -15,7 +16,7 @@ abstract class Ecu(
     var address: EcuAddress = DEFAULT_ADDRESS,
     var displayName: String = type.toString(),
     context: Context
-) : ConstraintLayout(context) {
+) : ConstraintLayout(context), JsonConfigurable {
 
     companion object {
 
@@ -84,7 +85,7 @@ abstract class Ecu(
         }
     }
 
-    fun fromJson(desc: JSONObject) {
+    override fun fromJson(desc: JSONObject) {
         val schema = desc.optString("schema")
         val prefix = "${SCHEMA}/"
 
@@ -144,14 +145,14 @@ abstract class Ecu(
 
     }
 
-    fun toJson(): JSONObject {
-        val obj = JSONObject()
+    override fun toJson(): JSONObject {
+        val desc = JSONObject()
 
-        obj.put("schema", "${SCHEMA}/${type.name}")
-        obj.put("version", SCHEMA_VERSION)
+        desc.put("schema", "${SCHEMA}/${type.name}")
+        desc.put("version", SCHEMA_VERSION)
 
         val content = JSONObject()
-        obj.put("content", content)
+        desc.put("content", content)
 
         content.put("address", address)
         content.put("displayName", displayName)
@@ -159,7 +160,7 @@ abstract class Ecu(
         objSpecialization.keys().forEach { key ->
             content.put(key, objSpecialization.get(key))
         }
-        return obj
+        return desc
     }
 
     protected open fun toJsonInternal(): JSONObject {

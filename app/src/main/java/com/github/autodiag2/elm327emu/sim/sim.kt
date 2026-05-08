@@ -1,4 +1,4 @@
-package com.github.autodiag2.elm327emu
+package com.github.autodiag2.elm327emu.sim
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -11,19 +11,32 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.cardview.widget.CardView
+import com.github.autodiag2.elm327emu.LogLevel
+import com.github.autodiag2.elm327emu.MainActivity
+import com.github.autodiag2.elm327emu.R
+import com.github.autodiag2.elm327emu.libautodiag
 import com.github.autodiag2.elm327emu.sim.ecu.Ecu
 import com.github.autodiag2.elm327emu.sim.ecu.EcuAddress
 import com.github.autodiag2.elm327emu.sim.ecu.EcuType
+import com.github.autodiag2.elm327emu.ui.JsonConfigurable
 import org.json.JSONArray
+import org.json.JSONObject
 import java.io.File
 
 class Sim(
     private val activity: MainActivity
-) : FrameLayout(activity) {
+) : FrameLayout(activity), JsonConfigurable {
 
     private val ecuListView: ViewGroup
     val ecus = mutableListOf<Ecu>()
     private val ecuAddSelect: Spinner
+
+    companion object {
+
+        const val SCHEMA: String = "autodiag/sim/any"
+        const val SCHEMA_VERSION: Double = 1.0
+
+    }
 
     init {
         LayoutInflater.from(context).inflate(R.layout.sim_main, this, true)
@@ -76,12 +89,24 @@ class Sim(
     }
 
     fun saveConfigAsJson(): String {
-        val root = JSONArray()
+        val desc = toJson()
+        return desc.toString(2)
+    }
+
+    override fun toJson(): JSONObject {
+        val desc = JSONObject()
+
+        desc.put("schema", SCHEMA)
+        desc.put("version", SCHEMA_VERSION)
+
+        val content = JSONArray()
+        desc.put("content", content)
 
         for (ecu in ecus) {
-            root.put(ecu.toJson())
+            content.put(ecu.toJson())
         }
-        return root.toString(2)
+
+        return desc
     }
 
     fun loadConfig(path: String) {
@@ -91,15 +116,47 @@ class Sim(
     }
 
     fun loadConfigJSON(json_text: String) {
-        val root = JSONArray(json_text)
+        val desc = JSONObject(json_text)
+        fromJson(desc)
+    }
+
+    override fun fromJson(desc: JSONObject) {
+        val schema = desc.optString("schema")
+        val prefix = "$SCHEMA/"
+
+        if(schema.isEmpty() || !schema.startsWith(prefix)) {
+            activity.appendLog(
+                getString(R.string.sim_invalid_ecu_schema, schema),
+                LogLevel.ERROR
+            )
+            return
+        }
+
+        val schemaVersion = desc.optDouble("version")
+        if ( schemaVersion != SCHEMA_VERSION ) {
+            activity.appendLog(
+                getString(R.string.sim_unsupported_ecu_schema_version, schemaVersion),
+                LogLevel.ERROR
+            )
+            return
+        }
+
+        val content = desc.optJSONArray("content")
+        if ( content == null ) {
+            activity.appendLog(
+                getString(R.string.sim_no_content, schemaVersion),
+                LogLevel.ERROR
+            )
+            return
+        }
 
         // reset current state
         ecuClear()
 
-        for (i in 0 until root.length()) {
-            val obj = root.getJSONObject(i)
+        for (i in 0 until content.length()) {
+            val ecuDesc = content.getJSONObject(i)
 
-            val ecu = Ecu.createFromJSON(obj, activity)
+            val ecu = Ecu.createFromJSON(ecuDesc, activity)
             if ( ecu != null ) {
                 ecus.add(ecu)
                 addEcuRow(ecu)
