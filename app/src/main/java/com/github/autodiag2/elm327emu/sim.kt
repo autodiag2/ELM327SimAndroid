@@ -17,7 +17,7 @@ import com.github.autodiag2.elm327emu.sim.ecu.EcuType
 import org.json.JSONArray
 import java.io.File
 
-class SimView(
+class Sim(
     private val activity: MainActivity
 ) : FrameLayout(activity) {
 
@@ -79,7 +79,7 @@ class SimView(
         val root = JSONArray()
 
         for (ecu in ecus) {
-            root.put(ecu.stateAsJson())
+            root.put(ecu.toJson())
         }
         return root.toString(2)
     }

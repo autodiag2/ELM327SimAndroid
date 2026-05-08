@@ -50,7 +50,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var drawer: DrawerLayout
     lateinit var toolbar: Toolbar
 
-    lateinit var simView: SimView
+    lateinit var sim: Sim
     lateinit var settingsView: View
     lateinit var logView: LogView
     lateinit var statsView: StatsView
@@ -154,7 +154,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPrepareOptionsMenu(menu: android.view.Menu): Boolean {
 
-        menu.setGroupVisible(R.id.action_menu_group_sim_config, activeScreen == simView)
+        menu.setGroupVisible(R.id.action_menu_group_sim_config, activeScreen == sim)
         menu.setGroupVisible(R.id.action_menu_group_sims,
             activeScreen == simsView &&
             isSimItemSelectedMode
@@ -179,7 +179,7 @@ class MainActivity : AppCompatActivity() {
                     lastConfigName = name
                     val file = File(filesDir, "config/${name}.json")
                     file.parentFile?.mkdirs()
-                    simView.saveConfig(file.absolutePath)
+                    sim.saveConfig(file.absolutePath)
                     appendLog(getString(R.string.sim_load_config_log_save_success, name), LogLevel.INFO)
                 }
             }
@@ -254,24 +254,24 @@ class MainActivity : AppCompatActivity() {
         showHamburger()
 
         // ---- Views ----
-        simView = SimView(this)
+        sim = Sim(this)
         logView = LogView(this)
         settingsView = SettingsView(this)
         statsView = StatsView(this)
         simsView = SimsConfig(this) { file ->
-            simView.loadConfig(file.absolutePath)
+            sim.loadConfig(file.absolutePath)
             handleBack()
         }
 
         // Default screen
-        show(simView)
+        show(sim)
 
         // ---- Drawer navigation ----
         navView.setNavigationItemSelectedListener { item ->
             screenStack.clear() // reset stack when using drawer
 
             when (item.itemId) {
-                R.id.nav_sim -> show(simView)
+                R.id.nav_sim -> show(sim)
                 R.id.nav_log -> show(logView)
                 R.id.nav_stats -> show(statsView)
                 R.id.nav_settings -> show(settingsView)
@@ -313,7 +313,7 @@ class MainActivity : AppCompatActivity() {
         return when (item.itemId) {
 
             R.id.action_clear -> {
-                simView.ecuClear()
+                sim.ecuClear()
                 SimGeneratorGuiManager.clear()
                 true
             }
@@ -325,7 +325,7 @@ class MainActivity : AppCompatActivity() {
                     ?.maxByOrNull { it.lastModified() }
 
                 if (latest != null) {
-                    simView.loadConfig(latest.absolutePath)
+                    sim.loadConfig(latest.absolutePath)
                     appendLog(getString(R.string.sim_load_config_load_latest_success, latest.name), LogLevel.INFO)
                 } else {
                     appendLog(getString(R.string.sim_load_config_load_latest_no_config), LogLevel.ERROR)
@@ -345,7 +345,7 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 try {
-                    simView.loadConfigJSON(text)
+                    sim.loadConfigJSON(text)
                 } catch (e: Exception) {
                 }
 
@@ -355,7 +355,7 @@ class MainActivity : AppCompatActivity() {
             R.id.action_export_clipboard -> {
 
                 try {
-                    val json = simView.saveConfigAsJson()
+                    val json = sim.saveConfigAsJson()
 
                     val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                     val clip = android.content.ClipData.newPlainText("ECU Config", json)

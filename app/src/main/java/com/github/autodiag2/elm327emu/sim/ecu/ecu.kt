@@ -78,13 +78,13 @@ abstract class Ecu(
             val displayName = content.optString("displayName", type.toString())
             val ecu = create(type, activity, address, displayName)
 
-            ecu.stateFromJson(content)
+            ecu.fromJson(content)
 
             return ecu
         }
     }
 
-    fun stateFromJson(desc: JSONObject) {
+    fun fromJson(desc: JSONObject) {
         val schema = desc.optString("schema")
         val prefix = "${SCHEMA}/"
 
@@ -136,15 +136,15 @@ abstract class Ecu(
         val displayName = content.optString("displayName", type.toString())
         // TODO
 
-        stateFromJsonInternal(content)
+        fromJsonInternal(content)
 
     }
 
-    protected open fun stateFromJsonInternal(content: JSONObject) {
+    protected open fun fromJsonInternal(content: JSONObject) {
 
     }
 
-    fun stateAsJson(): JSONObject {
+    fun toJson(): JSONObject {
         val obj = JSONObject()
 
         obj.put("schema", "${SCHEMA}/${type.name}")
@@ -155,14 +155,14 @@ abstract class Ecu(
 
         content.put("address", address)
         content.put("displayName", displayName)
-        val objSpecialization = stateAsJsonInternal()
+        val objSpecialization = toJsonInternal()
         objSpecialization.keys().forEach { key ->
             content.put(key, objSpecialization.get(key))
         }
         return obj
     }
 
-    protected open fun stateAsJsonInternal(): JSONObject {
+    protected open fun toJsonInternal(): JSONObject {
         return JSONObject()
     }
 

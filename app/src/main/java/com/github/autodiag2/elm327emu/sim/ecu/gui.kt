@@ -241,7 +241,7 @@ class EcuGui(
         dtcContainer.addView(row)
     }
 
-    override fun stateFromJsonInternal(content: JSONObject) {
+    override fun fromJsonInternal(content: JSONObject) {
         val ecu_name = findViewById<EditText>(R.id.ecu_name)
         ecu_name.setText(content.optString("ecuName", ""))
         val vin = findViewById<EditText>(R.id.vin)
@@ -275,7 +275,7 @@ class EcuGui(
         }
     }
 
-    override fun stateAsJsonInternal(): JSONObject {
+    override fun toJsonInternal(): JSONObject {
         val state = JSONObject()
 
         state.put("ecuName", getECUName())
