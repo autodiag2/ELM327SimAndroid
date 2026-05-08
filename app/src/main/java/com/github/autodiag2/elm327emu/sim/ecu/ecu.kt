@@ -7,6 +7,7 @@ import com.github.autodiag2.elm327emu.MainActivity
 import com.github.autodiag2.elm327emu.MainActivityRef.activity
 import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.ui.JsonConfigurable
+import com.github.autodiag2.elm327emu.ui.NestedScreen
 import org.json.JSONObject
 
 typealias EcuAddress = Byte
@@ -16,7 +17,11 @@ abstract class Ecu(
     var address: EcuAddress = DEFAULT_ADDRESS,
     var displayName: String = type.toString(),
     context: Context
-) : ConstraintLayout(context), JsonConfigurable {
+) : ConstraintLayout(context), JsonConfigurable, NestedScreen {
+
+    override fun onBack() {
+
+    }
 
     companion object {
 

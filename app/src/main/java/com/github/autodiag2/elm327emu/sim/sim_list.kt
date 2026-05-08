@@ -15,6 +15,7 @@ import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.sim.Sim.Companion.SCHEMA
 import com.github.autodiag2.elm327emu.sim.Sim.Companion.SCHEMA_VERSION
 import com.github.autodiag2.elm327emu.sim.ecu.getString
+import com.github.autodiag2.elm327emu.ui.NestedScreen
 import org.json.JSONObject
 import java.io.File
 
@@ -34,6 +35,7 @@ private class SimListAdapter(
 
     fun onOpenSimConfig() {
         val config = selectedItems.firstOrNull() ?: return
+        updateListState()
         return onClick(config)
     }
 
@@ -50,6 +52,7 @@ private class SimListAdapter(
         activity.startActivity(
             Intent.createChooser(intent, "Share config")
         )
+        updateListState()
     }
 
     fun exportConfigToFile(config: SimSummary) {
@@ -61,9 +64,10 @@ private class SimListAdapter(
             putExtra(Intent.EXTRA_TITLE, config.file.name)
         }
 
+        updateListState()
         activity.exportLauncher.launch(intent)
     }
-    private fun updateListState() {
+    fun updateListState() {
         selectedItems.clear()
         notifyDataSetChanged()
     }
@@ -219,7 +223,7 @@ private class SimListAdapter(
 class SimList(
     activity: MainActivity,
     onConfigSelected: (File) -> Unit
-) :LinearLayout(activity) {
+) :LinearLayout(activity), NestedScreen {
 
     private val recycler: RecyclerView
     private val adapter: SimListAdapter
@@ -261,6 +265,10 @@ class SimList(
 
     fun shareConfigAsText() {
         adapter.shareConfigAsText()
+    }
+
+    override fun onBack() {
+        adapter.updateListState()
     }
 
 }

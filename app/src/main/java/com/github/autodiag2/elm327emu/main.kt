@@ -29,6 +29,7 @@ import com.github.autodiag2.elm327emu.com.NetworkBridge
 import com.github.autodiag2.elm327emu.sim.SimSummary
 import com.github.autodiag2.elm327emu.sim.Sim
 import com.github.autodiag2.elm327emu.sim.SimList
+import com.github.autodiag2.elm327emu.ui.NestedScreen
 import java.io.File
 
 private const val REQUEST_CODE = 1
@@ -120,6 +121,8 @@ class MainActivity : AppCompatActivity() {
 
     fun handleBack() {
         if (screenStack.isNotEmpty()) {
+            val currentScreen = activeScreen as NestedScreen
+            currentScreen.onBack()
             val previousScreen: View? = screenStack.removeLast()
             if ( previousScreen != null ) {
                 show(previousScreen)
