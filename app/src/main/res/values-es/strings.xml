@@ -124,4 +124,6 @@
     <string name="sim_list_item_name">Nombre ECU :</string>
     <string name="sim_menu_clear">Limpiar</string>
     <string name="sim_menu_save_as">Guardar como...</string>
+    <string name="sim_ecu_replay_copy">Copiar</string>
+    <string name="sim_ecu_replay_paste">Pegar</string>
 </resources>
