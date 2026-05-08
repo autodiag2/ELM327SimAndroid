@@ -99,4 +99,6 @@
     <string name="sim_menu_save_as">另存为...</string>
     <string name="log_network_loopback_connected">回环连接成功</string>
     <string name="log_network_cancelled">已取消</string>
+    <string name="sim_ecu_replay_copy">复制</string>
+    <string name="sim_ecu_replay_paste">粘贴</string>
 </resources>
