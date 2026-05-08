@@ -26,7 +26,7 @@ class StatsView(
     }
 
     init {
-        inflate(context, R.layout.view_stats, this)
+        inflate(context, R.layout.stats, this)
 
         requestsText = findViewById(R.id.stats_requests)
         responsesText = findViewById(R.id.stats_responses)

@@ -26,7 +26,9 @@ import com.github.autodiag2.elm327emu.com.BLEBridge
 import com.github.autodiag2.elm327emu.com.BluetoothBridge
 import com.github.autodiag2.elm327emu.com.Bridge
 import com.github.autodiag2.elm327emu.com.NetworkBridge
+import com.github.autodiag2.elm327emu.sim.SimSummary
 import com.github.autodiag2.elm327emu.sim.Sim
+import com.github.autodiag2.elm327emu.sim.SimList
 import java.io.File
 
 private const val REQUEST_CODE = 1
@@ -51,15 +53,15 @@ class MainActivity : AppCompatActivity() {
     private lateinit var drawer: DrawerLayout
     lateinit var toolbar: Toolbar
 
-    lateinit var sim: Sim
-    lateinit var settingsView: View
+    lateinit var simView: Sim
+    private lateinit var settingsView: View
     lateinit var logView: LogView
     lateinit var statsView: StatsView
-    lateinit var simsView: SimsConfig
+    private lateinit var simListView: SimList
     private var activeScreen: View? = null
 
     private val screenStack = ArrayDeque<View?>()
-    var pendingExportConfig: CarConfigSummary? = null
+    var pendingExportConfig: SimSummary? = null
     val prefs by lazy { getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
 
     val exportLauncher =
@@ -155,9 +157,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPrepareOptionsMenu(menu: android.view.Menu): Boolean {
 
-        menu.setGroupVisible(R.id.action_menu_group_sim_config, activeScreen == sim)
+        menu.setGroupVisible(R.id.action_menu_group_sim_config, activeScreen == simView)
         menu.setGroupVisible(R.id.action_menu_group_sims,
-            activeScreen == simsView &&
+            activeScreen == simListView &&
             isSimItemSelectedMode
         )
 
@@ -180,7 +182,7 @@ class MainActivity : AppCompatActivity() {
                     lastConfigName = name
                     val file = File(filesDir, "config/${name}.json")
                     file.parentFile?.mkdirs()
-                    sim.saveConfig(file.absolutePath)
+                    simView.saveConfig(file.absolutePath)
                     appendLog(getString(R.string.sim_load_config_log_save_success, name), LogLevel.INFO)
                 }
             }
@@ -255,24 +257,24 @@ class MainActivity : AppCompatActivity() {
         showHamburger()
 
         // ---- Views ----
-        sim = Sim(this)
+        simView = Sim(this)
         logView = LogView(this)
         settingsView = SettingsView(this)
         statsView = StatsView(this)
-        simsView = SimsConfig(this) { file ->
-            sim.loadConfig(file.absolutePath)
+        simListView = SimList(this) { file ->
+            simView.loadConfig(file.absolutePath)
             handleBack()
         }
 
         // Default screen
-        show(sim)
+        show(simView)
 
         // ---- Drawer navigation ----
         navView.setNavigationItemSelectedListener { item ->
             screenStack.clear() // reset stack when using drawer
 
             when (item.itemId) {
-                R.id.nav_sim -> show(sim)
+                R.id.nav_sim -> show(simView)
                 R.id.nav_log -> show(logView)
                 R.id.nav_stats -> show(statsView)
                 R.id.nav_settings -> show(settingsView)
@@ -314,7 +316,7 @@ class MainActivity : AppCompatActivity() {
         return when (item.itemId) {
 
             R.id.action_clear -> {
-                sim.ecuClear()
+                simView.ecuClear()
                 SimGeneratorGuiManager.clear()
                 true
             }
@@ -326,7 +328,7 @@ class MainActivity : AppCompatActivity() {
                     ?.maxByOrNull { it.lastModified() }
 
                 if (latest != null) {
-                    sim.loadConfig(latest.absolutePath)
+                    simView.loadConfig(latest.absolutePath)
                     appendLog(getString(R.string.sim_load_config_load_latest_success, latest.name), LogLevel.INFO)
                 } else {
                     appendLog(getString(R.string.sim_load_config_load_latest_no_config), LogLevel.ERROR)
@@ -346,7 +348,7 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 try {
-                    sim.loadConfigJSON(text)
+                    simView.loadConfigJSON(text)
                 } catch (e: Exception) {
                 }
 
@@ -356,7 +358,7 @@ class MainActivity : AppCompatActivity() {
             R.id.action_export_clipboard -> {
 
                 try {
-                    val json = sim.saveConfigAsJson()
+                    val json = simView.saveConfigAsJson()
 
                     val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                     val clip = android.content.ClipData.newPlainText("ECU Config", json)
@@ -370,7 +372,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             R.id.action_load -> {
-                showNestedScreen(simsView)
+                showNestedScreen(simListView)
                 true
             }
 
@@ -381,23 +383,23 @@ class MainActivity : AppCompatActivity() {
 
             // sims screen actions
             R.id.action_delete -> {
-                simsView.onDelete()
+                simListView.onDelete()
                 true
             }
             R.id.action_export -> {
-                simsView.onExport()
+                simListView.onExport()
                 true
             }
             R.id.action_export_file -> {
-                simsView.onExportFile()
+                simListView.onExportFile()
                 true
             }
             R.id.action_open -> {
-                simsView.onOpenSimConfig()
+                simListView.onOpenSimConfig()
                 true
             }
             R.id.action_share -> {
-                simsView.shareConfigAsText()
+                simListView.shareConfigAsText()
                 true
             }
 

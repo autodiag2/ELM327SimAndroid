@@ -1,4 +1,4 @@
-package com.github.autodiag2.elm327emu
+package com.github.autodiag2.elm327emu.sim
 
 import android.content.Intent
 import android.view.LayoutInflater
@@ -9,6 +9,9 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.github.autodiag2.elm327emu.LogLevel
+import com.github.autodiag2.elm327emu.MainActivity
+import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.sim.Sim.Companion.SCHEMA
 import com.github.autodiag2.elm327emu.sim.Sim.Companion.SCHEMA_VERSION
 import com.github.autodiag2.elm327emu.sim.ecu.getString
@@ -16,18 +19,18 @@ import org.json.JSONObject
 import java.io.File
 
 
-data class CarConfigSummary(
+data class SimSummary(
     val file: File,
     val name: String,
     val ecuCount: Int
 )
-private class ConfigAdapter(
-    private val items: MutableList<CarConfigSummary>,
+private class SimListAdapter(
+    private val items: MutableList<SimSummary>,
     private val activity: MainActivity,
-    private val onClick: (CarConfigSummary) -> Unit,
-) : RecyclerView.Adapter<ConfigAdapter.VH>() {
+    private val onClick: (SimSummary) -> Unit,
+) : RecyclerView.Adapter<SimListAdapter.VH>() {
 
-    private val selectedItems = mutableSetOf<CarConfigSummary>()
+    private val selectedItems = mutableSetOf<SimSummary>()
 
     fun onOpenSimConfig() {
         val config = selectedItems.firstOrNull() ?: return
@@ -49,7 +52,7 @@ private class ConfigAdapter(
         )
     }
 
-    fun exportConfigToFile(config: CarConfigSummary) {
+    fun exportConfigToFile(config: SimSummary) {
         activity.pendingExportConfig = config
 
         val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
@@ -102,7 +105,7 @@ private class ConfigAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
         val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.sim_load_config_item, parent, false)
+            .inflate(R.layout.sim_list_item, parent, false)
         return VH(view)
     }
 
@@ -132,7 +135,7 @@ private class ConfigAdapter(
             true
         }
     }
-    private fun toggleSelection(item: CarConfigSummary, holder: VH) {
+    private fun toggleSelection(item: SimSummary, holder: VH) {
         if (selectedItems.contains(item)) {
             selectedItems.remove(item)
             holder.itemView.isActivated = false
@@ -172,7 +175,8 @@ private class ConfigAdapter(
                 val schemaVersion = desc.optDouble("version")
                 if ( schemaVersion != SCHEMA_VERSION ) {
                     activity.appendLog(
-                        getString(activity, R.string.sim_unsupported_ecu_schema_version, schemaVersion),
+                        getString(activity,
+                            R.string.sim_unsupported_ecu_schema_version, schemaVersion),
                         LogLevel.ERROR
                     )
                     return
@@ -191,7 +195,7 @@ private class ConfigAdapter(
                 val name = file.nameWithoutExtension
 
                 configs.add(
-                    CarConfigSummary(
+                    SimSummary(
                         file = file,
                         name = name,
                         ecuCount = ecuCount
@@ -212,23 +216,23 @@ private class ConfigAdapter(
         notifyDataSetChanged()
     }
 }
-class SimsConfig(
+class SimList(
     activity: MainActivity,
     onConfigSelected: (File) -> Unit
 ) :LinearLayout(activity) {
 
     private val recycler: RecyclerView
-    private val adapter: ConfigAdapter
+    private val adapter: SimListAdapter
 
     init {
-        LayoutInflater.from(context).inflate(R.layout.sim_load_config, this, true)
+        LayoutInflater.from(context).inflate(R.layout.sim_list, this, true)
 
         recycler = findViewById(R.id.config_list)
         recycler.layoutManager = LinearLayoutManager(activity)
 
-        val configs = mutableListOf<CarConfigSummary>()
+        val configs = mutableListOf<SimSummary>()
 
-        val adapter = ConfigAdapter(configs, activity,
+        val adapter = SimListAdapter(configs, activity,
             onClick = { config ->
                 onConfigSelected(config.file)
             }

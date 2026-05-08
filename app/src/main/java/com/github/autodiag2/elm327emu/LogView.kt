@@ -6,34 +6,21 @@ import android.widget.TextView
 
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.DiffUtil
-
-import androidx.paging.PagingSource
-import androidx.paging.PagingState
-import androidx.paging.Pager
-import androidx.paging.PagingConfig
-import androidx.paging.PagingDataAdapter
 
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 import android.content.Context
-import android.view.View
 import android.widget.FrameLayout
-import android.widget.LinearLayout
 import android.widget.Button
-import android.view.Gravity
 import kotlinx.coroutines.launch
 import java.io.File
 import androidx.lifecycle.lifecycleScope
 
-import kotlinx.coroutines.flow.collectLatest
-import androidx.paging.cachedIn
 import android.content.Intent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.withContext
 import androidx.activity.result.contract.ActivityResultContracts
 import android.app.Activity.RESULT_OK
 import android.view.LayoutInflater
@@ -60,11 +47,6 @@ class LogRepository(private val context: Context) {
 
     suspend fun append(text: String, level: LogLevel = LogLevel.DEBUG): LogEntry {
         return mutex.withLock {
-            val max = prefs.getInt("log_max_entries", 1000)
-
-            if (buffer.size >= max) {
-                buffer.removeAt(0)
-            }
 
             val entry = LogEntry(counter++, text, level)
             buffer.add(entry)

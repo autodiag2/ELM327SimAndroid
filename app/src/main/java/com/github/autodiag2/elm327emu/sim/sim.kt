@@ -39,7 +39,7 @@ class Sim(
     }
 
     init {
-        LayoutInflater.from(context).inflate(R.layout.sim_main, this, true)
+        LayoutInflater.from(context).inflate(R.layout.sim, this, true)
         ecuListView = findViewById(R.id.ecu_list)
         val addEcuBtn = findViewById<Button>(R.id.add_ecu)
         val ecuIdInput = findViewById<EditText>(R.id.ecu_id_input)
@@ -178,7 +178,7 @@ class Sim(
     }
 
     fun addEcuRow(ecu: Ecu) {
-        val row = activity.layoutInflater.inflate(R.layout.sim_main_ecu_row, ecuListView, false)
+        val row = activity.layoutInflater.inflate(R.layout.sim_ecu_row, ecuListView, false)
         val cardView = row.findViewById<CardView>(R.id.ecu_row_cardview)
         val title = row.findViewById<TextView>(R.id.ecu_title)
 
