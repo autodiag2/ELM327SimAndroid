@@ -20,6 +20,7 @@ abstract class Ecu(
     companion object {
 
         const val DEFAULT_ADDRESS: EcuAddress = 0xE8.toByte()
+        const val SCHEMA: String = "autodiag/sim/ecu"
 
         fun create(type: EcuType, activity: MainActivity, address: EcuAddress = DEFAULT_ADDRESS, displayName: String = type.toString()) : Ecu {
             return when ( type ) {
@@ -34,7 +35,7 @@ abstract class Ecu(
         fun createFromJSON(obj: JSONObject, activity: MainActivity): Ecu? {
 
             val schema = obj.optString("schema")
-            val prefix = "autodiag/sim/ecu/"
+            val prefix = "${SCHEMA}/"
 
             if(schema.isEmpty() || !schema.startsWith(prefix)) {
                 activity.appendLog(
@@ -69,7 +70,7 @@ abstract class Ecu(
 
     fun stateFromJson(obj: JSONObject) {
         val schema = obj.optString("schema")
-        val prefix = "autodiag/sim/ecu/"
+        val prefix = "${SCHEMA}/"
 
         if(schema.isEmpty() || !schema.startsWith(prefix)) {
             activity?.getString(R.string.sim_ecu_invalid_ecu_schema, schema)?.let {
@@ -110,7 +111,7 @@ abstract class Ecu(
     fun stateAsJson(): JSONObject {
         val obj = JSONObject()
 
-        obj.put("schema", "autodiag/sim/ecu/${type.name}")
+        obj.put("schema", "${SCHEMA}/${type.name}")
         obj.put("address", address)
         obj.put("displayName", displayName)
 
