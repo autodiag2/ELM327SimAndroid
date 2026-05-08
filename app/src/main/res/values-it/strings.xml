@@ -109,4 +109,6 @@
     <string name="sim_list_item_name">Nome ECU :</string>
     <string name="sim_menu_clear">Pulisci</string>
     <string name="sim_menu_save_as">Salva come...</string>
+    <string name="sim_ecu_replay_copy">Copia</string>
+    <string name="sim_ecu_replay_paste">Incolla</string>
 </resources>
