@@ -21,6 +21,7 @@ abstract class Ecu(
 
         const val DEFAULT_ADDRESS: EcuAddress = 0xE8.toByte()
         const val SCHEMA: String = "autodiag/sim/ecu"
+        const val SCHEMA_VERSION: Double = 1.0
 
         fun create(type: EcuType, activity: MainActivity, address: EcuAddress = DEFAULT_ADDRESS, displayName: String = type.toString()) : Ecu {
             return when ( type ) {
@@ -32,14 +33,22 @@ abstract class Ecu(
                 EcuType.CitroenC5X7 -> EcuCitroenC5X7(address, displayName, activity)
             }
         }
-        fun createFromJSON(obj: JSONObject, activity: MainActivity): Ecu? {
+        fun createFromJSON(desc: JSONObject, activity: MainActivity): Ecu? {
 
-            val schema = obj.optString("schema")
+            val schema = desc.optString("schema")
             val prefix = "${SCHEMA}/"
 
             if(schema.isEmpty() || !schema.startsWith(prefix)) {
                 activity.appendLog(
                     activity.getString(R.string.sim_ecu_invalid_ecu_schema, schema),
+                    LogLevel.ERROR
+                )
+                return null
+            }
+            val schemaVersion = desc.optDouble("version")
+            if ( schemaVersion != SCHEMA_VERSION ) {
+                activity.appendLog(
+                    activity.getString(R.string.sim_ecu_unsupported_ecu_schema_version, schemaVersion),
                     LogLevel.ERROR
                 )
                 return null
@@ -54,22 +63,29 @@ abstract class Ecu(
                     activity.getString(R.string.sim_ecu_unknown_ecu_type, typeName),
                     LogLevel.ERROR
                 )
-                activity.appendLog("", LogLevel.ERROR)
                 return null
             }
 
-            val address = obj.optInt("address", DEFAULT_ADDRESS.toInt()).toByte()
-            val displayName = obj.optString("displayName", type.toString())
+            val content = desc.optJSONObject("content")
+            if ( content == null ) {
+                activity.appendLog(
+                    activity.getString(R.string.sim_ecu_no_content),
+                    LogLevel.ERROR
+                )
+                return null
+            }
+            val address = content.optInt("address", DEFAULT_ADDRESS.toInt()).toByte()
+            val displayName = content.optString("displayName", type.toString())
             val ecu = create(type, activity, address, displayName)
 
-            ecu.stateFromJson(obj)
+            ecu.stateFromJson(content)
 
             return ecu
         }
     }
 
-    fun stateFromJson(obj: JSONObject) {
-        val schema = obj.optString("schema")
+    fun stateFromJson(desc: JSONObject) {
+        val schema = desc.optString("schema")
         val prefix = "${SCHEMA}/"
 
         if(schema.isEmpty() || !schema.startsWith(prefix)) {
@@ -82,6 +98,16 @@ abstract class Ecu(
             return
         }
 
+        val schemaVersion = desc.optDouble("version")
+        if ( schemaVersion != SCHEMA_VERSION ) {
+            activity?.getString(R.string.sim_ecu_unsupported_ecu_schema_version, schemaVersion)?.let {
+                activity?.appendLog(
+                    it,
+                    LogLevel.ERROR
+                )
+            }
+            return
+        }
         val typeName = schema.removePrefix(prefix)
 
         val type = try {
@@ -96,15 +122,25 @@ abstract class Ecu(
             return
         }
 
-        val address = obj.optInt("address", DEFAULT_ADDRESS.toInt()).toByte()
-        val displayName = obj.optString("displayName", type.toString())
+        val content = desc.optJSONObject("content")
+        if ( content == null ) {
+            activity?.getString(R.string.sim_ecu_no_content)?.let {
+                activity?.appendLog(
+                    it,
+                    LogLevel.ERROR
+                )
+            }
+            return
+        }
+        val address = content.optInt("address", DEFAULT_ADDRESS.toInt()).toByte()
+        val displayName = content.optString("displayName", type.toString())
         // TODO
 
-        stateFromJsonInternal(obj.getJSONObject("child"))
+        stateFromJsonInternal(content)
 
     }
 
-    protected open fun stateFromJsonInternal(obj: JSONObject) {
+    protected open fun stateFromJsonInternal(content: JSONObject) {
 
     }
 
@@ -112,11 +148,17 @@ abstract class Ecu(
         val obj = JSONObject()
 
         obj.put("schema", "${SCHEMA}/${type.name}")
-        obj.put("address", address)
-        obj.put("displayName", displayName)
+        obj.put("version", SCHEMA_VERSION)
 
+        val content = JSONObject()
+        obj.put("content", content)
+
+        content.put("address", address)
+        content.put("displayName", displayName)
         val objSpecialization = stateAsJsonInternal()
-        obj.put("child", objSpecialization)
+        objSpecialization.keys().forEach { key ->
+            content.put(key, objSpecialization.get(key))
+        }
         return obj
     }
 

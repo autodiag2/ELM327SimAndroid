@@ -4,7 +4,6 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Button
-import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.PopupMenu
@@ -14,17 +13,8 @@ import android.widget.Toast
 import androidx.cardview.widget.CardView
 import com.github.autodiag2.elm327emu.sim.ecu.Ecu
 import com.github.autodiag2.elm327emu.sim.ecu.EcuAddress
-import com.github.autodiag2.elm327emu.sim.ecu.EcuCitroenC5X7
-import com.github.autodiag2.elm327emu.sim.ecu.EcuCycle
-import com.github.autodiag2.elm327emu.sim.ecu.EcuRandom
-import com.github.autodiag2.elm327emu.sim.ecu.EcuReplay
-import com.github.autodiag2.elm327emu.sim.ecu.EcuGui
-import com.github.autodiag2.elm327emu.sim.ecu.EcuScript
 import com.github.autodiag2.elm327emu.sim.ecu.EcuType
-import com.github.autodiag2.elm327emu.sim.ecu.getScript
-import com.github.autodiag2.elm327emu.sim.ecu.updateScript
 import org.json.JSONArray
-import org.json.JSONObject
 import java.io.File
 
 class SimView(

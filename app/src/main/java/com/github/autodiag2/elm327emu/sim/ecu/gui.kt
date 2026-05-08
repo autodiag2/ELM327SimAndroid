@@ -241,19 +241,19 @@ class EcuGui(
         dtcContainer.addView(row)
     }
 
-    override fun stateFromJsonInternal(obj: JSONObject) {
+    override fun stateFromJsonInternal(content: JSONObject) {
         val ecu_name = findViewById<EditText>(R.id.ecu_name)
-        ecu_name.setText(obj.optString("ecuName", ""))
+        ecu_name.setText(content.optString("ecuName", ""))
         val vin = findViewById<EditText>(R.id.vin)
-        vin.setText(obj.optString("vin", ""))
+        vin.setText(content.optString("vin", ""))
         val mil = findViewById<CheckBox>(R.id.mil_state)
-        mil.isChecked = obj.optBoolean("mil", false)
+        mil.isChecked = content.optBoolean("mil", false)
         val dtcCleared = findViewById<CheckBox>(R.id.dtcs_cleared)
-        dtcCleared.isChecked = obj.optBoolean("dtcCleared", false)
+        dtcCleared.isChecked = content.optBoolean("dtcCleared", false)
 
         // dtcs
         clearDTCs()
-        val dtcs = obj.optJSONArray("dtcs")
+        val dtcs = content.optJSONArray("dtcs")
         if (dtcs != null) {
             for (j in 0 until dtcs.length()) {
                 addDtcByCode(dtcs.getString(j))
@@ -262,7 +262,7 @@ class EcuGui(
 
         // signals
         clearSignals()
-        val signals = obj.optJSONArray("signals")
+        val signals = content.optJSONArray("signals")
         if (signals != null) {
             for (j in 0 until signals.length()) {
                 val s = signals.getJSONObject(j)

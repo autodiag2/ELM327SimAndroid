@@ -190,8 +190,8 @@ class EcuScript(
         }
     }
 
-    override fun stateFromJsonInternal(obj: JSONObject) {
-        val script = obj.optString("script", "")
+    override fun stateFromJsonInternal(content: JSONObject) {
+        val script = content.optString("script", "")
         val editor = findViewById<EditText>(R.id.lua_editor)
         updateScript(script, this)
         editor.setText(script)
