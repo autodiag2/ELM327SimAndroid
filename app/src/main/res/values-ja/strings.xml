@@ -109,4 +109,6 @@
     <string name="sim_list_item_name">ECU 名 :</string>
     <string name="sim_menu_clear">クリア</string>
     <string name="sim_menu_save_as">名前を付けて保存...</string>
+    <string name="sim_ecu_replay_copy">コピー</string>
+    <string name="sim_ecu_replay_paste">貼り付け</string>
 </resources>
