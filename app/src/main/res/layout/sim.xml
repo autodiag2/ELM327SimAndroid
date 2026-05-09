@@ -25,15 +25,18 @@
                 android:layout_margin="8dp"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/border"
                 android:radius="8dp"
-                android:elevation="4dp">
+                app:cardBackgroundColor="@android:color/transparent"
+                app:cardElevation="0dp"
+                app:cardUseCompatPadding="false"
+                app:cardPreventCornerOverlap="false"
+                android:elevation="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:background="@drawable/border"
                     android:orientation="horizontal"
+                    android:background="@drawable/border"
                     android:padding="16dp">
 
                     <EditText
