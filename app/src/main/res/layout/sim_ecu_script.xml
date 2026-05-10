@@ -52,6 +52,10 @@
             android:imeOptions="flagNoExtractUi"
             android:text="
 function response(req)\n
+    -- Mode 01 supported PID\n
+    if req[1] == 0x01 and req[2] == 0x00 then\n
+        return {0x41, 0x00, 0xFF, 0xFF, 0xFF, 0xFF} -- all PIDs supported\n
+    end\n
     -- Mode 01 PID 0C (engine RPM)\n
     if req[1] == 0x01 and req[2] == 0x0C then\n
         local rpm = 3000\n
