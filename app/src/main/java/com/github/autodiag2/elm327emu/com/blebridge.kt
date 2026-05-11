@@ -19,9 +19,32 @@ class BLEBridge(
     private val activity: MainActivity,
     private val btAdapter: BluetoothAdapter
     ) : Bridge(activity) {
-    private val ELM_SERVICE_UUID = UUID.fromString("6E400001-B5A3-F393-E0A9-E50E24DCCA9E")
-    private val ELM_RX_UUID      = UUID.fromString("6E400002-B5A3-F393-E0A9-E50E24DCCA9E")
-    private val ELM_TX_UUID      = UUID.fromString("6E400003-B5A3-F393-E0A9-E50E24DCCA9E")
+    private val prefs =
+        activity.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+
+    private val ELM_SERVICE_UUID: UUID
+        get() = UUID.fromString(
+            prefs.getString(
+                "ble_service",
+                "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
+            )!!
+        )
+
+    private val ELM_RX_UUID: UUID
+        get() = UUID.fromString(
+            prefs.getString(
+                "ble_rx",
+                "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
+            )!!
+        )
+
+    private val ELM_TX_UUID: UUID
+        get() = UUID.fromString(
+            prefs.getString(
+                "ble_tx",
+                "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
+            )!!
+        )
     private lateinit var gattServer: BluetoothGattServer
     private lateinit var advertiser: BluetoothLeAdvertiser
     private var connectedDevice: BluetoothDevice? = null
@@ -188,6 +211,18 @@ class BLEBridge(
     override fun start() {
         if (!btAdapter.isEnabled) {
             activity.showBluetoothEnablePopup()
+            return
+        }
+
+        try {
+            ELM_SERVICE_UUID
+            ELM_RX_UUID
+            ELM_TX_UUID
+        } catch (e: Exception) {
+            appendLog(
+                getString(R.string.log_ble_uuid_validation, e.message),
+                LogLevel.ERROR
+            )
             return
         }
 

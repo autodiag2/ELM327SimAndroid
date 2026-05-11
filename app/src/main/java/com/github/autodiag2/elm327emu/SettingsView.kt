@@ -11,6 +11,41 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.Spinner
 
+data class BleProfile(
+    val name: String,
+    val service: String,
+    val tx: String,
+    val rx: String,
+    val isCustom: Boolean = false
+)
+val PREF_BLE_PROFILE = "ble_profile"
+
+val PREF_BLE_SERVICE = "ble_service"
+val PREF_BLE_TX = "ble_tx"
+val PREF_BLE_RX = "ble_rx"
+
+val bleProfiles = listOf(
+    BleProfile(
+        "Nordic UART Service (common)",
+        "6E400001-B5A3-F393-E0A9-E50E24DCCA9E",
+        "6E400003-B5A3-F393-E0A9-E50E24DCCA9E",
+        "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
+    ),
+    BleProfile(
+        "Microchip Transparent UART Service (less common)",
+        "49535343-FE7D-4AE5-8FA9-9FAFD205E455",
+        "49535343-1E4D-4BD9-BA61-23C647249616",
+        "49535343-8841-43F4-A8D4-ECBE34729BB3"
+    ),
+    BleProfile(
+        "Custom",
+        "",
+        "",
+        "",
+        isCustom = true
+    )
+)
+
 class SettingsView(
     private val activity: MainActivity
 ) : FrameLayout(activity) {
@@ -36,6 +71,14 @@ class SettingsView(
         val networkSpinner = findViewById<Spinner>(R.id.networkSpinner)
         val protocolSpinner = findViewById<Spinner>(R.id.protocolSpinner)
 
+        val bleConfigContainer = findViewById<LinearLayout>(R.id.bleConfigContainer)
+        val bleProfileSpinner = findViewById<Spinner>(R.id.bleProfileSpinner)
+        val customBleContainer = findViewById<LinearLayout>(R.id.customBleContainer)
+
+        val customServiceUuid = findViewById<EditText>(R.id.customServiceUuid)
+        val customTxUuid = findViewById<EditText>(R.id.customTxUuid)
+        val customRxUuid = findViewById<EditText>(R.id.customRxUuid)
+
         // ---------- Bluetooth ----------
         val adapterName = if (activity.isPermissionsGranted()) activity.btAdapter.name ?: "" else getString(R.string.settings_missing_permission)
         btNameEdit.setText(adapterName)
@@ -46,6 +89,88 @@ class SettingsView(
                 if (activity.isPermissionsGranted()) activity.btAdapter.name = newName
                 else activity.requestPermissions()
             }
+        }
+        bleProfileSpinner.onItemSelectedListener =
+            object : AdapterView.OnItemSelectedListener {
+
+                override fun onItemSelected(
+                    parent: AdapterView<*>,
+                    view: View?,
+                    pos: Int,
+                    id: Long
+                ) {
+
+                    prefs.edit()
+                        .putInt(PREF_BLE_PROFILE, pos)
+                        .apply()
+
+                    val profile = bleProfiles[pos]
+
+                    if ( ! profile.isCustom) {
+
+                        prefs.edit()
+                            .putString(PREF_BLE_SERVICE, profile.service)
+                            .putString(PREF_BLE_TX, profile.tx)
+                            .putString(PREF_BLE_RX, profile.rx)
+                            .apply()
+
+                        customServiceUuid.setText(profile.service)
+                        customTxUuid.setText(profile.tx)
+                        customRxUuid.setText(profile.rx)
+                    }
+                }
+
+                override fun onNothingSelected(parent: AdapterView<*>) {}
+            }
+
+        bleProfileSpinner.adapter = ArrayAdapter(
+            activity,
+            android.R.layout.simple_spinner_item,
+            bleProfiles.map { it.name }
+        ).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+        val savedBleProfile = prefs.getInt(PREF_BLE_PROFILE, 0)
+        bleProfileSpinner.setSelection(savedBleProfile)
+        customServiceUuid.setText(
+            prefs.getString(PREF_BLE_SERVICE, "")
+        )
+
+        customTxUuid.setText(
+            prefs.getString(PREF_BLE_TX, "")
+        )
+
+        customRxUuid.setText(
+            prefs.getString(PREF_BLE_RX, "")
+        )
+
+        fun saveCustomBleConfig() {
+            prefs.edit()
+                .putString(
+                    PREF_BLE_SERVICE,
+                    customServiceUuid.text.toString().trim()
+                )
+                .putString(
+                    PREF_BLE_TX,
+                    customTxUuid.text.toString().trim()
+                )
+                .putString(
+                    PREF_BLE_RX,
+                    customRxUuid.text.toString().trim()
+                )
+                .apply()
+        }
+
+        customServiceUuid.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) saveCustomBleConfig()
+        }
+
+        customTxUuid.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) saveCustomBleConfig()
+        }
+
+        customRxUuid.setOnFocusChangeListener { _, hasFocus ->
+            if (!hasFocus) saveCustomBleConfig()
         }
 
         // ---------- Log level ----------
@@ -96,6 +221,8 @@ class SettingsView(
 
                 btContainer.visibility =
                     if (pos == activity.NETWORK_BT || pos == activity.NETWORK_BLE) VISIBLE else GONE
+                bleConfigContainer.visibility =
+                    if (pos == activity.NETWORK_BLE) VISIBLE else GONE
             }
 
             override fun onNothingSelected(parent: AdapterView<*>) {}

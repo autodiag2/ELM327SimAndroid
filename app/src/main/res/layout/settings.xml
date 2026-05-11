@@ -37,6 +37,72 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/settings_btApply" />
+
+            <!-- BLE UART configuration (hidden unless BLE selected) -->
+            <LinearLayout
+                android:id="@+id/bleConfigContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingTop="16dp"
+                android:visibility="gone">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/settings_ble_profiles_title" />
+
+                <Spinner
+                    android:id="@+id/bleProfileSpinner"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <!-- Custom UUID inputs -->
+                <LinearLayout
+                    android:id="@+id/customBleContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/settings_ble_profile_service_uuid" />
+
+                    <EditText
+                        android:id="@+id/customServiceUuid"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textCapCharacters|textNoSuggestions"
+                        android:hint="6E400001-B5A3-F393-E0A9-E50E24DCCA9E" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/settings_ble_profile_tx_uuid" />
+
+                    <EditText
+                        android:id="@+id/customTxUuid"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textCapCharacters|textNoSuggestions"
+                        android:hint="6E400003-B5A3-F393-E0A9-E50E24DCCA9E" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/settings_ble_profile_rx_uuid" />
+
+                    <EditText
+                        android:id="@+id/customRxUuid"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textCapCharacters|textNoSuggestions"
+                        android:hint="6E400002-B5A3-F393-E0A9-E50E24DCCA9E" />
+
+                </LinearLayout>
+
+            </LinearLayout>
         </LinearLayout>
 
         <!-- Log level -->

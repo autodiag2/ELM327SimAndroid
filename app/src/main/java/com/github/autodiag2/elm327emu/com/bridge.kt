@@ -34,7 +34,6 @@ open class Bridge(
     open fun start() {
         scope.launch {
             activity.clearSocketFiles()
-
             while (true) {
                 startInternal()
             }

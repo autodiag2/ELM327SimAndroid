@@ -18,6 +18,10 @@
     <string name="settings_network_bluetooth">Bluetooth</string>
     <string name="settings_network_ble">Bluetooth LE (4.0+)</string>
     <string name="settings_network_network">Network</string>
+    <string name="settings_ble_profiles_title">BLE UART Profile</string>
+    <string name="settings_ble_profile_service_uuid">Service UUID</string>
+    <string name="settings_ble_profile_tx_uuid">TX Characteristic UUID</string>
+    <string name="settings_ble_profile_rx_uuid">RX Characteristic UUID</string>
     <string name="sim_no_content">No content in sim desc</string>
     <string name="sim_unsupported_ecu_schema_version">Unsupported sim schema version: %1$.1f</string>
     <string name="sim_invalid_ecu_schema">Invalid sim schema: %1$s</string>
@@ -103,6 +107,7 @@
     <string name="main_drawer_stats">Stats</string>
     <string name="main_drawer_settings">Settings</string>
     <string name="sim_ecu_row_delete">Delete ECU</string>
+    <string name="log_ble_uuid_validation">Invalid BLE UUID configuration: %1$s</string>
     <string name="log_ble_connected">%1$s connected</string>
     <string name="log_ble_disconnected">%1$s disconnected</string>
     <string name="log_ble_unknown_device_address">Unknown device address</string>
