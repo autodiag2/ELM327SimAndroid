@@ -25,11 +25,15 @@ import androidx.activity.result.contract.ActivityResultContracts
 import android.app.Activity.RESULT_OK
 import android.view.LayoutInflater
 
-public enum class LogLevel(val value: Int) {
-    ERROR(0),
-    INFO(1),
-    DEBUG(2)
+enum class LogLevel(val value: Int) {
+    NONE(0),
+    ERROR(1),
+    WARNING(2),
+    INFO(3),
+    DEBUG(4)
 }
+
+val LogLevel_DEFAULT = LogLevel.DEBUG
 
 data class LogEntry(
     val id: Long,
@@ -42,8 +46,6 @@ class LogRepository(private val context: Context) {
     private val buffer = ArrayList<LogEntry>()
     private val mutex = Mutex()
     private var counter = 0L
-
-    val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
 
     suspend fun append(text: String, level: LogLevel = LogLevel.DEBUG): LogEntry {
         return mutex.withLock {
@@ -106,6 +108,8 @@ class LogAdapter :
         val colorInt = when (item.level) {
             LogLevel.INFO -> ctx.getColor(R.color.sol_blue)
             LogLevel.ERROR -> ctx.getColor(R.color.sol_red)
+            LogLevel.WARNING -> ctx.getColor(R.color.sol_orange)
+            LogLevel.NONE -> ctx.getColor(R.color.sol_magenta)
             LogLevel.DEBUG -> {
                 val ta = ctx.theme.obtainStyledAttributes(
                     intArrayOf(android.R.attr.textColorPrimary)
@@ -298,7 +302,7 @@ class LogView(
     // ---- PUBLIC APPEND API ----
     fun append(text: String, level: LogLevel = LogLevel.DEBUG) {
 
-        val currentLevel = activity.prefs.getInt("log_level", LogLevel.INFO.ordinal)
+        val currentLevel = activity.prefs.getInt("log_level", LogLevel_DEFAULT.ordinal)
         if (currentLevel < level.ordinal) return
 
         scope.launch {

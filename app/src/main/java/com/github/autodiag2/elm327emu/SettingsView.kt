@@ -59,7 +59,7 @@ class SettingsView(
             setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         }
 
-        val savedLogLevel = prefs.getInt("log_level", LogLevel.INFO.ordinal)
+        val savedLogLevel = prefs.getInt("log_level", LogLevel_DEFAULT.ordinal)
         logLevelSpinner.setSelection(savedLogLevel)
 
         logLevelSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
