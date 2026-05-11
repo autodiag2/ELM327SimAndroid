@@ -83,7 +83,7 @@ abstract class Ecu(
             val displayName = content.optString("displayName", type.toString())
             val ecu = create(type, activity, address, displayName)
 
-            ecu.fromJson(content)
+            ecu.fromJson(desc)
 
             return ecu
         }
