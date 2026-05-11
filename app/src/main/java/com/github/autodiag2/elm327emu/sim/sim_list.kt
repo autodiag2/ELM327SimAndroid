@@ -271,4 +271,8 @@ class SimList(
         adapter.updateListState()
     }
 
+    fun refresh() {
+        adapter.refresh()
+    }
+
 }

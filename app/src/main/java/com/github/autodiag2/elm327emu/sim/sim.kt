@@ -232,7 +232,7 @@ class Sim(
         for (i in ecus.indices.reversed()) {
             val ecu = ecus[i]
 
-            if (ecu.address.toByte() == address.toByte()) {
+            if (ecu.address == address) {
                 libautodiag.removeEcuByAddress(ecu.address)
                 ecuListView.removeViewAt(i + offset_in_layout)
                 ecus.removeAt(i)

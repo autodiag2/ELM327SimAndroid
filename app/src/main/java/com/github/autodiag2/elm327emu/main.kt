@@ -187,6 +187,7 @@ class MainActivity : AppCompatActivity() {
                     file.parentFile?.mkdirs()
                     simView.saveConfig(file.absolutePath)
                     appendLog(getString(R.string.sim_list_log_save_success, name), LogLevel.INFO)
+                    simListView.refresh()
                 }
             }
             .setNegativeButton(R.string.sim_list_save_cancel, null)
