@@ -81,7 +81,7 @@
     <string name="sim_list_title">Load Car Configuration</string>
     <string name="sim_list_load_latest_success">Loaded latest config: %1$s</string>
     <string name="sim_list_load_latest_no_config">No config found</string>
-    <string name="sim_list_save_title">No config found</string>
+    <string name="sim_list_save_title">Save Sim config as:</string>
     <string name="sim_list_save_validate">Validate</string>
     <string name="sim_list_save_cancel">Cancel</string>
     <string name="sim_list_log_save_success">Saved config: %1$s</string>
