@@ -14,6 +14,7 @@ import com.github.autodiag2.elm327emu.LogLevel
 import com.github.autodiag2.elm327emu.MainActivity
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import android.os.Build
 
 class BLEBridge(
     private val activity: MainActivity,
@@ -45,6 +46,10 @@ class BLEBridge(
                 "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
             )!!
         )
+    
+    // Client Characteristic Configuration Descriptor
+    private val cccdUuid = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
+
     private lateinit var gattServer: BluetoothGattServer
     private lateinit var advertiser: BluetoothLeAdvertiser
     private var connectedDevice: BluetoothDevice? = null
@@ -53,7 +58,7 @@ class BLEBridge(
 
     private lateinit var rxChar: BluetoothGattCharacteristic
     private lateinit var txChar: BluetoothGattCharacteristic
-    
+
     private fun sendTx(device: BluetoothDevice, text: String) {
         if (!txNotificationsEnabled) return
 
@@ -80,7 +85,7 @@ class BLEBridge(
             offset: Int,
             value: ByteArray
         ) {
-            if (descriptor.uuid.toString() == "00002902-0000-1000-8000-00805f9b34fb") {
+            if (descriptor.uuid == cccdUuid) {
                 txNotificationsEnabled = value.contentEquals(byteArrayOf(0x01, 0x00))
 
                 if (txNotificationsEnabled) {
@@ -275,7 +280,7 @@ class BLEBridge(
             )
 
             val cccd = BluetoothGattDescriptor(
-                UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"),
+                cccdUuid,
                 BluetoothGattDescriptor.PERMISSION_READ or BluetoothGattDescriptor.PERMISSION_WRITE
             )
 
