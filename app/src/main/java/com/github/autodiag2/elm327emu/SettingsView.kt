@@ -26,16 +26,28 @@ val PREF_BLE_RX = "ble_rx"
 
 val bleProfiles = listOf(
     BleProfile(
-        "Nordic UART Service (common)",
+        "Nordic UART Service",
         "6E400001-B5A3-F393-E0A9-E50E24DCCA9E",
         "6E400003-B5A3-F393-E0A9-E50E24DCCA9E",
         "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
     ),
     BleProfile(
-        "Microchip Transparent UART Service (less common)",
+        "Microchip Transparent UART Service",
         "49535343-FE7D-4AE5-8FA9-9FAFD205E455",
         "49535343-1E4D-4BD9-BA61-23C647249616",
         "49535343-8841-43F4-A8D4-ECBE34729BB3"
+    ),
+    BleProfile(
+        "Nexas",
+        "0000fff0-0000-1000-8000-00805f9b34fb",
+        "0000fff1-0000-1000-8000-00805f9b34fb",
+        "0000fff2-0000-1000-8000-00805f9b34fb"
+    ),
+    BleProfile(
+        "Nexas (less common)",
+        "000018f0-0000-1000-8000-00805f9b34fb",
+        "00002af0-0000-1000-8000-00805f9b34fb",
+        "00002af1-0000-1000-8000-00805f9b34fb"
     ),
     BleProfile(
         "Custom",
