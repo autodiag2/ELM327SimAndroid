@@ -59,6 +59,19 @@ class BLEBridge(
     private lateinit var rxChar: BluetoothGattCharacteristic
     private lateinit var txChar: BluetoothGattCharacteristic
 
+    private fun notifyCharacteristicChangedCompat(
+        device: BluetoothDevice,
+        characteristic: BluetoothGattCharacteristic,
+        value: ByteArray
+    ): Boolean {
+        characteristic.value = value
+        return gattServer.notifyCharacteristicChanged(
+            device,
+            characteristic,
+            false
+        )
+    }
+    
     private fun sendTx(device: BluetoothDevice, text: String) {
         if (!txNotificationsEnabled) return
 
@@ -68,8 +81,7 @@ class BLEBridge(
 
         while (i < bytes.size) {
             val end = minOf(i + mtu, bytes.size)
-            txChar.value = bytes.copyOfRange(i, end)
-            gattServer.notifyCharacteristicChanged(device, txChar, false)
+            notifyCharacteristicChangedCompat(device, txChar, bytes.copyOfRange(i, end))
             i = end
         }
     }
@@ -302,11 +314,10 @@ class BLEBridge(
                     try {
                         val n = loopbackInput?.read(bufferLoop) ?: break
                         if (n <= 0) break
-                        txChar.value = bufferLoop.copyOf(n)
-                        activity.onDataSent(bufferLoop, n)
                         connectedDevice?.let {
-                            gattServer.notifyCharacteristicChanged(it, txChar, false)
+                            notifyCharacteristicChangedCompat(it, txChar, bufferLoop.copyOf(n))
                         }
+                        activity.onDataSent(bufferLoop, n)
                     } catch(e: Exception) {
                         appendLog(getString(R.string.log_ble_loopback_failed, e.message),
                             LogLevel.DEBUG
