@@ -1,6 +1,6 @@
 plugins {
-    id("com.android.application") version "8.6.0"
-    id("org.jetbrains.kotlin.android") version "1.9.24"
+    id 'com.android.application' version '8.7.3'
+    id 'org.jetbrains.kotlin.android' version '2.1.20'
 }
 
 import java.io.ByteArrayOutputStream
@@ -23,7 +23,31 @@ def runCmd(List<String> cmd) {
 
     return stdout
 }
+tasks.register("buildGodotPck", Exec) {
 
+    def godotProjectDir = file("../Godot-Advanced-Vehicle")
+    def outputDir = file("$projectDir/src/main/assets")
+
+    workingDir godotProjectDir
+
+    doFirst {
+        outputDir.mkdirs()
+    }
+
+    commandLine(
+        "godot4",
+        "--headless",
+        "--path",
+        godotProjectDir.absolutePath,
+        "--export-pack",
+        "Android",
+        "${outputDir.absolutePath}/game.pck"
+    )
+}
+
+tasks.named("preDebugBuild") {
+    dependsOn("buildGodotPck")
+}
 tasks.register("bumpVersion") {
   doLast {
     def gradleFile = file("build.gradle")
@@ -102,6 +126,9 @@ android {
         ndk {
             abiFilters "arm64-v8a", "armeabi-v7a", "x86", "x86_64"
         }
+        aaptOptions {
+            ignoreAssetsPattern "!.svn:!.git:!.gitignore:!.ds_store:!*.scc:<dir>_*:!CVS:!thumbs.db:!picasa.ini:!*~"
+        }
         externalNativeBuild {
             ndkBuild {
                 arguments(
@@ -147,5 +174,6 @@ dependencies {
     implementation "androidx.recyclerview:recyclerview:1.3.2"
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.7.0"
     implementation 'org.luaj:luaj-jse:3.0.1'
+    implementation("org.godotengine:godot:4.6.2.stable")
 }
 

@@ -31,6 +31,7 @@ import com.github.autodiag2.elm327emu.sim.Sim
 import com.github.autodiag2.elm327emu.sim.SimList
 import com.github.autodiag2.elm327emu.ui.NestedScreen
 import java.io.File
+import org.godotengine.godot.GodotFragment
 
 private const val REQUEST_CODE = 1
 
@@ -203,10 +204,22 @@ class MainActivity : AppCompatActivity() {
     // Lifecycle
     // -------------------------------
 
+    private var godotFragment: GodotFragment? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_main)
+        
+        val currentGodotFragment = supportFragmentManager.findFragmentById(R.id.godot_fragment_container)
+        if (currentGodotFragment is GodotFragment) {
+            godotFragment = currentGodotFragment
+        } else {
+            godotFragment = GodotFragment()
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.godot_fragment_container, godotFragment!!)
+                .commitNowAllowingStateLoss()
+        }
 
         filePickerLauncher = registerForActivityResult(
             ActivityResultContracts.GetContent()
