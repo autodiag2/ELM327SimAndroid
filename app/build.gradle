@@ -41,13 +41,10 @@ tasks.register("buildGodotPck", Exec) {
         godotProjectDir.absolutePath,
         "--export-pack",
         "Android",
-        "${outputDir.absolutePath}/game.pck"
+        "${outputDir.absolutePath}/com.github.autodiag2.elm327emu.pck"
     )
 }
 
-tasks.named("preDebugBuild") {
-    dependsOn("buildGodotPck")
-}
 tasks.register("bumpVersion") {
   doLast {
     def gradleFile = file("build.gradle")
@@ -97,6 +94,9 @@ android {
     compileSdk 35
     ndkVersion "29.0.14206865"
 
+    sourceSets.main.assets.srcDirs += [
+        "$projectDir/src/main/assets"
+    ]
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
@@ -150,6 +150,7 @@ android {
                 keyPassword System.getenv("KEY_PASSWORD")
             }
         }
+    
     }
     buildTypes {
         release {
