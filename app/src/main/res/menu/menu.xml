@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <item
+        android:id="@+id/godot_toggle"
+        android:title="toggle godot" />
+
     <group android:id="@+id/action_menu_group_sim">
         <item
             android:id="@+id/sim_menu_clear"

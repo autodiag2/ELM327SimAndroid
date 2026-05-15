@@ -32,6 +32,7 @@ import com.github.autodiag2.elm327emu.sim.SimList
 import com.github.autodiag2.elm327emu.ui.NestedScreen
 import java.io.File
 import org.godotengine.godot.GodotFragment
+import androidx.fragment.app.FragmentContainerView
 
 private const val REQUEST_CODE = 1
 
@@ -153,6 +154,28 @@ class MainActivity : AppCompatActivity() {
         invalidateOptionsMenu()
     }
 
+    private fun showGodot() {
+        val godotContainer = FragmentContainerView(this).apply {
+            id = View.generateViewId()
+
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        }
+
+        show(godotContainer)
+        
+        val godotFragment = GodotFragment()
+
+        supportFragmentManager.beginTransaction()
+            .replace(
+                godotContainer.id,
+                godotFragment
+            )
+            .commitNow()
+    }
+
     var simListNumberOfSelectedItems = 0
         set(value) {
             field = value
@@ -204,22 +227,10 @@ class MainActivity : AppCompatActivity() {
     // Lifecycle
     // -------------------------------
 
-    private var godotFragment: GodotFragment? = null
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setContentView(R.layout.activity_main)
-        
-        val currentGodotFragment = supportFragmentManager.findFragmentById(R.id.godot_fragment_container)
-        if (currentGodotFragment is GodotFragment) {
-            godotFragment = currentGodotFragment
-        } else {
-            godotFragment = GodotFragment()
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.godot_fragment_container, godotFragment!!)
-                .commitNowAllowingStateLoss()
-        }
 
         filePickerLauncher = registerForActivityResult(
             ActivityResultContracts.GetContent()
@@ -340,6 +351,13 @@ class MainActivity : AppCompatActivity() {
             R.id.sim_menu_clear -> {
                 simView.ecuClear()
                 SimGeneratorGuiManager.clear()
+                true
+            }
+
+            R.id.godot_toggle -> {
+
+                showGodot()
+
                 true
             }
 
