@@ -23,43 +23,16 @@ def runCmd(List<String> cmd) {
 
     return stdout
 }
-tasks.register("buildGodot", Exec) {
+tasks.register("buildGodot") {
 
     def godotProjectDir = file("../Godot-Advanced-Vehicle")
     def assetsDir = file("$projectDir/src/main/assets")
 
-    workingDir godotProjectDir
-
-    doFirst {
+    doLast {
 
         assetsDir.mkdirs()
 
-        delete fileTree(assetsDir) {
-            include "*.pck"
-            include "project.binary"
-            include "project.godot"
-        }
-
-        copy {
-            from godotProjectDir
-            into assetsDir
-
-            include "project.godot"
-            include "project.binary"
-        }
-    }
-
-    commandLine(
-        "godot4",
-        "--headless",
-        "--path",
-        godotProjectDir.absolutePath,
-        "--export-pack",
-        "Android",
-        "${assetsDir.absolutePath}/com.github.autodiag2.elm327emu.pck"
-    )
-
-    doLast {
+        delete fileTree(assetsDir)
 
         copy {
             from godotProjectDir
@@ -70,6 +43,39 @@ tasks.register("buildGodot", Exec) {
             include "export_presets.cfg"
         }
 
+        copy {
+            from fileTree(godotProjectDir) {
+
+                include "assets/**"
+                include "levels/**"
+                include "models/**"
+                include "scenes/**"
+                include "addons/**"
+                include ".godot/**"
+                exclude ".git**"
+
+                include "**/*.gd"
+                include "**/*.gdc"
+                include "**/*.tscn"
+                include "**/*.scn"
+                include "**/*.tres"
+                include "**/*.res"
+                include "**/*.png"
+                include "**/*.jpg"
+                include "**/*.jpeg"
+                include "**/*.webp"
+                include "**/*.svg"
+                include "**/*.glb"
+                include "**/*.ogg"
+                include "**/*.wav"
+                include "**/*.mp3"
+                include "**/*.import"
+                include "**/*.shader"
+                include "**/*.gdshader"
+            }
+
+            into assetsDir
+        }
     }
 }
 
