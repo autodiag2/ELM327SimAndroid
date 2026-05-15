@@ -23,16 +23,39 @@ def runCmd(List<String> cmd) {
 
     return stdout
 }
-tasks.register("buildGodotPck", Exec) {
+tasks.register("buildGodot", Exec) {
 
     def godotProjectDir = file("../Godot-Advanced-Vehicle")
-    def outputDir = file("$projectDir/src/main/assets")
+    def assetsDir = file("$projectDir/src/main/assets")
 
     workingDir godotProjectDir
 
     doFirst {
-        outputDir.mkdirs()
+
+        assetsDir.mkdirs()
+
+        delete fileTree(assetsDir) {
+            include "*.pck"
+            include "project.binary"
+            include "project.godot"
+        }
+
+        copy {
+            from godotProjectDir
+            into assetsDir
+
+            include "project.godot"
+            include "project.binary"
+        }
     }
+
+    commandLine(
+        "godot4",
+        "--headless",
+        "--path",
+        godotProjectDir.absolutePath,
+        "--import"
+    )
 
     commandLine(
         "godot4",
@@ -41,8 +64,21 @@ tasks.register("buildGodotPck", Exec) {
         godotProjectDir.absolutePath,
         "--export-pack",
         "Android",
-        "${outputDir.absolutePath}/com.github.autodiag2.elm327emu.pck"
+        "${assetsDir.absolutePath}/com.github.autodiag2.elm327emu.pck"
     )
+
+    doLast {
+
+        copy {
+            from godotProjectDir
+            into assetsDir
+
+            include "project.godot"
+            include "project.binary"
+            include "export_presets.cfg"
+        }
+   
+    }
 }
 
 tasks.register("bumpVersion") {
@@ -94,9 +130,6 @@ android {
     compileSdk 35
     ndkVersion "29.0.14206865"
 
-    sourceSets.main.assets.srcDirs += [
-        "$projectDir/src/main/assets"
-    ]
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
@@ -164,6 +197,9 @@ android {
     }
 
 }
+
+// Wire Godot PCK export into the build lifecycle
+//tasks.preBuild.dependsOn("buildGodot")
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.24")
