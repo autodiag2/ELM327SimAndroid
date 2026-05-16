@@ -5,6 +5,7 @@ import android.widget.FrameLayout
 import androidx.fragment.app.FragmentContainerView
 import org.godotengine.godot.GodotFragment
 import com.github.autodiag2.elm327emu.MainActivity
+import android.content.pm.ActivityInfo
 
 class GuiGodot(
     private val activity: MainActivity
@@ -13,6 +14,8 @@ class GuiGodot(
 
     fun show() {
         isShowing = true
+        activity.requestedOrientation =
+            ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
         val godotContainer = FragmentContainerView(activity).apply {
             id = View.generateViewId()
 
@@ -36,6 +39,8 @@ class GuiGodot(
 
     fun onDestroy() {
         isShowing = false
+        activity.requestedOrientation =
+            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
     }
 
     fun isVisible(): Boolean {
