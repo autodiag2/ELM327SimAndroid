@@ -33,6 +33,7 @@ import com.github.autodiag2.elm327emu.ui.NestedScreen
 import java.io.File
 import org.godotengine.godot.GodotFragment
 import androidx.fragment.app.FragmentContainerView
+import com.github.autodiag2.elm327emu.sim.ecu.EcuGui
 
 private const val REQUEST_CODE = 1
 
@@ -164,7 +165,7 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        show(godotContainer)
+        showNestedScreen(godotContainer)
         
         val godotFragment = GodotFragment()
 
@@ -193,6 +194,9 @@ class MainActivity : AppCompatActivity() {
         menu.setGroupVisible(R.id.action_menu_group_sim_list_single_selection,
             activeScreen == simListView &&
             1 == simListNumberOfSelectedItems
+        )
+        menu.setGroupVisible(R.id.action_menu_group_sim_ecu_gui_default, 
+            activeScreen is EcuGui
         )
 
         return super.onPrepareOptionsMenu(menu)
@@ -354,7 +358,7 @@ class MainActivity : AppCompatActivity() {
                 true
             }
 
-            R.id.godot_toggle -> {
+            R.id.sim_ecu_gui_menu_start_godot -> {
 
                 showGodot()
 

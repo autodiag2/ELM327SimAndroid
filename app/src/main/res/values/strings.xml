@@ -52,6 +52,7 @@
     <string name="sim_ecu_gui_dtc_entry">P0103</string>
     <string name="sim_ecu_gui_remove_signal">Remove</string>
     <string name="sim_ecu_gui_remove_dtc">X</string>
+    <string name="sim_ecu_gui_menu_start_godot">Open in Godot</string>
     <string name="sim_ecu_script_copy">Copy</string>
     <string name="sim_ecu_script_paste">Paste</string>
     <string name="sim_ecu_script_apply">Apply Script</string>

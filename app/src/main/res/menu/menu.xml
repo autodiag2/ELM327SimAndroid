@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <item
-        android:id="@+id/godot_toggle"
-        android:title="toggle godot" />
-
     <group android:id="@+id/action_menu_group_sim">
         <item
             android:id="@+id/sim_menu_clear"
@@ -31,11 +27,18 @@
             android:title="@string/sim_menu_export_clipboard" />
     </group>
 
+    <group android:id="@+id/action_menu_group_sim_ecu_gui_default">
+        <item
+            android:id="@+id/sim_ecu_gui_menu_start_godot"
+            android:title="@string/sim_ecu_gui_menu_start_godot" />
+    </group>
+
     <group android:id="@+id/action_menu_group_sim_list_any_selection">
         <item
             android:id="@+id/sim_list_menu_delete"
             android:title="@string/sim_list_menu_delete" />
     </group>
+
     <group android:id="@+id/action_menu_group_sim_list_single_selection">
         <item
             android:id="@+id/sim_list_menu_export"
