@@ -31,9 +31,8 @@ import com.github.autodiag2.elm327emu.sim.Sim
 import com.github.autodiag2.elm327emu.sim.SimList
 import com.github.autodiag2.elm327emu.ui.NestedScreen
 import java.io.File
-import org.godotengine.godot.GodotFragment
-import androidx.fragment.app.FragmentContainerView
 import com.github.autodiag2.elm327emu.sim.ecu.EcuGui
+import com.github.autodiag2.elm327emu.sim.GuiGodot
 
 private const val REQUEST_CODE = 1
 
@@ -63,6 +62,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var statsView: StatsView
     private lateinit var simListView: SimList
     private var activeScreen: View? = null
+    private val godotGui by lazy { GuiGodot(this) }
 
     private val screenStack = ArrayDeque<View?>()
     var pendingExportConfig: SimSummary? = null
@@ -124,8 +124,11 @@ class MainActivity : AppCompatActivity() {
 
     fun handleBack() {
         if (screenStack.isNotEmpty()) {
-            val currentScreen = activeScreen as NestedScreen
-            currentScreen.onBack()
+            if ( activeScreen is NestedScreen ) {
+                (activeScreen as NestedScreen).onBack()
+            } else if ( godotGui.isVisible() ) {
+                godotGui.onDestroy()
+            }
             val previousScreen: View? = screenStack.removeLast()
             if ( previousScreen != null ) {
                 show(previousScreen)
@@ -153,28 +156,6 @@ class MainActivity : AppCompatActivity() {
         activeScreen = view
 
         invalidateOptionsMenu()
-    }
-
-    private fun showGodot() {
-        val godotContainer = FragmentContainerView(this).apply {
-            id = View.generateViewId()
-
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
-        }
-
-        showNestedScreen(godotContainer)
-        
-        val godotFragment = GodotFragment()
-
-        supportFragmentManager.beginTransaction()
-            .replace(
-                godotContainer.id,
-                godotFragment
-            )
-            .commitNow()
     }
 
     var simListNumberOfSelectedItems = 0
@@ -359,9 +340,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             R.id.sim_ecu_gui_menu_start_godot -> {
-
-                showGodot()
-
+                godotGui.show()
                 true
             }
 
