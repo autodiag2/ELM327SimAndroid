@@ -8,6 +8,7 @@ import android.widget.FrameLayout
 import androidx.fragment.app.FragmentContainerView
 import com.github.autodiag2.elm327emu.MainActivity
 import com.github.autodiag2.elm327emu.sim.ecu.EcuGui
+import com.github.autodiag2.elm327emu.R
 import org.godotengine.godot.GodotFragment
 
 class GuiGodot(
@@ -62,9 +63,11 @@ class GuiGodot(
                     return
                 }
 
+                android.util.Log.d("GuiGodot", "Refreshing Godot GUI")
+                android.util.Log.d("GuiGodot", "Current RPM: ${CarBridge.getRpm()}")
                 updateSignal(
                     "SAEJ1979.engine_speed",
-                    CarBridge.rpm.toDouble()
+                    CarBridge.getRpm().toDouble()
                 )
 
                 handler.postDelayed(
