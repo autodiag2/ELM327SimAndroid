@@ -63,11 +63,29 @@ class GuiGodot(
                     return
                 }
 
-                android.util.Log.d("GuiGodot", "Refreshing Godot GUI")
-                android.util.Log.d("GuiGodot", "Current RPM: ${CarBridge.getRpm()}")
                 updateSignal(
                     "SAEJ1979.engine_speed",
                     CarBridge.getRpm().toDouble()
+                )
+
+                updateSignal(
+                    "SAEJ1979.vehicle_speed",
+                    CarBridge.getSpeed().toDouble()
+                )
+
+                updateSignal(
+                    "SAEJ1979.fuel_tank_level_input",
+                    CarBridge.getFuel().toDouble()
+                )
+
+                updateSignal(
+                    "SAEJ1979.relative_accelerator_pedal_position",
+                    CarBridge.getAcceleratorRelativePosition().toDouble()
+                )
+
+                updateSignal(
+                    "SAEJ1979.actual_engine_percent_torque",
+                    CarBridge.getActualEnginePercentTorque().toDouble()
                 )
 
                 handler.postDelayed(
