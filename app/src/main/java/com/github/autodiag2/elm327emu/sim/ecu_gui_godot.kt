@@ -20,12 +20,19 @@ class GuiGodot(
     private val handler = Handler(Looper.getMainLooper())
 
     private var refreshRunnable: Runnable? = null
+    private var fragmentContainer: FragmentContainerView? = null
 
     fun show() {
         isShowing = true
 
         activity.requestedOrientation =
             ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+
+        if ( fragmentContainer != null ) {
+            val container = fragmentContainer ?: return
+            activity.showNestedScreen(container)
+            return
+        }
 
         val godotContainer = FragmentContainerView(activity).apply {
             id = View.generateViewId()
@@ -35,6 +42,7 @@ class GuiGodot(
                 FrameLayout.LayoutParams.MATCH_PARENT
             )
         }
+        fragmentContainer = godotContainer
 
         activity.showNestedScreen(godotContainer)
 
