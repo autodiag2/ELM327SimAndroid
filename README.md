@@ -7,7 +7,7 @@
 Ever wanted to test your scantool software before going into production ?  
 Just curious about how your scantool works ?  
 ELM327 Emulator is here ! Turn your phone into a car   
-You can emulate ELM327 wifi, bluetooth, bluetooth BLE then connect to it for example with [autodiag](https://github.com/autodiag2/autodiag/).
+You can emulate ELM327 wifi, bluetooth, bluetooth BLE then connect to it for example with [autodiag](https://github.com/autodiag2/autodiag/).  
 Test your scantool with a playable virtualcar !
 
 <table>
