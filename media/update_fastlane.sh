@@ -11,5 +11,6 @@ cp -f "main.png"        "$DEST/phoneScreenshots/1.png"
 cp -f "log.png"         "$DEST/phoneScreenshots/2.png"
 cp -f "settings.png"    "$DEST/phoneScreenshots/3.png"
 cp -f "side.png"        "$DEST/phoneScreenshots/4.png"
+cp -f "godot.png"       "$DEST/phoneScreenshots/5.png"
 
 echo "Images updated"
