@@ -23,61 +23,6 @@ def runCmd(List<String> cmd) {
 
     return stdout
 }
-tasks.register("buildGodot") {
-
-    def godotProjectDir = file("../Godot-Advanced-Vehicle")
-    def assetsDir = file("$projectDir/src/main/assets")
-
-    doLast {
-
-        assetsDir.mkdirs()
-
-        delete fileTree(assetsDir)
-
-        copy {
-            from godotProjectDir
-            into assetsDir
-
-            include "project.godot"
-            include "project.binary"
-            include "export_presets.cfg"
-        }
-
-        copy {
-            from fileTree(godotProjectDir) {
-
-                include "assets/**"
-                include "levels/**"
-                include "models/**"
-                include "scenes/**"
-                include "addons/**"
-                include ".godot/**"
-                exclude ".git**"
-
-                include "**/*.gd"
-                include "**/*.gdc"
-                include "**/*.tscn"
-                include "**/*.scn"
-                include "**/*.tres"
-                include "**/*.res"
-                include "**/*.png"
-                include "**/*.jpg"
-                include "**/*.jpeg"
-                include "**/*.webp"
-                include "**/*.svg"
-                include "**/*.glb"
-                include "**/*.ogg"
-                include "**/*.wav"
-                include "**/*.mp3"
-                include "**/*.import"
-                include "**/*.shader"
-                include "**/*.gdshader"
-            }
-
-            into assetsDir
-        }
-    }
-}
 
 tasks.register("bumpVersion") {
   doLast {
@@ -195,9 +140,6 @@ android {
     }
 
 }
-
-// Wire Godot PCK export into the build lifecycle
-//tasks.preBuild.dependsOn("buildGodot")
 
 dependencies {
     implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.24")
