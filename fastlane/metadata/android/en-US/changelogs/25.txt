@@ -1,0 +1,6 @@
+ - import back generators from autodiag with config ui
+ - define a general way of defining ui (sim ui)
+ - mutli gui sim now allowed
+ - add sim config (sim list)
+ - clean refactor of the code base
+ - improve ui
