@@ -1,0 +1,5 @@
+ - refactor in a cleaner way
+ - fix the back handling logic
+ - proper ECU removal method
+ - add translations
+ - allow to create export car configurations and share them
