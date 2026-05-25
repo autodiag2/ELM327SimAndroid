@@ -1,0 +1,4 @@
+ - fix issue in sim preventing to set a default proto
+ - add ECU scripting capabilites
+ - add possibility to multiple ECU sim
+ - add a stats tab
