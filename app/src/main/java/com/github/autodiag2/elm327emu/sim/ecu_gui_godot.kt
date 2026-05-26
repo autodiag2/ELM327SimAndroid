@@ -16,6 +16,7 @@ class GuiGodot(
 ) {
     private var isShowing = false
     private var godotFragment: GodotFragment? = null
+    private val REFRESH_HZ = 10
 
     private val handler = Handler(Looper.getMainLooper())
 
@@ -31,6 +32,7 @@ class GuiGodot(
         if ( fragmentContainer != null ) {
             val container = fragmentContainer ?: return
             activity.showNestedScreen(container)
+            refreshPeriodically(REFRESH_HZ)
             return
         }
 
@@ -55,7 +57,7 @@ class GuiGodot(
             )
             .commitNow()
 
-        refreshPeriodically(10)
+        refreshPeriodically(REFRESH_HZ)
     }
 
     fun refreshPeriodically(hz: Int = 10) {
