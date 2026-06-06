@@ -1,14 +1,18 @@
 # ELM327 Emulator Android
+
 [![CI](https://github.com/autodiag2/ELM327SimAndroid/actions/workflows/release.yml/badge.svg?event=push)](https://github.com/autodiag2/ELM327SimAndroid/actions)
 [![License](https://img.shields.io/github/license/autodiag2/ELM327SimAndroid)](https://github.com/autodiag2/ELM327SimAndroid/blob/main/LICENSE)
 [![Release](https://img.shields.io/github/v/release/autodiag2/ELM327SimAndroid)](https://github.com/autodiag2/ELM327SimAndroid/releases)
 ![Downloads](https://img.shields.io/github/downloads/autodiag2/ELM327SimAndroid/total)
 
+Android app to simulate, emulate an ELM327 (Wifi, Bluetooth BLE, Bluetooth) connected to a car (0-n ECUs) for testing OBD-II, UDS applications.  
+You can plug in or plug out ECUs of simulation, change default protocol, inspect logs, share your config with other devs.
+
 Ever wanted to test your scantool software before going into production ?  
 Just curious about how your scantool works ?  
 ELM327 Emulator is here ! Turn your phone into a car   
 You can emulate ELM327 wifi, bluetooth, bluetooth BLE then connect to it for example with [autodiag](https://github.com/autodiag2/autodiag/).  
-Test your scantool with a playable virtualcar !
+To go more deeper a playable virtual car linked to virtual ELM327 is available ! Test fuel consumption, dyno tests and much more !
 
 <table>
   <tr>
