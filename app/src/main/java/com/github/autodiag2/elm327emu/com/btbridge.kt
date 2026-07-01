@@ -25,7 +25,6 @@ class BluetoothBridge(
     override suspend fun startInternal() {
         try {
 
-            server = btAdapter.listenUsingRfcommWithServiceRecord(getString(R.string.app_name), classicalBtUUID)
             appendLog(getString(R.string.log_bt_waiting_for_connection), LogLevel.INFO)
 
             socket = server?.accept()
@@ -88,7 +87,6 @@ class BluetoothBridge(
             bt_input?.close()
             bt_output?.close()
             socket?.close()
-            server?.close()
             appendLog(getString(R.string.log_bt_connection_closed), LogLevel.INFO)
         }
     }
@@ -98,6 +96,7 @@ class BluetoothBridge(
             activity.showBluetoothEnablePopup()
             return
         }
+        server = btAdapter.listenUsingRfcommWithServiceRecord(getString(R.string.app_name), classicalBtUUID)
         super.start()
     }
 
