@@ -34,9 +34,13 @@ class NetworkBridge(
         }
     }
 
+    override fun start() {
+        serverSocket = openServer()
+        super.start()
+    }
+
     override suspend fun startInternal() {
         try {
-            serverSocket = openServer()
             clientSocket = serverSocket!!.accept()
             appendLog(
                 getString(R.string.log_network_client_connected, clientSocket!!.inetAddress.hostAddress, clientSocket!!.port),
@@ -100,12 +104,10 @@ class NetworkBridge(
             netInput?.close()
             netOutput?.close()
             clientSocket?.close()
-            serverSocket?.close()
 
             netInput = null
             netOutput = null
             clientSocket = null
-            serverSocket = null
 
             appendLog(getString(R.string.log_network_connection_closed), LogLevel.INFO)
         }
