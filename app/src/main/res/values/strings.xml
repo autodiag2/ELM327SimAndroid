@@ -210,7 +210,7 @@
     <string name="log_wifi_error_generic">Generic failure</string>
     <string name="log_wifi_error_incompatible_mode">Another Wi-Fi mode is active, please set credentials by hand</string>
     <string name="log_wifi_error_unknown">Unknown error: %1$d</string>
-    <string name="log_wifi_hotspot_started">Wi-Fi hotspot started: SSID=%1$s, Password=%2$s</string>
+    <string name="log_wifi_hotspot_started">Wi-Fi hotspot started: (SSID=%1$s Password=%2$s) ip of the ELM327 emulator : %3$s</string>
     <string name="log_wifi_error_missing_permission">Missing permission to start Wi-Fi hotspot</string>
     <string name="settings_wifi_startBtn">Start Wi-Fi Hotspot</string>
     <string name="settings_wifi_startBtn_hotspot_error_return"></string>
