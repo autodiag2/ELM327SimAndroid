@@ -152,5 +152,6 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.7.0"
     implementation 'org.luaj:luaj-jse:3.0.1'
     implementation("org.godotengine:godot:4.6.2.stable")
+    implementation("com.google.zxing:core:3.5.3")
 }
 

@@ -105,6 +105,33 @@
             </LinearLayout>
         </LinearLayout>
 
+        <LinearLayout
+            android:id="@+id/wifiContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingTop="16dp">
+
+            <TextView
+                android:id="@+id/settings_wifi_startBtn_hotspot_error_return"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/settings_wifi_startBtn_hotspot_error_return" />
+            
+            <Button
+                android:id="@+id/settings_wifi_startBtn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/settings_wifi_startBtn" />
+            
+            <ImageView
+                android:id="@+id/settings_wifi_qrCode"
+                android:layout_width="300dp"
+                android:layout_height="300dp"
+                android:layout_gravity="center"/>
+
+        </LinearLayout>
+
         <!-- Log level -->
         <TextView
             android:id="@+id/logLevelLabel"

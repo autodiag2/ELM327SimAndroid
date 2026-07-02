@@ -68,6 +68,15 @@ class MainActivity : AppCompatActivity() {
     var pendingExportConfig: SimSummary? = null
     val prefs by lazy { getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
 
+    private var pendingWifiHotspotPermCallback: ((Boolean) -> Unit)? = null
+    private val nearbyWifiPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if ( pendingWifiHotspotPermCallback != null ) {
+                pendingWifiHotspotPermCallback?.invoke(granted)
+                pendingWifiHotspotPermCallback = null
+            }
+        }
+    
     val exportLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
 
@@ -476,6 +485,19 @@ class MainActivity : AppCompatActivity() {
     fun clearSocketFiles() {
         filesDir.listFiles()?.forEach {
             if (it.name.startsWith("socket")) it.delete()
+        }
+    }
+
+    fun requestNearbyWifiPermission(callback: (Boolean) -> Unit) {
+        pendingWifiHotspotPermCallback = callback;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            nearbyWifiPermissionLauncher.launch(
+                Manifest.permission.NEARBY_WIFI_DEVICES
+            )
+        } else {
+            nearbyWifiPermissionLauncher.launch(
+                Manifest.permission.ACCESS_FINE_LOCATION
+            )
         }
     }
 

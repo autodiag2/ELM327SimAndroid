@@ -3,6 +3,7 @@ package com.github.autodiag2.elm327emu
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
+import android.widget.TextView
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
@@ -10,6 +11,9 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.Spinner
+import android.widget.ImageView
+import com.github.autodiag2.elm327emu.com.LocalHotspotManager
+import com.github.autodiag2.elm327emu.generateQrBitmap
 
 data class BleProfile(
     val name: String,
@@ -71,9 +75,15 @@ class SettingsView(
         return activity.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
     }
 
+    private var hotspotManager: LocalHotspotManager? = null
+
     private fun setup() {
         val prefs = activity.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
 
+        val wifiSettingsContainer = findViewById<LinearLayout>(R.id.wifiContainer)
+        val wifiApLaunchBtn = findViewById<Button>(R.id.settings_wifi_startBtn)
+        val wifiApErrorReturn = findViewById<TextView>(R.id.settings_wifi_startBtn_hotspot_error_return)
+        val wifiApQrCode = findViewById<ImageView>(R.id.settings_wifi_qrCode)
         val btContainer = findViewById<LinearLayout>(R.id.btContainer)
         val btNameEdit = findViewById<EditText>(R.id.btNameEdit)
         val btApplyBtn = findViewById<Button>(R.id.btApplyBtn)
@@ -91,6 +101,29 @@ class SettingsView(
         val customTxUuid = findViewById<EditText>(R.id.customTxUuid)
         val customRxUuid = findViewById<EditText>(R.id.customRxUuid)
 
+        wifiApQrCode.visibility = View.GONE
+        
+        // ---------- Wi-Fi ----------
+        wifiApLaunchBtn.setOnClickListener {
+            if (hotspotManager == null) {
+                hotspotManager = LocalHotspotManager(activity)
+            }
+
+            hotspotManager?.start(
+                onStarted = { info ->
+                    activity.appendLog(getString(R.string.log_wifi_hotspot_started, info.ssid, info.password), LogLevel.INFO)
+                    wifiApErrorReturn.text = getString(R.string.log_wifi_hotspot_started, info.ssid, info.password)
+                    val qrBitmap = generateQrBitmap(info.wifiQr, 300)
+                    wifiApQrCode.setImageBitmap(qrBitmap)
+                    wifiApQrCode.visibility = View.VISIBLE
+                },
+                onFailed = { reason, reasonStr ->
+                    activity.appendLog(reasonStr, LogLevel.ERROR)
+                    wifiApErrorReturn.text = reasonStr
+                    wifiApQrCode.visibility = View.GONE
+                }
+            )
+        }
         // ---------- Bluetooth ----------
         val adapterName = if (activity.isPermissionsGranted()) activity.btAdapter.name ?: "" else getString(R.string.settings_missing_permission)
         btNameEdit.setText(adapterName)
@@ -226,6 +259,9 @@ class SettingsView(
 
         btContainer.visibility =
             if (savedNetwork == activity.NETWORK_BT || savedNetwork == activity.NETWORK_BLE) VISIBLE else GONE
+        
+        wifiSettingsContainer.visibility =
+            if (savedNetwork == activity.NETWORK_IP) VISIBLE else GONE
 
         networkSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, pos: Int, id: Long) {
@@ -235,6 +271,8 @@ class SettingsView(
                     if (pos == activity.NETWORK_BT || pos == activity.NETWORK_BLE) VISIBLE else GONE
                 bleConfigContainer.visibility =
                     if (pos == activity.NETWORK_BLE) VISIBLE else GONE
+                wifiSettingsContainer.visibility =
+                    if (pos == activity.NETWORK_IP) VISIBLE else GONE
             }
 
             override fun onNothingSelected(parent: AdapterView<*>) {}
