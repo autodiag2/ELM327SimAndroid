@@ -82,12 +82,13 @@ public class LocalHotspotManager(
 
                     val cfg: SoftApConfiguration = res.softApConfiguration
 
-                    val ssid = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    var ssid = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         cfg.wifiSsid?.toString() ?: ""
                     } else {
                         @Suppress("DEPRECATION")
                         cfg.ssid ?: ""
                     }
+                    ssid = ssid.replace("\"", "") // Remove quotes if present
                     val password = cfg.passphrase
 
                     val qr = buildWifiQr(ssid, password)
