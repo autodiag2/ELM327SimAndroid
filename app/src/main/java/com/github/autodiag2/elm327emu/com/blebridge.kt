@@ -153,8 +153,7 @@ class BLEBridge(
         ) {
             if (characteristic.uuid == ELM_RX_UUID) {
                 try {
-                    loopbackOutput?.write(value)
-                    loopbackOutput?.flush()
+                    emuSend(value, value.size)
                     activity.onDataReceived(value, value.size)
                 } catch(e: Exception) {
                     appendLog(getString(R.string.log_ble_gatt_characteristic_write_failed, e.message),
@@ -312,7 +311,7 @@ class BLEBridge(
                 val bufferLoop = ByteArray(512)
                 while (isActive) {
                     try {
-                        val n = loopbackInput?.read(bufferLoop) ?: break
+                        val n = emuRecv(bufferLoop)
                         if (n <= 0) break
                         connectedDevice?.let {
                             notifyCharacteristicChangedCompat(it, txChar, bufferLoop.copyOf(n))

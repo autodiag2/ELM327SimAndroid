@@ -43,10 +43,9 @@ class BluetoothBridge(
             val btToLoop = scope.launch {
                 while (isActive) {
                     try {
-                        val n = bt_input?.read(bufferBT) ?: break
+                        val n = emuRecv(bufferBT)
                         if (n <= 0) break
-                        loopbackOutput?.write(bufferBT, 0, n)
-                        loopbackOutput?.flush()
+                        emuSend(bufferBT, n)
                         activity.onDataReceived(bufferBT, n)
                     } catch(e: Exception) {
                         appendLog(getString(R.string.log_bt_btToLoop_failed, e.message),

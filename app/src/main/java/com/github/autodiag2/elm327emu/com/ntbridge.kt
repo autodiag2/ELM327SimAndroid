@@ -60,8 +60,7 @@ class NetworkBridge(
                     try {
                         val n = netInput?.read(bufferNet) ?: break
                         if (n <= 0) break
-                        loopbackOutput?.write(bufferNet, 0, n)
-                        loopbackOutput?.flush()
+                        emuSend(bufferNet, n)
                         activity.onDataReceived(bufferNet, n)
                     } catch (e: Exception) {
                         appendLog(getString(R.string.log_network_netToLoop_failed, e.message),
@@ -75,7 +74,7 @@ class NetworkBridge(
             val loopToNet = scope.launch {
                 while (isActive) {
                     try {
-                        val n = loopbackInput?.read(bufferLoop) ?: break
+                        val n = emuRecv(bufferLoop)
                         if (n <= 0) break
                         netOutput?.write(bufferLoop, 0, n)
                         netOutput?.flush()

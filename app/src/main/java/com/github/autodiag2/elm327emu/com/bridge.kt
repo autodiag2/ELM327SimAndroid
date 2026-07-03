@@ -70,4 +70,21 @@ open class Bridge(
         loopbackSocket?.close()
     }
 
+    /**
+     * Shortcircuit the underlying stack and send directly to the emulator
+     * NOTE: There may be noise if an other client is connected through the bridge.
+     */
+    public fun emuSend(buffer: ByteArray, size: Int) {
+        loopbackOutput?.write(buffer, 0, size)
+        loopbackOutput?.flush()
+    }
+
+    /**
+     * Shortcircuit the underlying stack and recv directly from the emulator.
+     * NOTE: There may be noise if an other client is connected through the bridge.
+     */
+    public fun emuRecv(buffer: ByteArray): Int {
+        return loopbackInput?.read(buffer) ?: -1
+    }
+
 }
