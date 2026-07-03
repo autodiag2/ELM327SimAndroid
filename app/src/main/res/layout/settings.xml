@@ -130,6 +130,18 @@
                 android:layout_height="300dp"
                 android:layout_gravity="center"/>
 
+            <TextView
+                android:id="@+id/settings_wifi_hotspot_gatewayIp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="" />
+
+            <Button
+                android:id="@+id/settings_wifi_hotspot_gatewayIpBtn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/settings_wifi_hotspot_gatewayIpBtn" />
+
         </LinearLayout>
 
         <!-- Log level -->

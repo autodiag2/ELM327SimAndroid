@@ -215,4 +215,9 @@
     <string name="settings_wifi_startBtn">Start Wi-Fi Hotspot</string>
     <string name="settings_wifi_startBtn_hotspot_error_return"></string>
     <string name="log_wifi_error_hotspot_already_started">Wi-Fi hotspot already started</string>
+    <string name="settings_wifi_hotspot_gatewayIp">ELM327 emulator address: %1$s</string>
+    <string name="settings_wifi_hotspot_gatewayIpBtn">Fetch ELM327 emulator IP using root</string>
+    <string name="settings_wifi_hotspot_gatewayIp_error">Failed to fetch ELM327 emulator IP using root: %1$s</string>
+    <string name="settings_wifi_hotspot_gatewayIp_error_no_ap_interface">no Wi-Fi AP interface found (make sure to start hotspot first)</string>
+    <string name="settings_wifi_hotspot_gatewayIp_error_multiple_ap_interfaces">multiple Wi-Fi AP interfaces found : %1$s</string>
 </resources>

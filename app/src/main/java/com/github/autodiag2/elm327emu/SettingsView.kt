@@ -84,6 +84,8 @@ class SettingsView(
         val wifiApLaunchBtn = findViewById<Button>(R.id.settings_wifi_startBtn)
         val wifiApErrorReturn = findViewById<TextView>(R.id.settings_wifi_startBtn_hotspot_error_return)
         val wifiApQrCode = findViewById<ImageView>(R.id.settings_wifi_qrCode)
+        val wifiApGatewayIp = findViewById<TextView>(R.id.settings_wifi_hotspot_gatewayIp)
+        val wifiApGatewayIpBtn = findViewById<Button>(R.id.settings_wifi_hotspot_gatewayIpBtn)
         val btContainer = findViewById<LinearLayout>(R.id.btContainer)
         val btNameEdit = findViewById<EditText>(R.id.btNameEdit)
         val btApplyBtn = findViewById<Button>(R.id.btApplyBtn)
@@ -104,6 +106,27 @@ class SettingsView(
         wifiApQrCode.visibility = View.GONE
         
         // ---------- Wi-Fi ----------
+        wifiApGatewayIpBtn.setOnClickListener {
+            val result = hotspotManager?.findHotspotIpRoot()
+            when (result) {
+                is LocalHotspotManager.HotspotIpResult.Success -> {
+                    val ip = result.ip
+                    wifiApGatewayIp.text = getString(R.string.settings_wifi_hotspot_gatewayIp, ip)
+                }
+                is LocalHotspotManager.HotspotIpResult.NoApInterface -> {
+                    wifiApGatewayIp.text = getString(R.string.settings_wifi_hotspot_gatewayIp_error, getString(R.string.settings_wifi_hotspot_gatewayIp_error_no_ap_interface))
+                }
+                is LocalHotspotManager.HotspotIpResult.MultipleApInterfaces -> {
+                    wifiApGatewayIp.text = getString(R.string.settings_wifi_hotspot_gatewayIp_error, getString(R.string.settings_wifi_hotspot_gatewayIp_error_multiple_ap_interfaces, result.interfaces.joinToString(", ")))
+                }
+                is LocalHotspotManager.HotspotIpResult.Exception -> {
+                    wifiApGatewayIp.text = getString(R.string.settings_wifi_hotspot_gatewayIp_error, result.cause.message ?: "Unknown error")
+                }
+                else -> {
+                    wifiApGatewayIp.text = getString(R.string.settings_wifi_hotspot_gatewayIp_error, "Hotspot manager not initialized")
+                }
+            }
+        }
         wifiApLaunchBtn.setOnClickListener {
             if (hotspotManager == null) {
                 hotspotManager = LocalHotspotManager(activity)

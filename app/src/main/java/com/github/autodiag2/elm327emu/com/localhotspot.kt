@@ -29,6 +29,23 @@ public class LocalHotspotManager(
         val wifiQr: String
     )
 
+    sealed class HotspotIpResult {
+        data class Success(
+            val interfaceName: String,
+            val ip: String
+        ) : HotspotIpResult()
+
+        object NoApInterface : HotspotIpResult()
+
+        data class MultipleApInterfaces(
+            val interfaces: List<String>
+        ) : HotspotIpResult()
+
+        data class Exception(
+            val cause: Throwable
+        ) : HotspotIpResult()
+    }
+
     private var _hotspotInfo: HotspotInfo? = null
 
     fun getString(resId: Int, vararg formatArgs: Any?): String {
@@ -150,6 +167,58 @@ public class LocalHotspotManager(
             .replace(",", "\\,")
             .replace(":", "\\:")
             .replace("\"", "\\\"")
+    }
+
+    public fun findHotspotIpRoot(): HotspotIpResult {
+        return try {
+            val ifaceProcess = ProcessBuilder(
+                "su",
+                "-c",
+                "iw dev | awk '/Interface/{i=$2}/type AP/{print i}'"
+            ).redirectErrorStream(true).start()
+
+            val interfaces = ifaceProcess.inputStream.bufferedReader().useLines { lines ->
+                lines.map(String::trim)
+                    .filter(String::isNotEmpty)
+                    .distinct()
+                    .toList()
+            }
+
+            ifaceProcess.waitFor()
+
+            when {
+                interfaces.isEmpty() ->
+                    return HotspotIpResult.NoApInterface
+
+                interfaces.size > 1 ->
+                    return HotspotIpResult.MultipleApInterfaces(interfaces)
+            }
+
+            val iface = interfaces.first()
+
+            val ipProcess = ProcessBuilder(
+                "su",
+                "-c",
+                "ip -4 -o addr show dev $iface"
+            ).redirectErrorStream(true).start()
+
+            val output = ipProcess.inputStream.bufferedReader().use { it.readText() }
+
+            ipProcess.waitFor()
+
+            val ip = Regex("""inet\s+(\d+\.\d+\.\d+\.\d+)""")
+                .find(output)
+                ?.groupValues
+                ?.get(1)
+                ?: return HotspotIpResult.NoApInterface
+
+            HotspotIpResult.Success(
+                interfaceName = iface,
+                ip = ip
+            )
+        } catch (e: Throwable) {
+            HotspotIpResult.Exception(e)
+        }
     }
 
 }
