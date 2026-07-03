@@ -220,4 +220,6 @@
     <string name="settings_wifi_hotspot_gatewayIp_error">Failed to fetch ELM327 emulator IP using root: %1$s</string>
     <string name="settings_wifi_hotspot_gatewayIp_error_no_ap_interface">no Wi-Fi AP interface found (make sure to start hotspot first)</string>
     <string name="settings_wifi_hotspot_gatewayIp_error_multiple_ap_interfaces">multiple Wi-Fi AP interfaces found : %1$s</string>
+    <string name="settings_wifi_hotspot_gatewayIp_error_no_root">no root installed</string>
+    <string name="settings_wifi_hotspot_gatewayIp_error_root_denied">root permission denied</string>
 </resources>

@@ -14,6 +14,7 @@ import com.github.autodiag2.elm327emu.R
 import android.net.wifi.SoftApConfiguration
 import android.net.wifi.WifiManager
 import android.net.wifi.WifiSsid
+import java.io.IOException
 
 public class LocalHotspotManager(
     private val activity: MainActivity
@@ -36,6 +37,10 @@ public class LocalHotspotManager(
         ) : HotspotIpResult()
 
         object NoApInterface : HotspotIpResult()
+
+        object NoRootInstalled : HotspotIpResult()
+
+        object RootPermissionDenied : HotspotIpResult()
 
         data class MultipleApInterfaces(
             val interfaces: List<String>
@@ -170,7 +175,26 @@ public class LocalHotspotManager(
     }
 
     public fun findHotspotIpRoot(): HotspotIpResult {
-        return try {
+        try {
+            val su = try {
+                ProcessBuilder("su", "-c", "id")
+                    .redirectErrorStream(true)
+                    .start()
+            } catch (_: IOException) {
+                return HotspotIpResult.NoRootInstalled
+            }
+
+            val suOutput = su.inputStream.bufferedReader().use { it.readText() }
+            su.waitFor()
+
+            if (su.exitValue() != 0) {
+                return HotspotIpResult.RootPermissionDenied
+            }
+
+            if (!suOutput.contains("uid=0")) {
+                return HotspotIpResult.RootPermissionDenied
+            }
+
             val ifaceProcess = ProcessBuilder(
                 "su",
                 "-c",
@@ -212,12 +236,12 @@ public class LocalHotspotManager(
                 ?.get(1)
                 ?: return HotspotIpResult.NoApInterface
 
-            HotspotIpResult.Success(
+            return HotspotIpResult.Success(
                 interfaceName = iface,
                 ip = ip
             )
         } catch (e: Throwable) {
-            HotspotIpResult.Exception(e)
+            return HotspotIpResult.Exception(e)
         }
     }
 

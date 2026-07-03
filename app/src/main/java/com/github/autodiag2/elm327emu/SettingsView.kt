@@ -14,6 +14,10 @@ import android.widget.Spinner
 import android.widget.ImageView
 import com.github.autodiag2.elm327emu.com.LocalHotspotManager
 import com.github.autodiag2.elm327emu.generateQrBitmap
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class BleProfile(
     val name: String,
@@ -107,23 +111,34 @@ class SettingsView(
         
         // ---------- Wi-Fi ----------
         wifiApGatewayIpBtn.setOnClickListener {
-            val result = hotspotManager?.findHotspotIpRoot()
-            when (result) {
-                is LocalHotspotManager.HotspotIpResult.Success -> {
-                    val ip = result.ip
-                    wifiApGatewayIp.text = getString(R.string.settings_wifi_hotspot_gatewayIp, ip)
-                }
-                is LocalHotspotManager.HotspotIpResult.NoApInterface -> {
-                    wifiApGatewayIp.text = getString(R.string.settings_wifi_hotspot_gatewayIp_error, getString(R.string.settings_wifi_hotspot_gatewayIp_error_no_ap_interface))
-                }
-                is LocalHotspotManager.HotspotIpResult.MultipleApInterfaces -> {
-                    wifiApGatewayIp.text = getString(R.string.settings_wifi_hotspot_gatewayIp_error, getString(R.string.settings_wifi_hotspot_gatewayIp_error_multiple_ap_interfaces, result.interfaces.joinToString(", ")))
-                }
-                is LocalHotspotManager.HotspotIpResult.Exception -> {
-                    wifiApGatewayIp.text = getString(R.string.settings_wifi_hotspot_gatewayIp_error, result.cause.message ?: "Unknown error")
-                }
-                else -> {
-                    wifiApGatewayIp.text = getString(R.string.settings_wifi_hotspot_gatewayIp_error, "Hotspot manager not initialized")
+            activity.lifecycleScope.launch(Dispatchers.IO) {
+                val result = hotspotManager?.findHotspotIpRoot()
+
+                withContext(Dispatchers.Main) {
+                    when (result) {
+                        is LocalHotspotManager.HotspotIpResult.Success -> {
+                            val ip = result.ip
+                            wifiApGatewayIp.text = getString(R.string.settings_wifi_hotspot_gatewayIp, ip)
+                        }
+                        is LocalHotspotManager.HotspotIpResult.NoApInterface -> {
+                            wifiApGatewayIp.text = getString(R.string.settings_wifi_hotspot_gatewayIp_error, getString(R.string.settings_wifi_hotspot_gatewayIp_error_no_ap_interface))
+                        }
+                        is LocalHotspotManager.HotspotIpResult.MultipleApInterfaces -> {
+                            wifiApGatewayIp.text = getString(R.string.settings_wifi_hotspot_gatewayIp_error, getString(R.string.settings_wifi_hotspot_gatewayIp_error_multiple_ap_interfaces, result.interfaces.joinToString(", ")))
+                        }
+                        is LocalHotspotManager.HotspotIpResult.Exception -> {
+                            wifiApGatewayIp.text = getString(R.string.settings_wifi_hotspot_gatewayIp_error, result.cause.message ?: "Unknown error")
+                        }
+                        is LocalHotspotManager.HotspotIpResult.NoRootInstalled -> {
+                            wifiApGatewayIp.text = getString(R.string.settings_wifi_hotspot_gatewayIp_error_no_root)
+                        }
+                        is LocalHotspotManager.HotspotIpResult.RootPermissionDenied -> {
+                            wifiApGatewayIp.text = getString(R.string.settings_wifi_hotspot_gatewayIp_error_root_denied)
+                        }
+                        else -> {
+                            wifiApGatewayIp.text = getString(R.string.settings_wifi_hotspot_gatewayIp_error, "Hotspot manager not initialized")
+                        }
+                    }
                 }
             }
         }
