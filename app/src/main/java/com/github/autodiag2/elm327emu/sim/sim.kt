@@ -30,6 +30,7 @@ class Sim(
     private val ecuListView: ViewGroup
     val ecus = mutableListOf<Ecu>()
     private val ecuAddSelect: Spinner
+    var running: Boolean = false
 
     companion object {
 
@@ -69,7 +70,6 @@ class Sim(
             buildAddECUToGUI(address.toByte(), getString(R.string.sim_ecu_config_ecu_name, type), type)
         }
 
-        var running = false
         findViewById<Button>(R.id.sim_state).apply {
             setOnClickListener {
                 if (activity.isPermissionsGranted()) {
@@ -82,6 +82,10 @@ class Sim(
             }
         }
         buildAddECUToGUI(Ecu.DEFAULT_ADDRESS, getString(R.string.sim_ecu_gui_ecu_name), EcuType.GUI)
+    }
+
+    public fun isRunning(): Boolean {
+        return running
     }
 
     fun saveConfig(path: String) {

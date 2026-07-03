@@ -154,6 +154,7 @@ class SettingsView(
                     val qrBitmap = generateQrBitmap(info.wifiQr, 300)
                     wifiApQrCode.setImageBitmap(qrBitmap)
                     wifiApQrCode.visibility = View.VISIBLE
+                    activity.serverRestartWithUI()
                 },
                 onFailed = { reason, reasonStr ->
                     activity.appendLog(reasonStr, LogLevel.ERROR)

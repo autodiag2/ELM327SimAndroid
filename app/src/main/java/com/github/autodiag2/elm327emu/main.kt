@@ -33,6 +33,7 @@ import com.github.autodiag2.elm327emu.ui.NestedScreen
 import java.io.File
 import com.github.autodiag2.elm327emu.sim.ecu.EcuGui
 import com.github.autodiag2.elm327emu.sim.GuiGodot
+import android.widget.Button
 
 private const val REQUEST_CODE = 1
 
@@ -508,6 +509,15 @@ class MainActivity : AppCompatActivity() {
 
     fun startServer() {
         bridges[prefs.getInt("network_mode", NETWORK_BT)].start()
+    }
+
+    public fun serverRestartWithUI() {
+        val simv = simView
+        val simToggle = simv.findViewById<Button>(R.id.sim_state)
+        if ( simv.isRunning() ) {
+            simToggle.performClick()
+        }
+        simToggle.performClick()
     }
 
     fun onDataReceived(data: ByteArray, size_used: Int) {
