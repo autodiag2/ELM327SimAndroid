@@ -111,8 +111,8 @@ class SettingsView(
 
             hotspotManager?.start(
                 onStarted = { info ->
-                    activity.appendLog(getString(R.string.log_wifi_hotspot_started, info.ssid, info.password, info.gatewayIp), LogLevel.INFO)
-                    wifiApErrorReturn.text = getString(R.string.log_wifi_hotspot_started, info.ssid, info.password, info.gatewayIp)
+                    activity.appendLog(getString(R.string.log_wifi_hotspot_started, info.ssid, info.password), LogLevel.INFO)
+                    wifiApErrorReturn.text = getString(R.string.log_wifi_hotspot_started, info.ssid, info.password)
                     val qrBitmap = generateQrBitmap(info.wifiQr, 300)
                     wifiApQrCode.setImageBitmap(qrBitmap)
                     wifiApQrCode.visibility = View.VISIBLE

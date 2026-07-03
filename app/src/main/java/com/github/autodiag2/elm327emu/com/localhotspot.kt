@@ -26,7 +26,6 @@ public class LocalHotspotManager(
     data class HotspotInfo(
         val ssid: String,
         val password: String?,
-        val gatewayIp: String?,
         val wifiQr: String
     )
 
@@ -96,7 +95,6 @@ public class LocalHotspotManager(
                     `_hotspotInfo` = HotspotInfo(
                         ssid = ssid,
                         password = password,
-                        gatewayIp = findHotspotIp(),
                         wifiQr = qr
                     )
                     onStarted(
@@ -154,24 +152,4 @@ public class LocalHotspotManager(
             .replace("\"", "\\\"")
     }
 
-    private fun findHotspotIp(): String? {
-        NetworkInterface.getNetworkInterfaces().toList().forEach { iface ->
-            if (!iface.isUp || iface.isLoopback) return@forEach
-
-            iface.inetAddresses.toList().forEach { addr ->
-                if (addr is Inet4Address && !addr.isLoopbackAddress) {
-                    val ip = addr.hostAddress ?: return@forEach
-
-                    if (
-                        ip.startsWith("192.168.") ||
-                        ip.startsWith("172.") ||
-                        ip.startsWith("10.")
-                    ) {
-                        return ip
-                    }
-                }
-            }
-        }
-        return null
-    }
 }
