@@ -15,6 +15,14 @@ import com.github.autodiag2.elm327emu.MainActivity
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import android.os.Build
+import kotlinx.coroutines.channels.Channel
+
+private data class PendingRequest(
+    val device: BluetoothDevice,
+    val requestId: Int,
+    val responseNeeded: Boolean,
+    val value: ByteArray
+)
 
 class BLEBridge(
     private val activity: MainActivity,
@@ -23,6 +31,7 @@ class BLEBridge(
     private val prefs =
         activity.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
 
+    private val requestQueue = Channel<PendingRequest>(Channel.UNLIMITED)
     private val ELM_SERVICE_UUID: UUID
         get() = UUID.fromString(
             prefs.getString(
@@ -161,26 +170,30 @@ class BLEBridge(
             offset: Int,
             value: ByteArray
         ) {
-            if (characteristic.uuid == ELM_RX_UUID) {
-                try {
-                    emuSend(value, value.size)
-                    activity.onDataReceived(value, value.size)
-                } catch(e: Exception) {
-                    appendLog(getString(R.string.log_ble_gatt_characteristic_write_failed, e.message),
-                        LogLevel.DEBUG
+            if (characteristic.uuid != ELM_RX_UUID) {
+                if (responseNeeded) {
+                    gattServer.sendResponse(
+                        device,
+                        requestId,
+                        BluetoothGatt.GATT_SUCCESS,
+                        0,
+                        null
                     )
                 }
+                return
             }
 
-            if (responseNeeded) {
-                gattServer.sendResponse(
+            activity.onDataReceived(value, value.size)
+
+            requestQueue.trySend(
+                PendingRequest(
                     device,
                     requestId,
-                    BluetoothGatt.GATT_SUCCESS,
-                    0,
-                    null
+                    responseNeeded,
+                    value.copyOf()
                 )
-            }
+            )
+
         }
     }
 
@@ -318,22 +331,64 @@ class BLEBridge(
             emuStart()
 
             launch {
-                val bufferLoop = ByteArray(512)
+
+                val buffer = ByteArray(512)
+
                 while (isActive) {
+
+                    val request = requestQueue.receive()
+
                     try {
-                        val n = emuRecv(bufferLoop)
-                        if (n <= 0) break
-                        connectedDevice?.let {
-                            notifyCharacteristicChangedCompat(it, txChar, bufferLoop.copyOf(n))
+
+                        emuSend(
+                            request.value,
+                            request.value.size
+                        )
+
+                        val n = emuRecv(buffer)
+
+                        if (n > 0) {
+
+                            connectedDevice?.let {
+
+                                notifyCharacteristicChangedCompat(
+                                    it,
+                                    txChar,
+                                    buffer.copyOf(n)
+                                )
+
+                            }
+
+                            activity.onDataSent(buffer, n)
+
                         }
-                        activity.onDataSent(bufferLoop, n)
-                    } catch(e: Exception) {
-                        appendLog(getString(R.string.log_ble_loopback_failed, e.message),
+
+                        if (request.responseNeeded) {
+
+                            gattServer.sendResponse(
+                                request.device,
+                                request.requestId,
+                                BluetoothGatt.GATT_SUCCESS,
+                                0,
+                                null
+                            )
+
+                        }
+
+                    } catch (e: Exception) {
+
+                        appendLog(
+                            getString(
+                                R.string.log_ble_loopback_failed,
+                                e.message
+                            ),
                             LogLevel.DEBUG
                         )
-                        break
+
                     }
+
                 }
+
             }
         }
     }
