@@ -59,17 +59,27 @@ class BLEBridge(
     private lateinit var rxChar: BluetoothGattCharacteristic
     private lateinit var txChar: BluetoothGattCharacteristic
 
+    @Suppress("DEPRECATION")
     private fun notifyCharacteristicChangedCompat(
         device: BluetoothDevice,
         characteristic: BluetoothGattCharacteristic,
         value: ByteArray
     ): Boolean {
-        characteristic.value = value
-        return gattServer.notifyCharacteristicChanged(
-            device,
-            characteristic,
-            false
-        )
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            gattServer.notifyCharacteristicChanged(
+                device,
+                characteristic,
+                false,
+                value
+            ) == BluetoothStatusCodes.SUCCESS
+        } else {
+            characteristic.value = value
+            gattServer.notifyCharacteristicChanged(
+                device,
+                characteristic,
+                false
+            )
+        }
     }
     
     private fun sendTx(device: BluetoothDevice, text: String) {
