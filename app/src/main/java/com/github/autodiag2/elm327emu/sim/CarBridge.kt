@@ -1,65 +1,34 @@
 package com.github.autodiag2.elm327emu.sim
 
+import java.util.concurrent.ConcurrentHashMap
+import java.util.Enumeration
+
 object CarBridge {
 
-    @Volatile private var rpm: Float = 0f
+    private val signals = ConcurrentHashMap<String, Double>()
 
     @JvmStatic
-    fun setRpm(value: Float) {
-        rpm = value
+    fun setSignal(name: String, value: Double) {
+        signals[name] = value
     }
 
     @JvmStatic
-    fun getRpm(): Float {
-        return rpm
-    }
-
-    @Volatile private var speed: Float = 0f
-
-    @JvmStatic
-    fun setSpeed(value: Float) {
-        speed = value
+    fun getSignal(name: String): Double {
+        return signals[name] ?: 0.0
     }
 
     @JvmStatic
-    fun getSpeed(): Float {
-        return speed
-    }
-
-    @Volatile private var fuel: Float = 0f
-
-    @JvmStatic
-    fun setFuel(value: Float) {
-        fuel = value
+    fun hasSignal(name: String): Boolean {
+        return signals.containsKey(name)
     }
 
     @JvmStatic
-    fun getFuel(): Float {
-        return fuel
-    }
-
-    @Volatile private var acceleratorRelativePosition: Float = 0f
-
-    @JvmStatic
-    fun setAcceleratorRelativePosition(value: Float) {
-        acceleratorRelativePosition = value
+    fun getSignalsPath(): Enumeration<String> {
+        return signals.keys()
     }
 
     @JvmStatic
-    fun getAcceleratorRelativePosition(): Float {
-        return acceleratorRelativePosition
+    fun clear() {
+        signals.clear()
     }
-
-    @Volatile private var actualEnginePercentTorque: Float = 0f
-
-    @JvmStatic
-    fun setActualEnginePercentTorque(value: Float) {
-        actualEnginePercentTorque = value
-    }
-
-    @JvmStatic
-    fun getActualEnginePercentTorque(): Float {
-        return actualEnginePercentTorque
-    }
-
 }

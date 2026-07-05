@@ -73,30 +73,16 @@ class GuiGodot(
                     return
                 }
 
-                updateSignal(
-                    "SAEJ1979.engine_speed",
-                    CarBridge.getRpm().toDouble()
-                )
+                val paths = CarBridge.getSignalsPath()
 
-                updateSignal(
-                    "SAEJ1979.vehicle_speed",
-                    CarBridge.getSpeed().toDouble()
-                )
+                while (paths.hasMoreElements()) {
+                    val path = paths.nextElement()
 
-                updateSignal(
-                    "SAEJ1979.fuel_tank_level_input",
-                    CarBridge.getFuel().toDouble()
-                )
-
-                updateSignal(
-                    "SAEJ1979.relative_accelerator_pedal_position",
-                    CarBridge.getAcceleratorRelativePosition().toDouble()
-                )
-
-                updateSignal(
-                    "SAEJ1979.actual_engine_percent_torque",
-                    CarBridge.getActualEnginePercentTorque().toDouble()
-                )
+                    updateSignal(
+                        path,
+                        CarBridge.getSignal(path)
+                    )
+                }
 
                 handler.postDelayed(
                     this,
