@@ -59,7 +59,7 @@ class BluetoothBridge(
             val loopToBt = scope.launch {
                 while (isActive) {
                     try {
-                        val n = loopbackInput?.read(bufferLoop) ?: break
+                        val n = emuRecv(bufferLoop)
                         if (n <= 0) break
                         bt_output?.write(bufferLoop, 0, n)
                         bt_output?.flush()

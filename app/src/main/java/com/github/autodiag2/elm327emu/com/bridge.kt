@@ -19,9 +19,9 @@ open class Bridge(
 ) {
 
     protected val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    protected var loopbackInput: InputStream? = null
-    protected var loopbackOutput: OutputStream? = null
-    protected var loopbackSocket: LocalSocket? = null
+    private var loopbackInput: InputStream? = null
+    private var loopbackOutput: OutputStream? = null
+    private var loopbackSocket: LocalSocket? = null
 
     protected fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {
         activity.appendLog(text, level)
@@ -46,6 +46,7 @@ open class Bridge(
 
     open fun stop() {
         scope.coroutineContext.cancelChildren()
+        emuStop()
     }
 
     protected fun emuStart() {
@@ -70,20 +71,12 @@ open class Bridge(
         loopbackSocket?.close()
     }
 
-    /**
-     * Shortcircuit the underlying stack and send directly to the emulator
-     * NOTE: There may be noise if an other client is connected through the bridge.
-     */
-    public fun emuSend(buffer: ByteArray, size: Int) {
+    protected fun emuSend(buffer: ByteArray, size: Int) {
         loopbackOutput?.write(buffer, 0, size)
         loopbackOutput?.flush()
     }
 
-    /**
-     * Shortcircuit the underlying stack and recv directly from the emulator.
-     * NOTE: There may be noise if an other client is connected through the bridge.
-     */
-    public fun emuRecv(buffer: ByteArray): Int {
+    protected fun emuRecv(buffer: ByteArray): Int {
         return loopbackInput?.read(buffer) ?: -1
     }
 
