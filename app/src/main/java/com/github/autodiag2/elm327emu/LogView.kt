@@ -26,6 +26,7 @@ import android.app.Activity.RESULT_OK
 import android.view.LayoutInflater
 import android.widget.EditText
 import androidx.core.widget.doAfterTextChanged
+import com.github.autodiag2.elm327emu.R
 
 enum class LogLevel(val value: Int) {
     NONE(0),
@@ -41,7 +42,8 @@ data class LogEntry(
     val id: Long,
     val text: String,
     val level: LogLevel,
-    val data: ByteArray
+    val data: ByteArray,
+    var match: Boolean = false
 )
 
 private fun parseHexString(text: String): ByteArray? {
@@ -90,13 +92,57 @@ class LogRepository(private val context: Context) {
 
     suspend fun search(text: String): List<LogEntry> {
         return mutex.withLock {
+
             if (text.isBlank()) {
-                buffer.toList()
-            } else {
-                buffer.filter {
-                    search_match(it, text)
+                return@withLock buffer.toList()
+            }
+
+            val result = ArrayList<LogEntry>()
+            val added = HashSet<Long>()
+
+            val showSz = 2
+
+            for (i in buffer.indices) {
+
+                if (!search_match(buffer[i], text))
+                    continue
+
+                val first = maxOf(0, i - showSz)
+                val last = minOf(buffer.lastIndex, i + showSz)
+
+                val previousMatchInWindow =
+                    (first until i).any { search_match(buffer[it], text) }
+
+                if (!previousMatchInWindow) {
+                    result += LogEntry(
+                        id = -1,
+                        text = "======================================",
+                        level = LogLevel.INFO,
+                        data = ByteArray(0)
+                    )
+                }
+
+                for (j in first..last) {
+                    if (added.add(buffer[j].id)) {
+                        buffer[j].match = (i == j)
+                        result += buffer[j]
+                    }
+                }
+
+                val nextMatchInWindow =
+                    (i + 1..last).any { search_match(buffer[it], text) }
+
+                if (!nextMatchInWindow) {
+                    result += LogEntry(
+                        id = -2,
+                        text = "======================================",
+                        level = LogLevel.INFO,
+                        data = ByteArray(0)
+                    )
                 }
             }
+
+            return result
         }
     }
 
@@ -458,9 +504,10 @@ class LogView(
 
             mainScope.launch {
 
-                if (search.isBlank() ||
-                    search_match(entry, search)) {
+                if (search.isBlank()) {
                     logAdapter.append(entry)
+                } else {
+                    refresh()
                 }
 
                 // ---- ONLY auto-scroll if allowed ----
