@@ -521,12 +521,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun onDataReceived(data: ByteArray, size_used: Int) {
-        appendLog(getString(R.string.log_main_data_received, logView.dataLogFormat(data, size_used)), LogLevel.DEBUG)
+        logView.logData(LogView.DataType.RECV, data, size_used)
         statsView.onDataReceived(data, size_used)
     }
 
     fun onDataSent(data: ByteArray, size_used: Int) {
-        appendLog(getString(R.string.log_main_data_sent, logView.dataLogFormat(data, size_used)), LogLevel.DEBUG)
+        logView.logData(LogView.DataType.SENT, data, size_used)
         statsView.onDataSent(data, size_used)
     }
 

@@ -8,7 +8,7 @@
     <string name="log_btnClear">Clear log</string>
     <string name="log_btnUp">↑</string>
     <string name="log_btnDown">↓</string>
-    <string name="log_search_hint">text ...</string>
+    <string name="log_search_hint">text, bins eg. 4100 ...</string>
     <string name="settings_btLabel">Bluetooth device name</string>
     <string name="settings_btHint">OBD II</string>
     <string name="settings_btApply">Set</string>

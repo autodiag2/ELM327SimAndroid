@@ -40,9 +40,48 @@ val LogLevel_DEFAULT = LogLevel.DEBUG
 data class LogEntry(
     val id: Long,
     val text: String,
-    val level: LogLevel
+    val level: LogLevel,
+    val data: ByteArray
 )
 
+private fun parseHexString(text: String): ByteArray? {
+    val hex = text.filter {
+        !it.isWhitespace() && it != ':' && it != '-'
+    }
+
+    if (hex.length % 2 != 0) return null
+    if (!hex.all { it.isDigit() || it.uppercaseChar() in 'A'..'F' }) return null
+
+    return ByteArray(hex.length / 2) { i ->
+        hex.substring(i * 2, i * 2 + 2).toInt(16).toByte()
+    }
+}
+
+private fun containsSubArray(data: ByteArray, pattern: ByteArray): Boolean {
+    if (pattern.isEmpty()) return true
+    if (pattern.size > data.size) return false
+
+    outer@ for (i in 0 .. data.size - pattern.size) {
+        for (j in pattern.indices) {
+            if (data[i + j] != pattern[j]) {
+                continue@outer
+            }
+        }
+        return true
+    }
+
+    return false
+}
+
+fun search_match(entry: LogEntry, search: String): Boolean {
+    if (entry.text.contains(search, ignoreCase = true)) {
+        return true
+    }
+
+    val pattern = parseHexString(search) ?: return false
+
+    return containsSubArray(entry.data, pattern)
+}
 class LogRepository(private val context: Context) {
 
     private val buffer = ArrayList<LogEntry>()
@@ -55,16 +94,19 @@ class LogRepository(private val context: Context) {
                 buffer.toList()
             } else {
                 buffer.filter {
-                    it.text.contains(text, ignoreCase = true)
+                    search_match(it, text)
                 }
             }
         }
     }
 
-    suspend fun append(text: String, level: LogLevel = LogLevel.DEBUG): LogEntry {
+    suspend fun append(text: String, level: LogLevel = LogLevel.DEBUG, data: ByteArray? = null, size_used: Int = data?.size ?: 0): LogEntry {
         return mutex.withLock {
 
-            val entry = LogEntry(counter++, text, level)
+            val entry = LogEntry(
+                counter++, text, level,
+                data = data?.copyOf(size_used) ?: ByteArray(0),
+            )
             buffer.add(entry)
             entry
         }
@@ -201,6 +243,71 @@ class LogView(
                 }
             }
         }
+    }
+
+    private fun decodeHexAscii(data: ByteArray, length: Int): ByteArray? {
+        val out = ArrayList<Byte>()
+
+        var hi = -1
+
+        fun hex(c: Int): Int = when (c) {
+            in '0'.code..'9'.code -> c - '0'.code
+            in 'A'.code..'F'.code -> c - 'A'.code + 10
+            in 'a'.code..'f'.code -> c - 'a'.code + 10
+            else -> -1
+        }
+
+        for (i in 0 until length) {
+            val b = data[i].toInt() and 0xff
+
+            when (b) {
+                '\r'.code, '\n'.code, ' '.code, '>'.code -> continue
+            }
+
+            val v = hex(b)
+            if (v < 0) {
+                return null
+            }
+
+            if (hi < 0) {
+                hi = v
+            } else {
+                out += ((hi shl 4) or v).toByte()
+                hi = -1
+            }
+        }
+
+        if (hi >= 0) {
+            return null
+        }
+
+        return out.toByteArray()
+    }
+
+    enum class DataType {
+        RECV, SENT
+    }
+
+    fun logData(
+        type: DataType,
+        data: ByteArray,
+        length: Int = data.size
+    ) {
+        val binary = decodeHexAscii(data, length)
+            ?: ByteArray(0)
+        
+        append(
+            activity.getString(
+                if (type == DataType.RECV)
+                    R.string.log_main_data_received
+                else
+                    R.string.log_main_data_sent,
+                dataLogFormat(data, length)
+            ),
+            LogLevel.DEBUG,
+            binary,
+            binary.size
+        )
     }
 
     fun dataLogFormat(
@@ -340,19 +447,19 @@ class LogView(
     }
 
     // ---- PUBLIC APPEND API ----
-    fun append(text: String, level: LogLevel = LogLevel.DEBUG) {
+    fun append(text: String, level: LogLevel = LogLevel.DEBUG, data: ByteArray? = null, size_used: Int = data?.size ?: 0) {
 
         val currentLevel = activity.prefs.getInt("log_level", LogLevel_DEFAULT.ordinal)
         if (currentLevel < level.ordinal) return
 
         scope.launch {
 
-            val entry = logRepo.append(text, level)
+            val entry = logRepo.append(text, level, data, size_used)
 
             mainScope.launch {
 
                 if (search.isBlank() ||
-                    entry.text.contains(search, ignoreCase = true)) {
+                    search_match(entry, search)) {
                     logAdapter.append(entry)
                 }
 
