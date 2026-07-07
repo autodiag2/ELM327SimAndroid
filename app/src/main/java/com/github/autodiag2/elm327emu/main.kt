@@ -34,6 +34,7 @@ import java.io.File
 import com.github.autodiag2.elm327emu.sim.ecu.EcuGui
 import com.github.autodiag2.elm327emu.sim.GuiGodot
 import android.widget.Button
+import com.github.autodiag2.elm327emu.LogEntryType
 
 private const val REQUEST_CODE = 1
 
@@ -521,12 +522,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun onDataReceived(data: ByteArray, size_used: Int) {
-        logView.logData(LogView.DataType.RECV, data, size_used)
+        logView.logData(LogEntryType.RECV, data, size_used)
         statsView.onDataReceived(data, size_used)
     }
 
     fun onDataSent(data: ByteArray, size_used: Int) {
-        logView.logData(LogView.DataType.SENT, data, size_used)
+        logView.logData(LogEntryType.SENT, data, size_used)
         statsView.onDataSent(data, size_used)
     }
 

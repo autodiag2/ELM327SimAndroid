@@ -27,6 +27,7 @@ import android.view.LayoutInflater
 import android.widget.EditText
 import androidx.core.widget.doAfterTextChanged
 import com.github.autodiag2.elm327emu.R
+import com.github.autodiag2.elm327emu.LogEntryType
 
 enum class LogLevel(val value: Int) {
     NONE(0),
@@ -38,13 +39,17 @@ enum class LogLevel(val value: Int) {
 
 val LogLevel_DEFAULT = LogLevel.DEBUG
 
+enum class LogEntryType {
+    RECV, SENT, NONE
+}
 data class LogEntry(
     val id: Long,
     val text: String,
     val level: LogLevel,
     val data: ByteArray,
     var match: Boolean = false,
-    var count: Int = 0
+    var count: Int = 0,
+    val type: LogEntryType = LogEntryType.NONE
 )
 
 private fun parseHexString(text: String): ByteArray? {
@@ -162,7 +167,8 @@ class LogRepository(private val context: Context) {
         text: String,
         level: LogLevel = LogLevel.DEBUG,
         data: ByteArray? = null,
-        size_used: Int = data?.size ?: 0
+        size_used: Int = data?.size ?: 0,
+        type: LogEntryType = LogEntryType.NONE
     ): AppendResult {
         return mutex.withLock {
 
@@ -184,7 +190,8 @@ class LogRepository(private val context: Context) {
                     id = counter++,
                     text = text,
                     level = level,
-                    data = data?.copyOf(size_used) ?: ByteArray(0)
+                    data = data?.copyOf(size_used) ?: ByteArray(0),
+                    type = type
                 )
                 buffer.add(entry)
             }
@@ -378,12 +385,8 @@ class LogView(
         return out.toByteArray()
     }
 
-    enum class DataType {
-        RECV, SENT
-    }
-
     fun logData(
-        type: DataType,
+        type: LogEntryType,
         data: ByteArray,
         length: Int = data.size
     ) {
@@ -392,7 +395,7 @@ class LogView(
         
         append(
             activity.getString(
-                if (type == DataType.RECV)
+                if (type == LogEntryType.RECV)
                     R.string.log_main_data_received
                 else
                     R.string.log_main_data_sent,
@@ -400,7 +403,8 @@ class LogView(
             ),
             LogLevel.DEBUG,
             binary,
-            binary.size
+            binary.size,
+            type
         )
     }
 
@@ -541,14 +545,14 @@ class LogView(
     }
 
     // ---- PUBLIC APPEND API ----
-    fun append(text: String, level: LogLevel = LogLevel.DEBUG, data: ByteArray? = null, size_used: Int = data?.size ?: 0) {
+    fun append(text: String, level: LogLevel = LogLevel.DEBUG, data: ByteArray? = null, size_used: Int = data?.size ?: 0, type: LogEntryType = LogEntryType.NONE) {
 
         val currentLevel = activity.prefs.getInt("log_level", LogLevel_DEFAULT.ordinal)
         if (currentLevel < level.ordinal) return
 
         scope.launch {
 
-            val result = logRepo.append(text, level, data, size_used)
+            val result = logRepo.append(text, level, data, size_used, type)
 
             mainScope.launch {
 
