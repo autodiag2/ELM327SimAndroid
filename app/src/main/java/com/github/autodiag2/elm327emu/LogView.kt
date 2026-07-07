@@ -90,7 +90,7 @@ fun search_match(entry: LogEntry, search: String): Boolean {
 
     return containsSubArray(entry.data, pattern)
 }
-class LogRepository(private val context: Context) {
+class LogRepository(private val context: MainActivity) {
 
     private val buffer = ArrayList<LogEntry>()
     private val mutex = Mutex()
@@ -174,12 +174,14 @@ class LogRepository(private val context: Context) {
 
             var entry: LogEntry? = null
 
-            val first = maxOf(0, buffer.size - MAX_BACKWARD_DUP_SEARCH)
-
-            for (i in buffer.lastIndex downTo first) {
-                if (buffer[i].text == text) {
-                    entry = buffer[i]
-                    break
+            if ( context.prefs.getBoolean("log_group", false) ) {
+                val first = maxOf(0, buffer.size - MAX_BACKWARD_DUP_SEARCH)
+    
+                for (i in buffer.lastIndex downTo first) {
+                    if (buffer[i].text == text) {
+                        entry = buffer[i]
+                        break
+                    }
                 }
             }
 

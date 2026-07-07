@@ -18,6 +18,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.appcompat.widget.SwitchCompat
 
 data class BleProfile(
     val name: String,
@@ -95,6 +96,13 @@ class SettingsView(
         val btApplyBtn = findViewById<Button>(R.id.btApplyBtn)
 
         val logLevelSpinner = findViewById<Spinner>(R.id.logLevelSpinner)
+        val logExchangeDupSearch = findViewById<SwitchCompat>(R.id.settings_log_exchange_dup_search)
+        logExchangeDupSearch.isChecked = prefs.getBoolean("log_group", false)
+        logExchangeDupSearch.setOnCheckedChangeListener { _, checked ->
+            prefs.edit()
+                .putBoolean("log_group", checked)
+                .apply()
+        }
 
         val networkSpinner = findViewById<Spinner>(R.id.networkSpinner)
         val protocolSpinner = findViewById<Spinner>(R.id.protocolSpinner)

@@ -157,6 +157,13 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/settings_log_exchange_dup_search"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/settings_log_exchange_dup_search"/>
+
         <!-- Network -->
         <TextView
             android:id="@+id/networkLabel"
