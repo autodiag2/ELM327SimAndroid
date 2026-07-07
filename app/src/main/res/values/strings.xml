@@ -31,6 +31,9 @@
     <string name="sim_ecu_unknown_ecu_type">Unknown ECU type: %1$s</string>
     <string name="sim_ecu_citroen_c5_x7_seed_label">Random seed</string>
     <string name="sim_ecu_citroen_c5_x7_validate">Validate</string>
+    <string name="sim_ecu_citroen_c5_x7_vin_label">VIN</string>
+    <string name="sim_ecu_citroen_c5_x7_dtc_entry">P1234</string>
+    <string name="sim_ecu_citroen_c5_x7_dtc_entry_validate">Add</string>
     <string name="sim_ecu_replay_editor_label">JSON trace</string>
     <string name="sim_ecu_replay_validate">Load</string>
     <string name="sim_ecu_replay_format">Format</string>

@@ -84,7 +84,7 @@ class EcuGui(
 
         val dtcInput = findViewById<EditText>(R.id.dtc_entry)
 
-        findViewById<Button>(R.id.dtc_entery_validate).apply {
+        findViewById<Button>(R.id.dtc_entry_validate).apply {
             setOnClickListener {
                 val v = dtcInput.text.toString().uppercase()
                 if (v.isNotEmpty()) {

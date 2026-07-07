@@ -9,6 +9,7 @@ import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.ui.JsonConfigurable
 import com.github.autodiag2.elm327emu.ui.NestedScreen
 import org.json.JSONObject
+import com.github.autodiag2.elm327emu.libautodiag
 
 typealias EcuAddress = Byte
 
@@ -19,7 +20,7 @@ abstract class Ecu(
     context: Context
 ) : ConstraintLayout(context), JsonConfigurable, NestedScreen {
 
-    override fun onBack() {
+    override fun onBack() {        
 
     }
 

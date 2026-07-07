@@ -91,7 +91,7 @@
                         android:text="@string/sim_ecu_gui_dtc_entry" />
 
                     <Button
-                        android:id="@+id/dtc_entery_validate"
+                        android:id="@+id/dtc_entry_validate"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"

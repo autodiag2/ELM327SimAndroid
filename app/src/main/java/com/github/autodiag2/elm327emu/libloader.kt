@@ -99,6 +99,16 @@ object libautodiag {
         address: EcuAddress,
         callback: EcuByteArrayHandler
     )
+    @JvmStatic
+    external fun simEcuToJson(
+        address: EcuAddress
+    ) : String
+    
+    @JvmStatic
+    external fun simEcuLoadFromJson(
+        address: EcuAddress,
+        json: String
+    )
 
     @JvmStatic
     external fun removeEcuByAddress(address: EcuAddress)
