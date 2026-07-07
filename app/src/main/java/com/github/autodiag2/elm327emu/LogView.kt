@@ -24,6 +24,8 @@ import kotlinx.coroutines.SupervisorJob
 import androidx.activity.result.contract.ActivityResultContracts
 import android.app.Activity.RESULT_OK
 import android.view.LayoutInflater
+import android.widget.EditText
+import androidx.core.widget.doAfterTextChanged
 
 enum class LogLevel(val value: Int) {
     NONE(0),
@@ -46,6 +48,18 @@ class LogRepository(private val context: Context) {
     private val buffer = ArrayList<LogEntry>()
     private val mutex = Mutex()
     private var counter = 0L
+
+    suspend fun search(text: String): List<LogEntry> {
+        return mutex.withLock {
+            if (text.isBlank()) {
+                buffer.toList()
+            } else {
+                buffer.filter {
+                    it.text.contains(text, ignoreCase = true)
+                }
+            }
+        }
+    }
 
     suspend fun append(text: String, level: LogLevel = LogLevel.DEBUG): LogEntry {
         return mutex.withLock {
@@ -81,6 +95,12 @@ class LogAdapter :
     class VH(val tv: TextView) : RecyclerView.ViewHolder(tv)
 
     private val items = ArrayList<LogEntry>()
+
+    fun replace(entries: List<LogEntry>) {
+        items.clear()
+        items.addAll(entries)
+        notifyDataSetChanged()
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
         val tv = TextView(parent.context).apply {
@@ -143,6 +163,7 @@ class LogView(
     val logRepo: LogRepository = LogRepository(activity)
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val mainScope = CoroutineScope(Dispatchers.Main)
+    private var search = ""
 
     private val logAdapter = LogAdapter()
 
@@ -168,6 +189,18 @@ class LogView(
     init {
         LayoutInflater.from(context).inflate(R.layout.log, this, true)
         setupLogsView()
+    }
+
+    private fun refresh() {
+        scope.launch {
+            val entries = logRepo.search(search)
+            mainScope.launch {
+                logAdapter.replace(entries)
+                if (stickToBottom && search.isBlank()) {
+                    scrollToBottomSafe()
+                }
+            }
+        }
     }
 
     fun dataLogFormat(
@@ -247,6 +280,13 @@ class LogView(
         val btnDown = findViewById<Button>(R.id.btnDown)
         val btnSave = findViewById<Button>(R.id.btnSave)
         val btnDownload = findViewById<Button>(R.id.btnDownload)
+        
+        val btnSearch = findViewById<EditText>(R.id.log_search)
+
+        btnSearch.doAfterTextChanged {
+            search = it?.toString() ?: ""
+            refresh()
+        }
 
         rv.layoutManager = LinearLayoutManager(activity)
         rv.adapter = logAdapter
@@ -272,7 +312,7 @@ class LogView(
             scope.launch {
                 logRepo.clear()
                 mainScope.launch {
-                    logAdapter.clear()
+                    refresh()
                 }
             }
         }
@@ -311,7 +351,10 @@ class LogView(
 
             mainScope.launch {
 
-                logAdapter.append(entry)
+                if (search.isBlank() ||
+                    entry.text.contains(search, ignoreCase = true)) {
+                    logAdapter.append(entry)
+                }
 
                 // ---- ONLY auto-scroll if allowed ----
                 if (stickToBottom && !userTouching) {
