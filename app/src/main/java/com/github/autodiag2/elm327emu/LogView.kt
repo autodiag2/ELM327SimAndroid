@@ -43,7 +43,8 @@ data class LogEntry(
     val text: String,
     val level: LogLevel,
     val data: ByteArray,
-    var match: Boolean = false
+    var match: Boolean = false,
+    var count: Int = 0
 )
 
 private fun parseHexString(text: String): ByteArray? {
@@ -146,15 +147,51 @@ class LogRepository(private val context: Context) {
         }
     }
 
-    suspend fun append(text: String, level: LogLevel = LogLevel.DEBUG, data: ByteArray? = null, size_used: Int = data?.size ?: 0): LogEntry {
+    data class AppendResult(
+        val entry: LogEntry,
+        val inserted: Boolean
+    )
+    private companion object {
+        /**
+         * Avoid at least scantool's pings
+         */
+        const val MAX_BACKWARD_DUP_SEARCH = 2
+    }
+
+    suspend fun append(
+        text: String,
+        level: LogLevel = LogLevel.DEBUG,
+        data: ByteArray? = null,
+        size_used: Int = data?.size ?: 0
+    ): AppendResult {
         return mutex.withLock {
 
-            val entry = LogEntry(
-                counter++, text, level,
-                data = data?.copyOf(size_used) ?: ByteArray(0),
-            )
-            buffer.add(entry)
-            entry
+            var entry: LogEntry? = null
+
+            val first = maxOf(0, buffer.size - MAX_BACKWARD_DUP_SEARCH)
+
+            for (i in buffer.lastIndex downTo first) {
+                if (buffer[i].text == text) {
+                    entry = buffer[i]
+                    break
+                }
+            }
+
+            val inserted = entry == null
+
+            if (entry == null) {
+                entry = LogEntry(
+                    id = counter++,
+                    text = text,
+                    level = level,
+                    data = data?.copyOf(size_used) ?: ByteArray(0)
+                )
+                buffer.add(entry)
+            }
+
+            entry.count++
+
+            AppendResult(entry, inserted)
         }
     }
 
@@ -184,6 +221,13 @@ class LogAdapter :
 
     private val items = ArrayList<LogEntry>()
 
+    fun notifyChanged(entry: LogEntry) {
+        val index = items.indexOfFirst { it.id == entry.id }
+        if (index >= 0) {
+            notifyItemChanged(index)
+        }
+    }
+
     fun replace(entries: List<LogEntry>) {
         items.clear()
         items.addAll(entries)
@@ -209,7 +253,11 @@ class LogAdapter :
 
     override fun onBindViewHolder(holder: VH, position: Int) {
         val item = items[position]
-        holder.tv.text = item.text
+        holder.tv.text =
+        if (item.count > 1)
+            "×${item.count} ${item.text}"
+        else
+            item.text
 
         val ctx = holder.tv.context
 
@@ -500,12 +548,16 @@ class LogView(
 
         scope.launch {
 
-            val entry = logRepo.append(text, level, data, size_used)
+            val result = logRepo.append(text, level, data, size_used)
 
             mainScope.launch {
 
                 if (search.isBlank()) {
-                    logAdapter.append(entry)
+                    if (result.inserted) {
+                        logAdapter.append(result.entry)
+                    } else {
+                        logAdapter.notifyChanged(result.entry)
+                    }
                 } else {
                     refresh()
                 }
