@@ -76,6 +76,12 @@
     <string name="sim_ecu_config_ecu_name">from %1$s</string>
     <string name="sim_ecu_row_title">ECU 0xE8 (name)</string>
     <string name="sim_ecu_row_open">→</string>
+    <string name="sim_ecu_type_gui">GUI</string>
+    <string name="sim_ecu_type_random">Random</string>
+    <string name="sim_ecu_type_cycle">Cycle</string>
+    <string name="sim_ecu_type_replay">Replay</string>
+    <string name="sim_ecu_type_citroen_c5_x7">Citroën C5 X7</string>
+    <string name="sim_ecu_type_bytearray">Script</string>
     <string name="sim_add_ecu">Add ECU (+)</string>
     <string name="sim_start_sim">Start Sim</string>
     <string name="sim_stop_sim">Stop Sim</string>

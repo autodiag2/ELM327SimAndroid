@@ -38,7 +38,7 @@ abstract class Ecu(
         fun create(type: EcuType, activity: MainActivity, address: EcuAddress = DEFAULT_ADDRESS, displayName: String = type.toString()) : Ecu {
             return when ( type ) {
                 EcuType.gui -> EcuGui(address, displayName, activity)
-                EcuType.script -> EcuScript(address, displayName, activity)
+                EcuType.bytearray -> EcuScript(address, displayName, activity)
                 EcuType.random -> EcuRandom(address, displayName, activity)
                 EcuType.cycle -> EcuCycle(address, displayName, activity)
                 EcuType.replay -> EcuReplay(address, displayName, activity)
@@ -66,7 +66,7 @@ abstract class Ecu(
             }
 
             val typeName = schema.removePrefix("${SCHEMA}/")
-
+            activity.appendLog("schema = ${schema} typeName = ${typeName}")
             var type = try {
                 EcuType.valueOf(typeName)
             } catch (e: IllegalArgumentException) {
@@ -181,11 +181,16 @@ abstract class Ecu(
 
 }
 
-enum class EcuType(val label: String) {
-    gui("GUI"),
-    random("random"),
-    cycle("cycle"),
-    replay("replay"),
-    citroen_c5_x7("Citroen C5 X7"),
-    script("Script");
+enum class EcuType(val label_id: Int) {
+    gui(R.string.sim_ecu_type_gui),
+    random(R.string.sim_ecu_type_random),
+    cycle(R.string.sim_ecu_type_cycle),
+    replay(R.string.sim_ecu_type_replay),
+    citroen_c5_x7(R.string.sim_ecu_type_citroen_c5_x7),
+    bytearray(R.string.sim_ecu_type_bytearray);
+
+    companion object {
+        fun labels(): List<Int> = entries.map { it.label_id }
+    }
+
 }

@@ -11,9 +11,9 @@ import org.json.JSONObject
 
 class EcuRandom(
     address: EcuAddress = DEFAULT_ADDRESS,
-    name: String = EcuType.random.label,
+    name: String? = null,
     activity: MainActivity
-): Ecu(EcuType.random, address, name, activity) {
+): Ecu(EcuType.random, address, name ?: activity.getString(EcuType.random.label_id), activity) {
 
     private val seed: EditText
 

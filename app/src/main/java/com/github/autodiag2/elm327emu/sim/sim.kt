@@ -45,16 +45,17 @@ class Sim(
         val addEcuBtn = findViewById<Button>(R.id.add_ecu)
         val ecuIdInput = findViewById<EditText>(R.id.ecu_id_input)
         ecuAddSelect = findViewById(R.id.ecu_type_spinner)
-        val types = EcuType.values().toList()
+
+        val types = EcuType.entries
+        val labels = types.map { activity.getString(it.label_id) }
 
         val adapter = ArrayAdapter(
             activity,
             android.R.layout.simple_spinner_item,
-            types
+            labels
         )
 
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-
         ecuAddSelect.adapter = adapter
         addEcuBtn.setOnClickListener {
             val type = selectedType()
@@ -215,10 +216,8 @@ class Sim(
     }
 
 
-    private fun selectedType(): EcuType {
-        val selected = ecuAddSelect.selectedItem
-        return selected as EcuType
-    }
+    private fun selectedType(): EcuType = EcuType.entries[ecuAddSelect.selectedItemPosition]
+
     fun ecuClear() {
         // iterate backwards to safely remove
         val offset_in_layout = 1

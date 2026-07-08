@@ -13,9 +13,13 @@ import org.json.JSONObject
 
 class EcuCitroenC5X7(
     address: EcuAddress = DEFAULT_ADDRESS,
-    name: String = EcuType.citroen_c5_x7.label,
+    name: String? = null,
     activity: MainActivity
-) : Ecu(EcuType.citroen_c5_x7, address, name, activity) {
+) : Ecu(
+        EcuType.citroen_c5_x7, address, 
+        name ?: activity.getString(EcuType.citroen_c5_x7.label_id), 
+        activity
+    ) {
 
     private val dtcsView: LinearLayout
 

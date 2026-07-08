@@ -142,9 +142,9 @@ fun updateScript(script: String, ecu: Ecu) {
 }
 class EcuScript(
     address: EcuAddress = DEFAULT_ADDRESS,
-    name: String = EcuType.script.label,
+    name: String? = null,
     private val activity: MainActivity
-): Ecu(EcuType.script, address, name, activity) {
+): Ecu(EcuType.bytearray, address, name ?: activity.getString(EcuType.bytearray.label_id), activity) {
     init {
         LayoutInflater.from(activity).inflate(R.layout.sim_ecu_script, this, true)
         val luaEditor = findViewById<EditText>(R.id.lua_editor)

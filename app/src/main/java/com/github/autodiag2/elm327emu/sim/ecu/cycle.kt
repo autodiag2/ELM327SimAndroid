@@ -11,9 +11,9 @@ import org.json.JSONObject
 
 class EcuCycle(
     address: EcuAddress = DEFAULT_ADDRESS,
-    name: String = EcuType.cycle.label,
+    name: String? = null,
     activity: MainActivity
-): Ecu(EcuType.cycle, address, name, activity) {
+): Ecu(EcuType.cycle, address, name ?: activity.getString(EcuType.cycle.label_id), activity) {
 
     private val gears: EditText
 
