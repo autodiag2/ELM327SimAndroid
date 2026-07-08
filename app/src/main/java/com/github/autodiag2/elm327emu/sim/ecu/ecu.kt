@@ -150,6 +150,7 @@ abstract class Ecu(
         // TODO
 
         fromJsonInternal(content)
+        libautodiag.simEcuLoadFromJson(address.toByte(), desc.toString())
 
     }
 
