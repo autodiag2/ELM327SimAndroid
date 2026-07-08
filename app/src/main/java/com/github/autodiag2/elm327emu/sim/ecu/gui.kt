@@ -36,9 +36,9 @@ fun getString(context: Context,resId: Int, vararg formatArgs: Any?): String {
 
 class EcuGui(
     address: EcuAddress = DEFAULT_ADDRESS,
-    name: String = EcuType.GUI.toString(),
+    name: String = EcuType.gui.label,
     private val activity: MainActivity,
-) : Ecu(EcuType.GUI, address, name, activity) {
+) : Ecu(EcuType.gui, address, name, activity) {
 
     private val dynamicSignalsContainer: LinearLayout
     private val dtcContainer: LinearLayout

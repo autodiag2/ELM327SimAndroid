@@ -24,6 +24,11 @@ abstract class Ecu(
 
     }
 
+    override fun onShow() {
+        val json: String = libautodiag.simEcuToJson(address.toByte())
+        fromJson(JSONObject(json))
+    }
+
     companion object {
 
         const val DEFAULT_ADDRESS: EcuAddress = 0xE8.toByte()
@@ -32,12 +37,12 @@ abstract class Ecu(
 
         fun create(type: EcuType, activity: MainActivity, address: EcuAddress = DEFAULT_ADDRESS, displayName: String = type.toString()) : Ecu {
             return when ( type ) {
-                EcuType.GUI -> EcuGui(address, displayName, activity)
-                EcuType.SCRIPT -> EcuScript(address, displayName, activity)
-                EcuType.RANDOM -> EcuRandom(address, displayName, activity)
-                EcuType.CYCLE -> EcuCycle(address, displayName, activity)
-                EcuType.REPLAY -> EcuReplay(address, displayName, activity)
-                EcuType.CitroenC5X7 -> EcuCitroenC5X7(address, displayName, activity)
+                EcuType.gui -> EcuGui(address, displayName, activity)
+                EcuType.script -> EcuScript(address, displayName, activity)
+                EcuType.random -> EcuRandom(address, displayName, activity)
+                EcuType.cycle -> EcuCycle(address, displayName, activity)
+                EcuType.replay -> EcuReplay(address, displayName, activity)
+                EcuType.citroen_c5_x7 -> EcuCitroenC5X7(address, displayName, activity)
             }
         }
         fun createFromJSON(desc: JSONObject, activity: MainActivity): Ecu? {
@@ -62,7 +67,7 @@ abstract class Ecu(
 
             val typeName = schema.removePrefix("${SCHEMA}/")
 
-            val type = try {
+            var type = try {
                 EcuType.valueOf(typeName)
             } catch (e: IllegalArgumentException) {
                 activity.appendLog(
@@ -71,6 +76,7 @@ abstract class Ecu(
                 )
                 return null
             }
+            type = type!!
 
             val content = desc.optJSONObject("content")
             if ( content == null ) {
@@ -116,7 +122,7 @@ abstract class Ecu(
 
         val typeName = schema.removePrefix("${SCHEMA}/")
 
-        val type = try {
+        var type = try {
             EcuType.valueOf(typeName)
         } catch (e: IllegalArgumentException) {
             activity?.getString(R.string.sim_ecu_unknown_ecu_type, typeName)?.let {
@@ -127,6 +133,7 @@ abstract class Ecu(
             }
             return
         }
+        type = type!!
 
         val content = desc.optJSONObject("content")
         if ( content == null ) {
@@ -175,12 +182,10 @@ abstract class Ecu(
 }
 
 enum class EcuType(val label: String) {
-    GUI("GUI"),
-    RANDOM("random"),
-    CYCLE("cycle"),
-    REPLAY("replay"),
-    CitroenC5X7("Citroen C5 X7"),
-    SCRIPT("Script");
-
-    override fun toString() = label
+    gui("GUI"),
+    random("random"),
+    cycle("cycle"),
+    replay("replay"),
+    citroen_c5_x7("Citroen C5 X7"),
+    script("Script");
 }

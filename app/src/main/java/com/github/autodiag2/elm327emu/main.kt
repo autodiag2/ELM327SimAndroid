@@ -159,6 +159,9 @@ class MainActivity : AppCompatActivity() {
         screenStack.addLast(activeScreen)
         show(view)
         showBackArrow()
+        if ( view is NestedScreen ) {
+            view.onShow()
+        }
     }
 
     private fun show(view: View) {

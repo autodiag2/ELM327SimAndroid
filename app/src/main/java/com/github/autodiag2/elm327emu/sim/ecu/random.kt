@@ -11,9 +11,9 @@ import org.json.JSONObject
 
 class EcuRandom(
     address: EcuAddress = DEFAULT_ADDRESS,
-    name: String = EcuType.RANDOM.toString(),
+    name: String = EcuType.random.label,
     activity: MainActivity
-): Ecu(EcuType.RANDOM, address, name, activity) {
+): Ecu(EcuType.random, address, name, activity) {
 
     private val seed: EditText
 
@@ -33,7 +33,7 @@ class EcuRandom(
     }
 
     override fun fromJsonInternal(content: JSONObject) {
-        seed.setText(content.getInt("seed"))
+        seed.setText(content.getInt("seed").toString())
     }
 
 }

@@ -13,9 +13,9 @@ import org.json.JSONObject
 
 class EcuCitroenC5X7(
     address: EcuAddress = DEFAULT_ADDRESS,
-    name: String = EcuType.CitroenC5X7.toString(),
+    name: String = EcuType.citroen_c5_x7.label,
     activity: MainActivity
-) : Ecu(EcuType.CitroenC5X7, address, name, activity) {
+) : Ecu(EcuType.citroen_c5_x7, address, name, activity) {
 
     private val dtcsView: LinearLayout
 
@@ -42,7 +42,7 @@ class EcuCitroenC5X7(
             libautodiag.simEcuLoadFromJson(address.toByte(), toJson().toString())
         }
 
-        libautodiag.setResponseTypeByAddress(address, "citroen_c5_x7")
+        libautodiag.setResponseTypeByAddress(address, EcuType.citroen_c5_x7.name)
     }
 
     override fun toJsonInternal(): JSONObject {

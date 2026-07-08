@@ -5,6 +5,11 @@ interface NestedScreen {
     /**
      * Triggered when user use system navigation to go back or arrow (home)
      */
-    fun onBack()
+    fun onBack() { }
+
+    /**
+     * Triggered when user show the screen
+     */
+    fun onShow() { }
 
 }

@@ -10,9 +10,9 @@ import org.json.JSONObject
 
 class EcuReplay(
     address: EcuAddress = DEFAULT_ADDRESS,
-    name: String = EcuType.REPLAY.toString(),
+    name: String = EcuType.replay.label,
     activity: MainActivity
-): Ecu(EcuType.REPLAY, address, name, activity) {
+): Ecu(EcuType.replay, address, name, activity) {
 
     private val jsonInput: EditText
 

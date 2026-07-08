@@ -11,9 +11,9 @@ import org.json.JSONObject
 
 class EcuCycle(
     address: EcuAddress = DEFAULT_ADDRESS,
-    name: String = EcuType.CYCLE.toString(),
+    name: String = EcuType.cycle.label,
     activity: MainActivity
-): Ecu(EcuType.CYCLE, address, name, activity) {
+): Ecu(EcuType.cycle, address, name, activity) {
 
     private val gears: EditText
 
@@ -33,7 +33,7 @@ class EcuCycle(
     }
 
     override fun fromJsonInternal(content: JSONObject) {
-        gears.setText(content.getInt("gears"))
+        gears.setText(content.getInt("gears").toString())
     }
 
 }

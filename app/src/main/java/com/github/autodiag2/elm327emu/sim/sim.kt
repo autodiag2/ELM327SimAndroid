@@ -81,7 +81,7 @@ class Sim(
                 }
             }
         }
-        buildAddECUToGUI(Ecu.DEFAULT_ADDRESS, getString(R.string.sim_ecu_gui_ecu_name), EcuType.GUI)
+        buildAddECUToGUI(Ecu.DEFAULT_ADDRESS, getString(R.string.sim_ecu_gui_ecu_name), EcuType.gui)
     }
 
     public fun isRunning(): Boolean {
