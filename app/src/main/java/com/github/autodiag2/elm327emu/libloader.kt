@@ -120,4 +120,9 @@ object libautodiag {
         type: String,
         context: String
     )
+    @JvmStatic
+    external fun setResponseTypeByAddress(
+        address: EcuAddress,
+        type: String
+    )
 }

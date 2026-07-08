@@ -6,6 +6,8 @@ import android.widget.EditText
 import com.github.autodiag2.elm327emu.MainActivity
 import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.libautodiag
+import org.json.JSONArray
+import org.json.JSONObject
 
 class EcuCycle(
     address: EcuAddress = DEFAULT_ADDRESS,
@@ -13,17 +15,25 @@ class EcuCycle(
     activity: MainActivity
 ): Ecu(EcuType.CYCLE, address, name, activity) {
 
+    private val gears: EditText
+
     init {
         LayoutInflater.from(activity).inflate(R.layout.sim_ecu_cycle, this, true)
-        val gears: EditText = findViewById(R.id.sim_ecu_cycle_gears_input)
+        gears = findViewById(R.id.sim_ecu_cycle_gears_input)
         findViewById<Button>(R.id.sim_ecu_cycle_gears_validate).setOnClickListener {
-            setByAddressWithContext(gears.text.toString())
+            libautodiag.simEcuLoadFromJson(address.toByte(), toJson().toString())
         }
-        setByAddressWithContext(gears.text.toString())
+        libautodiag.setResponseTypeByAddress(address, "cycle")
     }
 
-    private fun setByAddressWithContext(context: String) {
-        libautodiag.setResponseTypeContextByAddress(address, "cycle", context)
+    override fun toJsonInternal(): JSONObject {
+        val content = JSONObject()
+        content.put("gears", gears.getText().toString().toInt())
+        return content
+    }
+
+    override fun fromJsonInternal(content: JSONObject) {
+        gears.setText(content.getInt("gears"))
     }
 
 }

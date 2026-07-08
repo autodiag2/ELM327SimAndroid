@@ -24,12 +24,6 @@ class EcuCitroenC5X7(
 
         dtcsView = findViewById(R.id.sim_ecu_citroen_c5_x7_dtc_list)
 
-        val seed: EditText = findViewById(R.id.sim_ecu_citroen_c5_x7_seed_input)
-        findViewById<Button>(R.id.sim_ecu_citroen_c5_x7_validate).setOnClickListener {
-            setByAddressWithContext(seed.text.toString())
-        }
-        setByAddressWithContext(seed.text.toString())
-
         val dtcEntry: EditText = findViewById(R.id.sim_ecu_citroen_c5_x7_dtc_entry)
         val addDTC: Button = findViewById(R.id.sim_ecu_citroen_c5_x7_dtc_entry_validate)
 
@@ -47,10 +41,8 @@ class EcuCitroenC5X7(
         validate.setOnClickListener {
             libautodiag.simEcuLoadFromJson(address.toByte(), toJson().toString())
         }
-    }
 
-    private fun setByAddressWithContext(context: String) {
-        libautodiag.setResponseTypeContextByAddress(address, "citroen_c5_x7", context)
+        libautodiag.setResponseTypeByAddress(address, "citroen_c5_x7")
     }
 
     override fun toJsonInternal(): JSONObject {
@@ -87,8 +79,6 @@ class EcuCitroenC5X7(
         val seed = content.optLong("seed", 0L)
         findViewById<EditText>(R.id.sim_ecu_citroen_c5_x7_seed_input)
             .setText(seed.toString())
-
-        setByAddressWithContext(seed.toString())
 
         dtcsView.removeAllViews()
 
