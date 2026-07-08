@@ -68,7 +68,7 @@ class Sim(
                 return@setOnClickListener
             }
 
-            buildAddECUToGUI(address.toByte(), getString(R.string.sim_ecu_config_ecu_name, type), type)
+            buildAddECUToGUI(address.toByte(), getString(R.string.sim_ecu_config_ecu_name, getString(type.label_id)), type)
         }
 
         findViewById<Button>(R.id.sim_state).apply {

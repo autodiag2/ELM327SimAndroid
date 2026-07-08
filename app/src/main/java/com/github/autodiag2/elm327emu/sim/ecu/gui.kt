@@ -97,7 +97,7 @@ class EcuGui(
         libautodiag.setResponseGuiByAddress(address)
     }
 
-    override fun onShow() {
+    override fun loadStateFromGeneratorWhenShowing() {
         // leave empty state stored externally
     }
 

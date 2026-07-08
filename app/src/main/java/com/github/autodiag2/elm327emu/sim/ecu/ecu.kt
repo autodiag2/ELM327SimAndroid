@@ -24,9 +24,13 @@ abstract class Ecu(
 
     }
 
-    override fun onShow() {
+    protected open fun loadStateFromGeneratorWhenShowing() {
         val json: String = libautodiag.simEcuToJson(address.toByte())
         fromJson(JSONObject(json))
+    }
+
+    override fun onShow() {
+        loadStateFromGeneratorWhenShowing()
     }
 
     companion object {

@@ -190,7 +190,7 @@ class EcuScript(
         }
     }
 
-    override fun onShow() {
+    override fun loadStateFromGeneratorWhenShowing() {
         // leave empty state stored externally
     }
 
