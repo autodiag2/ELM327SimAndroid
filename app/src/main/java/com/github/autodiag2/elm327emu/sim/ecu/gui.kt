@@ -97,6 +97,10 @@ class EcuGui(
         libautodiag.setResponseGuiByAddress(address)
     }
 
+    override fun onShow() {
+        // leave empty state stored externally
+    }
+
     fun getECUName(): String {
         return ecuName.text.toString()
     }

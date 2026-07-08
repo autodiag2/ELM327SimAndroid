@@ -15,7 +15,7 @@ import org.json.JSONObject
 import org.luaj.vm2.LuaTable
 import org.luaj.vm2.LuaValue
 import org.luaj.vm2.lib.jse.JsePlatform
-
+import com.github.autodiag2.elm327emu.LogLevel
 
 interface EcuByteArrayHandler {
     fun response(request: ByteArray): ByteArray
@@ -188,6 +188,10 @@ class EcuScript(
                         "end"
             )
         }
+    }
+
+    override fun onShow() {
+        // leave empty state stored externally
     }
 
     override fun fromJsonInternal(content: JSONObject) {
