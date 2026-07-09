@@ -27,6 +27,13 @@
             android:inputType="numberDecimal"
             android:text="0" />
 
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/sim_ecu_random_use_signals"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/sim_ecu_random_use_signals"/>
+            
         <Button
             android:id="@+id/sim_ecu_random_validate"
             android:layout_width="match_parent"

@@ -43,8 +43,10 @@
     <string name="sim_ecu_replay_paste">Paste</string>
     <string name="sim_ecu_replay_import_file">Import file</string>
     <string name="sim_ecu_cycle_gears_label">gears per byte</string>
+    <string name="sim_ecu_cycle_use_signals">Use signals to drive bytes expansion</string>
     <string name="sim_ecu_cycle_validate">Validate</string>
     <string name="sim_ecu_random_seed_label">Seed value</string>
+    <string name="sim_ecu_random_use_signals">Use signals to drive bytes expansion</string>
     <string name="sim_ecu_random_seed_validate">Validate</string>
     <string name="sim_ecu_gui_add_signal">Add</string>
     <string name="sim_ecu_gui_dtc_entry_validate">Add</string>
