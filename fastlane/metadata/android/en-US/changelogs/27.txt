@@ -1,0 +1,6 @@
+- add setting to turn wifi hotspot on from the app with a qrcode
+- fix issue in the sim where scantool use ELM optimized sends
+- add possibility to change parameters of generators (more than simple context)
+- search logs feature
+- group by logs
+- add checksum to legacy protocols (CRC, additive)
