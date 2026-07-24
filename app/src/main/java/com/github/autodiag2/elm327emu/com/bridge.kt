@@ -13,6 +13,7 @@ import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import java.io.InputStream
 import java.io.OutputStream
+import kotlinx.coroutines.isActive
 
 open class Bridge(
     private val activity: MainActivity,
@@ -34,7 +35,7 @@ open class Bridge(
     open fun start() {
         scope.launch {
             activity.clearSocketFiles()
-            while (true) {
+            while (isActive) {
                 startInternal()
             }
         }

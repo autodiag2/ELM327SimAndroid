@@ -143,7 +143,7 @@
     <string name="log_bt_btToLoop_failed">exiting btToLoop: %1$s</string>
     <string name="log_bt_loopToBt_failed">exiting loopToBt: %1$s</string>
     <string name="log_bt_cancelled">Cancelled</string>
-    <string name="log_bt_error">Error: %1$s</string>
+    <string name="log_bt_error">Bluetooth error: %1$s</string>
     <string name="log_bt_connection_closed">Bluetooth connection closed</string>
     <string name="log_main_bluetooth_server_stopped">Bluetooth server stopped</string>
     <string name="log_main_network_mode_not_implemented">Network mode not implemented</string>
@@ -156,7 +156,7 @@
     <string name="log_network_netToLoop_failed">exiting netToLoop: %1$s</string>
     <string name="log_network_loopToNet_failed">exiting loopToNet: %1$s</string>
     <string name="log_network_cancelled">Cancelled</string>
-    <string name="log_network_error">Error: %1$s</string>
+    <string name="log_network_error">Network error: %1$s</string>
     <string name="log_network_connection_closed">Network connection closed</string>
     <string name="signal_SAEJ1979_number_of_dtc">Number Of DTC</string>
     <string name="signal_SAEJ1979_mil_status">MIL Status</string>
