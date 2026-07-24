@@ -102,7 +102,6 @@ class NetworkBridge(
             reader.join()
             worker.cancel()
 
-
             emuStop()
 
         } catch (e: CancellationException) {

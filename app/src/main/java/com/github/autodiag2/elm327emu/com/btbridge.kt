@@ -9,6 +9,7 @@ import android.bluetooth.BluetoothSocket
 import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.LogLevel
 import com.github.autodiag2.elm327emu.MainActivity
+import kotlinx.coroutines.channels.Channel
 
 class BluetoothBridge(
     private val activity: MainActivity,
@@ -16,6 +17,7 @@ class BluetoothBridge(
 ) : Bridge(activity) {
 
     private val classicalBtUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
+    private val requestQueue = Channel<ByteArray>(Channel.UNLIMITED)
 
     private var server: BluetoothServerSocket? = null
     private var socket: BluetoothSocket? = null
@@ -37,18 +39,18 @@ class BluetoothBridge(
 
             emuStart()
 
-            val bufferBT = ByteArray(1024)
-            val bufferLoop = ByteArray(1024)
-
-            val btToLoop = scope.launch {
+            val reader = scope.launch {
                 while (isActive) {
+                    val bufferBT = ByteArray(1024)
                     try {
-                        val n = emuRecv(bufferBT)
+                        val n = bt_input?.read(bufferBT) ?: break
                         if (n <= 0) break
-                        emuSend(bufferBT, n)
-                        activity.onDataReceived(bufferBT, n)
-                    } catch(e: Exception) {
-                        appendLog(getString(R.string.log_bt_btToLoop_failed, e.message),
+
+                        requestQueue.send(bufferBT.copyOf(n))
+
+                    } catch (e: Exception) {
+                        appendLog(
+                            getString(R.string.log_bt_btToLoop_failed, e.message),
                             LogLevel.DEBUG
                         )
                         break
@@ -56,16 +58,28 @@ class BluetoothBridge(
                 }
             }
 
-            val loopToBt = scope.launch {
+            val worker = scope.launch {
+                val bufferLoop = ByteArray(1024)
+
                 while (isActive) {
                     try {
+                        val request = requestQueue.receive()
+
+                        activity.onDataReceived(request, request.size)
+
+                        emuSend(request, request.size)
+
                         val n = emuRecv(bufferLoop)
                         if (n <= 0) break
+
                         bt_output?.write(bufferLoop, 0, n)
                         bt_output?.flush()
+
                         activity.onDataSent(bufferLoop, n)
-                    } catch(e: Exception) {
-                        appendLog(getString(R.string.log_bt_loopToBt_failed, e.message),
+
+                    } catch (e: Exception) {
+                        appendLog(
+                            getString(R.string.log_bt_loopToBt_failed, e.message),
                             LogLevel.DEBUG
                         )
                         break
@@ -73,8 +87,8 @@ class BluetoothBridge(
                 }
             }
 
-            btToLoop.join()
-            loopToBt.cancel()
+            reader.join()
+            worker.cancelAndJoin()
 
             emuStop()
         } catch (e: CancellationException) {
