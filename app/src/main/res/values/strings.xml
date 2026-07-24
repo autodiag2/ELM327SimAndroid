@@ -225,6 +225,7 @@
     <string name="log_wifi_error_unknown">Unknown error: %1$d</string>
     <string name="log_wifi_hotspot_started">Wi-Fi hotspot started: (SSID=%1$s Password=%2$s) find the IP address of the ELM327 emulator in settings</string>
     <string name="log_wifi_error_missing_permission">Missing permission to start Wi-Fi hotspot</string>
+    <string name="log_wifi_error_location_not_enabled">Location not enabled</string>
     <string name="settings_wifi_startBtn">Start Wi-Fi Hotspot</string>
     <string name="settings_wifi_startBtn_hotspot_error_return"></string>
     <string name="log_wifi_error_hotspot_already_started">Wi-Fi hotspot already started</string>

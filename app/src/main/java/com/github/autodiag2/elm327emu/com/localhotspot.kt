@@ -15,6 +15,9 @@ import android.net.wifi.SoftApConfiguration
 import android.net.wifi.WifiManager
 import android.net.wifi.WifiSsid
 import java.io.IOException
+import android.location.LocationManager
+import android.provider.Settings
+import android.content.Intent
 
 public class LocalHotspotManager(
     private val activity: MainActivity
@@ -73,6 +76,20 @@ public class LocalHotspotManager(
         }
     }
 
+    fun isLocationEnabled(context: Context): Boolean {
+        val lm = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            lm.isLocationEnabled
+        } else {
+            @Suppress("DEPRECATION")
+            Settings.Secure.getInt(
+                context.contentResolver,
+                Settings.Secure.LOCATION_MODE,
+                Settings.Secure.LOCATION_MODE_OFF
+            ) != Settings.Secure.LOCATION_MODE_OFF
+        }
+    }
+
     fun start(
         onStarted: (HotspotInfo) -> Unit,
         onFailed: (Int, String) -> Unit
@@ -82,11 +99,18 @@ public class LocalHotspotManager(
             return
         }
         ensureHotspotPermission { granted ->
-            if (granted) {
-                startInternal(onStarted, onFailed)
-            } else {
+            if (!granted) {
                 onFailed(-1, getString(R.string.log_wifi_error_missing_permission))
+                return@ensureHotspotPermission
             }
+            if (!isLocationEnabled(activity)) {
+                onFailed(-1, getString(R.string.log_wifi_error_location_not_enabled))
+                val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
+                activity.startActivity(intent)
+                return@ensureHotspotPermission
+            }
+
+            startInternal(onStarted, onFailed)
         }
     }
 
@@ -101,27 +125,40 @@ public class LocalHotspotManager(
                 override fun onStarted(res: WifiManager.LocalOnlyHotspotReservation) {
                     reservation = res
 
-                    val cfg: SoftApConfiguration = res.softApConfiguration
+                    val ssid: String
+                    val password: String
 
-                    var ssid = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        cfg.wifiSsid?.toString() ?: ""
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                        val cfg = res.softApConfiguration
+
+                        ssid = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            cfg.wifiSsid?.toString() ?: ""
+                        } else {
+                            @Suppress("DEPRECATION")
+                            cfg.ssid ?: ""
+                        }.replace("\"", "")
+
+                        password = cfg.passphrase ?: ""
                     } else {
                         @Suppress("DEPRECATION")
-                        cfg.ssid ?: ""
+                        val cfg = res.wifiConfiguration
+
+                        @Suppress("DEPRECATION")
+                        ssid = (cfg?.SSID ?: "").replace("\"", "")
+
+                        @Suppress("DEPRECATION")
+                        password = cfg?.preSharedKey ?: ""
                     }
-                    ssid = ssid.replace("\"", "") // Remove quotes if present
-                    val password = cfg.passphrase
 
                     val qr = buildWifiQr(ssid, password)
 
-                    `_hotspotInfo` = HotspotInfo(
+                    _hotspotInfo = HotspotInfo(
                         ssid = ssid,
                         password = password,
                         wifiQr = qr
                     )
-                    onStarted(
-                        `_hotspotInfo`!!
-                    )
+
+                    onStarted(_hotspotInfo!!)
                 }
 
                 override fun onStopped() {
@@ -129,7 +166,7 @@ public class LocalHotspotManager(
                 }
 
                 override fun onFailed(reason: Int) {
-                    val reasonStr: String = when (reason) {
+                    val reasonStr = when (reason) {
                         WifiManager.LocalOnlyHotspotCallback.ERROR_NO_CHANNEL ->
                             getString(R.string.log_wifi_error_no_channel)
 
@@ -142,6 +179,7 @@ public class LocalHotspotManager(
                         else ->
                             getString(R.string.log_wifi_error_unknown, reason)
                     }
+
                     onFailed(reason, reasonStr)
                 }
             },
