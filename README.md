@@ -1,4 +1,7 @@
-# ELM327 Emulator Android
+<h1 align="left">
+  <img src="media/logo/logo.png" alt="ELM327 Emulator Android" width="150" valign="middle">
+  ELM327 Emulator Android
+</h1>
 
 [![CI](https://github.com/autodiag2/ELM327SimAndroid/actions/workflows/release.yml/badge.svg?event=push)](https://github.com/autodiag2/ELM327SimAndroid/actions)
 [![License](https://img.shields.io/github/license/autodiag2/ELM327SimAndroid)](https://github.com/autodiag2/ELM327SimAndroid/blob/main/LICENSE)
