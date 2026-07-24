@@ -9,6 +9,7 @@ import com.github.autodiag2.elm327emu.R
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.ServerSocket
+import kotlinx.coroutines.channels.Channel
 
 class NetworkBridge(
     private val activity: MainActivity,
@@ -17,6 +18,7 @@ class NetworkBridge(
 
     private var serverSocket: ServerSocket? = null
     private var clientSocket: Socket? = null
+    private val requestQueue = Channel<ByteArray>(Channel.UNLIMITED)
 
     private var netInput: InputStream? = null
     private var netOutput: OutputStream? = null
@@ -52,16 +54,13 @@ class NetworkBridge(
 
             emuStart()
 
-            val bufferNet = ByteArray(1024)
-            val bufferLoop = ByteArray(1024)
-
-            val netToLoop = scope.launch {
+            val reader = scope.launch {
+                val bufferNet = ByteArray(1024)
                 while (isActive) {
                     try {
                         val n = netInput?.read(bufferNet) ?: break
                         if (n <= 0) break
-                        emuSend(bufferNet, n)
-                        activity.onDataReceived(bufferNet, n)
+                        requestQueue.send(bufferNet.copyOf(n))
                     } catch (e: Exception) {
                         appendLog(getString(R.string.log_network_netToLoop_failed, e.message),
                             LogLevel.DEBUG
@@ -71,16 +70,28 @@ class NetworkBridge(
                 }
             }
 
-            val loopToNet = scope.launch {
+            val worker = scope.launch {
+                val bufferLoop = ByteArray(1024)
+
                 while (isActive) {
                     try {
+                        val request = requestQueue.receive()
+
+                        activity.onDataReceived(request, request.size)
+
+                        emuSend(request, request.size)
+
                         val n = emuRecv(bufferLoop)
                         if (n <= 0) break
+
                         netOutput?.write(bufferLoop, 0, n)
                         netOutput?.flush()
+
                         activity.onDataSent(bufferLoop, n)
+
                     } catch (e: Exception) {
-                        appendLog(getString(R.string.log_network_loopToNet_failed, e.message),
+                        appendLog(
+                            getString(R.string.log_network_loopToNet_failed, e.message),
                             LogLevel.DEBUG
                         )
                         break
@@ -88,8 +99,8 @@ class NetworkBridge(
                 }
             }
 
-            netToLoop.join()
-            loopToNet.cancel()
+            reader.join()
+            worker.cancel()
 
 
             emuStop()
