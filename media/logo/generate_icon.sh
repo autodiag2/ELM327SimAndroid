@@ -22,6 +22,6 @@ for dir in "${!sizes[@]}"; do
   sips -z $px $px "$SRC" --out "$RES/$dir/ic_launcher_round.png"
 done
 
-mkdir -p "$RES/mipmap-anydpi-v26"
-sips -z 1024 1024 "$SRC" --out "$RES/mipmap-anydpi-v26/ic_launcher_foreground.png"
+mkdir -p "$RES/drawable/"
+sips -z 1024 1024 "$SRC" --out "$RES/drawable/ic_launcher_foreground.png"
 
