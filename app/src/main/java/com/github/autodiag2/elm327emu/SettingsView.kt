@@ -19,6 +19,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.appcompat.widget.SwitchCompat
+import androidx.core.widget.doAfterTextChanged
 
 data class BleProfile(
     val name: String,
@@ -101,6 +102,22 @@ class SettingsView(
         logExchangeDupSearch.setOnCheckedChangeListener { _, checked ->
             prefs.edit()
                 .putBoolean("log_group", checked)
+                .apply()
+        }
+        val logExchangeNBackwardSearch = findViewById<EditText>(R.id.settings_log_exchange_dup_search_depth)
+                logExchangeNBackwardSearch.setText(
+            prefs.getInt("log_group_search_n", 10).toString()
+        )
+
+        logExchangeNBackwardSearch.doAfterTextChanged { editable ->
+            val value = editable
+                ?.toString()
+                ?.toIntOrNull()
+                ?.coerceAtLeast(1)
+                ?: 1
+
+            prefs.edit()
+                .putInt("log_group_search_n", value)
                 .apply()
         }
 

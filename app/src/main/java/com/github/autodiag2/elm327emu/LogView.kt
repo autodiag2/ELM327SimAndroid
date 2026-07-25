@@ -158,12 +158,6 @@ class LogRepository(private val context: MainActivity) {
         val deleted: LogEntry?,
         val modified: LogEntry?
     )
-    private companion object {
-        /**
-         * Avoid at least scantool's pings
-         */
-        const val MAX_BACKWARD_DUP_SEARCH = 2
-    }
 
     suspend fun append(
         text: String,
@@ -183,30 +177,38 @@ class LogRepository(private val context: MainActivity) {
             ) {
 
                 var exchanges = 0
-
-                for (i in buffer.size - 3 downTo 1) {
-
-                    if (buffer[i].type != LogEntryType.RECV || buffer[i+1].type != LogEntryType.SENT || buffer[i+2].type != LogEntryType.RECV) {
-                        continue
-                    }
-
-                    exchanges++
-                    if (exchanges > MAX_BACKWARD_DUP_SEARCH) {
+                var currentRecv: LogEntry? = null
+                for (i in buffer.size - 1 downTo 1) {
+                    if ( buffer[i].type == LogEntryType.RECV ) {
+                        currentRecv = buffer[i]
                         break
                     }
+                }
+                if ( currentRecv != null ) {
 
-                    val previousRecv = buffer[i]
-                    val previousSent = buffer[i + 1]
-                    val currentRecv = buffer[i + 2]
+                    for (i in buffer.size - 3 downTo 1) {
 
-                    if (previousRecv.text == currentRecv.text &&
-                        previousSent.text == text
-                    ) {
-                        deleted = buffer.removeAt(buffer.lastIndex)
-                        previousRecv.count++
-                        modified = previousRecv
-                        entry = previousSent
-                        break
+                        if (buffer[i].type != LogEntryType.RECV || buffer[i+1].type != LogEntryType.SENT) {
+                            continue
+                        }
+
+                        exchanges++
+                        if (exchanges > context.prefs.getInt("log_group_search_n", 10)) {
+                            break
+                        }
+
+                        val previousRecv = buffer[i]
+                        val previousSent = buffer[i + 1]
+
+                        if (previousRecv.text == currentRecv.text &&
+                            previousSent.text == text
+                        ) {
+                            deleted = buffer.removeAt(buffer.lastIndex)
+                            previousRecv.count++
+                            modified = previousRecv
+                            entry = previousSent
+                            break
+                        }
                     }
                 }
             }

@@ -157,12 +157,33 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
-        <androidx.appcompat.widget.SwitchCompat
-            android:id="@+id/settings_log_exchange_dup_search"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="@string/settings_log_exchange_dup_search"/>
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <androidx.appcompat.widget.SwitchCompat
+                android:id="@+id/settings_log_exchange_dup_search"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/settings_log_exchange_dup_search" />
+
+            <EditText
+                android:id="@+id/settings_log_exchange_dup_search_depth"
+                android:layout_width="64dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:ems="3"
+                android:gravity="center"
+                android:hint="5"
+                android:inputType="number"
+                android:maxLength="3"
+                android:singleLine="true" />
+
+        </LinearLayout>
 
         <!-- Network -->
         <TextView
