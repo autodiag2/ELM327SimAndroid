@@ -28,6 +28,7 @@ import android.widget.EditText
 import androidx.core.widget.doAfterTextChanged
 import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.LogEntryType
+import android.util.Log
 
 enum class LogLevel(val value: Int) {
     NONE(0),
@@ -178,17 +179,31 @@ class LogRepository(private val context: MainActivity) {
 
                 var exchanges = 0
                 var currentRecv: LogEntry? = null
+                var currentRecvIdx = -1
                 for (i in buffer.size - 1 downTo 1) {
                     if ( buffer[i].type == LogEntryType.RECV ) {
                         currentRecv = buffer[i]
+                        currentRecvIdx = i
                         break
                     }
                 }
                 if ( currentRecv != null ) {
 
-                    for (i in buffer.size - 3 downTo 1) {
+                    for (i in currentRecvIdx - 1 downTo 0) {
 
-                        if (buffer[i].type != LogEntryType.RECV || buffer[i+1].type != LogEntryType.SENT) {
+                        if (buffer[i].type != LogEntryType.RECV) {
+                            continue
+                        }
+                        var sent_idx = -1
+                        for (idx in (i+1) until currentRecvIdx) {
+                            if ( buffer[idx].type == LogEntryType.SENT ) {
+                                sent_idx = idx
+                                break
+                            } else if ( buffer[idx].type == LogEntryType.RECV ) {
+                                break
+                            }
+                        }
+                        if ( sent_idx == -1 ) {
                             continue
                         }
 
@@ -198,12 +213,12 @@ class LogRepository(private val context: MainActivity) {
                         }
 
                         val previousRecv = buffer[i]
-                        val previousSent = buffer[i + 1]
+                        val previousSent = buffer[sent_idx]
 
                         if (previousRecv.text == currentRecv.text &&
                             previousSent.text == text
                         ) {
-                            deleted = buffer.removeAt(buffer.lastIndex)
+                            deleted = buffer.removeAt(currentRecvIdx)
                             previousRecv.count++
                             modified = previousRecv
                             entry = previousSent
@@ -329,13 +344,12 @@ class LogAdapter :
             return
         }
         items.remove(entry)
-        notifyItemRangeRemoved(i, 1)
+        notifyItemRemoved(i)
     }
 
     fun clear() {
-        val size = items.size
         items.clear()
-        notifyItemRangeRemoved(0, size)
+        notifyDataSetChanged()
     }
 }
 class LogView(
