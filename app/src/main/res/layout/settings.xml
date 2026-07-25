@@ -138,6 +138,7 @@
                 android:focusable="true"
                 android:focusableInTouchMode="true"
                 android:textIsSelectable="true"
+                android:paddingTop="16dp"
                 android:text="" />
 
             <Button
