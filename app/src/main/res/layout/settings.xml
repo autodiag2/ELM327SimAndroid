@@ -134,6 +134,10 @@
                 android:id="@+id/settings_wifi_hotspot_gatewayIp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:longClickable="true"
+                android:focusable="true"
+                android:focusableInTouchMode="true"
+                android:textIsSelectable="true"
                 android:text="" />
 
             <Button
