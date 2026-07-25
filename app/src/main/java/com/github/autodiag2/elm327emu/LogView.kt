@@ -154,7 +154,9 @@ class LogRepository(private val context: MainActivity) {
 
     data class AppendResult(
         val entry: LogEntry,
-        val inserted: Boolean
+        val inserted: Boolean,
+        val deleted: LogEntry?,
+        val modified: LogEntry?
     )
     private companion object {
         /**
@@ -173,13 +175,37 @@ class LogRepository(private val context: MainActivity) {
         return mutex.withLock {
 
             var entry: LogEntry? = null
+            var deleted: LogEntry? = null
+            var modified: LogEntry? = null
+            if (context.prefs.getBoolean("log_group", false) &&
+                type == LogEntryType.SENT &&
+                buffer.size >= 3
+            ) {
 
-            if ( context.prefs.getBoolean("log_group", false) ) {
-                val first = maxOf(0, buffer.size - MAX_BACKWARD_DUP_SEARCH)
-    
-                for (i in buffer.lastIndex downTo first) {
-                    if (buffer[i].text == text) {
-                        entry = buffer[i]
+                var exchanges = 0
+
+                for (i in buffer.size - 3 downTo 1) {
+
+                    if (buffer[i].type != LogEntryType.RECV || buffer[i+1].type != LogEntryType.SENT || buffer[i+2].type != LogEntryType.RECV) {
+                        continue
+                    }
+
+                    exchanges++
+                    if (exchanges > MAX_BACKWARD_DUP_SEARCH) {
+                        break
+                    }
+
+                    val previousRecv = buffer[i]
+                    val previousSent = buffer[i + 1]
+                    val currentRecv = buffer[i + 2]
+
+                    if (previousRecv.text == currentRecv.text &&
+                        previousSent.text == text
+                    ) {
+                        deleted = buffer.removeAt(buffer.lastIndex)
+                        previousRecv.count++
+                        modified = previousRecv
+                        entry = previousSent
                         break
                     }
                 }
@@ -200,7 +226,7 @@ class LogRepository(private val context: MainActivity) {
 
             entry.count++
 
-            AppendResult(entry, inserted)
+            AppendResult(entry, inserted, deleted, modified)
         }
     }
 
@@ -293,6 +319,15 @@ class LogAdapter :
     fun append(entry: LogEntry) {
         items.add(entry)
         notifyItemInserted(items.size - 1)
+    }
+
+    fun remove(entry: LogEntry) {
+        val i = items.indexOf(entry)
+        if ( i < 0 ) {
+            return
+        }
+        items.remove(entry)
+        notifyItemRangeRemoved(i, 1)
     }
 
     fun clear() {
@@ -559,6 +594,12 @@ class LogView(
             mainScope.launch {
 
                 if (search.isBlank()) {
+                    if ( result.deleted != null ) {
+                        logAdapter.remove(result.deleted)
+                    }
+                    if ( result.modified != null ) {
+                        logAdapter.notifyChanged(result.modified)
+                    }
                     if (result.inserted) {
                         logAdapter.append(result.entry)
                     } else {
