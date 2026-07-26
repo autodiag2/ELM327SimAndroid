@@ -27,6 +27,7 @@ class EcuRandom(
             libautodiag.simEcuLoadFromJson(address.toByte(), toJson().toString())
         }
         libautodiag.setResponseTypeByAddress(address, EcuType.random.name)
+        libautodiag.registerOnSignalReceived(address, signalHandler)
     }
 
     override fun toJsonInternal(): JSONObject {

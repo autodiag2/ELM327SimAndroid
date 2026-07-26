@@ -53,14 +53,6 @@ class EcuGui(
     val dtcs: MutableList<String> = mutableListOf()
     val signals: MutableMap<String, Double> = linkedMapOf()
 
-    private val signalHandler = SignalReceivedHandler { signal, value ->
-        onSignalReceived(signal, value)
-    }
-
-    private fun onSignalReceived(signal: SimSignal, value: Double) {
-        activity.appendLog(getName(activity, signal) + ": " + value)
-    }
-
     init {
         LayoutInflater.from(activity).inflate(R.layout.sim_ecu_gui, this, true)
         dynamicSignalsContainer = findViewById(R.id.signal_container)

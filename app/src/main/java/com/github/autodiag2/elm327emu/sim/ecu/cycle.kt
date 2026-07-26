@@ -27,6 +27,7 @@ class EcuCycle(
             libautodiag.simEcuLoadFromJson(address.toByte(), toJson().toString())
         }
         libautodiag.setResponseTypeByAddress(address, EcuType.cycle.name)
+        libautodiag.registerOnSignalReceived(address, signalHandler)
     }
 
     override fun toJsonInternal(): JSONObject {

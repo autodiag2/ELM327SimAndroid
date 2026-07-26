@@ -28,6 +28,7 @@
     <string name="sim_unsupported_ecu_schema_version">Unsupported sim schema version: %1$.1f</string>
     <string name="sim_invalid_ecu_schema">Invalid sim schema: %1$s</string>
     <string name="sim_ecu_no_content">No content in ecu desc</string>
+    <string name="sim_ecu_log_signal">Sending %1$s: %2$.2f %3$s</string>
     <string name="sim_ecu_unsupported_ecu_schema_version">Unsupported ECU schema version: %1$.1f</string>
     <string name="sim_ecu_invalid_ecu_schema">Invalid ECU schema: %1$s</string>
     <string name="sim_ecu_unknown_ecu_type">Unknown ECU type: %1$s</string>

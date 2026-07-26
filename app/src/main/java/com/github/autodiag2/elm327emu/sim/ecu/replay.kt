@@ -55,6 +55,7 @@ class EcuReplay(
             setJson(jsonInput.text.toString())
         }
         setByAddressWithContext(jsonInput.text.toString())
+        libautodiag.registerOnSignalReceived(address, signalHandler)
     }
 
     private fun setJson(json: String) {

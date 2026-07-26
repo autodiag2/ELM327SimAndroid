@@ -188,6 +188,7 @@ class EcuScript(
                         "end"
             )
         }
+        libautodiag.registerOnSignalReceived(address, signalHandler)
     }
 
     override fun loadStateFromGeneratorWhenShowing() {

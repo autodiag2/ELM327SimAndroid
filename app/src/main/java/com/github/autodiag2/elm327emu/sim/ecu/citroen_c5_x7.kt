@@ -47,6 +47,7 @@ class EcuCitroenC5X7(
         }
 
         libautodiag.setResponseTypeByAddress(address, EcuType.citroen_c5_x7.name)
+        libautodiag.registerOnSignalReceived(address, signalHandler)
     }
 
     override fun toJsonInternal(): JSONObject {

@@ -10,6 +10,8 @@ import com.github.autodiag2.elm327emu.ui.JsonConfigurable
 import com.github.autodiag2.elm327emu.ui.NestedScreen
 import org.json.JSONObject
 import com.github.autodiag2.elm327emu.libautodiag
+import com.github.autodiag2.elm327emu.libautodiag.SignalReceivedHandler
+import com.github.autodiag2.elm327emu.SimSignal
 
 typealias EcuAddress = Byte
 
@@ -19,6 +21,16 @@ abstract class Ecu(
     var displayName: String = type.toString(),
     context: Context
 ) : ConstraintLayout(context), JsonConfigurable, NestedScreen {
+
+    protected val signalHandler = SignalReceivedHandler { signal, value ->
+        onSignalReceived(signal, value)
+    }
+
+    protected open fun onSignalReceived(signal: SimSignal, value: Double) {
+        activity?.appendLog(
+            activity?.getString(R.string.sim_ecu_log_signal, getName(context, signal), value, signal.unit) ?: ""
+        )
+    }
 
     override fun onBack() {        
 
