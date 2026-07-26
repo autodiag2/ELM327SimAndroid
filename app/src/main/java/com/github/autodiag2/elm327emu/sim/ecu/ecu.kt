@@ -33,7 +33,7 @@ abstract class Ecu(
         loadStateFromGeneratorWhenShowing()
     }
 
-    companion object {
+    public companion object {
 
         const val DEFAULT_ADDRESS: EcuAddress = 0xE8.toByte()
         const val SCHEMA: String = "autodiag/sim/ecu"

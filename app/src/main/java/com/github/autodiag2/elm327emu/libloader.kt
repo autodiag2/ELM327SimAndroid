@@ -99,6 +99,16 @@ object libautodiag {
         address: EcuAddress,
         callback: EcuByteArrayHandler
     )
+    public fun interface SignalReceivedHandler {
+        fun onSignalReceived(signal: SimSignal, value: Double)
+    }
+
+    @JvmStatic
+    external fun registerOnSignalReceived(
+        address: EcuAddress,
+        callback: SignalReceivedHandler
+    )
+
     @JvmStatic
     external fun simEcuToJson(
         address: EcuAddress

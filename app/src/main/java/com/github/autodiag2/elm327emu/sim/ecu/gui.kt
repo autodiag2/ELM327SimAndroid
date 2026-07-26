@@ -17,6 +17,9 @@ import com.github.autodiag2.elm327emu.SimSignal
 import com.github.autodiag2.elm327emu.libautodiag
 import org.json.JSONArray
 import org.json.JSONObject
+import com.github.autodiag2.elm327emu.libautodiag.SignalReceivedHandler
+import com.github.autodiag2.elm327emu.sim.ecu.Ecu
+import android.util.Log
 
 fun getName(context: Context, signal: SimSignal): String {
     val key = "signal_" + signal.path.replace(".", "_")
@@ -49,6 +52,14 @@ class EcuGui(
     val allSignals = libautodiag.getSimSignals().sortedBy { it.name.lowercase() }
     val dtcs: MutableList<String> = mutableListOf()
     val signals: MutableMap<String, Double> = linkedMapOf()
+
+    private val signalHandler = SignalReceivedHandler { signal, value ->
+        onSignalReceived(signal, value)
+    }
+
+    private fun onSignalReceived(signal: SimSignal, value: Double) {
+        activity.appendLog(getName(activity, signal) + ": " + value)
+    }
 
     init {
         LayoutInflater.from(activity).inflate(R.layout.sim_ecu_gui, this, true)
@@ -95,6 +106,7 @@ class EcuGui(
         }
 
         libautodiag.setResponseGuiByAddress(address)
+        libautodiag.registerOnSignalReceived(address, signalHandler)
     }
 
     override fun loadStateFromGeneratorWhenShowing() {
