@@ -29,6 +29,10 @@ import androidx.core.widget.doAfterTextChanged
 import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.LogEntryType
 import android.util.Log
+import android.os.Handler
+import android.os.Looper
+import androidx.core.view.isVisible
+import android.view.View
 
 enum class LogLevel(val value: Int) {
     NONE(0),
@@ -362,6 +366,23 @@ class LogView(
     private var search = ""
 
     private val logAdapter = LogAdapter()
+    private val uiHandler = Handler(Looper.getMainLooper())
+
+    private lateinit var overlayButtons: View
+    companion object {
+        val OVERLAY_BUTTONS_ANIM_MS: Long = 1000
+    }
+
+    private val hideOverlayRunnable = Runnable {
+        overlayButtons.animate()
+            .alpha(0f)
+            .translationY(32f)
+            .setDuration(250)
+            .withEndAction {
+                overlayButtons.isVisible = false
+            }
+            .start()
+    }
 
     val saveLogLauncher =
         activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -385,6 +406,26 @@ class LogView(
     init {
         LayoutInflater.from(context).inflate(R.layout.log, this, true)
         setupLogsView()
+    }
+
+    private fun showOverlayButtons() {
+        uiHandler.removeCallbacks(hideOverlayRunnable)
+
+        if (!overlayButtons.isVisible) {
+            overlayButtons.apply {
+                alpha = 0f
+                translationY = 32f
+                isVisible = true
+            }
+        }
+
+        overlayButtons.animate()
+            .alpha(1f)
+            .translationY(0f)
+            .setDuration(150)
+            .start()
+
+        uiHandler.postDelayed(hideOverlayRunnable, OVERLAY_BUTTONS_ANIM_MS)
     }
 
     private fun refresh() {
@@ -537,6 +578,8 @@ class LogView(
         val btnUp = findViewById<Button>(R.id.btnUp)
         val btnDown = findViewById<Button>(R.id.btnDown)
         val btnSave = findViewById<Button>(R.id.btnSave)
+        overlayButtons = findViewById(R.id.overlayButtons)
+        uiHandler.postDelayed(hideOverlayRunnable, OVERLAY_BUTTONS_ANIM_MS)
         val btnDownload = findViewById<Button>(R.id.btnDownload)
         
         val btnSearch = findViewById<EditText>(R.id.log_search)
@@ -560,8 +603,21 @@ class LogView(
         }
 
         rv.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+
+            override fun onScrollStateChanged(rv: RecyclerView, newState: Int) {
+                if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                    uiHandler.postDelayed(hideOverlayRunnable, OVERLAY_BUTTONS_ANIM_MS)
+                } else {
+                    showOverlayButtons()
+                }
+            }
+
             override fun onScrolled(rv: RecyclerView, dx: Int, dy: Int) {
-                if (dy < 0) stickToBottom = false
+                if (dy < 0) {
+                    stickToBottom = false
+                }
+
+                showOverlayButtons()
             }
         })
 
