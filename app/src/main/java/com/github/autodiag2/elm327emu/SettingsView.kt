@@ -108,6 +108,13 @@ class SettingsView(
                 logExchangeNBackwardSearch.setText(
             prefs.getInt("log_group_search_n", 10).toString()
         )
+        val logDisplaySignalValue = findViewById<SwitchCompat>(R.id.settings_log_signal_value)
+        logDisplaySignalValue.isChecked = prefs.getBoolean("log_signal_value", true)
+        logDisplaySignalValue.setOnCheckedChangeListener { _, checked ->
+            prefs.edit()
+                .putBoolean("log_signal_value", checked)
+                .apply()
+        }
 
         logExchangeNBackwardSearch.doAfterTextChanged { editable ->
             val value = editable

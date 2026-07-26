@@ -189,6 +189,13 @@
                 android:singleLine="true" />
 
         </LinearLayout>
+        
+        <androidx.appcompat.widget.SwitchCompat
+            android:id="@+id/settings_log_signal_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingTop="16dp"
+            android:text="@string/settings_log_signal_value" />
 
         <!-- Network -->
         <TextView

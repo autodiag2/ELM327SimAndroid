@@ -10,6 +10,7 @@
     <string name="log_btnDown">↓</string>
     <string name="log_search_hint">text, bins eg. 4100 ...</string>
     <string name="settings_log_exchange_dup_search">Group duplicate entries</string>
+    <string name="settings_log_signal_value">Decode data and print signals values</string>
     <string name="settings_btLabel">Bluetooth device name</string>
     <string name="settings_btHint">OBD II</string>
     <string name="settings_btApply">Set</string>

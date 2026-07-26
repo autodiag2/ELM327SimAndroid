@@ -27,9 +27,11 @@ abstract class Ecu(
     }
 
     protected open fun onSignalReceived(signal: SimSignal, value: Double) {
-        activity?.appendLog(
-            activity?.getString(R.string.sim_ecu_log_signal, getName(context, signal), value, signal.unit) ?: ""
-        )
+        if ( activity?.prefs?.getBoolean("log_signal_value", true) ?: true ) {
+            activity?.appendLog(
+                activity?.getString(R.string.sim_ecu_log_signal, getName(context, signal), value, signal.unit) ?: ""
+            )
+        }
     }
 
     override fun onBack() {        
