@@ -7,16 +7,15 @@ if ! [ -f "$SRC" ] ; then
 	exit 1
 fi
 
-declare -A sizes=(
-  [mipmap-mdpi]=48
-  [mipmap-hdpi]=72
-  [mipmap-xhdpi]=96
-  [mipmap-xxhdpi]=144
-  [mipmap-xxxhdpi]=192
-)
-
-for dir in "${!sizes[@]}"; do
-  px=${sizes[$dir]}
+for item in \
+  mipmap-mdpi:48 \
+  mipmap-hdpi:72 \
+  mipmap-xhdpi:96 \
+  mipmap-xxhdpi:144 \
+  mipmap-xxxhdpi:192
+do
+  dir=${item%%:*}
+  px=${item##*:}
   mkdir -p "$RES/$dir"
   sips -z $px $px "$SRC" --out "$RES/$dir/ic_launcher.png"
   sips -z $px $px "$SRC" --out "$RES/$dir/ic_launcher_round.png"
