@@ -14,15 +14,15 @@ Turn your phone into a virtual car with ELM327 connected.
 
 <table>
   <tr>
-    <td><img src="https://raw.githubusercontent.com/autodiag2/ELM327SimAndroid/main/media/main.png"></td>
-    <td><img src="https://raw.githubusercontent.com/autodiag2/ELM327SimAndroid/main/media/side.png"></td>
+    <td width="50%"><img src="https://raw.githubusercontent.com/autodiag2/ELM327SimAndroid/main/media/main.png"></td>
+    <td width="50%"><img src="https://raw.githubusercontent.com/autodiag2/ELM327SimAndroid/main/media/side.png"></td>
   </tr>
   <tr>
-    <td><img src="https://raw.githubusercontent.com/autodiag2/ELM327SimAndroid/main/media/settings.png"></td>
-    <td><img src="https://raw.githubusercontent.com/autodiag2/ELM327SimAndroid/main/media/log.png"></td>
+    <td width="50%"><img src="https://raw.githubusercontent.com/autodiag2/ELM327SimAndroid/main/media/settings.png"></td>
+    <td width="50%"><img src="https://raw.githubusercontent.com/autodiag2/ELM327SimAndroid/main/media/log.png"></td>
   </tr>
   <tr>
-    <td><img src="https://raw.githubusercontent.com/autodiag2/ELM327SimAndroid/main/media/godot.png"></td>
+    <td width="50%"><img src="https://raw.githubusercontent.com/autodiag2/ELM327SimAndroid/main/media/godot.png"></td>
   </tr>
 </table>
 
