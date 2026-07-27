@@ -92,7 +92,11 @@ class BLEBridge(
         }
     }
     
-    private val notificationQueue = Channel<ByteArray>(Channel.UNLIMITED)
+    data class NotificationPacket(
+        val device: BluetoothDevice,
+        val data: ByteArray
+    )
+    private val notificationQueue = Channel<NotificationPacket>(Channel.UNLIMITED)
     private var notificationJob: Job? = null
 
     private fun sendTx(device: BluetoothDevice?, input: Any): Boolean {
@@ -112,13 +116,13 @@ class BLEBridge(
 
         while (i < bytes.size) {
             val end = minOf(i + payloadSize, bytes.size)
-            notificationQueue.trySend(bytes.copyOfRange(i, end))
+            notificationQueue.trySend(NotificationPacket(device, bytes.copyOfRange(i, end)))
             i = end
         }
         if (notificationJob?.isActive != true) {
             notificationJob = scope.launch {
-                for (packet in notificationQueue) {
-                    if (!notifyCharacteristicChangedCompat(device, txChar, packet)) {
+                for (notification in notificationQueue) {
+                    if (!notifyCharacteristicChangedCompat(notification.device, txChar, notification.data)) {
                         appendLog("BLE notification failed", LogLevel.DEBUG)
                     }
 
