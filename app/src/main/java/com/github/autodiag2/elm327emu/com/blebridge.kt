@@ -63,7 +63,6 @@ class BLEBridge(
 
     private lateinit var gattServer: BluetoothGattServer
     private lateinit var advertiser: BluetoothLeAdvertiser
-    private var connectedDevice: BluetoothDevice? = null
     private var txNotificationsEnabled = false
     private var gattReady = false
 
@@ -166,10 +165,8 @@ class BLEBridge(
             val addr = device.address ?: getString(R.string.log_ble_unknown_device_address)
             if (newState == BluetoothProfile.STATE_CONNECTED) {
                 appendLog(getString(R.string.log_ble_connected, addr), LogLevel.DEBUG)
-                connectedDevice = device
             } else {
                 appendLog(getString(R.string.log_ble_disconnected, addr), LogLevel.DEBUG)
-                connectedDevice = null
             }
         }
         
@@ -375,7 +372,7 @@ class BLEBridge(
                         val n = emuRecv(buffer)
 
                         if (n > 0) {
-                            if ( ! sendTx(connectedDevice, buffer.copyOf(n)) ) {
+                            if ( ! sendTx(request.device, buffer.copyOf(n)) ) {
                                 activity.appendLog("failed to send (2)")
                             }
                             activity.onDataSent(buffer, n)
@@ -430,7 +427,6 @@ class BLEBridge(
             )
         }
 
-        connectedDevice = null
         txNotificationsEnabled = false
 
         super.stop()
