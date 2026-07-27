@@ -16,6 +16,7 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import android.os.Build
 import kotlinx.coroutines.channels.Channel
+import kotlin.reflect.typeOf
 
 private data class PendingRequest(
     val device: BluetoothDevice,
@@ -39,6 +40,7 @@ class BLEBridge(
                 "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
             )!!
         )
+    private var negotiatedMtu = 23
 
     private val ELM_RX_UUID: UUID
         get() = UUID.fromString(
@@ -91,21 +93,40 @@ class BLEBridge(
         }
     }
     
-    private fun sendTx(device: BluetoothDevice, text: String) {
-        if (!txNotificationsEnabled) return
+    private fun sendTx(device: BluetoothDevice?, input: Any): Boolean {
+        if (!txNotificationsEnabled) return false
+        if (device == null) return false
 
-        val bytes = text.toByteArray(Charsets.US_ASCII)
-        val mtu = 20
+        var bytes: Any
+        if ( input is String ) {
+            bytes = input.toByteArray(Charsets.US_ASCII)
+        } else if ( input is ByteArray ) {
+            bytes = input
+        } else {
+            return false
+        }
+        val payloadSize = negotiatedMtu - 3
         var i = 0
 
         while (i < bytes.size) {
-            val end = minOf(i + mtu, bytes.size)
-            notifyCharacteristicChangedCompat(device, txChar, bytes.copyOfRange(i, end))
+            val end = minOf(i + payloadSize, bytes.size)
+            if ( ! notifyCharacteristicChangedCompat(device, txChar, bytes.copyOfRange(i, end)) ) {
+                return false
+            }
             i = end
         }
+        return true
     }
 
     private val gattCallback = object : BluetoothGattServerCallback() {
+
+        override fun onMtuChanged(
+            device: BluetoothDevice,
+            mtu: Int
+        ) {
+            negotiatedMtu = mtu
+            appendLog("BLE MTU changed to $mtu", LogLevel.DEBUG)
+        }
 
         override fun onDescriptorWriteRequest(
             device: BluetoothDevice,
@@ -120,7 +141,9 @@ class BLEBridge(
                 txNotificationsEnabled = value.contentEquals(byteArrayOf(0x01, 0x00))
 
                 if (txNotificationsEnabled) {
-                    sendTx(device, "ELM327 v1.5\r>")
+                    if ( ! sendTx(device, "ELM327 v1.5\r>") ) {
+                        activity.appendLog("failed to send (1)")
+                    }
                 }
             }
 
@@ -247,6 +270,10 @@ class BLEBridge(
         appendLog(payload.joinToString(" ") { "%02X".format(it) }, LogLevel.DEBUG)
     }
 
+    private fun currentTimeMs(): Long {
+        return System.currentTimeMillis()
+    }
+
     override fun start() {
         if (!btAdapter.isEnabled) {
             activity.showBluetoothEnablePopup()
@@ -348,19 +375,12 @@ class BLEBridge(
                         val n = emuRecv(buffer)
 
                         if (n > 0) {
-
-                            connectedDevice?.let {
-
-                                notifyCharacteristicChangedCompat(
-                                    it,
-                                    txChar,
-                                    buffer.copyOf(n)
-                                )
-
+                            if ( ! sendTx(connectedDevice, buffer.copyOf(n)) ) {
+                                activity.appendLog("failed to send (2)")
                             }
-
                             activity.onDataSent(buffer, n)
-
+                        } else {
+                            activity.appendLog("Nothing received from emu", LogLevel.ERROR)
                         }
 
                         if (request.responseNeeded) {
