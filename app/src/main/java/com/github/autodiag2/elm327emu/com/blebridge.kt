@@ -136,16 +136,6 @@ class BLEBridge(
             offset: Int,
             value: ByteArray
         ) {
-            if (descriptor.uuid == cccdUuid) {
-                txNotificationsEnabled = value.contentEquals(byteArrayOf(0x01, 0x00))
-
-                if (txNotificationsEnabled) {
-                    if ( ! sendTx(device, "ELM327 v1.5\r>") ) {
-                        activity.appendLog("failed to send (1)")
-                    }
-                }
-            }
-
             if (responseNeeded) {
                 gattServer.sendResponse(
                     device,
@@ -154,6 +144,16 @@ class BLEBridge(
                     0,
                     null
                 )
+            }
+            
+            if (descriptor.uuid == cccdUuid) {
+                txNotificationsEnabled = value.contentEquals(byteArrayOf(0x01, 0x00))
+
+                if (txNotificationsEnabled) {
+                    if ( ! sendTx(device, "ELM327 v1.5\r>") ) {
+                        activity.appendLog("failed to send (1)")
+                    }
+                }
             }
         }
 
@@ -371,17 +371,7 @@ class BLEBridge(
 
                         val n = emuRecv(buffer)
 
-                        if (n > 0) {
-                            if ( ! sendTx(request.device, buffer.copyOf(n)) ) {
-                                activity.appendLog("failed to send (2)")
-                            }
-                            activity.onDataSent(buffer, n)
-                        } else {
-                            activity.appendLog("Nothing received from emu", LogLevel.ERROR)
-                        }
-
                         if (request.responseNeeded) {
-
                             gattServer.sendResponse(
                                 request.device,
                                 request.requestId,
@@ -389,7 +379,15 @@ class BLEBridge(
                                 0,
                                 null
                             )
+                        }
 
+                        if (n > 0) {
+                            if ( ! sendTx(request.device, buffer.copyOf(n)) ) {
+                                activity.appendLog("failed to send (2)")
+                            }
+                            activity.onDataSent(buffer, n)
+                        } else {
+                            activity.appendLog("Nothing received from emu", LogLevel.ERROR)
                         }
 
                     } catch (e: Exception) {
