@@ -163,7 +163,9 @@ class BLEBridge(
             }
 
             if (descriptor.uuid == cccdUuid) {
-                txNotificationsEnabled = value.contentEquals(byteArrayOf(0x01, 0x00))
+                txNotificationsEnabled = value.contentEquals(
+                    BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
+                )
 
                 if (txNotificationsEnabled) {
                     if ( ! sendTx(device, "ELM327 v1.5\r>") ) {
@@ -350,7 +352,7 @@ class BLEBridge(
             txChar = BluetoothGattCharacteristic(
                 ELM_TX_UUID,
                 BluetoothGattCharacteristic.PROPERTY_NOTIFY,
-                BluetoothGattCharacteristic.PERMISSION_READ
+                0
             )
 
             val cccd = BluetoothGattDescriptor(
