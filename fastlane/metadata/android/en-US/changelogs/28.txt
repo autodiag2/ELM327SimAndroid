@@ -1,0 +1,4 @@
+- improve logo compat
+- improve compat with android 9
+- improve the group function
+- improve bluetooth support with mtu mostly
