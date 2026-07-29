@@ -42,7 +42,7 @@ enum class LogLevel(val value: Int) {
     DEBUG(4)
 }
 
-val LogLevel_DEFAULT = LogLevel.DEBUG
+val LogLevel_DEFAULT = LogLevel.INFO
 
 enum class LogEntryType {
     RECV, SENT, NONE
@@ -495,7 +495,7 @@ class LogView(
                     R.string.log_main_data_sent,
                 dataLogFormat(data, length)
             ),
-            LogLevel.DEBUG,
+            LogLevel.INFO,
             binary,
             binary.size,
             type

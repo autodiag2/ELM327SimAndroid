@@ -160,6 +160,27 @@
     <string name="log_network_cancelled">Cancelled</string>
     <string name="log_network_error">Network error: %1$s</string>
     <string name="log_network_connection_closed">Network connection closed</string>
+    <string name="log_ble_write_request">BLE RX write (%1$d bytes): %2$s</string>
+    <string name="log_ble_write_response_sent">BLE write response sent</string>
+    <string name="log_ble_write_response_failed">BLE write response failed</string>
+    <string name="log_ble_notification_queue">BLE TX queued (%1$d bytes): %2$s</string>
+    <string name="log_ble_notification_sent">BLE TX notification (%1$d bytes): %2$s</string>
+    <string name="log_ble_notification_failed">BLE TX notification failed</string>
+    <string name="log_ble_notifications_enabled">BLE notifications enabled</string>
+    <string name="log_ble_notifications_disabled">BLE notifications disabled</string>
+    <string name="log_ble_descriptor_write">BLE descriptor write %1$s: %2$s</string>
+    <string name="log_ble_request_queued">BLE request queued (%1$d bytes)</string>
+    <string name="log_ble_request_processing">BLE request processing (%1$d bytes)</string>
+    <string name="log_ble_emu_response">BLE emulator response (%1$d bytes): %2$s</string>
+    <string name="log_ble_emu_no_response">BLE emulator returned no data</string>
+    <string name="log_ble_notify_chunk">BLE TX chunk %1$d/%2$d (%3$d bytes)</string>
+    <string name="log_ble_service_adding">Adding BLE GATT service</string>
+    <string name="log_ble_advertising_starting">Starting BLE advertising</string>
+    <string name="log_ble_connection_state">BLE connection state status=%1$d state=%2$d</string>
+    <string name="log_ble_mtu_changed">BLE MTU changed to %1$d (payload %2$d bytes)</string>
+    <string name="log_ble_phy_update">BLE PHY updated: TX=%1$d RX=%2$d status=%3$d</string>
+    <string name="log_ble_phy_read">BLE PHY read: TX=%1$d RX=%2$d status=%3$d</string>
+    <string name="log_ble_send_initial_banner">Sending initial ELM banner</string>
     <string name="signal_SAEJ1979_number_of_dtc">Number Of DTC</string>
     <string name="signal_SAEJ1979_mil_status">MIL Status</string>
     <string name="signal_SAEJ1979_engine_spark_or_compression">Type of engine</string>

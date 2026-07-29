@@ -17,6 +17,7 @@ import java.nio.ByteOrder
 import android.os.Build
 import kotlinx.coroutines.channels.Channel
 import kotlin.reflect.typeOf
+import androidx.annotation.RequiresApi
 
 private data class PendingRequest(
     val device: BluetoothDevice,
@@ -122,8 +123,19 @@ class BLEBridge(
         if (notificationJob?.isActive != true) {
             notificationJob = scope.launch {
                 for (notification in notificationQueue) {
+                    appendLog(
+                        getString(
+                            R.string.log_ble_notification_sent,
+                            notification.data.size,
+                            notification.data.joinToString(" ") { "%02X".format(it) }
+                        ),
+                        LogLevel.DEBUG
+                    )
                     if (!notifyCharacteristicChangedCompat(notification.device, txChar, notification.data)) {
-                        appendLog("BLE notification failed", LogLevel.DEBUG)
+                        appendLog(
+                            getString(R.string.log_ble_notification_failed),
+                            LogLevel.ERROR
+                        )
                     }
 
                     delay(10)
@@ -135,12 +147,63 @@ class BLEBridge(
 
     private val gattCallback = object : BluetoothGattServerCallback() {
 
+        @RequiresApi(Build.VERSION_CODES.O)
+        override fun onPhyUpdate(
+            device: BluetoothDevice,
+            txPhy: Int,
+            rxPhy: Int,
+            status: Int
+        ) {
+            appendLog(
+                getString(
+                    R.string.log_ble_phy_update,
+                    phyToString(txPhy),
+                    phyToString(rxPhy),
+                    status
+                ),
+                LogLevel.DEBUG
+            )
+        }
+
+        @RequiresApi(Build.VERSION_CODES.O)
+        override fun onPhyRead(
+            device: BluetoothDevice,
+            txPhy: Int,
+            rxPhy: Int,
+            status: Int
+        ) {
+            appendLog(
+                getString(
+                    R.string.log_ble_phy_read,
+                    phyToString(txPhy),
+                    phyToString(rxPhy),
+                    status
+                ),
+                LogLevel.DEBUG
+            )
+        }
+
+        @RequiresApi(Build.VERSION_CODES.O)
+        private fun phyToString(phy: Int): String = when (phy) {
+            BluetoothDevice.PHY_LE_1M -> "1M"
+            BluetoothDevice.PHY_LE_2M -> "2M"
+            BluetoothDevice.PHY_LE_CODED -> "CODED"
+            else -> phy.toString()
+        }
+
         override fun onMtuChanged(
             device: BluetoothDevice,
             mtu: Int
         ) {
             negotiatedMtu = mtu
-            appendLog("BLE MTU changed to $mtu", LogLevel.DEBUG)
+            appendLog(
+                getString(
+                    R.string.log_ble_mtu_changed,
+                    mtu,
+                    mtu - 3
+                ),
+                LogLevel.DEBUG
+            )
         }
 
         override fun onDescriptorWriteRequest(
@@ -161,13 +224,24 @@ class BLEBridge(
                     null
                 )
             }
-
+            appendLog(
+                getString(
+                    R.string.log_ble_descriptor_write,
+                    descriptor.uuid,
+                    value.joinToString(" ") { "%02X".format(it) }
+                ),
+                LogLevel.DEBUG
+            )
             if (descriptor.uuid == cccdUuid) {
                 txNotificationsEnabled = value.contentEquals(
                     BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
                 )
-
+                
                 if (txNotificationsEnabled) {
+                    appendLog(
+                        getString(R.string.log_ble_send_initial_banner),
+                        LogLevel.DEBUG
+                    )
                     if ( ! sendTx(device, "ELM327 v1.5\r>") ) {
                         activity.appendLog("failed to send (1)")
                     }
@@ -223,6 +297,10 @@ class BLEBridge(
 
             activity.onDataReceived(value, value.size)
 
+            appendLog(
+                getString(R.string.log_ble_request_queued, value.size),
+                LogLevel.DEBUG
+            )
             requestQueue.trySend(
                 PendingRequest(
                     device,
@@ -364,10 +442,18 @@ class BLEBridge(
             service.addCharacteristic(rxChar)
             service.addCharacteristic(txChar)
 
+            appendLog(
+                getString(R.string.log_ble_service_adding),
+                LogLevel.DEBUG
+            )
             gattServer.addService(service)
             while (!gattReady) {
                 delay(10)
             }
+            appendLog(
+                getString(R.string.log_ble_advertising_starting),
+                LogLevel.DEBUG
+            )
             advertiser.startAdvertising(settings, advData, scanResp, advertiseCallback)
 
             emuStart()
@@ -382,6 +468,10 @@ class BLEBridge(
 
                     try {
 
+                        appendLog(
+                            getString(R.string.log_ble_request_processing, request.value.size),
+                            LogLevel.DEBUG
+                        )
                         emuSend(
                             request.value,
                             request.value.size
