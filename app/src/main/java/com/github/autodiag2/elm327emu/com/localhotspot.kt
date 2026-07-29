@@ -125,75 +125,86 @@ public class LocalHotspotManager(
         onStarted: (HotspotInfo) -> Unit,
         onFailed: (Int, String) -> Unit
     ) {
-        wifiManager.startLocalOnlyHotspot(
-            object : WifiManager.LocalOnlyHotspotCallback() {
+        try {
+            wifiManager.startLocalOnlyHotspot(
+                object : WifiManager.LocalOnlyHotspotCallback() {
 
-                override fun onStarted(res: WifiManager.LocalOnlyHotspotReservation) {
-                    reservation = res
+                    override fun onStarted(res: WifiManager.LocalOnlyHotspotReservation) {
+                        reservation = res
 
-                    val ssid: String
-                    val password: String
+                        val ssid: String
+                        val password: String
 
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                        val cfg = res.softApConfiguration
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            val cfg = res.softApConfiguration
 
-                        ssid = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            cfg.wifiSsid?.toString() ?: ""
+                            ssid = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                cfg.wifiSsid?.toString() ?: ""
+                            } else {
+                                @Suppress("DEPRECATION")
+                                cfg.ssid ?: ""
+                            }.replace("\"", "")
+
+                            password = cfg.passphrase ?: ""
                         } else {
                             @Suppress("DEPRECATION")
-                            cfg.ssid ?: ""
-                        }.replace("\"", "")
+                            val cfg = res.wifiConfiguration
 
-                        password = cfg.passphrase ?: ""
-                    } else {
-                        @Suppress("DEPRECATION")
-                        val cfg = res.wifiConfiguration
+                            @Suppress("DEPRECATION")
+                            ssid = (cfg?.SSID ?: "").replace("\"", "")
 
-                        @Suppress("DEPRECATION")
-                        ssid = (cfg?.SSID ?: "").replace("\"", "")
+                            @Suppress("DEPRECATION")
+                            password = cfg?.preSharedKey ?: ""
+                        }
 
-                        @Suppress("DEPRECATION")
-                        password = cfg?.preSharedKey ?: ""
+                        val qr = buildWifiQr(ssid, password)
+
+                        _hotspotInfo = HotspotInfo(
+                            ssid = ssid,
+                            password = password,
+                            wifiQr = qr
+                        )
+
+                        addCommonElmAliases()
+
+                        onStarted(_hotspotInfo!!)
                     }
 
-                    val qr = buildWifiQr(ssid, password)
-
-                    _hotspotInfo = HotspotInfo(
-                        ssid = ssid,
-                        password = password,
-                        wifiQr = qr
-                    )
-
-                    addCommonElmAliases()
-
-                    onStarted(_hotspotInfo!!)
-                }
-
-                override fun onStopped() {
-                    reservation = null
-                    removeCommonElmAliases()
-                }
-
-                override fun onFailed(reason: Int) {
-                    val reasonStr = when (reason) {
-                        WifiManager.LocalOnlyHotspotCallback.ERROR_NO_CHANNEL ->
-                            getString(R.string.log_wifi_error_no_channel)
-
-                        WifiManager.LocalOnlyHotspotCallback.ERROR_GENERIC ->
-                            getString(R.string.log_wifi_error_generic)
-
-                        WifiManager.LocalOnlyHotspotCallback.ERROR_INCOMPATIBLE_MODE ->
-                            getString(R.string.log_wifi_error_incompatible_mode)
-
-                        else ->
-                            getString(R.string.log_wifi_error_unknown, reason)
+                    override fun onStopped() {
+                        reservation = null
+                        removeCommonElmAliases()
                     }
 
-                    onFailed(reason, reasonStr)
-                }
-            },
-            null
-        )
+                    override fun onFailed(reason: Int) {
+                        val reasonStr = when (reason) {
+                            WifiManager.LocalOnlyHotspotCallback.ERROR_NO_CHANNEL ->
+                                getString(R.string.log_wifi_error_no_channel)
+
+                            WifiManager.LocalOnlyHotspotCallback.ERROR_GENERIC ->
+                                getString(R.string.log_wifi_error_generic)
+
+                            WifiManager.LocalOnlyHotspotCallback.ERROR_INCOMPATIBLE_MODE ->
+                                getString(R.string.log_wifi_error_incompatible_mode)
+
+                            else ->
+                                getString(R.string.log_wifi_error_unknown, reason)
+                        }
+
+                        onFailed(reason, reasonStr)
+                    }
+                },
+                null
+            )
+        } catch (e: IllegalStateException) {
+            if (e.message?.contains("active LocalOnlyHotspot request", ignoreCase = true) == true) {
+                onFailed(
+                    WifiManager.LocalOnlyHotspotCallback.ERROR_GENERIC,
+                    getString(R.string.log_wifi_reservation_lost)
+                )
+            } else {
+                throw e
+            }
+        }
     }
 
     fun stop() {
