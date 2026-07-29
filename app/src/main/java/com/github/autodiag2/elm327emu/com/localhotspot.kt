@@ -33,6 +33,12 @@ public class LocalHotspotManager(
         val wifiQr: String
     )
 
+    sealed class RootStatus {
+        object Granted : RootStatus()
+        object NoRootInstalled : RootStatus()
+        object PermissionDenied : RootStatus()
+    }
+
     sealed class HotspotIpResult {
         data class Success(
             val interfaceName: String,
@@ -158,11 +164,14 @@ public class LocalHotspotManager(
                         wifiQr = qr
                     )
 
+                    addCommonElmAliases()
+
                     onStarted(_hotspotInfo!!)
                 }
 
                 override fun onStopped() {
                     reservation = null
+                    removeCommonElmAliases()
                 }
 
                 override fun onFailed(reason: Int) {
@@ -212,25 +221,124 @@ public class LocalHotspotManager(
             .replace("\"", "\\\"")
     }
 
-    public fun findHotspotIpRoot(): HotspotIpResult {
+    fun getRootStatus(): RootStatus {
+        val process = try {
+            ProcessBuilder(
+                "su",
+                "-c",
+                "id"
+            ).redirectErrorStream(true).start()
+        } catch (_: IOException) {
+            return RootStatus.NoRootInstalled
+        }
+
+        return try {
+            val output = process.inputStream.bufferedReader().use { it.readText() }
+
+            process.waitFor()
+
+            if (process.exitValue() == 0 && output.contains("uid=0"))
+                RootStatus.Granted
+            else
+                RootStatus.PermissionDenied
+        } catch (_: Throwable) {
+            RootStatus.PermissionDenied
+        }
+    }
+
+    private fun runRoot(cmd: String): Boolean =
         try {
-            val su = try {
-                ProcessBuilder("su", "-c", "id")
-                    .redirectErrorStream(true)
-                    .start()
-            } catch (_: IOException) {
-                return HotspotIpResult.NoRootInstalled
-            }
+            val process = ProcessBuilder(
+                "su",
+                "-c",
+                cmd
+            ).redirectErrorStream(true).start()
 
-            val suOutput = su.inputStream.bufferedReader().use { it.readText() }
-            su.waitFor()
+            process.waitFor()
 
-            if (su.exitValue() != 0) {
-                return HotspotIpResult.RootPermissionDenied
-            }
+            process.exitValue() == 0
+        } catch (_: Throwable) {
+            false
+        }
 
-            if (!suOutput.contains("uid=0")) {
-                return HotspotIpResult.RootPermissionDenied
+    fun addIpAlias(
+        iface: String,
+        cidr: String
+    ): Boolean =
+        runRoot(
+            "ip addr show dev $iface | grep -qw '${cidr.substringBefore("/")}' || " +
+                    "ip addr add $cidr dev $iface"
+        )
+
+    fun removeIpAlias(
+        iface: String,
+        cidr: String
+    ): Boolean =
+        runRoot(
+            "ip addr del $cidr dev $iface >/dev/null 2>&1 || true"
+        )
+
+    fun addCommonElmAliases(): List<Pair<String, Boolean>> {
+        if (getRootStatus() != RootStatus.Granted) {
+            return emptyList()
+        }
+
+        val hotspot = findHotspotIp()
+
+        if (hotspot !is HotspotIpResult.Success) {
+            return emptyList()
+        }
+
+        val aliases = listOf(
+            "192.168.0.10/24",
+            "192.168.0.123/24",
+            "192.168.1.10/24",
+            "192.168.1.123/24"
+        )
+
+        return aliases.map {
+            it.substringBefore("/") to addIpAlias(
+                hotspot.interfaceName,
+                it
+            )
+        }
+    }
+
+    fun removeCommonElmAliases(): Boolean {
+        if (getRootStatus() != RootStatus.Granted) {
+            return false
+        }
+
+        val hotspot = findHotspotIp()
+
+        if (hotspot !is HotspotIpResult.Success) {
+            return false
+        }
+
+        listOf(
+            "192.168.0.10/24",
+            "192.168.0.123/24",
+            "192.168.1.10/24",
+            "192.168.1.123/24"
+        ).forEach {
+            removeIpAlias(
+                hotspot.interfaceName,
+                it
+            )
+        }
+        return true
+    }
+
+    fun findHotspotIp(preferCommonIp: Boolean = false): HotspotIpResult {
+        try {
+            when (getRootStatus()) {
+                RootStatus.NoRootInstalled ->
+                    return HotspotIpResult.NoRootInstalled
+
+                RootStatus.PermissionDenied ->
+                    return HotspotIpResult.RootPermissionDenied
+
+                RootStatus.Granted -> {}
             }
 
             val ifaceProcess = ProcessBuilder(
@@ -258,6 +366,35 @@ public class LocalHotspotManager(
 
             val iface = interfaces.first()
 
+            if (preferCommonIp) {
+                val commonIps = listOf(
+                    "192.168.0.10",
+                    "192.168.0.123",
+                    "192.168.1.10",
+                    "192.168.1.123"
+                )
+
+                val addrProcess = ProcessBuilder(
+                    "su",
+                    "-c",
+                    "ip -4 -o addr show dev $iface"
+                ).redirectErrorStream(true).start()
+
+                val addresses = Regex("""inet\s+(\d+\.\d+\.\d+\.\d+)""")
+                    .findAll(addrProcess.inputStream.bufferedReader().use { it.readText() })
+                    .map { it.groupValues[1] }
+                    .toSet()
+
+                addrProcess.waitFor()
+
+                commonIps.firstOrNull { it in addresses }?.let {
+                    return HotspotIpResult.Success(
+                        interfaceName = iface,
+                        ip = it
+                    )
+                }
+            }
+
             val ipProcess = ProcessBuilder(
                 "su",
                 "-c",
@@ -278,6 +415,7 @@ public class LocalHotspotManager(
                 interfaceName = iface,
                 ip = ip
             )
+
         } catch (e: Throwable) {
             return HotspotIpResult.Exception(e)
         }

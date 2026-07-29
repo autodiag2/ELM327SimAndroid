@@ -144,7 +144,7 @@ class SettingsView(
         // ---------- Wi-Fi ----------
         wifiApGatewayIpBtn.setOnClickListener {
             activity.lifecycleScope.launch(Dispatchers.IO) {
-                val result = hotspotManager?.findHotspotIpRoot()
+                val result = hotspotManager?.findHotspotIp(true)
 
                 withContext(Dispatchers.Main) {
                     when (result) {
