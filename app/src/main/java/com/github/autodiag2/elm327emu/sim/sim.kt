@@ -104,12 +104,15 @@ class Sim(
         desc.put("schema", SCHEMA)
         desc.put("version", SCHEMA_VERSION)
 
-        val content = JSONArray()
+        val content = JSONObject()
         desc.put("content", content)
 
+        var content_ecus = JSONArray()
+        content.put("ecu", content_ecus)
         for (ecu in ecus) {
-            content.put(ecu.toJson())
+            content_ecus.put(ecu.toJson())
         }
+        content.put("ignition", libautodiag.getIgnitionState())
 
         return desc
     }
@@ -145,7 +148,7 @@ class Sim(
             return
         }
 
-        val content = desc.optJSONArray("content")
+        val content = desc.optJSONObject("content")
         if ( content == null ) {
             activity.appendLog(
                 getString(R.string.sim_no_content, schemaVersion),
@@ -157,15 +160,20 @@ class Sim(
         // reset current state
         ecuClear()
 
-        for (i in 0 until content.length()) {
-            val ecuDesc = content.getJSONObject(i)
-
-            val ecu = Ecu.createFromJSON(ecuDesc, activity)
-            if ( ecu != null ) {
-                ecus.add(ecu)
-                addEcuRow(ecu)
+        val content_ecus = content.optJSONArray("ecu")
+        if ( content_ecus != null ) {
+            for (i in 0 until content_ecus.length()) {
+                val ecuDesc = content_ecus.getJSONObject(i)
+    
+                val ecu = Ecu.createFromJSON(ecuDesc, activity)
+                if ( ecu != null ) {
+                    ecus.add(ecu)
+                    addEcuRow(ecu)
+                }
             }
         }
+        val content_ignition = content.optInt("ignition")
+        libautodiag.setIgnitionState(content_ignition)
     }
 
     fun getString(resId: Int, vararg formatArgs: Any?): String {
