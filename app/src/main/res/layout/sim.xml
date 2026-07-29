@@ -74,21 +74,39 @@
     <!-- BOTTOM BAR -->
     <LinearLayout
         android:id="@+id/bottom_bar"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
         android:orientation="vertical"
         android:padding="8dp"
         android:background="@drawable/background_with_border_top"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- START / STOP -->
-        <Button
-            android:id="@+id/sim_state"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/sim_start_sim" />
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/sim_state"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginEnd="4dp"
+                android:text="@string/sim_start_sim" />
+
+            <ToggleButton
+                android:id="@+id/ignition_state"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="4dp"
+                android:textOff="@string/sim_ignition_off"
+                android:textOn="@string/sim_ignition_on"
+                android:text="@string/sim_ignition_on" />
+
+        </LinearLayout>
 
     </LinearLayout>
 

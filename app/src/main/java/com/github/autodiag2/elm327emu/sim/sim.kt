@@ -10,6 +10,7 @@ import android.widget.PopupMenu
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import android.widget.ToggleButton
 import androidx.cardview.widget.CardView
 import com.github.autodiag2.elm327emu.LogLevel
 import com.github.autodiag2.elm327emu.MainActivity
@@ -22,6 +23,7 @@ import com.github.autodiag2.elm327emu.ui.JsonConfigurable
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import com.github.autodiag2.elm327emu.IgnitionState
 
 class Sim(
     private val activity: MainActivity
@@ -80,6 +82,15 @@ class Sim(
                 } else {
                     activity.requestPermissions()
                 }
+            }
+        }
+        findViewById<ToggleButton>(R.id.ignition_state).apply {
+            isChecked = libautodiag.getIgnitionStateAs() == IgnitionState.ON
+
+            setOnCheckedChangeListener { _, isChecked ->
+                libautodiag.setIgnitionState(
+                    if (isChecked) IgnitionState.ON else IgnitionState.OFF
+                )
             }
         }
         buildAddECUToGUI(Ecu.DEFAULT_ADDRESS, getString(R.string.sim_ecu_gui_ecu_name), EcuType.gui)
