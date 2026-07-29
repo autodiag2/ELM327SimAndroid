@@ -4,6 +4,16 @@ import com.github.autodiag2.elm327emu.sim.ecu.EcuAddress
 import com.github.autodiag2.elm327emu.sim.ecu.EcuByteArrayHandler
 import com.github.autodiag2.elm327emu.sim.ecu.EcuGui
 
+enum class IgnitionState(val value: Int) {
+    OFF(0),
+    ON(1);
+    
+    companion object {
+        fun fromValue(value: Int): IgnitionState =
+            entries.firstOrNull { it.value == value } ?: OFF
+    }
+}
+
 data class SimSignal(
     val path: String,
     val name: String,
@@ -119,6 +129,20 @@ object libautodiag {
         address: EcuAddress,
         json: String
     )
+
+    @JvmStatic
+    external fun setIgnitionState(state: Int)
+
+    fun setIgnitionState(state: IgnitionState) {
+        setIgnitionState(state.value)
+    }
+    
+    @JvmStatic
+    external fun getIgnitionState(): Int
+
+    fun getIgnitionStateAs(): IgnitionState {
+        return IgnitionState.fromValue(getIgnitionState())
+    }
 
     @JvmStatic
     external fun removeEcuByAddress(address: EcuAddress)
