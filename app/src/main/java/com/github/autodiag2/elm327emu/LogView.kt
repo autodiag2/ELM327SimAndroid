@@ -33,6 +33,7 @@ import android.os.Handler
 import android.os.Looper
 import androidx.core.view.isVisible
 import android.view.View
+import androidx.core.graphics.ColorUtils
 
 enum class LogLevel(val value: Int) {
     NONE(0),
@@ -316,22 +317,22 @@ class LogAdapter :
             item.text
 
         val ctx = holder.tv.context
-
+        val primaryColor = run {
+            val ta = ctx.theme.obtainStyledAttributes(
+                intArrayOf(android.R.attr.textColorPrimary)
+            )
+            try {
+                ta.getColor(0, 0xFFAAAAAA.toInt())
+            } finally {
+                ta.recycle()
+            }
+        }
         val colorInt = when (item.level) {
-            LogLevel.INFO -> ctx.getColor(R.color.sol_blue)
+            LogLevel.INFO -> primaryColor
             LogLevel.ERROR -> ctx.getColor(R.color.sol_red)
             LogLevel.WARNING -> ctx.getColor(R.color.sol_orange)
             LogLevel.NONE -> ctx.getColor(R.color.sol_magenta)
-            LogLevel.DEBUG -> {
-                val ta = ctx.theme.obtainStyledAttributes(
-                    intArrayOf(android.R.attr.textColorPrimary)
-                )
-                try {
-                    ta.getColor(0, 0xFFAAAAAA.toInt())
-                } finally {
-                    ta.recycle()
-                }
-            }
+            LogLevel.DEBUG -> ColorUtils.setAlphaComponent(primaryColor, 128)
         }
 
         holder.tv.setTextColor(colorInt)
