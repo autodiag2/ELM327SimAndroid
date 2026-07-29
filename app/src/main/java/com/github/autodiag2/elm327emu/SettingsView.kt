@@ -233,6 +233,7 @@ class SettingsView(
                         customServiceUuid.setText(profile.service)
                         customTxUuid.setText(profile.tx)
                         customRxUuid.setText(profile.rx)
+                        activity.serverRestartWithUI()
                     }
                 }
 
@@ -275,6 +276,7 @@ class SettingsView(
                     customRxUuid.text.toString().trim()
                 )
                 .apply()
+            activity.serverRestartWithUI()
         }
 
         customServiceUuid.setOnFocusChangeListener { _, hasFocus ->
