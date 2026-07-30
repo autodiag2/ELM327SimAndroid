@@ -2,5 +2,5 @@
 	path = app/autodiag
 	url = https://github.com/autodiag2/autodiag
 [submodule "Godot-Advanced-Vehicle"]
-	path = app/src/main/assets
+	path = app/src/full/assets
 	url = https://github.com/autodiag2/Godot-Advanced-Vehicle
