@@ -8,6 +8,10 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
 
+    <!-- Ignore godot when device has sdk level too low -->
+    <uses-sdk
+        tools:overrideLibrary="org.godotengine.godot"/>
+
     <uses-permission
         android:name="android.permission.NEARBY_WIFI_DEVICES" />
 

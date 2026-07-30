@@ -94,7 +94,7 @@ android {
 
     defaultConfig {
         applicationId "com.github.autodiag2.elm327emu"
-        minSdk 28
+        minSdk 22
         targetSdk 35
         versionCode 28
         versionName "28"

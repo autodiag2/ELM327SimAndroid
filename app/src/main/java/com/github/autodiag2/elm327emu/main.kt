@@ -64,7 +64,13 @@ class MainActivity : AppCompatActivity() {
     lateinit var statsView: StatsView
     private lateinit var simListView: SimList
     private var activeScreen: View? = null
-    private val godotGui by lazy { GuiGodot(this) }
+    private val godotGui: GuiGodot? by lazy(LazyThreadSafetyMode.NONE) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            GuiGodot(this)
+        } else {
+            null
+        }
+    }
 
     val screenStack = ArrayDeque<View?>()
     var pendingExportConfig: SimSummary? = null
@@ -137,8 +143,8 @@ class MainActivity : AppCompatActivity() {
         if (screenStack.isNotEmpty()) {
             if ( activeScreen is NestedScreen ) {
                 (activeScreen as NestedScreen).onBack()
-            } else if ( godotGui.isVisible() ) {
-                godotGui.onDestroy()
+            } else if ( godotGui?.isVisible() ?: false ) {
+                godotGui?.onDestroy()
             }
             val previousScreen: View? = screenStack.removeLast()
             if ( previousScreen != null ) {
@@ -354,7 +360,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             R.id.sim_ecu_gui_menu_start_godot -> {
-                godotGui.show()
+                godotGui?.show()
                 true
             }
 
