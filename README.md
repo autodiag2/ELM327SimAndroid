@@ -7,6 +7,8 @@
 [![License](https://img.shields.io/github/license/autodiag2/ELM327SimAndroid)](https://github.com/autodiag2/ELM327SimAndroid/blob/main/LICENSE)
 [![Release](https://img.shields.io/github/v/release/autodiag2/ELM327SimAndroid)](https://github.com/autodiag2/ELM327SimAndroid/releases)
 ![Downloads](https://img.shields.io/github/downloads/autodiag2/ELM327SimAndroid/total)
+![com.github.autodiag2.elm327emu-light.apk](https://img.shields.io/badge/Android-5.1%2B%20(API%2022%2B)-3DDC84?logo=android&logoColor=white)
+![com.github.autodiag2.elm327emu.apk](https://img.shields.io/badge/Android%20%2B%20Godot-7.0%2B%20(API%2024%2B)-478CBF?logo=godot-engine&logoColor=white)  
 
 Android app to simulate, emulate an ELM327 (Wifi, Bluetooth BLE, Bluetooth) connected to a car (0-n ECUs) for testing OBD-II, UDS applications.  
 You can plug in or plug out ECUs of simulation, change default protocol, inspect logs, share your config with other devs.  
