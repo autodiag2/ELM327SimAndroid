@@ -109,7 +109,7 @@ class BluetoothBridge(
             activity.showBluetoothEnablePopup()
             return
         }
-        server = btAdapter.listenUsingRfcommWithServiceRecord(getString(R.string.app_name), classicalBtUUID)
+        server = btAdapter.listenUsingInsecureRfcommWithServiceRecord(getString(R.string.app_name), classicalBtUUID)
         super.start()
     }
 
