@@ -17,6 +17,7 @@ import com.github.autodiag2.elm327emu.sim.Sim.Companion.SCHEMA_VERSION
 import com.github.autodiag2.elm327emu.sim.ecu.getString
 import com.github.autodiag2.elm327emu.ui.NestedScreen
 import org.json.JSONObject
+import org.json.JSONArray
 import java.io.File
 
 
@@ -185,7 +186,7 @@ private class SimListAdapter(
                     return
                 }
 
-                val content = desc.optJSONArray("content")
+                val content = desc.optJSONObject("content")
                 if ( content == null ) {
                     activity.appendLog(
                         getString(activity, R.string.sim_no_content, schemaVersion),
@@ -193,8 +194,15 @@ private class SimListAdapter(
                     )
                     return
                 }
-
-                val ecuCount = content.length()
+                val ecus = content.optJSONArray("ecu")
+                if ( ecus == null ) {
+                    activity.appendLog(
+                        getString(activity, R.string.sim_no_ecu_in_content, schemaVersion),
+                        LogLevel.ERROR
+                    )
+                    return
+                }
+                val ecuCount = ecus.length()
                 val name = file.nameWithoutExtension
 
                 configs.add(

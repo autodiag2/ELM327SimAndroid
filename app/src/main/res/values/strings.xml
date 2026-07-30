@@ -28,6 +28,7 @@
     <string name="sim_ignition_off">Ignition OFF</string>
     <string name="sim_ignition_on">Ignition ON</string>
     <string name="sim_no_content">No content in sim desc</string>
+    <string name="sim_no_ecu_in_content">No ecu in sim content</string>
     <string name="sim_unsupported_ecu_schema_version">Unsupported sim schema version: %1$.1f</string>
     <string name="sim_invalid_ecu_schema">Invalid sim schema: %1$s</string>
     <string name="sim_ecu_no_content">No content in ecu desc</string>
