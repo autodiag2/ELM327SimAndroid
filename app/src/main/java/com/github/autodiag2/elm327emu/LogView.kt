@@ -34,6 +34,7 @@ import android.os.Looper
 import androidx.core.view.isVisible
 import android.view.View
 import androidx.core.graphics.ColorUtils
+import androidx.core.content.ContextCompat
 
 enum class LogLevel(val value: Int) {
     NONE(0),
@@ -329,9 +330,9 @@ class LogAdapter :
         }
         val colorInt = when (item.level) {
             LogLevel.INFO -> primaryColor
-            LogLevel.ERROR -> ctx.getColor(R.color.sol_red)
-            LogLevel.WARNING -> ctx.getColor(R.color.sol_orange)
-            LogLevel.NONE -> ctx.getColor(R.color.sol_magenta)
+            LogLevel.ERROR -> ContextCompat.getColor(ctx, R.color.sol_red)
+            LogLevel.WARNING -> ContextCompat.getColor(ctx, R.color.sol_orange)
+            LogLevel.NONE -> ContextCompat.getColor(ctx, R.color.sol_magenta)
             LogLevel.DEBUG -> ColorUtils.setAlphaComponent(primaryColor, 128)
         }
 
