@@ -14,14 +14,17 @@
         android:orientation="vertical"
         android:fitsSystemWindows="true">
 
-        <!-- Top bar -->
+        <!-- Top bar             
+            android:background="@drawable/toolbar_with_border"
+            to have a prettier version
+        -->
         <androidx.appcompat.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:fitsSystemWindows="true"
             app:titleTextColor="?attr/colorOnPrimary"
-            android:background="@drawable/toolbar_with_border"
+            android:background="?attr/colorPrimary"
             app:title="@string/app_title"/>
 
         <!-- Content container -->
