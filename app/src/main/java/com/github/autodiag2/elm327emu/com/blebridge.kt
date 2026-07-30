@@ -388,7 +388,6 @@ class BLEBridge(
         scope.launch(Dispatchers.IO) {
             activity.clearSocketFiles()
 
-            advertiser = btAdapter.bluetoothLeAdvertiser
             val settings = AdvertiseSettings.Builder()
                 .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
                 .setConnectable(true)
@@ -400,12 +399,12 @@ class BLEBridge(
                 .build()
             
             if (!btAdapter.isMultipleAdvertisementSupported) {
-                appendLog(getString(R.string.log_ble_advertising_not_supported), LogLevel.DEBUG)
-                return@launch
+                appendLog(getString(R.string.log_ble_advertising_not_supported), LogLevel.WARNING)
             }
 
             advertiser = btAdapter.bluetoothLeAdvertiser ?: run {
                 appendLog(getString(R.string.log_ble_advertiser_null), LogLevel.DEBUG)
+                appendLog(getString(R.string.log_ble_peripherical_mode_error), LogLevel.ERROR)
                 return@launch
             }
             val scanResp = AdvertiseData.Builder()

@@ -138,6 +138,7 @@
     <string name="log_ble_advertising_data">Advertising data (%1$d bytes)</string>
     <string name="log_ble_advertising_not_supported">BLE advertising not supported</string>
     <string name="log_ble_advertiser_null">bluetoothLeAdvertiser == null</string>
+    <string name="log_ble_peripherical_mode_error">your system seem to do not support BLE peripherical mode</string>
     <string name="log_ble_loopback_failed">Loopback failed: %1$s</string>
     <string name="log_ble_stop_advertising_failed">Error stopping advertising: %1$s</string>
     <string name="log_ble_gatt_server_close_failed">Error closing GATT server: %1$s</string>
