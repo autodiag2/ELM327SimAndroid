@@ -52,20 +52,36 @@ jobs:
           ./gradlew assembleRelease \
             -Pandroid.ndkVersion=29.0.14206865
 
-      - name: Rename APK to namespace
+      - name: Rename APKs
         run: |
           NS=$(sed -nE 's/^\s*namespace\s+"([^"]+)".*/\1/p' app/build.gradle | head -n1)
           if [ -z "$NS" ]; then
             echo "namespace not found in app/build.gradle"
             exit 1
           fi
-          APK=$(ls -1 app/build/outputs/apk/release/*.apk | head -n1)
-          OUTDIR="app/build/outputs/apk/release"
-          OUT="${OUTDIR}/${NS}.apk"
-          mv "$APK" "$OUT"
-          echo "RENAMED_APK=$OUT" >> "$GITHUB_ENV"
 
-      - name: Upload APK
+          FULL_APK=$(find app/build/outputs/apk/full/release -name "*.apk" | head -n1)
+          LIGHT_APK=$(find app/build/outputs/apk/light/release -name "*.apk" | head -n1)
+
+          if [ -z "$FULL_APK" ] || [ -z "$LIGHT_APK" ]; then
+            echo "Release APK(s) not found"
+            exit 1
+          fi
+
+          FULL_OUT="$(dirname "$FULL_APK")/${NS}.apk"
+          LIGHT_OUT="$(dirname "$LIGHT_APK")/${NS}-light.apk"
+
+          mv "$FULL_APK" "$FULL_OUT"
+          mv "$LIGHT_APK" "$LIGHT_OUT"
+
+          {
+            echo "FULL_APK=$FULL_OUT"
+            echo "LIGHT_APK=$LIGHT_OUT"
+          } >> "$GITHUB_ENV"
+
+      - name: Upload APKs
         uses: softprops/action-gh-release@v2
         with:
-          files: ${{ env.RENAMED_APK }}
+          files: |
+            ${{ env.FULL_APK }}
+            ${{ env.LIGHT_APK }}

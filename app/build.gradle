@@ -69,6 +69,18 @@ tasks.register("bumpVersion") {
 def keystorePath = System.getenv("KEYSTORE_PATH")
 
 android {
+    flavorDimensions += "edition"
+
+    productFlavors {
+        full {
+            dimension "edition"
+        }
+
+        light {
+            dimension "edition"
+        }
+    }
+
     namespace "com.github.autodiag2.elm327emu"
     compileSdk 35
     ndkVersion "29.0.14206865"
@@ -151,7 +163,7 @@ dependencies {
     implementation "androidx.recyclerview:recyclerview:1.3.2"
     implementation "androidx.lifecycle:lifecycle-runtime-ktx:2.7.0"
     implementation 'org.luaj:luaj-jse:3.0.1'
-    implementation("org.godotengine:godot:4.6.2.stable")
+    fullImplementation("org.godotengine:godot:4.6.2.stable")
     implementation("com.google.zxing:core:3.5.3")
 }
 
