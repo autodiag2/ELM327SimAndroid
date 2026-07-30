@@ -116,12 +116,23 @@ public class LocalHotspotManager(
                 return@ensureHotspotPermission
             }
 
-            startInternal(onStarted, onFailed)
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+                startInternalApi26Lower(onStarted, onFailed)
+            } else {
+                startInternalApi26(onStarted, onFailed)
+            }
         }
     }
 
+    fun startInternalApi26Lower(
+        onStarted: (HotspotInfo) -> Unit,
+        onFailed: (Int, String) -> Unit
+    ) {
+        onFailed(-1, "Not supported")
+    }
+
     @RequiresApi(Build.VERSION_CODES.O)
-    fun startInternal(
+    fun startInternalApi26(
         onStarted: (HotspotInfo) -> Unit,
         onFailed: (Int, String) -> Unit
     ) {
