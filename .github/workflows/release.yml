@@ -68,8 +68,8 @@ jobs:
             exit 1
           fi
 
-          FULL_OUT="$(dirname "$FULL_APK")/${NS}.apk"
-          LIGHT_OUT="$(dirname "$LIGHT_APK")/${NS}-light.apk"
+          FULL_OUT="$(dirname "$FULL_APK")/${NS}-full.apk"
+          LIGHT_OUT="$(dirname "$LIGHT_APK")/${NS}.apk"
 
           mv "$FULL_APK" "$FULL_OUT"
           mv "$LIGHT_APK" "$LIGHT_OUT"
