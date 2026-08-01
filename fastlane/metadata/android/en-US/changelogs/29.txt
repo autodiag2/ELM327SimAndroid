@@ -1,0 +1,5 @@
+- make the emulator device ip always the same default 192.168.0.10 (root required)
+- fix crash when switching theme
+- add ignition on/off button as some scantool check it
+- extend compat of app lower with android versions
+- fix memory leaks in jni
