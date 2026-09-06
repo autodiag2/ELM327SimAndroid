@@ -76,7 +76,7 @@ android {
             dimension "edition"
         }
 
-        light {
+        lite {
             dimension "edition"
         }
     }
