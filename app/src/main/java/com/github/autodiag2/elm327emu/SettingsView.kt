@@ -82,6 +82,8 @@ class SettingsView(
     }
 
     private var hotspotManager: LocalHotspotManager? = null
+    public val btNameEdit: EditText
+        get() = findViewById(R.id.btNameEdit)
 
     private fun setup() {
         val prefs = activity.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
@@ -93,7 +95,6 @@ class SettingsView(
         val wifiApGatewayIp = findViewById<TextView>(R.id.settings_wifi_hotspot_gatewayIp)
         val wifiApGatewayIpBtn = findViewById<Button>(R.id.settings_wifi_hotspot_gatewayIpBtn)
         val btContainer = findViewById<LinearLayout>(R.id.btContainer)
-        val btNameEdit = findViewById<EditText>(R.id.btNameEdit)
         val btApplyBtn = findViewById<Button>(R.id.btApplyBtn)
 
         val logLevelSpinner = findViewById<Spinner>(R.id.logLevelSpinner)
@@ -198,6 +199,7 @@ class SettingsView(
         // ---------- Bluetooth ----------
         val adapterName = if (activity.isPermissionsGranted()) activity.btAdapter.name ?: "" else getString(R.string.settings_missing_permission)
         btNameEdit.setText(adapterName)
+        btNameEdit.isEnabled = activity.isPermissionsGranted()
 
         btApplyBtn.setOnClickListener {
             val newName = btNameEdit.text.toString().trim()

@@ -478,6 +478,11 @@ class MainActivity : AppCompatActivity() {
         permissions: Array<out String>,
         grantResults: IntArray
     ) {
+        val v = settingsView as SettingsView
+        if ( isPermissionsGranted() ) {
+            v.btNameEdit.setText(btAdapter.name)
+            v.btNameEdit.isEnabled = true
+        }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 
