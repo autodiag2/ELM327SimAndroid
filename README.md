@@ -13,6 +13,7 @@
 Android app to simulate, emulate an ELM327 (Wifi, Bluetooth BLE, Bluetooth) connected to a car (0-n ECUs) for testing OBD-II, UDS applications.  
 You can plug in or plug out ECUs of simulation, change default protocol, inspect logs, share your config with other devs.  
 Turn your phone into a virtual car with ELM327 connected.  
+For user guide check the [wiki](https://github.com/autodiag2/ELM327SimAndroid/wiki)
 
 <table>
   <tr>
