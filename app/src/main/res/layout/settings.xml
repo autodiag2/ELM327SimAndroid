@@ -1,228 +1,94 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/settingsScroll"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:fillViewport="true">
 
-    <LinearLayout
-        android:id="@+id/rootContainer"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="32dp">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
-        <!-- Bluetooth section -->
-        <LinearLayout
-            android:id="@+id/btContainer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingTop="16dp">
+    <PreferenceCategory
+        android:title="@string/settings_section_general">
 
-            <TextView
-                android:id="@+id/btLabel"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/settings_btLabel" />
+        <ListPreference
+            android:key="log_level"
+            android:title="@string/settings_logLevelLabel"
+            android:entries="@array/log_levels"
+            android:entryValues="@array/log_level_values"
+            android:defaultValue="DEBUG" />
 
-            <EditText
-                android:id="@+id/btNameEdit"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:hint="@string/settings_btHint" />
+        <SwitchPreferenceCompat
+            android:key="log_exchange_dup_search"
+            android:title="@string/settings_log_exchange_dup_search"
+            android:defaultValue="false" />
 
-            <Button
-                android:id="@+id/btApplyBtn"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/settings_btApply" />
+        <EditTextPreference
+            android:key="log_exchange_dup_search_depth"
+            android:title="@string/settings_log_exchange_dup_search_depth"
+            android:dialogTitle="@string/settings_log_exchange_dup_search_depth"
+            android:defaultValue="5"
+            android:inputType="number" />
 
-            <!-- BLE UART configuration (hidden unless BLE selected) -->
-            <LinearLayout
-                android:id="@+id/bleConfigContainer"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:paddingTop="16dp"
-                android:visibility="gone">
+        <SwitchPreferenceCompat
+            android:key="log_signal_value"
+            android:title="@string/settings_log_signal_value"
+            android:defaultValue="false" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/settings_ble_profiles_title" />
+    </PreferenceCategory>
 
-                <Spinner
-                    android:id="@+id/bleProfileSpinner"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content" />
+    <PreferenceCategory
+        android:title="@string/settings_elmTitle">
 
-                <!-- Custom UUID inputs -->
-                <LinearLayout
-                    android:id="@+id/customBleContainer"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical">
+        <ListPreference
+            android:key="protocol"
+            android:title="@string/settings_elmTitle"
+            android:entries="@array/elm_protocols"
+            android:entryValues="@array/elm_protocol_values" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/settings_ble_profile_service_uuid" />
+    </PreferenceCategory>
 
-                    <EditText
-                        android:id="@+id/customServiceUuid"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="textCapCharacters|textNoSuggestions"
-                        android:hint="6E400001-B5A3-F393-E0A9-E50E24DCCA9E" />
+    <PreferenceCategory
+        android:title="@string/settings_section_bluetooth">
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/settings_ble_profile_tx_uuid" />
+        <EditTextPreference
+            android:key="bt_name"
+            android:title="@string/settings_btLabel"
+            android:dialogTitle="@string/settings_btLabel"
+            android:hint="@string/settings_btHint" />
 
-                    <EditText
-                        android:id="@+id/customTxUuid"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="textCapCharacters|textNoSuggestions"
-                        android:hint="6E400003-B5A3-F393-E0A9-E50E24DCCA9E" />
+        <Preference
+            android:key="bt_apply"
+            android:title="@string/settings_btApply" />
 
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/settings_ble_profile_rx_uuid" />
+    </PreferenceCategory>
 
-                    <EditText
-                        android:id="@+id/customRxUuid"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:inputType="textCapCharacters|textNoSuggestions"
-                        android:hint="6E400002-B5A3-F393-E0A9-E50E24DCCA9E" />
+    <PreferenceCategory
+        android:title="@string/settings_section_ble">
 
-                </LinearLayout>
+        <ListPreference
+            android:key="ble_profile"
+            android:title="@string/settings_ble_profiles_title"
+            android:entries="@array/ble_profiles"
+            android:entryValues="@array/ble_profile_values" />
 
-            </LinearLayout>
-        </LinearLayout>
+        <Preference
+            android:key="ble_custom"
+            android:title="@string/settings_ble_profiles_title"
+            android:summary="@string/settings_ble_profile_service_uuid" />
 
-        <LinearLayout
-            android:id="@+id/wifiContainer"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingTop="16dp">
+    </PreferenceCategory>
 
-            <TextView
-                android:id="@+id/settings_wifi_startBtn_hotspot_error_return"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/settings_wifi_startBtn_hotspot_error_return" />
-            
-            <Button
-                android:id="@+id/settings_wifi_startBtn"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/settings_wifi_startBtn" />
-            
-            <ImageView
-                android:id="@+id/settings_wifi_qrCode"
-                android:layout_width="300dp"
-                android:layout_height="300dp"
-                android:layout_gravity="center"/>
+    <PreferenceCategory
+        android:title="@string/settings_section_wifi">
 
-            <TextView
-                android:id="@+id/settings_wifi_hotspot_gatewayIp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:longClickable="true"
-                android:focusable="true"
-                android:focusableInTouchMode="true"
-                android:textIsSelectable="true"
-                android:paddingTop="16dp"
-                android:text="" />
+        <Preference
+            android:key="wifi_hotspot"
+            android:title="@string/settings_wifi_startBtn" />
 
-            <Button
-                android:id="@+id/settings_wifi_hotspot_gatewayIpBtn"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/settings_wifi_hotspot_gatewayIpBtn" />
+        <Preference
+            android:key="wifi_qrcode"
+            android:title="@string/settings_wifi_hotspot_gatewayIp" />
 
-        </LinearLayout>
+        <Preference
+            android:key="wifi_gateway"
+            android:title="@string/settings_wifi_hotspot_gatewayIpBtn" />
 
-        <!-- Log level -->
-        <TextView
-            android:id="@+id/logLevelLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/settings_logLevelLabel"
-            android:paddingTop="16dp" />
+    </PreferenceCategory>
 
-        <Spinner
-            android:id="@+id/logLevelSpinner"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/settings_log_exchange_dup_search"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="@string/settings_log_exchange_dup_search" />
-
-            <EditText
-                android:id="@+id/settings_log_exchange_dup_search_depth"
-                android:layout_width="64dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:ems="3"
-                android:gravity="center"
-                android:hint="5"
-                android:inputType="number"
-                android:maxLength="3"
-                android:singleLine="true" />
-
-        </LinearLayout>
-        
-        <androidx.appcompat.widget.SwitchCompat
-            android:id="@+id/settings_log_signal_value"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:paddingTop="16dp"
-            android:text="@string/settings_log_signal_value" />
-
-        <!-- Network -->
-        <TextView
-            android:id="@+id/networkLabel"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/settings_networkLabel"
-            android:paddingTop="16dp" />
-
-        <Spinner
-            android:id="@+id/networkSpinner"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <!-- ELM -->
-        <TextView
-            android:id="@+id/elmTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/settings_elmTitle"
-            android:textSize="18sp"
-            android:paddingTop="32dp" />
-
-        <Spinner
-            android:id="@+id/protocolSpinner"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-    </LinearLayout>
-</androidx.core.widget.NestedScrollView>
+</PreferenceScreen>

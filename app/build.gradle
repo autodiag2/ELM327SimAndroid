@@ -165,5 +165,6 @@ dependencies {
     implementation 'org.luaj:luaj-jse:3.0.1'
     fullImplementation("org.godotengine:godot:4.6.2.stable")
     implementation("com.google.zxing:core:3.5.3")
+    implementation("androidx.preference:preference-ktx:1.2.1")
 }
 

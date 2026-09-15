@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string-array name="log_levels">
+        <item>DEBUG</item>
+        <item>INFO</item>
+        <item>WARNING</item>
+        <item>ERROR</item>
+        <item>NONE</item>
+    </string-array>
+
+    <integer-array name="log_level_values">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+    </integer-array>
+
+    <string-array name="elm_protocols">
+        <item>Auto</item>
+        <item>SAE J1850 PWM (41.6 kBit/s)</item>
+        <item>SAE J1850 VPW (10.4 kBit/s)</item>
+        <item>ISO 9141-2</item>
+        <item>ISO 14230-4 KWP2000 (5-baud init)</item>
+        <item>ISO 14230-4 KWP2000 (fast init)</item>
+        <item>ISO 15765-4 (CAN 11-bit ID, 500 kBit/s)</item>
+        <item>ISO 15765-4 (CAN 29-bit ID, 500 kBit/s)</item>
+        <item>ISO 15765-4 (CAN 11-bit ID, 250 kBit/s)</item>
+        <item>ISO 15765-4 (CAN 29-bit ID, 250 kBit/s)</item>
+        <item>SAE J1939 (CAN 29-bit ID, 250 kBit/s)</item>
+        <item>USER1 CAN</item>
+        <item>USER2 CAN</item>
+    </string-array>
+
+    <string-array name="elm_protocol_values">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+        <item>7</item>
+        <item>8</item>
+        <item>9</item>
+        <item>A</item>
+        <item>B</item>
+        <item>C</item>
+    </string-array>
+
+    <string-array name="ble_profiles">
+        <item>Nordic UART Service</item>
+        <item>Microchip Transparent UART Service</item>
+        <item>Nexas</item>
+        <item>Nexas (less common)</item>
+        <item>Custom</item>
+    </string-array>
+
+    <string-array name="ble_profile_values">
+        <item>0</item>
+        <item>1</item>
+        <item>2</item>
+        <item>3</item>
+        <item>4</item>
+    </string-array>
+
+</resources>

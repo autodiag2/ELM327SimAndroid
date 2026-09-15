@@ -54,8 +54,8 @@ class MainActivity : AppCompatActivity() {
     lateinit var toolbar: Toolbar
 
     lateinit var simView: Sim
-    private lateinit var settingsView: View
     lateinit var logView: LogView
+    private lateinit var settingsFragment: SettingsFragment
     lateinit var statsView: StatsView
     private lateinit var simListView: SimList
     private var activeScreen: View? = null
@@ -136,13 +136,15 @@ class MainActivity : AppCompatActivity() {
 
     fun handleBack() {
         if (screenStack.isNotEmpty()) {
-            if ( activeScreen is NestedScreen ) {
+            if (activeScreen is NestedScreen) {
                 (activeScreen as NestedScreen).onBack()
-            } else if ( godotGui?.isVisible() ?: false ) {
+            } else if (godotGui?.isVisible() ?: false) {
                 godotGui?.onDestroy()
             }
-            val previousScreen: View? = screenStack.removeLast()
-            if ( previousScreen != null ) {
+
+            val previousScreen = screenStack.removeLast()
+
+            if (previousScreen != null) {
                 show(previousScreen)
             }
 
@@ -166,9 +168,38 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun show(view: View) {
+        supportFragmentManager.popBackStack(
+            null,
+            androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
+        )
+
         contentFrame.removeAllViews()
         contentFrame.addView(view)
+
         activeScreen = view
+
+        invalidateOptionsMenu()
+    }
+
+    private fun showSettings() {
+        contentFrame.removeAllViews()
+
+        val container = FrameLayout(this).apply {
+            id = View.generateViewId()
+            layoutParams = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+        }
+
+        contentFrame.addView(container)
+
+        supportFragmentManager
+            .beginTransaction()
+            .replace(container.id, settingsFragment)
+            .commit()
+
+        activeScreen = null
 
         invalidateOptionsMenu()
     }
@@ -288,7 +319,7 @@ class MainActivity : AppCompatActivity() {
         // ---- Views ----
         simView = Sim(this)
         logView = LogView(this)
-        settingsView = SettingsView(this)
+        settingsFragment = SettingsFragment()
         statsView = StatsView(this)
         simListView = SimList(this) { file ->
             simView.loadConfig(file.absolutePath)
@@ -306,7 +337,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.nav_sim -> show(simView)
                 R.id.nav_log -> show(logView)
                 R.id.nav_stats -> show(statsView)
-                R.id.nav_settings -> show(settingsView)
+                R.id.nav_settings -> showSettings()
             }
 
             showHamburger()
@@ -462,19 +493,6 @@ class MainActivity : AppCompatActivity() {
                 REQUEST_CODE
             )
         }
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        val v = settingsView as SettingsView
-        if ( isPermissionsGranted() ) {
-            v.btNameEdit.setText(btAdapter.name)
-            v.btNameEdit.isEnabled = true
-        }
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 
     // -------------------------------
