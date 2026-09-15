@@ -28,6 +28,7 @@ import android.widget.EditText
 import androidx.core.widget.doAfterTextChanged
 import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.LogEntryType
+import com.github.autodiag2.elm327emu.SettingsFragment
 import android.util.Log
 import android.os.Handler
 import android.os.Looper
@@ -178,7 +179,7 @@ class LogRepository(private val context: MainActivity) {
             var entry: LogEntry? = null
             var deleted: LogEntry? = null
             var modified: LogEntry? = null
-            if (context.prefs.getBoolean("log_group", false) &&
+            if (context.prefs.getBoolean("log_exchange_dup_search", false) &&
                 type == LogEntryType.SENT &&
                 buffer.size >= 3
             ) {
@@ -214,7 +215,7 @@ class LogRepository(private val context: MainActivity) {
                         }
 
                         exchanges++
-                        if (exchanges > context.prefs.getInt("log_group_search_n", 10)) {
+                        if (exchanges > context.prefs.getInt("log_exchange_dup_search_depth", 10)) {
                             break
                         }
 
