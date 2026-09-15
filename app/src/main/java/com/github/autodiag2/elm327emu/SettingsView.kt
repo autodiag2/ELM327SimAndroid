@@ -28,11 +28,11 @@ data class BleProfile(
     val rx: String,
     val isCustom: Boolean = false
 )
-val PREF_BLE_PROFILE = "ble_profile"
+val PREF_BLE_PROFILE = "com_ble_profile"
 
-val PREF_BLE_SERVICE = "ble_service"
-val PREF_BLE_TX = "ble_tx"
-val PREF_BLE_RX = "ble_rx"
+val PREF_BLE_SERVICE = "com_ble_service"
+val PREF_BLE_TX = "com_ble_tx"
+val PREF_BLE_RX = "com_ble_rx"
 
 val bleProfiles = listOf(
     BleProfile(
@@ -72,6 +72,11 @@ class SettingsView(
     private val activity: MainActivity
 ) : FrameLayout(activity) {
     
+    // LEGACY
+    private val NETWORK_BT = 0
+    private val NETWORK_BLE = 1
+    private val NETWORK_IP = 2
+
     init {
         LayoutInflater.from(context).inflate(R.layout.settings, this, true)
         setup()
@@ -329,25 +334,25 @@ class SettingsView(
             setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         }
 
-        val savedNetwork = prefs.getInt("network_mode", activity.NETWORK_BT)
+        val savedNetwork = prefs.getInt("network_mode", NETWORK_BT)
         networkSpinner.setSelection(savedNetwork)
 
         btContainer.visibility =
-            if (savedNetwork == activity.NETWORK_BT || savedNetwork == activity.NETWORK_BLE) VISIBLE else GONE
+            if (savedNetwork == NETWORK_BT || savedNetwork == NETWORK_BLE) VISIBLE else GONE
         
         wifiSettingsContainer.visibility =
-            if (savedNetwork == activity.NETWORK_IP) VISIBLE else GONE
+            if (savedNetwork == NETWORK_IP) VISIBLE else GONE
 
         networkSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, pos: Int, id: Long) {
                 prefs.edit().putInt("network_mode", pos).apply()
 
                 btContainer.visibility =
-                    if (pos == activity.NETWORK_BT || pos == activity.NETWORK_BLE) VISIBLE else GONE
+                    if (pos == NETWORK_BT || pos == NETWORK_BLE) VISIBLE else GONE
                 bleConfigContainer.visibility =
-                    if (pos == activity.NETWORK_BLE) VISIBLE else GONE
+                    if (pos == NETWORK_BLE) VISIBLE else GONE
                 wifiSettingsContainer.visibility =
-                    if (pos == activity.NETWORK_IP) VISIBLE else GONE
+                    if (pos == NETWORK_IP) VISIBLE else GONE
             }
 
             override fun onNothingSelected(parent: AdapterView<*>) {}

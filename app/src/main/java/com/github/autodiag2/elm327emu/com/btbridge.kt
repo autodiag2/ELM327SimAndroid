@@ -12,9 +12,10 @@ import com.github.autodiag2.elm327emu.MainActivity
 import kotlinx.coroutines.channels.Channel
 
 class BluetoothBridge(
-    private val activity: MainActivity,
-    private val btAdapter: BluetoothAdapter
-) : Bridge(activity) {
+    emu: EmuInterface,
+    scope: CoroutineScope,
+    activity: MainActivity
+) : Bridge(emu,scope,activity) {
 
     private val classicalBtUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
     private val requestQueue = Channel<ByteArray>(Channel.UNLIMITED)
@@ -24,7 +25,7 @@ class BluetoothBridge(
     private var bt_input: InputStream? = null
     private var bt_output: OutputStream? = null
 
-    override suspend fun startInternal() {
+    override suspend fun accept() {
         try {
 
             appendLog(getString(R.string.log_bt_waiting_for_connection), LogLevel.INFO)
@@ -36,8 +37,6 @@ class BluetoothBridge(
 
             bt_input = socket?.inputStream
             bt_output = socket?.outputStream
-
-            emuStart()
 
             val reader = scope.launch {
                 while (isActive) {
@@ -67,9 +66,9 @@ class BluetoothBridge(
 
                         activity.onDataReceived(request, request.size)
 
-                        emuSend(request, request.size)
+                        emu.send(request, request.size)
 
-                        val n = emuRecv(bufferLoop)
+                        val n = emu.recv(bufferLoop)
                         if (n <= 0) break
 
                         bt_output?.write(bufferLoop, 0, n)
@@ -89,8 +88,6 @@ class BluetoothBridge(
 
             reader.join()
             worker.cancelAndJoin()
-
-            emuStop()
         } catch (e: CancellationException) {
             appendLog(getString(R.string.log_bt_cancelled), LogLevel.DEBUG)
             throw e
@@ -100,17 +97,19 @@ class BluetoothBridge(
             bt_input?.close()
             bt_output?.close()
             socket?.close()
+            bt_input = null
+            bt_output = null
+            socket = null
             appendLog(getString(R.string.log_bt_connection_closed), LogLevel.INFO)
         }
     }
 
-    override fun start() {
-        if (!btAdapter.isEnabled) {
+    override suspend fun start() {
+        if (!activity.btAdapter.isEnabled) {
             activity.showBluetoothEnablePopup()
             return
         }
-        server = btAdapter.listenUsingInsecureRfcommWithServiceRecord(getString(R.string.app_name), classicalBtUUID)
-        super.start()
+        server = activity.btAdapter.listenUsingInsecureRfcommWithServiceRecord(getString(R.string.app_name), classicalBtUUID)
     }
 
     override fun stop() {
@@ -129,7 +128,6 @@ class BluetoothBridge(
         } catch (_: Exception) {
             
         }
-
-        super.stop()
     }
+
 }

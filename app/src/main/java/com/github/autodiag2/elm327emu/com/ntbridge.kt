@@ -12,9 +12,11 @@ import java.net.ServerSocket
 import kotlinx.coroutines.channels.Channel
 
 class NetworkBridge(
-    private val activity: MainActivity,
+    emu: EmuInterface,
+    scope: CoroutineScope,
+    activity: MainActivity,
     private val basePort: Int = 35000
-): Bridge(activity) {
+): Bridge(emu, scope, activity) {
 
     private var serverSocket: ServerSocket? = null
     private var clientSocket: Socket? = null
@@ -23,25 +25,7 @@ class NetworkBridge(
     private var netInput: InputStream? = null
     private var netOutput: OutputStream? = null
 
-    private fun openServer(): ServerSocket {
-        var port = basePort
-        while (true) {
-            try {
-                return ServerSocket(port).also {
-                    appendLog(getString(R.string.log_network_server_listening, port), LogLevel.INFO)
-                }
-            } catch (_: IOException) {
-                port++
-            }
-        }
-    }
-
-    override fun start() {
-        serverSocket = openServer()
-        super.start()
-    }
-
-    override suspend fun startInternal() {
+    override suspend fun accept() {
         try {
             clientSocket = serverSocket!!.accept()
             appendLog(
@@ -51,8 +35,6 @@ class NetworkBridge(
 
             netInput = clientSocket!!.getInputStream()
             netOutput = clientSocket!!.getOutputStream()
-
-            emuStart()
 
             val reader = scope.launch {
                 val bufferNet = ByteArray(1024)
@@ -79,9 +61,9 @@ class NetworkBridge(
 
                         activity.onDataReceived(request, request.size)
 
-                        emuSend(request, request.size)
+                        emu.send(request, request.size)
 
-                        val n = emuRecv(bufferLoop)
+                        val n = emu.recv(bufferLoop)
                         if (n <= 0) break
 
                         netOutput?.write(bufferLoop, 0, n)
@@ -102,8 +84,6 @@ class NetworkBridge(
             reader.join()
             worker.cancel()
 
-            emuStop()
-
         } catch (e: CancellationException) {
             appendLog(getString(R.string.log_network_cancelled), LogLevel.DEBUG)
             throw e
@@ -122,6 +102,11 @@ class NetworkBridge(
         }
     }
 
+    override suspend fun start() {
+        serverSocket = openServer()
+        
+    }
+
     override fun stop() {
         try {
             netInput?.close()
@@ -135,7 +120,19 @@ class NetworkBridge(
         netOutput = null
         clientSocket = null
         serverSocket = null
-
-        super.stop()
     }
+
+    private fun openServer(): ServerSocket {
+        var port = basePort
+        while (true) {
+            try {
+                return ServerSocket(port).also {
+                    appendLog(getString(R.string.log_network_server_listening, port), LogLevel.INFO)
+                }
+            } catch (_: IOException) {
+                port++
+            }
+        }
+    }
+
 }

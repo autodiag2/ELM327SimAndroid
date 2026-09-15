@@ -27,9 +27,10 @@ private data class PendingRequest(
 )
 
 class BLEBridge(
-    private val activity: MainActivity,
-    private val btAdapter: BluetoothAdapter
-    ) : Bridge(activity) {
+    emu: EmuInterface,
+    scope: CoroutineScope,
+    activity: MainActivity
+) : Bridge(emu, scope, activity) {
     private val prefs =
         activity.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
 
@@ -367,8 +368,8 @@ class BLEBridge(
         return System.currentTimeMillis()
     }
 
-    override fun start() {
-        if (!btAdapter.isEnabled) {
+    override suspend fun start() {
+        if (!activity.btAdapter.isEnabled) {
             activity.showBluetoothEnablePopup()
             return
         }
@@ -386,7 +387,6 @@ class BLEBridge(
         }
 
         scope.launch(Dispatchers.IO) {
-            activity.clearSocketFiles()
 
             val settings = AdvertiseSettings.Builder()
                 .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
@@ -398,11 +398,11 @@ class BLEBridge(
                 .setIncludeDeviceName(true)
                 .build()
             
-            if (!btAdapter.isMultipleAdvertisementSupported) {
+            if (!activity.btAdapter.isMultipleAdvertisementSupported) {
                 appendLog(getString(R.string.log_ble_advertising_not_supported), LogLevel.WARNING)
             }
 
-            advertiser = btAdapter.bluetoothLeAdvertiser ?: run {
+            advertiser = activity.btAdapter.bluetoothLeAdvertiser ?: run {
                 appendLog(getString(R.string.log_ble_advertiser_null), LogLevel.DEBUG)
                 appendLog(getString(R.string.log_ble_peripherical_mode_error), LogLevel.ERROR)
                 return@launch
@@ -454,64 +454,55 @@ class BLEBridge(
                 LogLevel.DEBUG
             )
             advertiser.startAdvertising(settings, advData, scanResp, advertiseCallback)
+        }
+    }
 
-            emuStart()
+    override suspend fun accept() {
+        val buffer = ByteArray(512)
+        val request = requestQueue.receive()
 
-            launch {
+        try {
 
-                val buffer = ByteArray(512)
+            appendLog(
+                getString(R.string.log_ble_request_processing, request.value.size),
+                LogLevel.DEBUG
+            )
+            emu.send(
+                request.value,
+                request.value.size
+            )
 
-                while (isActive) {
+            val n = emu.recv(buffer)
 
-                    val request = requestQueue.receive()
-
-                    try {
-
-                        appendLog(
-                            getString(R.string.log_ble_request_processing, request.value.size),
-                            LogLevel.DEBUG
-                        )
-                        emuSend(
-                            request.value,
-                            request.value.size
-                        )
-
-                        val n = emuRecv(buffer)
-
-                        if (request.responseNeeded) {
-                            gattServer.sendResponse(
-                                request.device,
-                                request.requestId,
-                                BluetoothGatt.GATT_SUCCESS,
-                                0,
-                                null
-                            )
-                        }
-
-                        if (n > 0) {
-                            if ( ! sendTx(request.device, buffer.copyOf(n)) ) {
-                                activity.appendLog("failed to send (2)")
-                            }
-                            activity.onDataSent(buffer, n)
-                        } else {
-                            activity.appendLog("Nothing received from emu", LogLevel.ERROR)
-                        }
-
-                    } catch (e: Exception) {
-
-                        appendLog(
-                            getString(
-                                R.string.log_ble_loopback_failed,
-                                e.message
-                            ),
-                            LogLevel.DEBUG
-                        )
-
-                    }
-
-                }
-
+            if (request.responseNeeded) {
+                gattServer.sendResponse(
+                    request.device,
+                    request.requestId,
+                    BluetoothGatt.GATT_SUCCESS,
+                    0,
+                    null
+                )
             }
+
+            if (n > 0) {
+                if ( ! sendTx(request.device, buffer.copyOf(n)) ) {
+                    activity.appendLog("failed to send (2)")
+                }
+                activity.onDataSent(buffer, n)
+            } else {
+                activity.appendLog("Nothing received from emu", LogLevel.ERROR)
+            }
+
+        } catch (e: Exception) {
+
+            appendLog(
+                getString(
+                    R.string.log_ble_loopback_failed,
+                    e.message
+                ),
+                LogLevel.DEBUG
+            )
+
         }
     }
 
@@ -533,8 +524,6 @@ class BLEBridge(
         }
 
         txNotificationsEnabled = false
-
-        super.stop()
     }
 
 }

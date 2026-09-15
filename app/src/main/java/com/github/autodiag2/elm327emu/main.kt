@@ -26,6 +26,7 @@ import com.github.autodiag2.elm327emu.com.BLEBridge
 import com.github.autodiag2.elm327emu.com.BluetoothBridge
 import com.github.autodiag2.elm327emu.com.Bridge
 import com.github.autodiag2.elm327emu.com.NetworkBridge
+import com.github.autodiag2.elm327emu.com.BridgeOrchestrator
 import com.github.autodiag2.elm327emu.sim.SimSummary
 import com.github.autodiag2.elm327emu.sim.Sim
 import com.github.autodiag2.elm327emu.sim.SimList
@@ -45,14 +46,8 @@ class MainActivity : AppCompatActivity() {
     private val enableBtLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { }
 
-    // Order in the settings screen
-    val NETWORK_BT = 0
-    val NETWORK_BLE = 1
-    val NETWORK_IP = 2
-
-    private lateinit var bridges: List<Bridge>
-
     val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    lateinit var bridgeOrchestrator: BridgeOrchestrator
 
     lateinit var contentFrame: FrameLayout
     private lateinit var drawer: DrawerLayout
@@ -235,6 +230,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        bridgeOrchestrator = BridgeOrchestrator(this)
         setContentView(R.layout.activity_main)
 
         filePickerLauncher = registerForActivityResult(
@@ -273,11 +269,6 @@ class MainActivity : AppCompatActivity() {
 
         // ---- Init core components ----
         MainActivityRef.activity = this
-        bridges = listOf(
-            BluetoothBridge(this, btAdapter), // NETWORK_BT
-            BLEBridge(this, btAdapter),       // NETWORK_BLE
-            NetworkBridge(this)               // NETWORK_IP
-        )
 
         // ---- Bind views ----
         drawer = findViewById(R.id.drawer)
@@ -491,9 +482,7 @@ class MainActivity : AppCompatActivity() {
     // -------------------------------
 
     fun stopServer() {
-        for(bridge in bridges) {
-            bridge.stop()
-        }
+        bridgeOrchestrator.stop()
         scope.coroutineContext.cancelChildren()
         appendLog(getString(R.string.log_main_bluetooth_server_stopped), LogLevel.INFO)
     }
@@ -523,7 +512,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun startServer() {
-        bridges[prefs.getInt("network_mode", NETWORK_BT)].start()
+        scope.launch {
+            bridgeOrchestrator.start()
+        }
     }
 
     public fun serverRestartWithUI() {

@@ -16,13 +16,10 @@ import java.io.OutputStream
 import kotlinx.coroutines.isActive
 
 open class Bridge(
-    private val activity: MainActivity,
+    protected val emu: EmuInterface,
+    protected val scope: CoroutineScope,
+    protected val activity: MainActivity,
 ) {
-
-    protected val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    private var loopbackInput: InputStream? = null
-    private var loopbackOutput: OutputStream? = null
-    private var loopbackSocket: LocalSocket? = null
 
     protected fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {
         activity.appendLog(text, level)
@@ -32,53 +29,16 @@ open class Bridge(
         return activity.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
     }
 
-    open fun start() {
-        scope.launch {
-            activity.clearSocketFiles()
-            while (isActive) {
-                startInternal()
-            }
-        }
-    }
-
-    protected open suspend fun startInternal() {
-
+    open suspend fun start() {
+        
     }
 
     open fun stop() {
-        scope.coroutineContext.cancelChildren()
-        emuStop()
+        
     }
 
-    protected fun emuStart() {
-        val filesDirPath = activity.filesDir.absolutePath
-        val location = libautodiag.launchEmu(filesDirPath)
-        appendLog(getString(R.string.log_network_native_sim_location, location),
-            LogLevel.DEBUG
-        )
-        loopbackSocket = LocalSocket()
-        loopbackSocket?.connect(
-            LocalSocketAddress(location, LocalSocketAddress.Namespace.FILESYSTEM)
-        )
-        appendLog(getString(R.string.log_network_loopback_connected), LogLevel.DEBUG)
-
-        loopbackInput = loopbackSocket?.inputStream
-        loopbackOutput = loopbackSocket?.outputStream
-    }
-
-    protected fun emuStop() {
-        loopbackInput?.close()
-        loopbackOutput?.close()
-        loopbackSocket?.close()
-    }
-
-    protected fun emuSend(buffer: ByteArray, size: Int) {
-        loopbackOutput?.write(buffer, 0, size)
-        loopbackOutput?.flush()
-    }
-
-    protected fun emuRecv(buffer: ByteArray): Int {
-        return loopbackInput?.read(buffer) ?: -1
+    open suspend fun accept() {
+    
     }
 
 }
