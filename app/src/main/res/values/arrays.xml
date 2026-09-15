@@ -2,11 +2,11 @@
 <resources>
 
     <string-array name="log_levels">
-        <item>DEBUG</item>
-        <item>INFO</item>
-        <item>WARNING</item>
-        <item>ERROR</item>
         <item>NONE</item>
+        <item>ERROR</item>
+        <item>WARNING</item>
+        <item>INFO</item>
+        <item>DEBUG</item>
     </string-array>
 
     <integer-array name="log_level_values">

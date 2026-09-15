@@ -11,7 +11,7 @@
             android:title="@string/settings_logLevelLabel"
             android:entries="@array/log_levels"
             android:entryValues="@array/log_level_values"
-            android:defaultValue="DEBUG" />
+            android:defaultValue="INFO" />
 
         <SwitchPreferenceCompat
             android:key="log_exchange_dup_search"

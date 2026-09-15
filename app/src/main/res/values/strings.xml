@@ -147,7 +147,7 @@
     <string name="log_ble_loopback_failed">Loopback failed: %1$s</string>
     <string name="log_ble_stop_advertising_failed">Error stopping advertising: %1$s</string>
     <string name="log_ble_gatt_server_close_failed">Error closing GATT server: %1$s</string>
-    <string name="log_bt_waiting_for_connection">Waiting for connection...</string>
+    <string name="log_bt_waiting_for_connection">Bluetooth SPP: Waiting for connection...</string>
     <string name="log_bt_client_connected">Client connected: %1$s</string>
     <string name="log_bt_native_sim_location">Native sim location: %1$s</string>
     <string name="log_bt_loopback_connected">Loopback socket connected</string>
