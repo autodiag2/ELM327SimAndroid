@@ -34,7 +34,7 @@ private const val PREF_LOG_GROUP = "log_exchange_dup_search"
 private const val PREF_LOG_GROUP_SEARCH_N = "log_exchange_dup_search_depth"
 private const val PREF_LOG_SIGNAL_VALUE = "log_signal_value"
 
-private const val PREF_BT_NAME = "bt_name"
+private const val PREF_BT_NAME = "com_bt_name"
 
 private const val NETWORK_BT = 0
 private const val NETWORK_BLE = 1
@@ -97,7 +97,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
     override fun onResume() {
         super.onResume()
 
-        val name = findPreference<androidx.preference.EditTextPreference>("bt_name")
+        val name = findPreference<androidx.preference.EditTextPreference>("com_bt_name")
             ?: return
 
         val enabled = activityMain.isPermissionsGranted()

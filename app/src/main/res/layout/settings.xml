@@ -47,14 +47,10 @@
         android:title="@string/settings_section_bluetooth">
 
         <EditTextPreference
-            android:key="bt_name"
+            android:key="com_bt_name"
             android:title="@string/settings_btLabel"
             android:dialogTitle="@string/settings_btLabel"
             android:hint="@string/settings_btHint" />
-
-        <Preference
-            android:key="bt_apply"
-            android:title="@string/settings_btApply" />
 
     </PreferenceCategory>
 
