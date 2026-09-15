@@ -44,7 +44,7 @@ class BridgeOrchestrator(
 ): EmuInterface() {
 
     protected val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    public val bleBridge = BluetoothBridge(this, scope, activity)
+    public val bleBridge = BLEBridge(this, scope, activity)
     private var bleBridgeJob: Job? = null
     public val ntBridge = NetworkBridge(this, scope, activity, basePort)
     private var ntBridgeJob: Job? = null

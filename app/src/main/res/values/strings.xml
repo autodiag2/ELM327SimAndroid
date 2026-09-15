@@ -25,7 +25,8 @@
     <string name="settings_network_bluetooth">Bluetooth</string>
     <string name="settings_network_ble">Bluetooth LE (4.0+)</string>
     <string name="settings_network_network">Network</string>
-    <string name="settings_ble_profiles_title">BLE UART Profile</string>
+    <string name="settings_ble_profiles_title">BLE Profile</string>
+    <string name="settings_ble_profile_custom_title">Custom BLE Profile</string>
     <string name="settings_ble_profile_service_uuid">Service UUID</string>
     <string name="settings_ble_profile_tx_uuid">TX Characteristic UUID</string>
     <string name="settings_ble_profile_rx_uuid">RX Characteristic UUID</string>

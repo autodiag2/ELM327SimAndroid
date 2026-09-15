@@ -65,7 +65,7 @@
 
         <Preference
             android:key="ble_custom"
-            android:title="@string/settings_ble_profiles_title"
+            android:title="@string/settings_ble_profile_custom_title"
             android:summary="@string/settings_ble_profile_service_uuid" />
 
     </PreferenceCategory>
