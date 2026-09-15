@@ -56,6 +56,7 @@ class MainActivity : AppCompatActivity() {
     lateinit var simView: Sim
     lateinit var logView: LogView
     private lateinit var settingsFragment: SettingsFragment
+    private lateinit var settingsContainer: FrameLayout
     lateinit var statsView: StatsView
     private lateinit var simListView: SimList
     private var activeScreen: View? = null
@@ -168,6 +169,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun show(view: View) {
+
+        settingsContainer.visibility = View.GONE
+        contentFrame.visibility = View.VISIBLE
         supportFragmentManager.popBackStack(
             null,
             androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
@@ -183,24 +187,16 @@ class MainActivity : AppCompatActivity() {
 
     private fun showSettings() {
         contentFrame.removeAllViews()
-
-        val container = FrameLayout(this).apply {
-            id = View.generateViewId()
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-            )
+        contentFrame.visibility = View.GONE
+        settingsContainer.visibility = View.VISIBLE
+        if (!settingsFragment.isAdded) {
+            supportFragmentManager
+                .beginTransaction()
+                .add(settingsContainer.id, settingsFragment)
+                .commit()
         }
 
-        contentFrame.addView(container)
-
-        supportFragmentManager
-            .beginTransaction()
-            .replace(container.id, settingsFragment)
-            .commit()
-
         activeScreen = null
-
         invalidateOptionsMenu()
     }
 
@@ -263,6 +259,7 @@ class MainActivity : AppCompatActivity() {
 
         bridgeOrchestrator = BridgeOrchestrator(this)
         setContentView(R.layout.activity_main)
+        settingsContainer = findViewById(R.id.settingsContainer)
 
         filePickerLauncher = registerForActivityResult(
             ActivityResultContracts.GetContent()
