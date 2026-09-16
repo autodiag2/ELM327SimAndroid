@@ -11,6 +11,7 @@
             android:title="@string/settings_logLevelLabel"
             android:entries="@array/log_levels"
             android:entryValues="@array/log_level_values"
+            app:useSimpleSummaryProvider="true"
             android:defaultValue="DEBUG" />
 
         <SwitchPreferenceCompat
@@ -39,7 +40,8 @@
             android:key="protocol"
             android:title="@string/settings_protocolLabel"
             android:entries="@array/elm_protocols"
-            android:entryValues="@array/elm_protocol_values" />
+            android:entryValues="@array/elm_protocol_values"
+            app:useSimpleSummaryProvider="true" />
 
         <SwitchPreferenceCompat
             android:key="com_bt_enabled"
@@ -76,6 +78,7 @@
             android:key="ble_profile"
             android:title="@string/settings_ble_profiles_title"
             android:entries="@array/ble_profiles"
+            app:useSimpleSummaryProvider="true"
             android:entryValues="@array/ble_profile_values" />
 
         <Preference
