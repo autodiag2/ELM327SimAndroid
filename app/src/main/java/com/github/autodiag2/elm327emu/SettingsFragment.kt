@@ -119,7 +119,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
         prefs = activityMain.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
         setupLog()
-        setupNetwork()
         setupElm()
         setupBluetooth()
         setupBle()
@@ -224,15 +223,27 @@ class SettingsFragment : PreferenceFragmentCompat() {
     }
 
     private fun setupNetwork() {
-        
+        val bridgesPrefView = HashMap<String, SwitchPreferenceCompat>()
+        bridgesPrefView["settings_network_bluetooth"] = findPreference<SwitchPreferenceCompat>("settings_network_bluetooth")!!
+        bridgesPrefView["settings_network_ble"] = findPreference<SwitchPreferenceCompat>("settings_network_ble")!!
+        bridgesPrefView["settings_network_network"] = findPreference<SwitchPreferenceCompat>("settings_network_network")!!
+        for((pref, bridgePrefView) in bridgesPrefView) {
+            bridgePrefView.isChecked = prefs.getBoolean(
+                pref,
+                true
+            )
 
-        val entries = arrayOf(
-            getString(R.string.settings_network_bluetooth),
-            getString(R.string.settings_network_ble),
-            getString(R.string.settings_network_network)
-        )
-
-        // TODO
+            bridgePrefView.setOnPreferenceChangeListener { _, newValue ->
+                prefs.edit()
+                    .putBoolean(
+                        pref,
+                        newValue as Boolean
+                    )
+                    .apply()
+                activityMain.bridgeOrchestrator.setupBridges()
+                true
+            }
+        }
     }
 
     private fun setupElm() {
@@ -331,7 +342,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                     .putString(PREF_BLE_RX, selected.rx)
                     .apply()
 
-                activityMain.serverRestartWithUI()
+                activityMain.bridgeOrchestrator.setupBridges()
             }
 
             updateBleCustomSummary()
@@ -436,7 +447,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                     .value = bleProfiles.lastIndex.toString()
 
                 updateBleCustomSummary()
-                activityMain.serverRestartWithUI()
+                activityMain.bridgeOrchestrator.setupBridges()
             }
             .show()
     }
@@ -469,7 +480,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
                     )
 
                     qr.isVisible = true
-                    activityMain.serverRestartWithUI()
                 },
                 onFailed = { _, reasonStr ->
                     activityMain.appendLog(

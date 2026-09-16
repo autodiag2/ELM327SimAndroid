@@ -41,6 +41,21 @@
             android:entries="@array/elm_protocols"
             android:entryValues="@array/elm_protocol_values" />
 
+        <SwitchPreferenceCompat
+            android:key="settings_network_bluetooth"
+            android:title="@string/settings_network_bluetooth"
+            android:defaultValue="true" />
+
+        <SwitchPreferenceCompat
+            android:key="settings_network_ble"
+            android:title="@string/settings_network_ble"
+            android:defaultValue="true" />
+
+        <SwitchPreferenceCompat
+            android:key="settings_network_network"
+            android:title="@string/settings_network_network"
+            android:defaultValue="true" />
+
     </PreferenceCategory>
 
     <PreferenceCategory

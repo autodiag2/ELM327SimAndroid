@@ -532,15 +532,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    public fun serverRestartWithUI() {
-        val simv = simView
-        val simToggle = simv.findViewById<Button>(R.id.sim_state)
-        if ( simv.isRunning() ) {
-            simToggle.performClick()
-        }
-        simToggle.performClick()
-    }
-
     fun onDataReceived(data: ByteArray, size_used: Int) {
         logView.logData(LogEntryType.RECV, data, size_used)
         statsView.onDataReceived(data, size_used)

@@ -17,6 +17,7 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.Job
 import android.bluetooth.BluetoothAdapter
 import android.content.Context
+import android.content.SharedPreferences
 
 abstract class EmuInterface {
 
@@ -60,44 +61,65 @@ class BridgeOrchestrator(
 
         activity.clearSocketFiles()
         started = true
-        updateIFace()
+        setupBridges()
     }
 
-    /**
-     * Without need to start or stop, setup interfaces used by emulator
-     */
-    suspend fun updateIFace() {
-        val bridges = listOf(
-            Triple(bleBridge, "com_ble_enabled", { job: Job? -> bleBridgeJob = job }),
-            Triple(ntBridge, "com_nt_enabled", { job: Job? -> ntBridgeJob = job }),
-            Triple(btBridge, "com_bt_enabled", { job: Job? -> btBridgeJob = job })
-        )
-
-        for ((bridge, pref, setJob) in bridges) {
-            val enabled = prefs.getBoolean(pref, true)
-            val job = when (bridge) {
-                bleBridge -> bleBridgeJob
-                ntBridge -> ntBridgeJob
-                btBridge -> btBridgeJob
-                else -> null
+    suspend fun setupBridge(pref: String, bridge: Bridge, force: Boolean=false) {
+        val enabled = prefs.getBoolean(pref, true)
+        val job = when (bridge) {
+            bleBridge -> bleBridgeJob
+            ntBridge -> ntBridgeJob
+            btBridge -> btBridgeJob
+            else -> null
+        }
+        val setJob = { local_job: Job? -> 
+            when(bridge) {
+                bleBridge -> bleBridgeJob = local_job 
+                ntBridge -> ntBridgeJob = local_job 
+                btBridge -> btBridgeJob = local_job 
             }
+        }
+        if (enabled && job == null) {
+            bridge.start()
 
-            if (enabled && job == null) {
+            setJob(scope.launch {
+                while (isActive) {
+                    bridge.accept()
+                }
+            })
+        } else if (!enabled && job != null) {
+            bridge.stop()
+            job.cancel()
+            setJob(null)
+        } else if (enabled && job != null) {
+            if ( force ) {
+                bridge.stop()
+                job.cancel()
+                setJob(null)
                 bridge.start()
-
                 setJob(scope.launch {
                     while (isActive) {
                         bridge.accept()
                     }
                 })
-            } else if (!enabled && job != null) {
-                bridge.stop()
-                job.cancel()
-                setJob(null)
-            } else if (enabled && job != null) {
-                // Already running, do nothing
-            } else if (!enabled && job == null) {
-                // Already stopped, do nothing
+            }
+        } else if (!enabled && job == null) {
+            // Already stopped, do nothing
+        }
+    }
+
+    /**
+     * Refresh interfaces with correct settings (cause a disconnection/reconnection of scantool)
+     */
+    fun setupBridges() {
+        scope.launch {
+            val bridges = HashMap<String, Bridge>()
+            bridges["com_ble_enabled"] = bleBridge
+            bridges["com_nt_enabled"] = ntBridge
+            bridges["com_bt_enabled"] = btBridge
+    
+            for ((pref, bridge) in bridges) {
+                setupBridge(pref, bridge, true)
             }
         }
     }
