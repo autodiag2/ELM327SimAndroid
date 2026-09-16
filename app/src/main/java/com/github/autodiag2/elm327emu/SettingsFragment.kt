@@ -460,7 +460,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private fun setupWifi() {
         val hotspot = findPreference<Preference>("wifi_hotspot")!!
         val qr = findPreference<Preference>("wifi_qrcode")!!
-        val gateway = findPreference<Preference>("wifi_gateway")!!
+        val ip_addr = findPreference<Preference>("wifi_ip_addr")!!
 
         hotspot.setOnPreferenceClickListener {
             if (hotspotManager == null) {
@@ -500,12 +500,12 @@ class SettingsFragment : PreferenceFragmentCompat() {
             true
         }
 
-        gateway.setOnPreferenceClickListener {
+        ip_addr.setOnPreferenceClickListener {
             activityMain.lifecycleScope.launch(Dispatchers.IO) {
                 val result = hotspotManager?.findHotspotIp(true)
 
                 withContext(Dispatchers.Main) {
-                    gateway.summary = when (result) {
+                    ip_addr.summary = when (result) {
                         is LocalHotspotManager.HotspotIpResult.Success ->
                             getString(
                                 R.string.settings_wifi_hotspot_gatewayIp,
