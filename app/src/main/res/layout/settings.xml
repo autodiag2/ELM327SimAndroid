@@ -6,6 +6,11 @@
     <PreferenceCategory
         android:title="@string/settings_section_general">
 
+        <SwitchPreferenceCompat
+            android:key="app_emu_autostart"
+            android:title="@string/settings_autostart"
+            android:defaultValue="true" />
+
         <ListPreference
             android:key="log_level"
             android:title="@string/settings_logLevelLabel"

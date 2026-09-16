@@ -9,6 +9,7 @@
     <string name="log_btnUp">↑</string>
     <string name="log_btnDown">↓</string>
     <string name="log_search_hint">text, bins eg. 4100 ...</string>
+    <string name="settings_autostart">Autostart emulator on app launch</string>
     <string name="settings_section_general">General Settings</string>
     <string name="settings_section_bluetooth">Bluetooth Settings</string>
     <string name="settings_section_ble">Bluetooth LE Settings</string>

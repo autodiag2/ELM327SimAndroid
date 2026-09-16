@@ -147,7 +147,15 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
             true
         }
+        val autostart = findPreference<SwitchPreferenceCompat>("app_emu_autostart")!!
+        autostart.isChecked = prefs.getBoolean("app_emu_autostart", true)
+        autostart.setOnPreferenceChangeListener { _, newValue ->
+            prefs.edit()
+                .putBoolean("app_emu_autostart", newValue as Boolean)
+                .apply()
 
+            true
+        }
         val group = findPreference<SwitchPreferenceCompat>(PREF_LOG_GROUP)!!
 
         group.isChecked = prefs.getBoolean(PREF_LOG_GROUP, false)

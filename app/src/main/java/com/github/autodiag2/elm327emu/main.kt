@@ -362,6 +362,14 @@ class MainActivity : AppCompatActivity() {
         if (!isPermissionsGranted()) {
             requestPermissions()
         }
+
+        // autostart
+        prefs.getBoolean("app_emu_autostart", true).let { autostart ->
+            if (autostart) {
+                simView.findViewById<Button>(R.id.sim_state).performClick()
+            }
+        }
+
     }
 
     override fun onCreateOptionsMenu(menu: android.view.Menu): Boolean {
