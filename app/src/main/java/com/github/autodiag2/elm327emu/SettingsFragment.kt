@@ -378,23 +378,14 @@ class SettingsFragment : PreferenceFragmentCompat() {
     }
 
     private fun showBleCustomDialog() {
-        val container = android.widget.LinearLayout(requireContext())
-
-        container.orientation = android.widget.LinearLayout.VERTICAL
-        container.setPadding(
-            48,
-            0,
-            48,
-            0
+        val container = layoutInflater.inflate(
+            R.layout.dialog_ble_custom,
+            null
         )
 
-        val service = EditText(requireContext())
-        val tx = EditText(requireContext())
-        val rx = EditText(requireContext())
-
-        service.hint = "Service UUID"
-        tx.hint = "TX UUID"
-        rx.hint = "RX UUID"
+        val service = container.findViewById<EditText>(R.id.ble_service)
+        val tx = container.findViewById<EditText>(R.id.ble_tx)
+        val rx = container.findViewById<EditText>(R.id.ble_rx)
 
         service.setText(
             prefs.getString(PREF_BLE_SERVICE, "")
@@ -407,22 +398,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
         rx.setText(
             prefs.getString(PREF_BLE_RX, "")
         )
-
-        service.inputType =
-            android.text.InputType.TYPE_CLASS_TEXT or
-            android.text.InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS
-
-        tx.inputType =
-            android.text.InputType.TYPE_CLASS_TEXT or
-            android.text.InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS
-
-        rx.inputType =
-            android.text.InputType.TYPE_CLASS_TEXT or
-            android.text.InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS
-
-        container.addView(service)
-        container.addView(tx)
-        container.addView(rx)
 
         androidx.appcompat.app.AlertDialog.Builder(requireContext())
             .setTitle(R.string.settings_ble_profiles_title)
