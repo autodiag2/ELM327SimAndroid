@@ -92,9 +92,9 @@
             android:key="wifi_hotspot"
             android:title="@string/settings_wifi_startBtn" />
 
-        <Preference
+        <com.github.autodiag2.elm327emu.WifiQrCodePreference
             android:key="wifi_qrcode"
-            android:title="@string/settings_wifi_hotspot_gatewayIp" />
+            android:title="@null" />
 
         <com.github.autodiag2.elm327emu.CopyableIpPreference
             android:key="wifi_ip_addr"

@@ -459,7 +459,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     private fun setupWifi() {
         val hotspot = findPreference<Preference>("wifi_hotspot")!!
-        val qr = findPreference<Preference>("wifi_qrcode")!!
+        val qr = findPreference<WifiQrCodePreference>("wifi_qrcode")!!
         val ip_addr = findPreference<Preference>("wifi_ip_addr")!!
 
         hotspot.setOnPreferenceClickListener {
@@ -478,13 +478,22 @@ class SettingsFragment : PreferenceFragmentCompat() {
                         LogLevel.INFO
                     )
 
-                    qr.summary = getString(
-                        R.string.log_wifi_hotspot_started,
-                        info.ssid,
-                        info.password
+                    qr.setMessage(
+                        getString(
+                            R.string.log_wifi_hotspot_started,
+                            info.ssid,
+                            info.password
+                        )
                     )
 
-                    qr.isVisible = true
+                    qr.setQrCode(info.wifiQr.length.let { len ->
+                        if (len > 0) {
+                            generateQrBitmap(info.wifiQr)
+                        } else {
+                            null
+                        }
+                    })
+
                 },
                 onFailed = { _, reasonStr ->
                     activityMain.appendLog(
@@ -492,8 +501,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
                         LogLevel.ERROR
                     )
 
-                    qr.summary = reasonStr
-                    qr.isVisible = true
+                    qr.setMessage(reasonStr)
+                    qr.setQrCode(null)
                 }
             )
 
@@ -557,6 +566,5 @@ class SettingsFragment : PreferenceFragmentCompat() {
             true
         }
 
-        qr.isVisible = false
     }
 }

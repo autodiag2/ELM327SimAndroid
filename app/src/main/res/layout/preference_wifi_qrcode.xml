@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:paddingTop="16dp"
+    android:paddingBottom="16dp">
+
+    <TextView
+        android:id="@+id/wifi_qrcode_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:text="@string/settings_wifi_hotspot_not_started"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:paddingBottom="12dp" />
+
+    <ImageView
+        android:id="@+id/wifi_qrcode_image"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_wifi_qrcode_placeholder"
+        android:contentDescription="@string/settings_wifi_hotspot_qrcode" />
+
+</LinearLayout>
