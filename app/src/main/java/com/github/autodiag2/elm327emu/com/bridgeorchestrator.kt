@@ -94,11 +94,19 @@ class BridgeOrchestrator(
                 btBridge -> btBridgeJob = local_job 
             }
         }
-        if (enabled && job == null) {
+        if (enabled) {
+            if ( job != null ) {
+                bridge.stop()
+                job.cancel()
+                setJob(null)
+            }
             bridge.start()
 
             setJob(scope.launch {
                 while (isActive) {
+                    if ( ( bridge is BLEBridge || bridge is BluetoothBridge ) && !activity.btAdapter.isEnabled ) {
+                        return@launch
+                    }
                     bridge.accept()
                 }
             })
@@ -106,18 +114,6 @@ class BridgeOrchestrator(
             bridge.stop()
             job.cancel()
             setJob(null)
-        } else if (enabled && job != null) {
-            if ( force ) {
-                bridge.stop()
-                job.cancel()
-                setJob(null)
-                bridge.start()
-                setJob(scope.launch {
-                    while (isActive) {
-                        bridge.accept()
-                    }
-                })
-            }
         } else if (!enabled && job == null) {
             // Already stopped, do nothing
         }

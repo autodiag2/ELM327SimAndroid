@@ -36,6 +36,8 @@ import com.github.autodiag2.elm327emu.sim.ecu.EcuGui
 import com.github.autodiag2.elm327emu.sim.GuiGodot
 import android.widget.Button
 import com.github.autodiag2.elm327emu.LogEntryType
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.whenResumed
 
 private const val REQUEST_CODE = 1
 
@@ -44,7 +46,15 @@ class MainActivity : AppCompatActivity() {
     lateinit var btAdapter: BluetoothAdapter
 
     private val enableBtLauncher =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { }
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                appendLog(getString(R.string.log_main_bluetooth_enabled), LogLevel.INFO)
+                bridgeOrchestrator.setupBluetoothBridge()
+                bridgeOrchestrator.setupBleBridge()
+            } else {
+                appendLog(getString(R.string.log_main_bluetooth_enable_failed), LogLevel.ERROR)
+            }
+        }
 
     val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     lateinit var bridgeOrchestrator: BridgeOrchestrator
@@ -169,9 +179,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun show(view: View) {
+        if (supportFragmentManager.isStateSaved) {
+            lifecycleScope.launch {
+                lifecycle.whenResumed {
+                    show(view)
+                }
+            }
+            return
+        }
 
         settingsContainer.visibility = View.GONE
         contentFrame.visibility = View.VISIBLE
+
         supportFragmentManager.popBackStack(
             null,
             androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE

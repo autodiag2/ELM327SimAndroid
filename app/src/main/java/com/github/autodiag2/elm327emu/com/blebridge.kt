@@ -459,6 +459,7 @@ class BLEBridge(
     }
 
     override suspend fun accept() {
+
         val buffer = ByteArray(512)
         val request = requestQueue.receive()
 
