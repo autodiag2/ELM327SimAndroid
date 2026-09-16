@@ -303,6 +303,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 prefs.edit()
                     .putString(PREF_BT_NAME, newName)
                     .apply()
+                activityMain.btAdapter.name = newName
+                activityMain.bridgeOrchestrator.setupBleBridge()
+                activityMain.bridgeOrchestrator.setupBluetoothBridge()
 
                 true
             }
