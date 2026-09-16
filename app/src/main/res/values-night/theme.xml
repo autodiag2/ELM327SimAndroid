@@ -11,33 +11,103 @@
         <item name="android:textColor">@color/sol_base0</item>
         <item name="colorOnPrimary">@color/sol_base0</item>
         <item name="android:textColorSecondary">@color/sol_base01</item>
+
         <item name="android:textViewStyle">@style/Solarized.TextView.Dark</item>
         <item name="android:editTextStyle">@style/Solarized.EditText.Dark</item>
         <item name="android:buttonStyle">@style/Solarized.Button.Dark</item>
         <item name="android:checkboxStyle">@style/Solarized.CheckBox.Dark</item>
         <item name="android:alertDialogTheme">@style/Solarized.TextView.AlertDialog.Dark</item>
+
+        <item name="alertDialogTheme">@style/Solarized.Dialog.Dark</item>
+        <item name="dialogTheme">@style/Solarized.Dialog.Dark</item>
+        <item name="preferenceTheme">@style/Solarized.PreferenceTheme.Dark</item>
     </style>
 
-    <style name="Solarized.TextView.AlertDialog.Dark" parent="Theme.AppCompat.Dialog.Alert">
-        <item name="android:background">@color/sol_base02</item>
+    <style name="Solarized.PreferenceTheme.Dark"
+        parent="@style/PreferenceThemeOverlay.v14.Material">
+        <item name="preferenceStyle">@style/Solarized.Preference.Dark</item>
+        <item name="preferenceCategoryStyle">@style/Solarized.PreferenceCategory.Dark</item>
+        <item name="switchPreferenceCompatStyle">@style/Solarized.SwitchPreference.Dark</item>
+        <item name="checkBoxPreferenceStyle">@style/Solarized.CheckBoxPreference.Dark</item>
+        <item name="dialogPreferenceStyle">@style/Solarized.DialogPreference.Dark</item>
+        <item name="editTextPreferenceStyle">@style/Solarized.EditTextPreference.Dark</item>
     </style>
 
-    <style name="Solarized.TextView.Dark" parent="TextAppearance.AppCompat">
+    <style name="Solarized.Preference.Dark"
+        parent="@style/Preference.Material">
+        <item name="android:background">@color/sol_base03</item>
         <item name="android:textColor">@color/sol_base0</item>
     </style>
 
-    <style name="Solarized.EditText.Dark" parent="Widget.AppCompat.EditText">
+    <style name="Solarized.PreferenceCategory.Dark"
+        parent="@style/Preference.Category.Material">
+        <item name="android:textColor">@color/sol_blue</item>
+    </style>
+
+    <style name="Solarized.SwitchPreference.Dark"
+        parent="@style/Preference.SwitchPreferenceCompat.Material">
+        <item name="android:textColor">@color/sol_base0</item>
+    </style>
+
+    <style name="Solarized.CheckBoxPreference.Dark"
+        parent="@style/Preference.CheckBoxPreference.Material">
+        <item name="android:textColor">@color/sol_base0</item>
+    </style>
+
+    <style name="Solarized.Dialog.Dark"
+        parent="Theme.AppCompat.Dialog.Alert">
+        <item name="android:windowBackground">@color/sol_base02</item>
+        <item name="android:colorBackground">@color/sol_base02</item>
+        <item name="android:textColor">@color/sol_base0</item>
+        <item name="android:textColorPrimary">@color/sol_base0</item>
+        <item name="android:textColorSecondary">@color/sol_base01</item>
+        <item name="colorAccent">@color/sol_blue</item>
+        <item name="colorControlNormal">@color/sol_base01</item>
+        <item name="colorControlActivated">@color/sol_blue</item>
+        <item name="android:editTextStyle">@style/Solarized.EditText.Dark</item>
+        <item name="editTextStyle">@style/Solarized.EditText.Dark</item>
+    </style>
+
+    <style name="Solarized.DialogPreference.Dark"
+        parent="@style/Preference.DialogPreference">
+        <item name="android:textColor">@color/sol_base0</item>
+    </style>
+
+    <style name="Solarized.EditTextPreference.Dark"
+        parent="@style/Preference.DialogPreference.EditTextPreference">
+        <item name="android:textColor">@color/sol_base0</item>
+    </style>
+
+    <style name="Solarized.TextView.AlertDialog.Dark"
+        parent="Theme.AppCompat.Dialog.Alert">
+        <item name="android:background">@color/sol_base02</item>
+        <item name="android:textColor">@color/sol_base0</item>
+        <item name="android:textColorPrimary">@color/sol_base0</item>
+        <item name="android:textColorSecondary">@color/sol_base01</item>
+        <item name="colorAccent">@color/sol_blue</item>
+    </style>
+
+    <style name="Solarized.TextView.Dark"
+        parent="TextAppearance.AppCompat">
+        <item name="android:textColor">@color/sol_base0</item>
+    </style>
+
+    <style name="Solarized.EditText.Dark"
+        parent="Widget.AppCompat.EditText">
+        <item name="backgroundTint">@color/sol_base01</item>
         <item name="android:textColor">@color/sol_base0</item>
         <item name="android:textColorHint">@color/sol_base01</item>
         <item name="android:backgroundTint">@color/sol_base01</item>
     </style>
 
-    <style name="Solarized.Button.Dark" parent="Widget.AppCompat.Button">
+    <style name="Solarized.Button.Dark"
+        parent="Widget.AppCompat.Button">
         <item name="android:textColor">@color/sol_base3</item>
         <item name="android:backgroundTint">@color/sol_blue</item>
     </style>
 
-    <style name="Solarized.CheckBox.Dark" parent="Widget.AppCompat.CompoundButton.CheckBox">
+    <style name="Solarized.CheckBox.Dark"
+        parent="Widget.AppCompat.CompoundButton.CheckBox">
         <item name="android:textColor">@color/sol_base0</item>
         <item name="buttonTint">@color/sol_cyan</item>
     </style>
