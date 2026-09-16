@@ -37,7 +37,7 @@
 
         <ListPreference
             android:key="protocol"
-            android:title="@string/settings_elmTitle"
+            android:title="@string/settings_protocolLabel"
             android:entries="@array/elm_protocols"
             android:entryValues="@array/elm_protocol_values" />
 
