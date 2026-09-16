@@ -343,16 +343,14 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
             val selected = bleProfiles[pos]
 
-            if (!selected.isCustom) {
-                prefs.edit()
-                    .putString(PREF_BLE_SERVICE, selected.service)
-                    .putString(PREF_BLE_TX, selected.tx)
-                    .putString(PREF_BLE_RX, selected.rx)
-                    .apply()
 
-                activityMain.bridgeOrchestrator.setupBleBridge()
-            }
+            prefs.edit()
+                .putString(PREF_BLE_SERVICE, selected.service)
+                .putString(PREF_BLE_TX, selected.tx)
+                .putString(PREF_BLE_RX, selected.rx)
+                .apply()
 
+            activityMain.bridgeOrchestrator.setupBleBridge()
             updateBleCustomSummary()
 
             true
