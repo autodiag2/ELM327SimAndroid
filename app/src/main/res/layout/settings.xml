@@ -42,17 +42,17 @@
             android:entryValues="@array/elm_protocol_values" />
 
         <SwitchPreferenceCompat
-            android:key="settings_network_bluetooth"
+            android:key="com_bt_enabled"
             android:title="@string/settings_network_bluetooth"
             android:defaultValue="true" />
 
         <SwitchPreferenceCompat
-            android:key="settings_network_ble"
+            android:key="com_ble_enabled"
             android:title="@string/settings_network_ble"
             android:defaultValue="true" />
 
         <SwitchPreferenceCompat
-            android:key="settings_network_network"
+            android:key="com_nt_enabled"
             android:title="@string/settings_network_network"
             android:defaultValue="true" />
 

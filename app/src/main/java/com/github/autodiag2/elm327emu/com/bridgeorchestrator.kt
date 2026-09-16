@@ -113,14 +113,9 @@ class BridgeOrchestrator(
      */
     fun setupBridges() {
         scope.launch {
-            val bridges = HashMap<String, Bridge>()
-            bridges["com_ble_enabled"] = bleBridge
-            bridges["com_nt_enabled"] = ntBridge
-            bridges["com_bt_enabled"] = btBridge
-    
-            for ((pref, bridge) in bridges) {
-                setupBridge(pref, bridge, true)
-            }
+            setupBridge("com_ble_enabled", bleBridge, true)
+            setupBridge("com_nt_enabled", ntBridge, true)
+            setupBridge("com_bt_enabled", btBridge, true)
         }
     }
 

@@ -119,6 +119,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         prefs = activityMain.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
         setupLog()
+        setupNetwork()
         setupElm()
         setupBluetooth()
         setupBle()
@@ -223,24 +224,24 @@ class SettingsFragment : PreferenceFragmentCompat() {
     }
 
     private fun setupNetwork() {
-        val bridgesPrefView = HashMap<String, SwitchPreferenceCompat>()
-        bridgesPrefView["settings_network_bluetooth"] = findPreference<SwitchPreferenceCompat>("settings_network_bluetooth")!!
-        bridgesPrefView["settings_network_ble"] = findPreference<SwitchPreferenceCompat>("settings_network_ble")!!
-        bridgesPrefView["settings_network_network"] = findPreference<SwitchPreferenceCompat>("settings_network_network")!!
-        for((pref, bridgePrefView) in bridgesPrefView) {
-            bridgePrefView.isChecked = prefs.getBoolean(
-                pref,
-                true
-            )
+        val bridgePreferences = listOf(
+            "com_nt_enabled",
+            "com_ble_enabled",
+            "com_bt_enabled"
+        )
 
-            bridgePrefView.setOnPreferenceChangeListener { _, newValue ->
+        for (key in bridgePreferences) {
+            val preference = findPreference<SwitchPreferenceCompat>(key) ?: continue
+
+            preference.isChecked = prefs.getBoolean(key, true)
+
+            preference.setOnPreferenceChangeListener { _, newValue ->
                 prefs.edit()
-                    .putBoolean(
-                        pref,
-                        newValue as Boolean
-                    )
+                    .putBoolean(key, newValue as Boolean)
                     .apply()
+
                 activityMain.bridgeOrchestrator.setupBridges()
+
                 true
             }
         }
