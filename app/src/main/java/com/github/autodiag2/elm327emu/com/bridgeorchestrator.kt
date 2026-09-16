@@ -57,9 +57,9 @@ class BridgeOrchestrator(
     private var started = false
 
     suspend fun start() {
+        activity.clearSocketFiles()
         emuStart()
 
-        activity.clearSocketFiles()
         started = true
         setupBridges()
     }
