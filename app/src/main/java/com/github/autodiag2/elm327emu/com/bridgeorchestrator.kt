@@ -64,6 +64,21 @@ class BridgeOrchestrator(
         setupBridges()
     }
 
+    fun setupNetworkBridge() {
+        scope.launch {
+            setupBridge("com_nt_enabled", ntBridge, true)
+        }
+    }
+    fun setupBleBridge() {
+        scope.launch {
+            setupBridge("com_ble_enabled", bleBridge, true)
+        }
+    }
+    fun setupBluetoothBridge() {
+        scope.launch {
+            setupBridge("com_bt_enabled", btBridge, true)
+        }
+    }
     suspend fun setupBridge(pref: String, bridge: Bridge, force: Boolean=false) {
         val enabled = prefs.getBoolean(pref, true)
         val job = when (bridge) {
@@ -112,11 +127,9 @@ class BridgeOrchestrator(
      * Refresh interfaces with correct settings (cause a disconnection/reconnection of scantool)
      */
     fun setupBridges() {
-        scope.launch {
-            setupBridge("com_ble_enabled", bleBridge, true)
-            setupBridge("com_nt_enabled", ntBridge, true)
-            setupBridge("com_bt_enabled", btBridge, true)
-        }
+        setupNetworkBridge()
+        setupBleBridge()
+        setupBluetoothBridge()
     }
 
     fun stop() {

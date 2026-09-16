@@ -240,7 +240,11 @@ class SettingsFragment : PreferenceFragmentCompat() {
                     .putBoolean(key, newValue as Boolean)
                     .apply()
 
-                activityMain.bridgeOrchestrator.setupBridges()
+                when(key) {
+                    "com_nt_enabled" -> activityMain.bridgeOrchestrator.setupNetworkBridge()
+                    "com_ble_enabled" -> activityMain.bridgeOrchestrator.setupBleBridge()
+                    "com_bt_enabled" -> activityMain.bridgeOrchestrator.setupBluetoothBridge()
+                }
 
                 true
             }
@@ -343,7 +347,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                     .putString(PREF_BLE_RX, selected.rx)
                     .apply()
 
-                activityMain.bridgeOrchestrator.setupBridges()
+                activityMain.bridgeOrchestrator.setupBleBridge()
             }
 
             updateBleCustomSummary()
@@ -448,7 +452,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                     .value = bleProfiles.lastIndex.toString()
 
                 updateBleCustomSummary()
-                activityMain.bridgeOrchestrator.setupBridges()
+                activityMain.bridgeOrchestrator.setupBleBridge()
             }
             .show()
     }
