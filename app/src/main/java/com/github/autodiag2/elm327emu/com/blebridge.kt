@@ -150,7 +150,6 @@ class BLEBridge(
                         )
                     }
 
-                    delay(10)
                 }
             }
         }
@@ -248,16 +247,6 @@ class BLEBridge(
                 txNotificationsEnabled = value.contentEquals(
                     BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
                 )
-                
-                if (txNotificationsEnabled) {
-                    appendLog(
-                        getString(R.string.log_ble_send_initial_banner),
-                        LogLevel.DEBUG
-                    )
-                    if ( ! sendTx(device, "ELM327 v1.5\r>") ) {
-                        activity.appendLog("failed to send (1)")
-                    }
-                }
             }
         }
 
