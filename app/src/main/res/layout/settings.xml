@@ -105,11 +105,11 @@
             android:key="wifi_hotspot"
             android:title="@string/settings_wifi_startBtn" />
 
-        <com.github.autodiag2.elm327emu.WifiQrCodePreference
+        <com.github.autodiag2.elm327emu.ui.settings.WifiQrCodePreference
             android:key="wifi_qrcode"
             android:title="@null" />
 
-        <com.github.autodiag2.elm327emu.CopyableIpPreference
+        <com.github.autodiag2.elm327emu.ui.settings.CopyableIpPreference
             android:key="wifi_ip_addr"
             android:title="@string/settings_wifi_hotspot_gatewayIpBtn" />
 

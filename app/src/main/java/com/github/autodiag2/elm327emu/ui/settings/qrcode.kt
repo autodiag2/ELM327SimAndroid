@@ -1,4 +1,4 @@
-package com.github.autodiag2.elm327emu
+package com.github.autodiag2.elm327emu.ui.settings
 
 import android.graphics.Bitmap
 import android.graphics.Color

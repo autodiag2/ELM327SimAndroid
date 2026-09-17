@@ -28,7 +28,6 @@ import android.widget.EditText
 import androidx.core.widget.doAfterTextChanged
 import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.LogEntryType
-import com.github.autodiag2.elm327emu.SettingsFragment
 import android.util.Log
 import android.os.Handler
 import android.os.Looper

@@ -1,4 +1,4 @@
-package com.github.autodiag2.elm327emu
+package com.github.autodiag2.elm327emu.ui.settings
 
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -10,6 +10,7 @@ import androidx.preference.PreferenceViewHolder
 import android.graphics.Bitmap
 import android.widget.ImageView
 import android.widget.TextView
+import com.github.autodiag2.elm327emu.R
 
 class WifiQrCodePreference @JvmOverloads constructor(
     context: Context,

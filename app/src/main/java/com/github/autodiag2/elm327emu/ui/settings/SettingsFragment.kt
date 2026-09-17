@@ -1,4 +1,4 @@
-package com.github.autodiag2.elm327emu
+package com.github.autodiag2.elm327emu.ui.settings
 
 import android.os.Bundle
 import androidx.preference.EditTextPreference
@@ -19,7 +19,12 @@ import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.ImageView
 import com.github.autodiag2.elm327emu.com.LocalHotspotManager
-import com.github.autodiag2.elm327emu.generateQrBitmap
+import com.github.autodiag2.elm327emu.ui.settings.generateQrBitmap
+import com.github.autodiag2.elm327emu.R
+import com.github.autodiag2.elm327emu.LogLevel
+import com.github.autodiag2.elm327emu.LogLevel_DEFAULT
+import com.github.autodiag2.elm327emu.MainActivity
+import com.github.autodiag2.elm327emu.libautodiag
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

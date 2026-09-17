@@ -38,6 +38,7 @@ import android.widget.Button
 import com.github.autodiag2.elm327emu.LogEntryType
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.whenResumed
+import com.github.autodiag2.elm327emu.ui.settings.SettingsFragment
 
 private const val REQUEST_CODE = 1
 
