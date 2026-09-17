@@ -476,12 +476,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
                         LogLevel.INFO
                     )
 
-                    qr.setMessage(
-                        getString(
-                            R.string.log_wifi_hotspot_started,
-                            info.ssid,
-                            info.password
-                        )
+                    hotspot.summary = getString(
+                        R.string.log_wifi_hotspot_started,
+                        info.ssid,
+                        info.password
                     )
 
                     qr.setQrCode(info.wifiQr.length.let { len ->
@@ -499,7 +497,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
                         LogLevel.ERROR
                     )
 
-                    qr.setMessage(reasonStr)
+                    hotspot.summary = getString(
+                        R.string.settings_wifi_hotspot_summary_error,
+                        reasonStr
+                    )
                     qr.setQrCode(null)
                 }
             )

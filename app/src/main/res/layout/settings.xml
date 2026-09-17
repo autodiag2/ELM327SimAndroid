@@ -103,7 +103,8 @@
 
         <Preference
             android:key="wifi_hotspot"
-            android:title="@string/settings_wifi_startBtn" />
+            android:title="@string/settings_wifi_startBtn"
+            android:summary="@string/settings_wifi_hotspot_not_started" />
 
         <com.github.autodiag2.elm327emu.ui.settings.WifiQrCodePreference
             android:key="wifi_qrcode"

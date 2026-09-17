@@ -7,15 +7,6 @@
     android:paddingTop="16dp"
     android:paddingBottom="16dp">
 
-    <TextView
-        android:id="@+id/wifi_qrcode_text"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center"
-        android:text="@string/settings_wifi_hotspot_not_started"
-        android:textAppearance="?android:attr/textAppearanceMedium"
-        android:paddingBottom="12dp" />
-
     <ImageView
         android:id="@+id/wifi_qrcode_image"
         android:layout_width="200dp"

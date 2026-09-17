@@ -268,6 +268,7 @@
     <string name="settings_wifi_startBtn">Start Wi-Fi Hotspot</string>
     <string name="settings_wifi_startBtn_hotspot_error_return"></string>
     <string name="log_wifi_error_hotspot_already_started">Wi-Fi hotspot already started</string>
+    <string name="settings_wifi_hotspot_summary_error">Wi-Fi hotspot start error: %1$s</string>
     <string name="settings_wifi_hotspot_not_started">Wi-Fi hotspot not started</string>
     <string name="settings_wifi_hotspot_qrcode">Wi-Fi QR code</string>
     <string name="settings_wifi_hotspot_gatewayIp">%1$s</string>

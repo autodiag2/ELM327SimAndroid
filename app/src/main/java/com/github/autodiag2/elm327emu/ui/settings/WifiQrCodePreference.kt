@@ -17,19 +17,11 @@ class WifiQrCodePreference @JvmOverloads constructor(
     attrs: AttributeSet? = null
 ) : Preference(context, attrs) {
 
-    private var message = context.getString(
-        R.string.settings_wifi_hotspot_not_started
-    )
-
     private var qrBitmap: Bitmap? = null
 
     init {
         layoutResource = R.layout.preference_wifi_qrcode
-    }
-
-    fun setMessage(value: String) {
-        message = value
-        notifyChanged()
+        isSelectable = false
     }
 
     fun setQrCode(bitmap: Bitmap?) {
@@ -39,11 +31,8 @@ class WifiQrCodePreference @JvmOverloads constructor(
 
     override fun onBindViewHolder(holder: PreferenceViewHolder) {
         super.onBindViewHolder(holder)
-
-        val text = holder.findViewById(R.id.wifi_qrcode_text) as TextView
+        
         val image = holder.findViewById(R.id.wifi_qrcode_image) as ImageView
-
-        text.text = message
 
         if (qrBitmap != null) {
             image.setImageBitmap(qrBitmap)
