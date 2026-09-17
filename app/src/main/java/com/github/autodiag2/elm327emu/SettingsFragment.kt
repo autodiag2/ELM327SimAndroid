@@ -147,6 +147,15 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
             true
         }
+        val timestamp = findPreference<SwitchPreferenceCompat>("log_timestamp")!!
+        timestamp.isChecked = prefs.getBoolean("log_timestamp", false)
+        timestamp.setOnPreferenceChangeListener { _, newValue ->
+            prefs.edit()
+                .putBoolean("log_timestamp", newValue as Boolean)
+                .apply()
+
+            true
+        }
         val autostart = findPreference<SwitchPreferenceCompat>("app_emu_autostart")!!
         autostart.isChecked = prefs.getBoolean("app_emu_autostart", true)
         autostart.setOnPreferenceChangeListener { _, newValue ->

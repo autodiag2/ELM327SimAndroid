@@ -36,6 +36,11 @@ import androidx.core.view.isVisible
 import android.view.View
 import androidx.core.graphics.ColorUtils
 import androidx.core.content.ContextCompat
+import java.text.DateFormat
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import android.content.SharedPreferences
 
 enum class LogLevel(val value: Int) {
     NONE(0),
@@ -57,7 +62,8 @@ data class LogEntry(
     val data: ByteArray,
     var match: Boolean = false,
     var count: Int = 0,
-    val type: LogEntryType = LogEntryType.NONE
+    val type: LogEntryType = LogEntryType.NONE,
+    val ts: Long = System.currentTimeMillis()
 )
 
 private fun parseHexString(text: String): ByteArray? {
@@ -273,8 +279,9 @@ class LogRepository(private val context: MainActivity) {
     }
 
 }
-class LogAdapter :
-    RecyclerView.Adapter<LogAdapter.VH>() {
+class LogAdapter(
+    private val prefs: SharedPreferences
+) : RecyclerView.Adapter<LogAdapter.VH>() {
 
     class VH(val tv: TextView) : RecyclerView.ViewHolder(tv)
 
@@ -312,12 +319,15 @@ class LogAdapter :
 
     override fun onBindViewHolder(holder: VH, position: Int) {
         val item = items[position]
-        holder.tv.text =
-        if (item.count > 1)
-            "×${item.count} ${item.text}"
-        else
-            item.text
-
+        if (item.count > 1) {
+            holder.tv.text = "×${item.count} ${item.text}"
+        } else {
+            if ( prefs.getBoolean("log_timestamp", false) ) {
+                holder.tv.text = "${SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date(item.ts))}: ${item.text}"
+            } else {
+                holder.tv.text = "${item.text}"
+            }
+        }
         val ctx = holder.tv.context
         val primaryColor = run {
             val ta = ctx.theme.obtainStyledAttributes(
@@ -368,7 +378,7 @@ class LogView(
     private val mainScope = CoroutineScope(Dispatchers.Main)
     private var search = ""
 
-    private val logAdapter = LogAdapter()
+    private val logAdapter = LogAdapter(activity.prefs)
     private val uiHandler = Handler(Looper.getMainLooper())
 
     private lateinit var overlayButtons: View

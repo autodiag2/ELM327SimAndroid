@@ -20,6 +20,11 @@
             android:defaultValue="DEBUG" />
 
         <SwitchPreferenceCompat
+            android:key="log_timestamp"
+            android:title="@string/settings_log_timestamp"
+            android:defaultValue="false" />
+
+        <SwitchPreferenceCompat
             android:key="log_exchange_dup_search"
             android:title="@string/settings_log_exchange_dup_search"
             android:defaultValue="false" />

@@ -20,6 +20,7 @@
     <string name="settings_btLabel">Bluetooth device name</string>
     <string name="settings_btHint">OBD II</string>
     <string name="settings_logLevelLabel">Log level</string>
+    <string name="settings_log_timestamp">Show timestamp in log</string>
     <string name="settings_networkLabel">Networking mode</string>
     <string name="settings_elmTitle">ELM327 parameters</string>
     <string name="settings_protocolLabel">Running protocol</string>
