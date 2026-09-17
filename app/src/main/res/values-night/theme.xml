@@ -20,17 +20,6 @@
 
         <item name="alertDialogTheme">@style/Solarized.Dialog.Dark</item>
         <item name="dialogTheme">@style/Solarized.Dialog.Dark</item>
-        <item name="preferenceTheme">@style/Solarized.PreferenceTheme.Dark</item>
-    </style>
-
-    <style name="Solarized.PreferenceTheme.Dark"
-        parent="@style/PreferenceThemeOverlay.v14.Material">
-        <item name="preferenceStyle">@style/Solarized.Preference.Dark</item>
-        <item name="preferenceCategoryStyle">@style/Solarized.PreferenceCategory.Dark</item>
-        <item name="switchPreferenceCompatStyle">@style/Solarized.SwitchPreference.Dark</item>
-        <item name="checkBoxPreferenceStyle">@style/Solarized.CheckBoxPreference.Dark</item>
-        <item name="dialogPreferenceStyle">@style/Solarized.DialogPreference.Dark</item>
-        <item name="editTextPreferenceStyle">@style/Solarized.EditTextPreference.Dark</item>
     </style>
 
     <style name="Solarized.Preference.Dark"

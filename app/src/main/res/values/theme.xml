@@ -19,17 +19,6 @@
         <item name="android:alertDialogTheme">@style/Solarized.TextView.AlertDialog.Light</item>
         <item name="alertDialogTheme">@style/Solarized.Dialog</item>
         <item name="dialogTheme">@style/Solarized.Dialog</item>
-        <item name="preferenceTheme">@style/Solarized.PreferenceTheme</item>
-    </style>
-
-    <style name="Solarized.PreferenceTheme"
-        parent="@style/PreferenceThemeOverlay.v14.Material">
-        <item name="preferenceStyle">@style/Solarized.Preference</item>
-        <item name="preferenceCategoryStyle">@style/Solarized.PreferenceCategory</item>
-        <item name="switchPreferenceCompatStyle">@style/Solarized.SwitchPreference</item>
-        <item name="checkBoxPreferenceStyle">@style/Solarized.CheckBoxPreference</item>
-        <item name="dialogPreferenceStyle">@style/Solarized.DialogPreference</item>
-        <item name="editTextPreferenceStyle">@style/Solarized.EditTextPreference</item>
     </style>
 
     <style name="Solarized.Preference"
