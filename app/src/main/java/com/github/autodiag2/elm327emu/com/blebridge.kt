@@ -119,7 +119,17 @@ class BLEBridge(
 
         while (i < bytes.size) {
             val end = minOf(i + payloadSize, bytes.size)
-            notificationQueue.trySend(NotificationPacket(device, bytes.copyOfRange(i, end)))
+            val result = notificationQueue.trySend(
+                NotificationPacket(device, bytes.copyOfRange(i, end))
+            )
+
+            if (result.isFailure) {
+                appendLog(
+                    getString(R.string.log_ble_notification_queue_failed),
+                    LogLevel.ERROR
+                )
+                return false
+            }
             i = end
         }
         if (notificationJob?.isActive != true) {
@@ -526,6 +536,14 @@ class BLEBridge(
         }
         gattReady = false
         txNotificationsEnabled = false
+        notificationJob?.cancel()
+        notificationJob = null
+        clearNotificationQueue()
+    }
+
+    private fun clearNotificationQueue() {
+        while (notificationQueue.tryReceive().isSuccess) {
+        }
     }
 
 }
