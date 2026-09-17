@@ -77,6 +77,7 @@
             android:key="com_bt_name"
             android:title="@string/settings_btLabel"
             android:dialogTitle="@string/settings_btLabel"
+            app:useSimpleSummaryProvider="true"
             android:hint="@string/settings_btHint" />
 
     </PreferenceCategory>
