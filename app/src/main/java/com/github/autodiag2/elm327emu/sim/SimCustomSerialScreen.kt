@@ -17,13 +17,13 @@ import androidx.core.view.setPadding
 import org.json.JSONArray
 import org.json.JSONObject
 import com.github.autodiag2.elm327emu.R
-import com.github.autodiag2.elm327emu.sim.CustomSerialEditorView
+import com.github.autodiag2.elm327emu.sim.SimCustomSerialView
 
-class SimCustomSerialScreen(
+class SimCustomSerialController(
     context: Context
 ) : LinearLayout(context) {
 
-    public var editor: CustomSerialEditorView
+    public var view: SimCustomSerialView
     
     open class ElementModel<V>(
         var view: V? = null,
@@ -54,9 +54,9 @@ class SimCustomSerialScreen(
         var includeEol: Boolean = false,
         var interpretEscapes: Boolean = true,
         var name: String = "",
-        view: CustomSerialEditorView.Node? = null,
+        view: SimCustomSerialView.Node? = null,
         val children: MutableList<Int> = mutableListOf()
-    ) : ElementModel<CustomSerialEditorView.Node>(view) {
+    ) : ElementModel<SimCustomSerialView.Node>(view) {
         enum class Type {
             DELAY,
             RECV,
@@ -68,8 +68,8 @@ class SimCustomSerialScreen(
     open class Link(
         val from: Int,
         val to: Int,
-        view: CustomSerialEditorView.Connection? = null
-    ) : ElementModel<CustomSerialEditorView.Connection>(view)
+        view: SimCustomSerialView.Connection? = null
+    ) : ElementModel<SimCustomSerialView.Connection>(view)
 
     private val blocks = mutableListOf<Block>()
     private val links = mutableListOf<Link>()
@@ -83,11 +83,11 @@ class SimCustomSerialScreen(
             true
         )
 
-        editor = findViewById(R.id.custom_serial_editor)
-        editor.listener = object : CustomSerialEditorView.Listener {
+        view = findViewById(R.id.custom_serial_view)
+        view.listener = object : SimCustomSerialView.Listener {
 
             override fun onNodeClicked(
-                node: CustomSerialEditorView.Node
+                node: SimCustomSerialView.Node
             ) {
                 blocks.find { it.id == node.model!!.id }?.let {
                     editBlock(it)
@@ -95,20 +95,20 @@ class SimCustomSerialScreen(
             }
 
             override fun onNodeLongClicked(
-                node: CustomSerialEditorView.Node
+                node: SimCustomSerialView.Node
             ) {
                 // TODO
             }
 
             override fun onCreateLink(
-                from: CustomSerialEditorView.Node
+                from: SimCustomSerialView.Node
             ) {
                 // TODO
             }
 
             override fun onLinkToNode(
-                from: CustomSerialEditorView.Node,
-                to: CustomSerialEditorView.Node
+                from: SimCustomSerialView.Node,
+                to: SimCustomSerialView.Node
             ) {
                 // TODO
             }
@@ -129,7 +129,7 @@ class SimCustomSerialScreen(
         assert(linko is Link)
         val linkm = linko as Link
         links.remove(linkm)
-        editor.rmConnection(linkm.view as CustomSerialEditorView.Connection)
+        view.rmConnection(linkm.view as SimCustomSerialView.Connection)
     }
 
     private fun rmBlock(block: Any) {
@@ -145,7 +145,7 @@ class SimCustomSerialScreen(
             rmBlock(childblock)
         }
         blocks.remove(blockm)
-        editor.removeNode(blockm.id)
+        view.removeNode(blockm.id)
         for(link in links) {
             if ( link.from == blockm.id || link.to == blockm.id ) {
                 rmLink(link)
@@ -171,13 +171,13 @@ class SimCustomSerialScreen(
             type = type,
             name = blockName
         )
-        val view = editor.addBlock(model = block)
+        val view = view.addBlock(model = block)
         block.viewLink(view)
         blocks.add(block)
         if ( to != null ) {
             if ( to.type == Block.Type.CONTAINER ) {
                 to.children.add(block.id)
-                editor.addBlockChild(to.view as CustomSerialEditorView.Node, block.view as CustomSerialEditorView.Node)
+                view.addBlockChild(to.view as SimCustomSerialView.Node, block.view as SimCustomSerialView.Node)
             }
         }
     }
@@ -220,7 +220,7 @@ class SimCustomSerialScreen(
         addBlock(Block.Type.CONTAINER)
     }
     public fun onDelete() {
-        editor.onDelete()
+        view.onDelete()
     }
     
     private fun editDelay(block: Block) {
@@ -234,7 +234,7 @@ class SimCustomSerialScreen(
             .setView(input)
             .setPositiveButton(android.R.string.ok) { _, _ ->
                 block.delay = input.text.toString().toIntOrNull() ?: 0
-                editor.blockUpdate(block)
+                view.blockUpdate(block)
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
@@ -292,7 +292,7 @@ class SimCustomSerialScreen(
                 block.text = initial_text.text.toString()
                 block.interpretEscapes = escapes.isChecked
 
-                editor.blockUpdate(block)
+                view.blockUpdate(block)
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
@@ -333,7 +333,7 @@ class SimCustomSerialScreen(
                 block.text = initial_text.text.toString()
                 block.includeEol = eol.isChecked
                 block.interpretEscapes = escapes.isChecked
-                editor.blockUpdate(block)
+                view.blockUpdate(block)
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
@@ -349,7 +349,7 @@ class SimCustomSerialScreen(
             .setView(input)
             .setPositiveButton(android.R.string.ok) { _, _ ->
                 block.name = input.text.toString()
-                editor.blockUpdate(block)
+                view.blockUpdate(block)
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()

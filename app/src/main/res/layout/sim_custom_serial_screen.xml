@@ -5,8 +5,8 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <com.github.autodiag2.elm327emu.sim.CustomSerialEditorView
-        android:id="@+id/custom_serial_editor"
+    <com.github.autodiag2.elm327emu.sim.SimCustomSerialView
+        android:id="@+id/custom_serial_view"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1" />
