@@ -173,7 +173,6 @@ class SimCustomSerialView(
                     if (source != null) {
                         linkingFrom = source
                         model?.onUnselectAll()
-                        model?.onElementSelected(source)
 
                         val point =
                             screenToWorld(
