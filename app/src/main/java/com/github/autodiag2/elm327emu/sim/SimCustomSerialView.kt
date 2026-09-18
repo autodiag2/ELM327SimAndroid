@@ -19,6 +19,7 @@ import android.util.Log
 import com.github.autodiag2.elm327emu.BuildConfig
 import androidx.core.content.ContextCompat
 import com.github.autodiag2.elm327emu.R
+import android.util.TypedValue
 
 class SimCustomSerialView(
     context: Context,
@@ -267,6 +268,20 @@ class SimCustomSerialView(
                 }
             }
         )
+    }
+
+    private fun getThemeColor(
+        attr: Int
+    ): Int {
+        val typedValue = TypedValue()
+
+        context.theme.resolveAttribute(
+            attr,
+            typedValue,
+            true
+        )
+
+        return typedValue.data
     }
 
     private fun drawArrow(
@@ -607,14 +622,27 @@ class SimCustomSerialView(
                 node.y + node.height
             )
 
+            val selected =
+                model!!.isBlockSelected(block)
+
+            val colorPrimaryDark =
+                getThemeColor(
+                    androidx.appcompat.R.attr.colorPrimaryDark
+                )
+
+            val textColor =
+                getThemeColor(
+                    android.R.attr.textColor
+                )
+
             nodePaint.style =
                 Paint.Style.FILL
 
             nodePaint.color =
-                if (model!!.isBlockSelected(block)) {
-                    0xffd7e8ff.toInt()
+                if (selected) {
+                    textColor
                 } else {
-                    0xffeeeeee.toInt()
+                    colorPrimaryDark
                 }
 
             canvas.drawRoundRect(
@@ -630,7 +658,11 @@ class SimCustomSerialView(
             nodePaint.strokeWidth = 3f
 
             nodePaint.color =
-                0xff444444.toInt()
+                if (selected) {
+                    colorPrimaryDark
+                } else {
+                    textColor
+                }
 
             canvas.drawRoundRect(
                 nodeRect,
@@ -643,7 +675,11 @@ class SimCustomSerialView(
                 Paint.Style.FILL
 
             textPaint.color =
-                0xff202020.toInt()
+                if (selected) {
+                    colorPrimaryDark
+                } else {
+                    textColor
+                }
 
             val textWidth =
                 textPaint.measureText(block.name)
@@ -686,7 +722,9 @@ class SimCustomSerialView(
 
         portPaint.color =
             if (isDestination) {
-                ContextCompat.getColor(context, R.color.sol_blue)
+                getThemeColor(
+                    androidx.appcompat.R.attr.colorAccent
+                )
             } else {
                 0xff555555.toInt()
             }
@@ -700,7 +738,9 @@ class SimCustomSerialView(
 
         portPaint.color =
             if (isSource) {
-                ContextCompat.getColor(context, R.color.sol_blue)
+                getThemeColor(
+                    androidx.appcompat.R.attr.colorAccent
+                )
             } else {
                 0xff555555.toInt()
             }
@@ -780,7 +820,7 @@ class SimCustomSerialView(
         val from = linkingFrom
             ?: return
 
-        linkPreviewPaint.color = ContextCompat.getColor(context, R.color.sol_blue)
+        linkPreviewPaint.color = getThemeColor(androidx.appcompat.R.attr.colorAccent)
 
         drawLinkCurve(
             canvas,
