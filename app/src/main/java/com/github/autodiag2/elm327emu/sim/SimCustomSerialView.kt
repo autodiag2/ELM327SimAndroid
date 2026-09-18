@@ -54,6 +54,15 @@ class SimCustomSerialView(
 
     var model: SimCustomSerialController? = null
 
+    // --------- Customization settings ---------
+    private var scale = 1f
+    private val containerPadding = 50f
+    private val containerTitleHeight = 40f
+    private val portRadius = 20f
+    private val portHitRadius = 100f
+    private val linkArrowSize = 30f
+    // --------- End Customization settings ---------
+
     private val nodePaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val containerPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -69,7 +78,6 @@ class SimCustomSerialView(
     private val gestureDetector: GestureDetector
     private val scaleDetector: ScaleGestureDetector
 
-    private var scale = 1f
     private var offsetX = 0f
     private var offsetY = 0f
 
@@ -77,20 +85,16 @@ class SimCustomSerialView(
     private var draggingContainer: Block? = null
 
     private var linkingFrom: Block? = null
+    private var hoveredDestination: Block? = null
+
     private var linkX = 0f
     private var linkY = 0f
 
     private var lastX = 0f
     private var lastY = 0f
+    private var lastPointerCount = 0
 
     private var movedDuringGesture = false
-
-    private val containerPadding = 50f
-    private val containerTitleHeight = 40f
-    private val portRadius = 20f
-    private val portHitRadius = 100f
-    private var lastPointerCount = 0
-    private val linkArrowSize = 30f
 
     init {
         nodePaint.style = Paint.Style.FILL
@@ -674,8 +678,18 @@ class SimCustomSerialView(
         canvas: Canvas,
         node: Block
     ) {
+        val isSource =
+            linkingFrom?.model?.id == node.model!!.id
+
+        val isDestination =
+            hoveredDestination?.model?.id == node.model!!.id
+
         portPaint.color =
-            0xff555555.toInt()
+            if (isDestination) {
+                ContextCompat.getColor(context, R.color.sol_blue)
+            } else {
+                0xff555555.toInt()
+            }
 
         canvas.drawCircle(
             node.x,
@@ -684,24 +698,19 @@ class SimCustomSerialView(
             portPaint
         )
 
+        portPaint.color =
+            if (isSource) {
+                ContextCompat.getColor(context, R.color.sol_blue)
+            } else {
+                0xff555555.toInt()
+            }
+
         canvas.drawCircle(
             node.x + node.width,
             node.y + node.height / 2f,
             portRadius,
             portPaint
         )
-
-        if (linkingFrom?.model?.id == node.model!!.id) {
-            portPaint.color =
-                0xff1976d2.toInt()
-
-            canvas.drawCircle(
-                node.x + node.width,
-                node.y + node.height / 2f,
-                portRadius + 3f,
-                portPaint
-            )
-        }
     }
 
     private fun drawLinks(
@@ -1273,6 +1282,12 @@ class SimCustomSerialView(
     
                         linkX = point.first
                         linkY = point.second
+
+                        hoveredDestination =
+                            findDestinationPort(
+                                event.x,
+                                event.y
+                            )
     
                         invalidate()
     
@@ -1291,6 +1306,7 @@ class SimCustomSerialView(
                         linkingFrom
 
                     linkingFrom = null
+                    hoveredDestination = null
 
                     if (source != null &&
                         target != null &&
@@ -1309,6 +1325,7 @@ class SimCustomSerialView(
 
                 MotionEvent.ACTION_CANCEL -> {
                     linkingFrom = null
+                    hoveredDestination = null
                     invalidate()
                     return true
                 }
