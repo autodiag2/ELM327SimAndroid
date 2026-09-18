@@ -21,7 +21,7 @@ import com.github.autodiag2.elm327emu.sim.SimCustomSerialView
 
 class SimCustomSerialController(
     context: Context
-) : LinearLayout(context) {
+) : LinearLayout(context), SimCustomSerialView.Listener {
 
     public var view: SimCustomSerialView
     
@@ -71,8 +71,10 @@ class SimCustomSerialController(
         view: SimCustomSerialView.Link? = null
     ) : ElementModel<SimCustomSerialView.Link>(view)
 
-    private val blocks = mutableListOf<Block>()
-    private val links = mutableListOf<Link>()
+    public val blocks = mutableListOf<Block>()
+    public val links = mutableListOf<Link>()
+    public var selectedBlock: Block? = null
+    public var selectedLink: Link? = null
 
     init {
         orientation = VERTICAL
@@ -84,51 +86,78 @@ class SimCustomSerialController(
         )
 
         view = findViewById(R.id.custom_serial_view)
-        view.listener = object : SimCustomSerialView.Listener {
+        view.model = this
+    }
 
-            override fun onBlockClicked(
-                node: SimCustomSerialView.Block
-            ) {
-                blocks.find { it.id == node.model!!.id }?.let {
-                    editBlock(it)
-                }
-            }
-
-            override fun onBlockLongClicked(
-                node: SimCustomSerialView.Block
-            ) {
-                // TODO
-            }
-
-            override fun onCreateLink(
-                from: SimCustomSerialView.Block
-            ) {
-                // TODO
-            }
-
-            override fun onLinkToBlock(
-                from: SimCustomSerialView.Block,
-                to: SimCustomSerialView.Block
-            ) {
-                // TODO
-            }
-
-            override fun onBlockIncluded(
-                parent: Block,
-                child: Block
-            ) {
-                parent.children.add(child.id)
-            }
-
-            override fun onBlockExcluded(
-                parent: Block,
-                child: Block
-            ) {
-                parent.children.remove(child.id)
-            }
-
+    // ------------ Listeners ------------
+    override fun onBlockClicked(
+        node: SimCustomSerialView.Block
+    ) {
+        blocks.find { it.id == node.model!!.id }?.let {
+            editBlock(it)
         }
     }
+
+    override fun onBlockLongClicked(
+        node: SimCustomSerialView.Block
+    ) {
+        // TODO
+    }
+
+    override fun onCreateLink(
+        from: SimCustomSerialView.Block
+    ) {
+        // TODO
+    }
+
+    override fun onLinkToBlock(
+        from: SimCustomSerialView.Block,
+        to: SimCustomSerialView.Block
+    ) {
+        // TODO
+    }
+
+    override fun onBlockIncluded(
+        parent: SimCustomSerialView.Block,
+        child: SimCustomSerialView.Block
+    ) {
+        parent.children.add(child.model!!.id)
+    }
+
+    override fun onBlockExcluded(
+        parent: SimCustomSerialView.Block,
+        child: SimCustomSerialView.Block
+    ) {
+        parent.children.remove(child.model!!.id)
+    }
+
+    override fun onElementSelected(view: ElementView<*>) {
+        val element_model = view.model
+        if ( element_model is Block ) {
+            selectedBlock = element_model
+        } else if ( element_model is Link ) {
+            selectedLink = element_model
+        } else {
+            assert(false)
+        }
+    }
+
+    override fun onElementUnselected(view: ElementView<*>) {
+        val element_model = view.model
+        if ( element_model is Block ) {
+            selectedBlock = null
+        } else if ( element_model is Link ) {
+            selectedLink = null
+        } else {
+            assert(false)
+        }
+    }
+    
+    override fun onUnselectAll() {
+        selectedBlock = null
+        selectedLink = null
+    }
+    // ------------ End Listeners ------------
 
     fun getString(resId: Int, vararg formatArgs: Any?): String {
         return context.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
@@ -144,7 +173,7 @@ class SimCustomSerialController(
         assert(linko is Link)
         val linkm = linko as Link
         links.remove(linkm)
-        view.rmLink(linkm.view as SimCustomSerialView.Link)
+        view.refresh()
     }
 
     private fun rmBlock(block: Any) {
@@ -160,12 +189,20 @@ class SimCustomSerialController(
             rmBlock(childblock)
         }
         blocks.remove(blockm)
-        view.removeBlock(blockm.id)
+        if ( selectedBlock == blockm ) {
+            selectedBlock = null
+        }
+        selectedLink =
+            selectedLink?.takeUnless {
+                it.from == blockm.id ||
+                it.to == blockm.id
+            }
         for(link in links) {
             if ( link.from == blockm.id || link.to == blockm.id ) {
                 rmLink(link)
             }
         }
+        view.refresh()
     }
 
     private fun addBlock(
@@ -192,9 +229,9 @@ class SimCustomSerialController(
         if ( to != null ) {
             if ( to.type == Block.Type.CONTAINER ) {
                 to.children.add(block.id)
-                view.addBlockChild(to.view as SimCustomSerialView.Block, block.view as SimCustomSerialView.Block)
             }
         }
+        view?.refresh()
     }
 
     private fun blockTitle(block: Block): String {
@@ -235,7 +272,9 @@ class SimCustomSerialController(
         addBlock(Block.Type.CONTAINER)
     }
     public fun onDelete() {
-        view.onDelete()
+        rmBlock(selectedBlock!!)
+        view.refresh()
+        // TODO rm selected link
     }
     
     private fun editDelay(block: Block) {
@@ -249,7 +288,7 @@ class SimCustomSerialController(
             .setView(input)
             .setPositiveButton(android.R.string.ok) { _, _ ->
                 block.delay = input.text.toString().toIntOrNull() ?: 0
-                view.blockUpdate(block)
+                view.refresh()
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
@@ -307,7 +346,7 @@ class SimCustomSerialController(
                 block.text = initial_text.text.toString()
                 block.interpretEscapes = escapes.isChecked
 
-                view.blockUpdate(block)
+                view.refresh()
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
@@ -348,7 +387,7 @@ class SimCustomSerialController(
                 block.text = initial_text.text.toString()
                 block.includeEol = eol.isChecked
                 block.interpretEscapes = escapes.isChecked
-                view.blockUpdate(block)
+                view.refresh()
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
@@ -364,10 +403,24 @@ class SimCustomSerialController(
             .setView(input)
             .setPositiveButton(android.R.string.ok) { _, _ ->
                 block.name = input.text.toString()
-                view.blockUpdate(block)
+                view.refresh()
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
+    }
+
+    fun isBlockSelected(block: Any?): Boolean {
+        if ( block == null ) {
+            return false
+        } else if ( block is Int ) {
+            return isBlockSelected(blocks.find { it.id == block })
+        } else {
+            return selectedBlock != null && selectedBlock == block
+        }
+    }
+
+    fun isSomeSelection(): Boolean {
+        return selectedBlock != null || selectedLink != null
     }
 
     fun toJson(): JSONObject {

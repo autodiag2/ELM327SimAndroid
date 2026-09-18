@@ -248,7 +248,7 @@ class MainActivity : AppCompatActivity() {
         var simCustomSerialScreenIsSomeSelection = false
         if ( activeScreen is SimCustomSerialController ) {
             val simCustomSerialScreen = activeScreen as SimCustomSerialController
-            simCustomSerialScreenIsSomeSelection = simCustomSerialScreen.view.isSomeSelection()
+            simCustomSerialScreenIsSomeSelection = simCustomSerialScreen.isSomeSelection()
         }
         menu.setGroupVisible(R.id.action_menu_group_sim_custom_serial_script_any_element_selected,
             activeScreen is SimCustomSerialController && simCustomSerialScreenIsSomeSelection

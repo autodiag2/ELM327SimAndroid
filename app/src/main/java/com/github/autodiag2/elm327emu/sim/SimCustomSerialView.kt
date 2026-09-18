@@ -41,14 +41,14 @@ class SimCustomSerialView(
         fun onBlockLongClicked(node: Block)
         fun onCreateLink(from: Block)
         fun onLinkToBlock(from: Block, to: Block)
-        fun onBlockIncluded(parent: SimCustomSerialController.Block, child: SimCustomSerialController.Block)
-        fun onBlockExcluded(parent: SimCustomSerialController.Block, child: SimCustomSerialController.Block)
+        fun onBlockIncluded(parent: Block, child: Block)
+        fun onBlockExcluded(parent: Block, child: Block)
+        fun onElementSelected(view: SimCustomSerialController.ElementView<*>)
+        fun onElementUnselected(view: SimCustomSerialController.ElementView<*>)
+        fun onUnselectAll()
     }
 
-    var listener: Listener? = null
-
-    private val nodes = mutableListOf<Block>()
-    private val connections = mutableListOf<Link>()
+    var model: SimCustomSerialController? = null
 
     private val nodePaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val containerPaint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -67,9 +67,6 @@ class SimCustomSerialView(
     private var scale = 1f
     private var offsetX = 0f
     private var offsetY = 0f
-
-    private var selectedBlock: Block? = null
-    private var selectedLink: Link? = null
 
     private var draggingBlock: Block? = null
     private var draggingContainer: Block? = null
@@ -134,10 +131,9 @@ class SimCustomSerialView(
                     )
 
                     if (node != null) {
-                        selectedBlock = node
-                        selectedLink = null
-
-                        listener?.onBlockClicked(node)
+                        model?.onUnselectAll()
+                        model?.onElementSelected(node)
+                        model?.onBlockClicked(node)
 
                         invalidate()
                         return true
@@ -149,15 +145,14 @@ class SimCustomSerialView(
                     )
 
                     if (connection != null) {
-                        selectedLink = connection
-                        selectedBlock = null
+                        model?.onUnselectAll()
+                        model?.onElementSelected(connection)
 
                         invalidate()
                         return true
                     }
 
-                    selectedBlock = null
-                    selectedLink = null
+                    model?.onUnselectAll()
 
                     invalidate()
 
@@ -174,8 +169,8 @@ class SimCustomSerialView(
 
                     if (source != null) {
                         linkingFrom = source
-                        selectedBlock = source
-                        selectedLink = null
+                        model?.onUnselectAll()
+                        model?.onElementSelected(source)
 
                         val point =
                             screenToWorld(
@@ -196,8 +191,8 @@ class SimCustomSerialView(
                     )
 
                     if (node != null) {
-                        selectedBlock = node
-                        selectedLink = null
+                        model?.onUnselectAll()
+                        model?.onElementSelected(node)
 
                         invalidate()
                         return
@@ -209,15 +204,14 @@ class SimCustomSerialView(
                     )
 
                     if (connection != null) {
-                        selectedLink = connection
-                        selectedBlock = null
+                        model?.onUnselectAll()
+                        model?.onElementSelected(connection)
 
                         invalidate()
                         return
                     }
 
-                    selectedBlock = null
-                    selectedLink = null
+                    model?.onUnselectAll()
 
                     invalidate()
                 }
@@ -247,201 +241,14 @@ class SimCustomSerialView(
         )
     }
 
-    public fun isSomeSelection(): Boolean {
-        return selectedBlock != null || selectedLink != null
-    }
-
-    fun setBlocks(
-        value: List<Block>
-    ) {
-        nodes.clear()
-        nodes.addAll(value)
-
-        selectedBlock =
-            selectedBlock?.let { selected ->
-                nodes.find {
-                    it.model!!.id == selected.model!!.id
-                }
-            }
-
-        linkingFrom =
-            linkingFrom?.let { source ->
-                nodes.find {
-                    it.model!!.id == source.model!!.id
-                }
-            }
-
-        invalidate()
-    }
-
-    public fun onDelete() {
-        if ( selectedBlock != null ) {
-            removeBlock(selectedBlock!!.model!!.id)
-            selectedBlock = null
-        }
-        if ( selectedLink != null ) {
-            removeLink(selectedLink!!.from, selectedLink!!.to)
-            selectedLink = null
-        }
-    }
-
-    fun setLinks(
-        value: List<Link>
-    ) {
-        connections.clear()
-        connections.addAll(value)
-
-        selectedLink =
-            selectedLink?.let { selected ->
-                connections.find {
-                    it.from == selected.from &&
-                    it.to == selected.to
-                }
-            }
-
-        invalidate()
-    }
-
-    public fun rmLink(connection: Link) {
-        connections.remove(connection)
-        invalidate()
-    }
-
-    public fun addBlockChild(to: Block, child: Block) {
-        assert(to.model!!.type == SimCustomSerialController.Block.Type.CONTAINER)
-        to.children.add(child.model!!.id)
-        invalidate()
-    }
-    
-    public fun blockUpdate(block: SimCustomSerialController.Block) {
-        val node = block.view as Block
-        node.model!!.name = block.name
+    public fun refresh() {
         invalidate()
     }
 
     public fun addBlock(
         model: SimCustomSerialController.Block
     ): Block {
-        val node = Block(0f, 0f, model = model)
-        nodes.add(node)
-        invalidate()
-        return node
-    }
-
-    fun removeBlock(
-        id: Int
-    ) {
-        nodes.removeAll {
-            it.model!!.id == id
-        }
-
-        for (node in nodes) {
-            node.children.removeAll {
-                it == id
-            }
-        }
-
-        connections.removeAll {
-            it.from == id ||
-            it.to == id
-        }
-
-        if (selectedBlock?.model?.id == id) {
-            selectedBlock = null
-        }
-
-        selectedLink =
-            selectedLink?.takeUnless {
-                it.from == id ||
-                it.to == id
-            }
-
-        if (linkingFrom?.model?.id == id) {
-            linkingFrom = null
-        }
-
-        invalidate()
-    }
-
-    fun addLink(
-        from: Int,
-        to: Int
-    ) {
-        if (from == to) {
-            return
-        }
-
-        val fromBlock = nodes.find {
-            it.model!!.id == from
-        }
-
-        val toBlock = nodes.find {
-            it.model!!.id == to
-        }
-
-        if (fromBlock == null ||
-            toBlock == null
-        ) {
-            return
-        }
-
-        connections.removeAll {
-            it.from == from &&
-            it.to == to
-        }
-
-        connections.add(
-            Link(
-                from = from,
-                to = to
-            )
-        )
-
-        invalidate()
-    }
-
-    fun removeLink(
-        from: Int,
-        to: Int
-    ) {
-        connections.removeAll {
-            it.from == from &&
-            it.to == to
-        }
-
-        if (selectedLink?.from == from &&
-            selectedLink?.to == to
-        ) {
-            selectedLink = null
-        }
-
-        invalidate()
-    }
-
-    fun startLink(
-        node: Block
-    ) {
-        linkingFrom = node
-        selectedBlock = node
-        selectedLink = null
-
-        invalidate()
-    }
-
-    fun clearSelection() {
-        selectedBlock = null
-        selectedLink = null
-        linkingFrom = null
-
-        invalidate()
-    }
-
-    fun getSelectedBlock(): Block? {
-        return selectedBlock
-    }
-
-    fun getSelectedLink(): Link? {
-        return selectedLink
+        return Block(0f, 0f, model = model)
     }
 
     override fun onDraw(
@@ -472,11 +279,11 @@ class SimCustomSerialView(
     }
 
     private fun updateAllContainerBounds() {
-        for (node in nodes) {
-            if (node.model!!.type ==
+        for (block in model!!.blocks) {
+            if (block.type ==
                 SimCustomSerialController.Block.Type.CONTAINER
             ) {
-                updateContainerBounds(node)
+                updateContainerBounds(block.view!!)
             }
         }
     }
@@ -486,11 +293,11 @@ class SimCustomSerialView(
     ) {
         val children =
             container.children.mapNotNull { childId ->
-                nodes.find {
-                    it.model!!.id == childId
+                model!!.blocks.find {
+                    it.id == childId
                 }
             }.filter {
-                it.model!!.type !=
+                it.type !=
                     SimCustomSerialController.Block.Type.CONTAINER
             }
 
@@ -515,7 +322,8 @@ class SimCustomSerialView(
         var right = -Float.MAX_VALUE
         var bottom = -Float.MAX_VALUE
 
-        for (child in children) {
+        for (childBlock in children) {
+            val child = childBlock.view!!
             left = min(
                 left,
                 child.x
@@ -565,13 +373,14 @@ class SimCustomSerialView(
     private fun drawContainers(
         canvas: Canvas
     ) {
-        for (node in nodes) {
-            if (node.model!!.type !=
+        for (block in model!!.blocks) {
+            if (block.type !=
                 SimCustomSerialController.Block.Type.CONTAINER
             ) {
                 continue
             }
 
+            val node = block.view!!
             updateContainerBounds(node)
 
             containerRect.set(
@@ -585,7 +394,7 @@ class SimCustomSerialView(
                 Paint.Style.FILL
 
             containerPaint.color =
-                if (node == selectedBlock) {
+                if ( model!!.isBlockSelected(block) ) {
                     0x332196f3
                 } else {
                     0x18000000
@@ -602,7 +411,7 @@ class SimCustomSerialView(
                 Paint.Style.STROKE
 
             containerPaint.strokeWidth =
-                if (node == selectedBlock) {
+                if ( model!!.isBlockSelected(block) ) {
                     5f
                 } else {
                     3f
@@ -641,13 +450,14 @@ class SimCustomSerialView(
     private fun drawBlocks(
         canvas: Canvas
     ) {
-        for (node in nodes) {
-            if (node.model!!.type ==
+        for (block in model!!.blocks) {
+            if (block.type ==
                 SimCustomSerialController.Block.Type.CONTAINER
             ) {
                 continue
             }
 
+            val node = block.view!!
             nodeRect.set(
                 node.x,
                 node.y,
@@ -659,7 +469,7 @@ class SimCustomSerialView(
                 Paint.Style.FILL
 
             nodePaint.color =
-                if (node == selectedBlock) {
+                if (model!!.isBlockSelected(block)) {
                     0xffd7e8ff.toInt()
                 } else {
                     0xffeeeeee.toInt()
@@ -694,7 +504,7 @@ class SimCustomSerialView(
                 0xff202020.toInt()
 
             canvas.drawText(
-                node.model!!.name,
+                block.name,
                 node.x + 16f,
                 node.y + 32f,
                 textPaint
@@ -744,13 +554,13 @@ class SimCustomSerialView(
     private fun drawLinks(
         canvas: Canvas
     ) {
-        for (connection in connections) {
-            val from = nodes.find {
-                it.model!!.id == connection.from
+        for (link in model!!.links) {
+            val from = model!!.blocks.find {
+                it.id == link.from
             }
 
-            val to = nodes.find {
-                it.model!!.id == connection.to
+            val to = model!!.blocks.find {
+                it.id == link.to
             }
 
             if (from == null ||
@@ -759,11 +569,9 @@ class SimCustomSerialView(
                 continue
             }
 
-            val selected =
-                selectedLink?.from ==
-                    connection.from &&
-                selectedLink?.to ==
-                    connection.to
+            val selected = 
+                link.from == model!!.selectedLink?.from && 
+                link.to == model!!.selectedLink?.to
 
             val paint =
                 if (selected) {
@@ -781,8 +589,8 @@ class SimCustomSerialView(
 
             drawLink(
                 canvas,
-                from,
-                to,
+                from.view!!,
+                to.view!!,
                 paint
             )
         }
@@ -893,10 +701,10 @@ class SimCustomSerialView(
         val x = point.first
         val y = point.second
 
-        for (i in nodes.indices.reversed()) {
-            val node = nodes[i]
+        for (block in model!!.blocks) {
+            val node = block.view!!
 
-            if (node.model!!.type ==
+            if (block.type ==
                 SimCustomSerialController.Block.Type.CONTAINER
             ) {
                 updateContainerBounds(node)
@@ -937,8 +745,8 @@ class SimCustomSerialView(
         val x = point.first
         val y = point.second
 
-        for (i in nodes.indices.reversed()) {
-            val node = nodes[i]
+        for (block in model!!.blocks) {
+            val node = block.view!!
 
             val portX =
                 node.x + node.width
@@ -973,8 +781,8 @@ class SimCustomSerialView(
         val x = point.first
         val y = point.second
 
-        for (i in nodes.indices.reversed()) {
-            val node = nodes[i]
+        for (block in model!!.blocks) {
+            val node = block.view!!
 
             val portX =
                 node.x
@@ -1009,13 +817,13 @@ class SimCustomSerialView(
         val x = point.first
         val y = point.second
 
-        for (connection in connections) {
-            val from = nodes.find {
-                it.model!!.id == connection.from
+        for (link in model!!.links) {
+            val from = model!!.blocks.find {
+                it.id == link.from
             }
 
-            val to = nodes.find {
-                it.model!!.id == connection.to
+            val to = model!!.blocks.find {
+                it.id == link.to
             }
 
             if (from == null ||
@@ -1027,11 +835,11 @@ class SimCustomSerialView(
             if (isPointNearLink(
                     x,
                     y,
-                    from,
-                    to
+                    from.view!!,
+                    to.view!!
                 )
             ) {
-                return connection
+                return link.view!!
             }
         }
 
@@ -1203,9 +1011,9 @@ class SimCustomSerialView(
         ) {
             for (childId in node.children) {
                 val child =
-                    nodes.find {
-                        it.model!!.id == childId
-                    }
+                    model!!.blocks.find {
+                        it.id == childId
+                    }?.view
 
                 if (child != null) {
                     child.x += worldDx
@@ -1226,67 +1034,69 @@ class SimCustomSerialView(
             return
         }
 
+        val currentContainer =
+            model!!.blocks.firstOrNull {
+                it.type ==
+                    SimCustomSerialController.Block.Type.CONTAINER &&
+                it.children.contains(node.model!!.id)
+            }
+
         var target: Block? = null
 
-        for (container in nodes) {
-            if (container.model!!.type !=
+        for (container in model!!.blocks) {
+            if (container.type !=
                 SimCustomSerialController.Block.Type.CONTAINER
             ) {
                 continue
             }
 
-            if (container.children.contains(
-                    node.model!!.id
-                )
-            ) {
+            if (container.view!! == currentContainer) {
                 continue
             }
 
-            updateContainerBounds(container)
+            updateContainerBounds(container.view!!)
 
             if (isBlockOverContainer(
                     node,
-                    container
+                    container.view!!
                 )
             ) {
-                target = container
+                target = container.view!!
                 break
             }
         }
 
         if (target != null) {
-            for (container in nodes) {
-                if (container.model!!.type ==
-                    SimCustomSerialController.Block.Type.CONTAINER
-                ) {
-                    listener?.onBlockExcluded(container.model!!, node.model!!)
-                }
+            if (currentContainer != null) {
+                model!!.onBlockExcluded(
+                    currentContainer.view!!,
+                    node
+                )
             }
 
-            listener?.onBlockIncluded(target.model!!, node.model!!)
+            model?.onBlockIncluded(
+                target,
+                node
+            )
 
             updateContainerBounds(target)
 
             return
         }
 
-        val currentContainer =
-            nodes.firstOrNull {
-                it.model!!.type ==
-                    SimCustomSerialController.Block.Type.CONTAINER &&
-                it.children.contains(node.model!!.id)
-            }
-
         if (currentContainer != null &&
             !isBlockOverContainer(
                 node,
-                currentContainer
+                currentContainer.view!!
             )
         ) {
-            listener?.onBlockExcluded(currentContainer.model!!, node.model!!)
+            model?.onBlockExcluded(
+                currentContainer.view!!,
+                node
+            )
 
             updateContainerBounds(
-                currentContainer
+                currentContainer.view!!
             )
         }
     }
@@ -1301,8 +1111,13 @@ class SimCustomSerialView(
         val centerY =
             node.y + node.height / 2f
 
-        updateContainerBounds(
-            container
+        updateContainerBounds(container)
+
+        containerRect.set(
+            container.x,
+            container.y,
+            container.x + container.width,
+            container.y + container.height
         )
 
         return containerRect.contains(
@@ -1350,7 +1165,7 @@ class SimCustomSerialView(
                         target != null &&
                         source.model!!.id != target.model!!.id
                     ) {
-                        listener?.onLinkToBlock(
+                        model?.onLinkToBlock(
                             source,
                             target
                         )
