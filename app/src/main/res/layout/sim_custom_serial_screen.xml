@@ -5,54 +5,10 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="8dp">
-
-        <Button
-            android:id="@+id/add_delay"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/sim_custom_serial_script_add_delay" />
-
-        <Button
-            android:id="@+id/add_recv"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/sim_custom_serial_script_add_recv" />
-
-        <Button
-            android:id="@+id/add_send"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/sim_custom_serial_script_add_send" />
-
-        <Button
-            android:id="@+id/add_container"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/sim_custom_serial_script_add_container" />
-
-    </LinearLayout>
-
-    <ScrollView
+    <com.github.autodiag2.elm327emu.sim.CustomSerialEditorView
+        android:id="@+id/custom_serial_editor"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
-
-        <LinearLayout
-            android:id="@+id/blocks_container"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="8dp" />
-
-    </ScrollView>
+        android:layout_weight="1" />
 
 </LinearLayout>

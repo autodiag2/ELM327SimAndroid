@@ -17,10 +17,13 @@ import androidx.core.view.setPadding
 import org.json.JSONArray
 import org.json.JSONObject
 import com.github.autodiag2.elm327emu.R
+import com.github.autodiag2.elm327emu.sim.CustomSerialEditorView
 
 class SimCustomSerialScreen(
     context: Context
 ) : LinearLayout(context) {
+
+    private var editor: CustomSerialEditorView
 
     enum class BlockType {
         DELAY,
@@ -51,7 +54,6 @@ class SimCustomSerialScreen(
 
     private var nextId = 0
 
-    private val blocksContainer: LinearLayout
 
     init {
         orientation = VERTICAL
@@ -62,25 +64,59 @@ class SimCustomSerialScreen(
             true
         )
 
-        blocksContainer = findViewById(R.id.blocks_container)
-
-        findViewById<Button>(R.id.add_delay).setOnClickListener {
-            addBlock(BlockType.DELAY)
-        }
-
-        findViewById<Button>(R.id.add_recv).setOnClickListener {
-            addBlock(BlockType.RECV)
-        }
-
-        findViewById<Button>(R.id.add_send).setOnClickListener {
-            addBlock(BlockType.SEND)
-        }
-
-        findViewById<Button>(R.id.add_container).setOnClickListener {
-            addBlock(BlockType.CONTAINER)
-        }
+        editor = findViewById(R.id.custom_serial_editor)
 
         addBlock(BlockType.CONTAINER, "Main")
+
+        editor.listener = object : CustomSerialEditorView.Listener {
+
+            override fun onNodeClicked(
+                node: CustomSerialEditorView.Node
+            ) {
+                blocks.find { it.id == node.id }?.let {
+                    editBlock(it)
+                }
+            }
+
+            override fun onNodeLongClicked(
+                node: CustomSerialEditorView.Node
+            ) {
+                blocks.find { it.id == node.id }?.let {
+                    linkBlock(it)
+                }
+            }
+
+            override fun onCreateLink(
+                from: CustomSerialEditorView.Node
+            ) {
+                blocks.find { it.id == from.id }?.let {
+                    linkBlock(it)
+                }
+            }
+        }
+    }
+
+    private fun updateEditor() {
+        val nodes = blocks.mapIndexed { index, block ->
+            CustomSerialEditorView.Node(
+                id = block.id,
+                type = block.type,
+                title = blockTitle(block),
+                x = 80f + (index % 2) * 360f,
+                y = 80f + (index / 2) * 160f
+            )
+        }
+
+        editor.setNodes(nodes)
+
+        editor.setConnections(
+            links.map {
+                CustomSerialEditorView.Connection(
+                    from = it.from,
+                    to = it.to
+                )
+            }
+        )
     }
 
     private fun addBlock(
@@ -106,78 +142,34 @@ class SimCustomSerialScreen(
     }
 
     private fun rebuild() {
-        blocksContainer.removeAllViews()
-
-        val containedIds = blocks
-            .flatMap { it.children }
-            .toSet()
-
-        val topLevel = blocks.filterNot {
-            containedIds.contains(it.id)
-        }
-
-        for (block in topLevel) {
-            blocksContainer.addView(
-                createBlockView(block, 0)
+        val nodes = blocks.mapIndexed { index, block ->
+            CustomSerialEditorView.Node(
+                id = block.id,
+                type = block.type,
+                title = blockTitle(block),
+                x = 80f + (index % 2) * 360f,
+                y = 80f + (index / 2) * 160f
             )
         }
+
+        editor.setNodes(nodes)
+
+        editor.setConnections(
+            links.map {
+                CustomSerialEditorView.Connection(
+                    from = it.from,
+                    to = it.to
+                )
+            }
+        )
     }
 
     private fun createBlockView(
         block: Block,
         indent: Int
     ): View {
-        val view = LayoutInflater.from(context).inflate(
-            R.layout.sim_custom_serial_block,
-            blocksContainer,
-            false
-        )
 
-        val params = view.layoutParams as MarginLayoutParams
-        params.setMargins(
-            indent * dp(32),
-            dp(4),
-            dp(4),
-            dp(4)
-        )
-        view.layoutParams = params
-
-        val title = view.findViewById<TextView>(R.id.block_title)
-        val children = view.findViewById<LinearLayout>(R.id.block_children)
-
-        title.text = blockTitle(block)
-
-        view.findViewById<Button>(R.id.block_edit).setOnClickListener {
-            editBlock(block)
-        }
-
-        view.findViewById<Button>(R.id.block_link).setOnClickListener {
-            linkBlock(block)
-        }
-
-        if (block.type == BlockType.CONTAINER) {
-            view.setOnClickListener {
-                children.visibility =
-                    if (children.visibility == View.VISIBLE) {
-                        View.GONE
-                    } else {
-                        View.VISIBLE
-                    }
-            }
-
-            for (childId in block.children) {
-                blocks.find { it.id == childId }?.let { child ->
-                    children.addView(
-                        createBlockView(
-                            child,
-                            indent + 1
-                        )
-                    )
-                }
-            }
-        }
-
-        return view
+        return View(context)
     }
 
     private fun blockTitle(block: Block): String {
@@ -222,6 +214,19 @@ class SimCustomSerialScreen(
             .show()
     }
 
+    public fun onAddDelay() {
+        addBlock(BlockType.DELAY)
+    }
+    public fun onAddRecv() {
+        addBlock(BlockType.RECV)
+    }
+    public fun onAddSend() {
+        addBlock(BlockType.SEND)
+    }
+    public fun onAddContainer() {
+        addBlock(BlockType.CONTAINER)
+    }
+    
     private fun editReceive(block: Block) {
         val layout = LinearLayout(context).apply {
             orientation = VERTICAL

@@ -29,6 +29,7 @@ class Sim(
     private val activity: MainActivity
 ) : FrameLayout(activity), JsonConfigurable {
 
+    public val customSerialScreen: SimCustomSerialScreen
     private val ecuListView: ViewGroup
     val ecus = mutableListOf<Ecu>()
     private val ecuAddSelect: Spinner
@@ -73,10 +74,9 @@ class Sim(
             buildAddECUToGUI(address.toByte(), getString(R.string.sim_ecu_config_ecu_name, getString(type.label_id)), type)
         }
 
+        customSerialScreen = SimCustomSerialScreen(activity)
         findViewById<Button>(R.id.sim_custom_serial_script_open).setOnClickListener {
-            activity.showNestedScreen(
-                SimCustomSerialScreen(activity)
-            )
+            activity.showNestedScreen(customSerialScreen)
         }
         
         findViewById<Button>(R.id.sim_state).apply {
