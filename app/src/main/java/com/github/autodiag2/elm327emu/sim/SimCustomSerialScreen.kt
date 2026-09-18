@@ -32,33 +32,44 @@ class SimCustomSerialScreen(
         CONTAINER
     }
     
-    open class ElementView(
-            val id: Int = ElementView.id_track++
-        ) { 
+    open class ElementModel<V>(
+        var view: V? = null,
+        val id: Int = id_track++
+    ) {
         companion object {
             private var id_track: Int = 1
         }
+
+        fun viewLink(view_arg: V) {
+            view = view_arg
+        }
     }
 
-    data class Block(
-        val id: Int,
+    open class ElementView<M>(
+        var model: M? = null
+    ) {
+        fun modelLink(model_arg: M) {
+            model = model_arg
+        }
+    }
+
+    open class Block(
         var type: BlockType,
-        val view: ElementView,
         var delay: Int = 0,
         var text: String = "",
         var match: String = "exact",
         var includeEol: Boolean = false,
         var interpretEscapes: Boolean = true,
         var name: String = "",
-        val children: MutableList<Int> = mutableListOf(),
-    )
+        view: CustomSerialEditorView.Node? = null,
+        val children: MutableList<Int> = mutableListOf()
+    ) : ElementModel<CustomSerialEditorView.Node>(view)
 
-    data class Link(
-        val id: Int,
+    open class Link(
         val from: Int,
         val to: Int,
-        val view: ElementView,
-    )
+        view: CustomSerialEditorView.Connection? = null
+    ) : ElementModel<CustomSerialEditorView.Connection>(view)
 
     private val blocks = mutableListOf<Block>()
     private val links = mutableListOf<Link>()
@@ -78,7 +89,7 @@ class SimCustomSerialScreen(
             override fun onNodeClicked(
                 node: CustomSerialEditorView.Node
             ) {
-                blocks.find { it.id == node.id }?.let {
+                blocks.find { it.id == node.model!!.id }?.let {
                     editBlock(it)
                 }
             }
@@ -134,7 +145,7 @@ class SimCustomSerialScreen(
             rmBlock(childblock)
         }
         blocks.remove(blockm)
-        editor.removeNode(blockm.view.id)
+        editor.removeNode(blockm.id)
         for(link in links) {
             if ( link.from == blockm.id || link.to == blockm.id ) {
                 rmLink(link)
@@ -158,11 +169,11 @@ class SimCustomSerialScreen(
         }
         val view = editor.addBlock(type, blockName)
         val block = Block(
-            id = view.id,
             type = type,
             name = blockName,
             view = view
         )
+        view.modelLink(block)
         blocks.add(block)
         if ( to != null ) {
             if ( to.type == BlockType.CONTAINER ) {

@@ -22,19 +22,19 @@ class CustomSerialEditorView(
 ) : View(context, attrs) {
 
     open class Node(
-        var type: SimCustomSerialScreen.BlockType,
-        var title: String,
         var x: Float,
         var y: Float,
         var width: Float = 260f,
         var height: Float = 100f,
-        val children: MutableList<Int> = mutableListOf()
-    ): SimCustomSerialScreen.ElementView()
+        val children: MutableList<Int> = mutableListOf(),
+        model: SimCustomSerialScreen.Block? = null
+    ) : SimCustomSerialScreen.ElementView<SimCustomSerialScreen.Block>(model = model)
 
     open class Connection(
         val from: Int,
         val to: Int,
-    ): SimCustomSerialScreen.ElementView()
+        model: SimCustomSerialScreen.Link? = null
+    ) : SimCustomSerialScreen.ElementView<SimCustomSerialScreen.Link>(model = model)
 
     interface Listener {
         fun onNodeClicked(node: Node)
@@ -258,14 +258,14 @@ class CustomSerialEditorView(
         selectedNode =
             selectedNode?.let { selected ->
                 nodes.find {
-                    it.id == selected.id
+                    it.model!!.id == selected.model!!.id
                 }
             }
 
         linkingFrom =
             linkingFrom?.let { source ->
                 nodes.find {
-                    it.id == source.id
+                    it.model!!.id == source.model!!.id
                 }
             }
 
@@ -274,7 +274,7 @@ class CustomSerialEditorView(
 
     public fun onDelete() {
         if ( selectedNode != null ) {
-            removeNode(selectedNode!!.id)
+            removeNode(selectedNode!!.model!!.id)
             selectedNode = null
         }
         if ( selectedConnection != null ) {
@@ -306,14 +306,14 @@ class CustomSerialEditorView(
     }
 
     public fun addBlockChild(to: Node, child: Node) {
-        assert(to.type == SimCustomSerialScreen.BlockType.CONTAINER)
-        to.children.add(child.id)
+        assert(to.model!!.type == SimCustomSerialScreen.BlockType.CONTAINER)
+        to.children.add(child.model!!.id)
         invalidate()
     }
     
     public fun blockUpdate(block: SimCustomSerialScreen.Block) {
         val node = block.view as Node
-        node.title = block.name
+        node.model!!.name = block.name
         invalidate()
     }
 
@@ -321,7 +321,7 @@ class CustomSerialEditorView(
         type: SimCustomSerialScreen.BlockType,
         name: String = ""
     ): Node {
-        val node = Node(type, name, 0f, 0f)
+        val node = Node(0f, 0f)
         nodes.add(node)
         invalidate()
         return node
@@ -331,7 +331,7 @@ class CustomSerialEditorView(
         id: Int
     ) {
         nodes.removeAll {
-            it.id == id
+            it.model!!.id == id
         }
 
         for (node in nodes) {
@@ -345,7 +345,7 @@ class CustomSerialEditorView(
             it.to == id
         }
 
-        if (selectedNode?.id == id) {
+        if (selectedNode?.model!!.id == id) {
             selectedNode = null
         }
 
@@ -355,7 +355,7 @@ class CustomSerialEditorView(
                 it.to == id
             }
 
-        if (linkingFrom?.id == id) {
+        if (linkingFrom?.model!!.id == id) {
             linkingFrom = null
         }
 
@@ -371,11 +371,11 @@ class CustomSerialEditorView(
         }
 
         val fromNode = nodes.find {
-            it.id == from
+            it.model!!.id == from
         }
 
         val toNode = nodes.find {
-            it.id == to
+            it.model!!.id == to
         }
 
         if (fromNode == null ||
@@ -472,7 +472,7 @@ class CustomSerialEditorView(
 
     private fun updateAllContainerBounds() {
         for (node in nodes) {
-            if (node.type ==
+            if (node.model!!.type ==
                 SimCustomSerialScreen.BlockType.CONTAINER
             ) {
                 updateContainerBounds(node)
@@ -486,10 +486,10 @@ class CustomSerialEditorView(
         val children =
             container.children.mapNotNull { childId ->
                 nodes.find {
-                    it.id == childId
+                    it.model!!.id == childId
                 }
             }.filter {
-                it.type !=
+                it.model!!.type !=
                     SimCustomSerialScreen.BlockType.CONTAINER
             }
 
@@ -565,7 +565,7 @@ class CustomSerialEditorView(
         canvas: Canvas
     ) {
         for (node in nodes) {
-            if (node.type !=
+            if (node.model!!.type !=
                 SimCustomSerialScreen.BlockType.CONTAINER
             ) {
                 continue
@@ -624,7 +624,7 @@ class CustomSerialEditorView(
                 0xff333333.toInt()
 
             canvas.drawText(
-                node.title,
+                node.model!!.name,
                 node.x + 16f,
                 node.y + 28f,
                 textPaint
@@ -641,7 +641,7 @@ class CustomSerialEditorView(
         canvas: Canvas
     ) {
         for (node in nodes) {
-            if (node.type ==
+            if (node.model!!.type ==
                 SimCustomSerialScreen.BlockType.CONTAINER
             ) {
                 continue
@@ -693,7 +693,7 @@ class CustomSerialEditorView(
                 0xff202020.toInt()
 
             canvas.drawText(
-                node.title,
+                node.model!!.name,
                 node.x + 16f,
                 node.y + 32f,
                 textPaint
@@ -727,7 +727,7 @@ class CustomSerialEditorView(
             portPaint
         )
 
-        if (linkingFrom?.id == node.id) {
+        if (linkingFrom?.model!!.id == node.model!!.id) {
             portPaint.color =
                 0xff1976d2.toInt()
 
@@ -745,11 +745,11 @@ class CustomSerialEditorView(
     ) {
         for (connection in connections) {
             val from = nodes.find {
-                it.id == connection.from
+                it.model!!.id == connection.from
             }
 
             val to = nodes.find {
-                it.id == connection.to
+                it.model!!.id == connection.to
             }
 
             if (from == null ||
@@ -895,7 +895,7 @@ class CustomSerialEditorView(
         for (i in nodes.indices.reversed()) {
             val node = nodes[i]
 
-            if (node.type ==
+            if (node.model!!.type ==
                 SimCustomSerialScreen.BlockType.CONTAINER
             ) {
                 updateContainerBounds(node)
@@ -1010,11 +1010,11 @@ class CustomSerialEditorView(
 
         for (connection in connections) {
             val from = nodes.find {
-                it.id == connection.from
+                it.model!!.id == connection.from
             }
 
             val to = nodes.find {
-                it.id == connection.to
+                it.model!!.id == connection.to
             }
 
             if (from == null ||
@@ -1197,13 +1197,13 @@ class CustomSerialEditorView(
         node.x += worldDx
         node.y += worldDy
 
-        if (node.type ==
+        if (node.model!!.type ==
             SimCustomSerialScreen.BlockType.CONTAINER
         ) {
             for (childId in node.children) {
                 val child =
                     nodes.find {
-                        it.id == childId
+                        it.model!!.id == childId
                     }
 
                 if (child != null) {
@@ -1219,7 +1219,7 @@ class CustomSerialEditorView(
     private fun updateContainerMembership(
         node: Node
     ) {
-        if (node.type ==
+        if (node.model!!.type ==
             SimCustomSerialScreen.BlockType.CONTAINER
         ) {
             return
@@ -1228,14 +1228,14 @@ class CustomSerialEditorView(
         var target: Node? = null
 
         for (container in nodes) {
-            if (container.type !=
+            if (container.model!!.type !=
                 SimCustomSerialScreen.BlockType.CONTAINER
             ) {
                 continue
             }
 
             if (container.children.contains(
-                    node.id
+                    node.model!!.id
                 )
             ) {
                 continue
@@ -1255,17 +1255,17 @@ class CustomSerialEditorView(
 
         if (target != null) {
             for (container in nodes) {
-                if (container.type ==
+                if (container.model!!.type ==
                     SimCustomSerialScreen.BlockType.CONTAINER
                 ) {
                     container.children.remove(
-                        node.id
+                        node.model!!.id
                     )
                 }
             }
 
             target.children.add(
-                node.id
+                node.model!!.id
             )
 
             updateContainerBounds(target)
@@ -1275,9 +1275,9 @@ class CustomSerialEditorView(
 
         val currentContainer =
             nodes.firstOrNull {
-                it.type ==
+                it.model!!.type ==
                     SimCustomSerialScreen.BlockType.CONTAINER &&
-                it.children.contains(node.id)
+                it.children.contains(node.model!!.id)
             }
 
         if (currentContainer != null &&
@@ -1287,7 +1287,7 @@ class CustomSerialEditorView(
             )
         ) {
             currentContainer.children.remove(
-                node.id
+                node.model!!.id
             )
 
             updateContainerBounds(
@@ -1353,7 +1353,7 @@ class CustomSerialEditorView(
 
                     if (source != null &&
                         target != null &&
-                        source.id != target.id
+                        source.model!!.id != target.model!!.id
                     ) {
                         listener?.onLinkToNode(
                             source,
@@ -1391,7 +1391,7 @@ class CustomSerialEditorView(
                         event.y
                     )
 
-                if (node?.type ==
+                if (node?.model!!.type ==
                     SimCustomSerialScreen.BlockType.CONTAINER
                 ) {
                     draggingContainer = node
