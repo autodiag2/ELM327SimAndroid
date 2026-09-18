@@ -1151,22 +1151,41 @@ class SimCustomSerialView(
     ): Boolean {
         scaleDetector.onTouchEvent(event)
 
+        val pointerCount = event.pointerCount
+
+        if (pointerCount != lastPointerCount) {
+            lastPointerCount = pointerCount
+
+            lastX = event.x
+            lastY = event.y
+
+            if (pointerCount > 1) {
+                draggingBlock = null
+                draggingContainer = null
+                movedDuringGesture = true
+            }
+
+            return true
+        }
+
         if (linkingFrom != null) {
             when (event.actionMasked) {
 
                 MotionEvent.ACTION_MOVE -> {
-                    val point =
-                        screenToWorld(
-                            event.x,
-                            event.y
-                        )
-
-                    linkX = point.first
-                    linkY = point.second
-
-                    invalidate()
-
-                    return true
+                    if ( !scaleDetector.isInProgress ) {
+                        val point =
+                            screenToWorld(
+                                event.x,
+                                event.y
+                            )
+    
+                        linkX = point.first
+                        linkY = point.second
+    
+                        invalidate()
+    
+                        return true
+                    }
                 }
 
                 MotionEvent.ACTION_UP -> {
