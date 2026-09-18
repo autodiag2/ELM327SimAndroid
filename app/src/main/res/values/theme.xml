@@ -3,8 +3,11 @@
 
     <style name="Theme.Solarized" parent="Theme.AppCompat.Light.NoActionBar">
         <item name="colorPrimary">@color/sol_base2</item>
-        <item name="colorPrimaryDark">@color/sol_base1</item>
+        <item name="colorPrimaryDark">@color/sol_base3</item>
         <item name="colorAccent">@color/sol_blue</item>
+        
+        <item name="android:statusBarColor">?attr/colorPrimary</item>
+        <item name="android:windowLightStatusBar">true</item>
 
         <item name="android:windowBackground">@color/sol_base3</item>
         <item name="android:colorBackground">@color/sol_base3</item>
