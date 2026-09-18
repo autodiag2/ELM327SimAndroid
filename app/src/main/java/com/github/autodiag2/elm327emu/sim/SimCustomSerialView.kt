@@ -17,6 +17,8 @@ import kotlin.math.sqrt
 import com.github.autodiag2.elm327emu.sim.SimCustomSerialController
 import android.util.Log
 import com.github.autodiag2.elm327emu.BuildConfig
+import androidx.core.content.ContextCompat
+import com.github.autodiag2.elm327emu.R
 
 class SimCustomSerialView(
     context: Context,
@@ -59,6 +61,7 @@ class SimCustomSerialView(
     private val selectedLinkPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val linkPreviewPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val portPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val arrowPaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
     private val nodeRect = RectF()
     private val containerRect = RectF()
@@ -87,6 +90,7 @@ class SimCustomSerialView(
     private val portRadius = 20f
     private val portHitRadius = 100f
     private var lastPointerCount = 0
+    private val linkArrowSize = 30f
 
     init {
         nodePaint.style = Paint.Style.FILL
@@ -98,6 +102,8 @@ class SimCustomSerialView(
         connectionPaint.style = Paint.Style.STROKE
         connectionPaint.strokeWidth = 4f
         connectionPaint.strokeCap = Paint.Cap.ROUND
+
+        arrowPaint.style = Paint.Style.FILL
 
         selectedLinkPaint.style = Paint.Style.STROKE
         selectedLinkPaint.strokeWidth = 7f
@@ -259,6 +265,39 @@ class SimCustomSerialView(
         )
     }
 
+    private fun drawArrow(
+        canvas: Canvas,
+        x: Float,
+        y: Float,
+        angle: Float,
+        paint: Paint
+    ) {
+
+        val path = Path()
+
+        path.moveTo(
+            x + kotlin.math.cos(angle) * linkArrowSize,
+            y + kotlin.math.sin(angle) * linkArrowSize
+        )
+
+        path.lineTo(
+            x + kotlin.math.cos(angle + 2.5f) * linkArrowSize,
+            y + kotlin.math.sin(angle + 2.5f) * linkArrowSize
+        )
+
+        path.lineTo(
+            x + kotlin.math.cos(angle - 2.5f) * linkArrowSize,
+            y + kotlin.math.sin(angle - 2.5f) * linkArrowSize
+        )
+
+        path.close()
+
+        canvas.drawPath(
+            path,
+            paint
+        )
+    }
+
     public fun refresh() {
         invalidate()
     }
@@ -296,6 +335,87 @@ class SimCustomSerialView(
         canvas.restore()
     }
 
+    private fun drawLinkCurve(
+        canvas: Canvas,
+        startX: Float,
+        startY: Float,
+        endX: Float,
+        endY: Float,
+        paint: Paint
+    ) {
+        val distance =
+            max(
+                40f,
+                abs(endX - startX) * 0.5f
+            )
+
+        val control1X = startX + distance
+        val control1Y = startY
+        val control2X = endX - distance
+        val control2Y = endY
+
+        val path = Path()
+
+        path.moveTo(
+            startX,
+            startY
+        )
+
+        path.cubicTo(
+            control1X,
+            control1Y,
+            control2X,
+            control2Y,
+            endX,
+            endY
+        )
+
+        canvas.drawPath(
+            path,
+            paint
+        )
+
+        val t = 0.5f
+        val inverse = 1f - t
+
+        val arrowX =
+            inverse * inverse * inverse * startX +
+            3f * inverse * inverse * t * control1X +
+            3f * inverse * t * t * control2X +
+            t * t * t * endX
+
+        val arrowY =
+            inverse * inverse * inverse * startY +
+            3f * inverse * inverse * t * control1Y +
+            3f * inverse * t * t * control2Y +
+            t * t * t * endY
+
+        val tangentX =
+            3f * inverse * inverse * (control1X - startX) +
+            6f * inverse * t * (control2X - control1X) +
+            3f * t * t * (endX - control2X)
+
+        val tangentY =
+            3f * inverse * inverse * (control1Y - startY) +
+            6f * inverse * t * (control2Y - control1Y) +
+            3f * t * t * (endY - control2Y)
+
+        val angle =
+            kotlin.math.atan2(
+                tangentY,
+                tangentX
+            )
+
+        arrowPaint.color = paint.color
+
+        drawArrow(
+            canvas,
+            arrowX,
+            arrowY,
+            angle,
+            arrowPaint
+        )
+    }
     private fun updateAllContainerBounds() {
         for (block in model!!.blocks) {
             if (block.type ==
@@ -635,42 +755,12 @@ class SimCustomSerialView(
         to: Block,
         paint: Paint
     ) {
-        val startX =
-            from.x + from.width
-
-        val startY =
-            from.y + from.height / 2f
-
-        val endX =
-            to.x
-
-        val endY =
-            to.y + to.height / 2f
-
-        val distance =
-            max(
-                40f,
-                abs(endX - startX) * 0.5f
-            )
-
-        val path = Path()
-
-        path.moveTo(
-            startX,
-            startY
-        )
-
-        path.cubicTo(
-            startX + distance,
-            startY,
-            endX - distance,
-            endY,
-            endX,
-            endY
-        )
-
-        canvas.drawPath(
-            path,
+        drawLinkCurve(
+            canvas,
+            from.x + from.width,
+            from.y + from.height / 2f,
+            to.x,
+            to.y + to.height / 2f,
             paint
         )
     }
@@ -681,42 +771,14 @@ class SimCustomSerialView(
         val from = linkingFrom
             ?: return
 
-        val startX =
-            from.x + from.width
+        linkPreviewPaint.color = ContextCompat.getColor(context, R.color.sol_blue)
 
-        val startY =
-            from.y + from.height / 2f
-
-        val endX = linkX
-        val endY = linkY
-
-        val distance =
-            max(
-                40f,
-                abs(endX - startX) * 0.5f
-            )
-
-        linkPreviewPaint.color =
-            0xff1976d2.toInt()
-
-        val path = Path()
-
-        path.moveTo(
-            startX,
-            startY
-        )
-
-        path.cubicTo(
-            startX + distance,
-            startY,
-            endX - distance,
-            endY,
-            endX,
-            endY
-        )
-
-        canvas.drawPath(
-            path,
+        drawLinkCurve(
+            canvas,
+            from.x + from.width,
+            from.y + from.height / 2f,
+            linkX,
+            linkY,
             linkPreviewPaint
         )
     }
