@@ -522,10 +522,25 @@ class SimCustomSerialView(
             textPaint.color =
                 0xff202020.toInt()
 
+            val textWidth =
+                textPaint.measureText(block.name)
+
+            val textX =
+                node.x +
+                (node.width - textWidth) / 2f
+
+            val fontMetrics =
+                textPaint.fontMetrics
+
+            val textY =
+                node.y +
+                node.height / 2f -
+                (fontMetrics.ascent + fontMetrics.descent) / 2f
+
             canvas.drawText(
                 block.name,
-                node.x + 16f,
-                node.y + 32f,
+                textX,
+                textY,
                 textPaint
             )
 
