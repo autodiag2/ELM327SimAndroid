@@ -5,13 +5,14 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
+import android.util.AttributeSet
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
+import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
-import android.util.AttributeSet
 
 class CustomSerialEditorView(
     context: Context,
@@ -25,7 +26,8 @@ class CustomSerialEditorView(
         var x: Float,
         var y: Float,
         var width: Float = 260f,
-        var height: Float = 100f
+        var height: Float = 100f,
+        val children: MutableList<Int> = mutableListOf()
     )
 
     data class Connection(
@@ -45,11 +47,15 @@ class CustomSerialEditorView(
     private val connections = mutableListOf<Connection>()
 
     private val nodePaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val containerPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val connectionPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val selectedConnectionPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val portPaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
     private val nodeRect = RectF()
+    private val containerRect = RectF()
+
     private val gestureDetector: GestureDetector
     private val scaleDetector: ScaleGestureDetector
 
@@ -58,21 +64,35 @@ class CustomSerialEditorView(
     private var offsetY = 0f
 
     private var selectedNode: Node? = null
+    private var selectedConnection: Connection? = null
+
     private var draggingNode: Node? = null
+    private var draggingContainer: Node? = null
 
     private var lastX = 0f
     private var lastY = 0f
 
+    private var movedDuringGesture = false
+
     private var linkModeNode: Node? = null
+
+    private val containerPadding = 32f
+    private val containerTitleHeight = 40f
 
     init {
         nodePaint.style = Paint.Style.FILL
+        containerPaint.style = Paint.Style.FILL
 
-        textPaint.textSize = 16f * resources.displayMetrics.scaledDensity
+        textPaint.textSize =
+            16f * resources.displayMetrics.scaledDensity
 
         connectionPaint.style = Paint.Style.STROKE
         connectionPaint.strokeWidth = 4f
         connectionPaint.strokeCap = Paint.Cap.ROUND
+
+        selectedConnectionPaint.style = Paint.Style.STROKE
+        selectedConnectionPaint.strokeWidth = 7f
+        selectedConnectionPaint.strokeCap = Paint.Cap.ROUND
 
         portPaint.style = Paint.Style.FILL
 
@@ -80,95 +100,238 @@ class CustomSerialEditorView(
             context,
             object : GestureDetector.SimpleOnGestureListener() {
 
-                override fun onSingleTapUp(event: MotionEvent): Boolean {
-                    val node = findNode(event.x, event.y)
+                override fun onDown(
+                    event: MotionEvent
+                ): Boolean {
+                    return true
+                }
+
+                override fun onSingleTapUp(
+                    event: MotionEvent
+                ): Boolean {
+                    if (movedDuringGesture) {
+                        return true
+                    }
+
+                    val node = findNode(
+                        event.x,
+                        event.y
+                    )
 
                     if (node != null) {
                         if (linkModeNode != null &&
-                            linkModeNode != node
+                            linkModeNode != node &&
+                            node.type !=
+                            SimCustomSerialScreen.BlockType.CONTAINER
                         ) {
                             listener?.onCreateLink(node)
+
                             linkModeNode = null
+                            selectedNode = node
+                            selectedConnection = null
+
                             invalidate()
+
                             return true
                         }
 
                         selectedNode = node
+                        selectedConnection = null
+
                         listener?.onNodeClicked(node)
+
                         invalidate()
-                    } else {
+
+                        return true
+                    }
+
+                    val connection = findConnection(
+                        event.x,
+                        event.y
+                    )
+
+                    if (connection != null) {
+                        selectedConnection = connection
                         selectedNode = null
                         invalidate()
+                        return true
                     }
 
+                    selectedNode = null
+                    selectedConnection = null
+
+                    invalidate()
+
                     return true
                 }
 
-                override fun onDown(event: MotionEvent): Boolean {
-                    return true
-                }
-
-                override fun onLongPress(event: MotionEvent) {
-                    val node = findNode(event.x, event.y)
+                override fun onLongPress(
+                    event: MotionEvent
+                ) {
+                    val node = findNode(
+                        event.x,
+                        event.y
+                    )
 
                     if (node != null) {
-                        listener?.onNodeLongClicked(node)
+                        selectedNode = node
+                        selectedConnection = null
+                        linkModeNode = null
+
+                        invalidate()
+                        return
                     }
+
+                    val connection = findConnection(
+                        event.x,
+                        event.y
+                    )
+
+                    if (connection != null) {
+                        selectedConnection = connection
+                        selectedNode = null
+                        linkModeNode = null
+
+                        invalidate()
+                        return
+                    }
+
+                    selectedNode = null
+                    selectedConnection = null
+                    linkModeNode = null
+
+                    invalidate()
                 }
             }
         )
 
         scaleDetector = ScaleGestureDetector(
             context,
-            object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            object :
+                ScaleGestureDetector.SimpleOnScaleGestureListener() {
 
-                override fun onScale(detector: ScaleGestureDetector): Boolean {
+                override fun onScale(
+                    detector: ScaleGestureDetector
+                ): Boolean {
                     scale *= detector.scaleFactor
-                    scale = scale.coerceIn(0.35f, 2.5f)
+
+                    scale = scale.coerceIn(
+                        0.35f,
+                        2.5f
+                    )
+
                     invalidate()
+
                     return true
                 }
             }
         )
     }
 
-    fun setNodes(value: List<Node>) {
+    fun setNodes(
+        value: List<Node>
+    ) {
         nodes.clear()
         nodes.addAll(value)
+
+        selectedNode =
+            selectedNode?.let { selected ->
+                nodes.find {
+                    it.id == selected.id
+                }
+            }
+
         invalidate()
     }
 
-    fun setConnections(value: List<Connection>) {
+    fun setConnections(
+        value: List<Connection>
+    ) {
         connections.clear()
         connections.addAll(value)
+
+        selectedConnection =
+            selectedConnection?.let { selected ->
+                connections.find {
+                    it.from == selected.from &&
+                    it.to == selected.to
+                }
+            }
+
         invalidate()
     }
 
-    fun addNode(node: Node) {
+    fun addNode(
+        node: Node
+    ) {
         nodes.add(node)
         invalidate()
     }
 
-    fun removeNode(id: Int) {
-        nodes.removeAll { it.id == id }
+    fun removeNode(
+        id: Int
+    ) {
+        nodes.removeAll {
+            it.id == id
+        }
+
+        for (node in nodes) {
+            node.children.removeAll {
+                it == id
+            }
+        }
+
         connections.removeAll {
-            it.from == id || it.to == id
+            it.from == id ||
+            it.to == id
         }
 
         if (selectedNode?.id == id) {
             selectedNode = null
         }
 
+        selectedConnection =
+            selectedConnection?.takeUnless {
+                it.from == id ||
+                it.to == id
+            }
+
         invalidate()
     }
 
-    fun addConnection(from: Int, to: Int) {
+    fun addConnection(
+        from: Int,
+        to: Int
+    ) {
         if (from == to) {
             return
         }
 
+        val fromNode = nodes.find {
+            it.id == from
+        }
+
+        val toNode = nodes.find {
+            it.id == to
+        }
+
+        if (fromNode == null ||
+            toNode == null
+        ) {
+            return
+        }
+
+        if (fromNode.type ==
+            SimCustomSerialScreen.BlockType.CONTAINER ||
+            toNode.type ==
+            SimCustomSerialScreen.BlockType.CONTAINER
+        ) {
+            return
+        }
+
         connections.removeAll {
-            it.from == from && it.to == to
+            it.from == from &&
+            it.to == to
         }
 
         connections.add(
@@ -181,42 +344,254 @@ class CustomSerialEditorView(
         invalidate()
     }
 
-    fun removeConnection(from: Int, to: Int) {
+    fun removeConnection(
+        from: Int,
+        to: Int
+    ) {
         connections.removeAll {
-            it.from == from && it.to == to
+            it.from == from &&
+            it.to == to
+        }
+
+        if (selectedConnection?.from == from &&
+            selectedConnection?.to == to
+        ) {
+            selectedConnection = null
         }
 
         invalidate()
     }
 
-    fun startLink(node: Node) {
+    fun startLink(
+        node: Node
+    ) {
+        if (node.type ==
+            SimCustomSerialScreen.BlockType.CONTAINER
+        ) {
+            return
+        }
+
         linkModeNode = node
         selectedNode = node
+        selectedConnection = null
+
         invalidate()
     }
 
     fun clearSelection() {
         selectedNode = null
+        selectedConnection = null
         linkModeNode = null
+
         invalidate()
     }
 
-    override fun onDraw(canvas: Canvas) {
+    fun getSelectedNode(): Node? {
+        return selectedNode
+    }
+
+    fun getSelectedConnection(): Connection? {
+        return selectedConnection
+    }
+
+    override fun onDraw(
+        canvas: Canvas
+    ) {
         super.onDraw(canvas)
 
         canvas.save()
 
-        canvas.translate(offsetX, offsetY)
-        canvas.scale(scale, scale)
+        canvas.translate(
+            offsetX,
+            offsetY
+        )
 
+        canvas.scale(
+            scale,
+            scale
+        )
+
+        updateAllContainerBounds()
+
+        drawContainers(canvas)
         drawConnections(canvas)
         drawNodes(canvas)
 
         canvas.restore()
     }
 
-    private fun drawNodes(canvas: Canvas) {
+    private fun updateAllContainerBounds() {
         for (node in nodes) {
+            if (node.type ==
+                SimCustomSerialScreen.BlockType.CONTAINER
+            ) {
+                updateContainerBounds(node)
+            }
+        }
+    }
+
+    private fun updateContainerBounds(
+        container: Node
+    ) {
+        val children = container.children.mapNotNull {
+            childId ->
+            nodes.find {
+                it.id == childId
+            }
+        }.filter {
+            it.type !=
+                SimCustomSerialScreen.BlockType.CONTAINER
+        }
+
+        if (children.isEmpty()) {
+            container.width =
+                max(
+                    container.width,
+                    260f
+                )
+
+            container.height =
+                max(
+                    container.height,
+                    140f
+                )
+
+            return
+        }
+
+        var left = Float.MAX_VALUE
+        var top = Float.MAX_VALUE
+        var right = -Float.MAX_VALUE
+        var bottom = -Float.MAX_VALUE
+
+        for (child in children) {
+            left = min(
+                left,
+                child.x
+            )
+
+            top = min(
+                top,
+                child.y
+            )
+
+            right = max(
+                right,
+                child.x + child.width
+            )
+
+            bottom = max(
+                bottom,
+                child.y + child.height
+            )
+        }
+
+        container.x =
+            left - containerPadding
+
+        container.y =
+            top -
+            containerPadding -
+            containerTitleHeight
+
+        container.width =
+            max(
+                260f,
+                right -
+                    container.x +
+                    containerPadding
+            )
+
+        container.height =
+            max(
+                140f,
+                bottom -
+                    container.y +
+                    containerPadding
+            )
+    }
+
+    private fun drawContainers(
+        canvas: Canvas
+    ) {
+        for (node in nodes) {
+            if (node.type !=
+                SimCustomSerialScreen.BlockType.CONTAINER
+            ) {
+                continue
+            }
+
+            updateContainerBounds(node)
+
+            containerRect.set(
+                node.x,
+                node.y,
+                node.x + node.width,
+                node.y + node.height
+            )
+
+            containerPaint.style =
+                Paint.Style.FILL
+
+            containerPaint.color =
+                if (node == selectedNode) {
+                    0x332196f3
+                } else {
+                    0x18000000
+                }
+
+            canvas.drawRoundRect(
+                containerRect,
+                18f,
+                18f,
+                containerPaint
+            )
+
+            containerPaint.style =
+                Paint.Style.STROKE
+
+            containerPaint.strokeWidth =
+                if (node == selectedNode) {
+                    5f
+                } else {
+                    3f
+                }
+
+            containerPaint.color =
+                0xff777777.toInt()
+
+            canvas.drawRoundRect(
+                containerRect,
+                18f,
+                18f,
+                containerPaint
+            )
+
+            containerPaint.style =
+                Paint.Style.FILL
+
+            textPaint.color =
+                0xff333333.toInt()
+
+            canvas.drawText(
+                node.title,
+                node.x + 16f,
+                node.y + 28f,
+                textPaint
+            )
+        }
+    }
+
+    private fun drawNodes(
+        canvas: Canvas
+    ) {
+        for (node in nodes) {
+            if (node.type ==
+                SimCustomSerialScreen.BlockType.CONTAINER
+            ) {
+                continue
+            }
+
             nodeRect.set(
                 node.x,
                 node.y,
@@ -224,7 +599,8 @@ class CustomSerialEditorView(
                 node.y + node.height
             )
 
-            nodePaint.style = Paint.Style.FILL
+            nodePaint.style =
+                Paint.Style.FILL
 
             nodePaint.color =
                 if (node == selectedNode) {
@@ -240,9 +616,12 @@ class CustomSerialEditorView(
                 nodePaint
             )
 
-            nodePaint.style = Paint.Style.STROKE
+            nodePaint.style =
+                Paint.Style.STROKE
+
             nodePaint.strokeWidth = 3f
-            nodePaint.color = 0xff444444.toInt()
+            nodePaint.color =
+                0xff444444.toInt()
 
             canvas.drawRoundRect(
                 nodeRect,
@@ -251,9 +630,11 @@ class CustomSerialEditorView(
                 nodePaint
             )
 
-            nodePaint.style = Paint.Style.FILL
+            nodePaint.style =
+                Paint.Style.FILL
 
-            textPaint.color = 0xff202020.toInt()
+            textPaint.color =
+                0xff202020.toInt()
 
             canvas.drawText(
                 node.title,
@@ -262,7 +643,10 @@ class CustomSerialEditorView(
                 textPaint
             )
 
-            drawPorts(canvas, node)
+            drawPorts(
+                canvas,
+                node
+            )
         }
     }
 
@@ -270,7 +654,8 @@ class CustomSerialEditorView(
         canvas: Canvas,
         node: Node
     ) {
-        portPaint.color = 0xff555555.toInt()
+        portPaint.color =
+            0xff555555.toInt()
 
         canvas.drawCircle(
             node.x,
@@ -287,9 +672,9 @@ class CustomSerialEditorView(
         )
     }
 
-    private fun drawConnections(canvas: Canvas) {
-        connectionPaint.color = 0xff555555.toInt()
-
+    private fun drawConnections(
+        canvas: Canvas
+    ) {
         for (connection in connections) {
             val from = nodes.find {
                 it.id == connection.from
@@ -299,20 +684,57 @@ class CustomSerialEditorView(
                 it.id == connection.to
             }
 
-            if (from == null || to == null) {
+            if (from == null ||
+                to == null
+            ) {
                 continue
             }
 
-            val startX = from.x + from.width
-            val startY = from.y + from.height / 2f
+            if (from.type ==
+                SimCustomSerialScreen.BlockType.CONTAINER ||
+                to.type ==
+                SimCustomSerialScreen.BlockType.CONTAINER
+            ) {
+                continue
+            }
 
-            val endX = to.x
-            val endY = to.y + to.height / 2f
+            val selected =
+                selectedConnection?.from ==
+                    connection.from &&
+                selectedConnection?.to ==
+                    connection.to
 
-            val distance = max(
-                40f,
-                (endX - startX) * 0.5f
-            )
+            val paint =
+                if (selected) {
+                    selectedConnectionPaint
+                } else {
+                    connectionPaint
+                }
+
+            paint.color =
+                if (selected) {
+                    0xff1976d2.toInt()
+                } else {
+                    0xff555555.toInt()
+                }
+
+            val startX =
+                from.x + from.width
+
+            val startY =
+                from.y + from.height / 2f
+
+            val endX =
+                to.x
+
+            val endY =
+                to.y + to.height / 2f
+
+            val distance =
+                max(
+                    40f,
+                    abs(endX - startX) * 0.5f
+                )
 
             val path = Path()
 
@@ -332,7 +754,7 @@ class CustomSerialEditorView(
 
             canvas.drawPath(
                 path,
-                connectionPaint
+                paint
             )
         }
     }
@@ -341,11 +763,30 @@ class CustomSerialEditorView(
         screenX: Float,
         screenY: Float
     ): Node? {
-        val x = (screenX - offsetX) / scale
-        val y = (screenY - offsetY) / scale
+        val x =
+            (screenX - offsetX) / scale
+
+        val y =
+            (screenY - offsetY) / scale
 
         for (i in nodes.indices.reversed()) {
             val node = nodes[i]
+
+            if (node.type ==
+                SimCustomSerialScreen.BlockType.CONTAINER
+            ) {
+                updateContainerBounds(node)
+
+                if (containerRect.contains(
+                        x,
+                        y
+                    )
+                ) {
+                    return node
+                }
+
+                continue
+            }
 
             if (x >= node.x &&
                 x <= node.x + node.width &&
@@ -359,14 +800,312 @@ class CustomSerialEditorView(
         return null
     }
 
+    private fun findConnection(
+        screenX: Float,
+        screenY: Float
+    ): Connection? {
+        val x =
+            (screenX - offsetX) / scale
+
+        val y =
+            (screenY - offsetY) / scale
+
+        for (connection in connections) {
+            val from = nodes.find {
+                it.id == connection.from
+            }
+
+            val to = nodes.find {
+                it.id == connection.to
+            }
+
+            if (from == null ||
+                to == null
+            ) {
+                continue
+            }
+
+            if (isPointNearConnection(
+                    x,
+                    y,
+                    from,
+                    to
+                )
+            ) {
+                return connection
+            }
+        }
+
+        return null
+    }
+
+    private fun isPointNearConnection(
+        x: Float,
+        y: Float,
+        from: Node,
+        to: Node
+    ): Boolean {
+        val startX =
+            from.x + from.width
+
+        val startY =
+            from.y + from.height / 2f
+
+        val endX =
+            to.x
+
+        val endY =
+            to.y + to.height / 2f
+
+        val distance =
+            max(
+                40f,
+                abs(endX - startX) * 0.5f
+            )
+
+        var previousX = startX
+        var previousY = startY
+
+        val steps = 30
+
+        for (i in 1..steps) {
+            val t =
+                i.toFloat() / steps
+
+            val inverse =
+                1f - t
+
+            val currentX =
+                inverse * inverse * inverse * startX +
+                3f * inverse * inverse * t *
+                (startX + distance) +
+                3f * inverse * t * t *
+                (endX - distance) +
+                t * t * t * endX
+
+            val currentY =
+                inverse * inverse * inverse * startY +
+                3f * inverse * inverse * t *
+                startY +
+                3f * inverse * t * t *
+                endY +
+                t * t * t * endY
+
+            if (distanceToSegment(
+                    x,
+                    y,
+                    previousX,
+                    previousY,
+                    currentX,
+                    currentY
+                ) <= 18f
+            ) {
+                return true
+            }
+
+            previousX = currentX
+            previousY = currentY
+        }
+
+        return false
+    }
+
+    private fun distanceToSegment(
+        px: Float,
+        py: Float,
+        x1: Float,
+        y1: Float,
+        x2: Float,
+        y2: Float
+    ): Float {
+        val dx = x2 - x1
+        val dy = y2 - y1
+
+        if (dx == 0f &&
+            dy == 0f
+        ) {
+            return distance(
+                px,
+                py,
+                x1,
+                y1
+            )
+        }
+
+        val t = (
+            (px - x1) * dx +
+            (py - y1) * dy
+        ) / (
+            dx * dx +
+            dy * dy
+        )
+
+        val clamped =
+            t.coerceIn(
+                0f,
+                1f
+            )
+
+        val closestX =
+            x1 + clamped * dx
+
+        val closestY =
+            y1 + clamped * dy
+
+        return distance(
+            px,
+            py,
+            closestX,
+            closestY
+        )
+    }
+
+    private fun distance(
+        x1: Float,
+        y1: Float,
+        x2: Float,
+        y2: Float
+    ): Float {
+        val dx = x2 - x1
+        val dy = y2 - y1
+
+        return kotlin.math.sqrt(
+            dx * dx +
+            dy * dy
+        )
+    }
+
     private fun moveNode(
         node: Node,
         dx: Float,
         dy: Float
     ) {
-        node.x += dx / scale
-        node.y += dy / scale
+        val worldDx =
+            dx / scale
+
+        val worldDy =
+            dy / scale
+
+        node.x += worldDx
+        node.y += worldDy
+
+        if (node.type ==
+            SimCustomSerialScreen.BlockType.CONTAINER
+        ) {
+            for (childId in node.children) {
+                val child =
+                    nodes.find {
+                        it.id == childId
+                    }
+
+                if (child != null) {
+                    child.x += worldDx
+                    child.y += worldDy
+                }
+            }
+        }
+
         invalidate()
+    }
+
+    private fun updateContainerMembership(
+        node: Node
+    ) {
+        if (node.type ==
+            SimCustomSerialScreen.BlockType.CONTAINER
+        ) {
+            return
+        }
+
+        var target: Node? = null
+
+        for (container in nodes) {
+            if (container.type !=
+                SimCustomSerialScreen.BlockType.CONTAINER
+            ) {
+                continue
+            }
+
+            if (container.children.contains(
+                    node.id
+                )
+            ) {
+                continue
+            }
+
+            updateContainerBounds(container)
+
+            if (isNodeOverContainer(
+                    node,
+                    container
+                )
+            ) {
+                target = container
+                break
+            }
+        }
+
+        if (target != null) {
+            for (container in nodes) {
+                if (container.type ==
+                    SimCustomSerialScreen.BlockType.CONTAINER
+                ) {
+                    container.children.remove(
+                        node.id
+                    )
+                }
+            }
+
+            target.children.add(
+                node.id
+            )
+
+            updateContainerBounds(target)
+
+            return
+        }
+
+        val currentContainer =
+            nodes.firstOrNull {
+                it.type ==
+                    SimCustomSerialScreen.BlockType.CONTAINER &&
+                it.children.contains(node.id)
+            }
+
+        if (currentContainer != null &&
+            !isNodeOverContainer(
+                node,
+                currentContainer
+            )
+        ) {
+            currentContainer.children.remove(
+                node.id
+            )
+
+            updateContainerBounds(
+                currentContainer
+            )
+        }
+    }
+
+    private fun isNodeOverContainer(
+        node: Node,
+        container: Node
+    ): Boolean {
+        val nodeCenterX =
+            node.x + node.width / 2f
+
+        val nodeCenterY =
+            node.y + node.height / 2f
+
+        updateContainerBounds(
+            container
+        )
+
+        return containerRect.contains(
+            nodeCenterX,
+            nodeCenterY
+        )
     }
 
     override fun onTouchEvent(
@@ -381,32 +1120,68 @@ class CustomSerialEditorView(
             MotionEvent.ACTION_DOWN -> {
                 lastX = event.x
                 lastY = event.y
+                movedDuringGesture = false
 
-                draggingNode =
+                val node =
                     findNode(
                         event.x,
                         event.y
                     )
 
+                if (node?.type ==
+                    SimCustomSerialScreen.BlockType.CONTAINER
+                ) {
+                    draggingContainer = node
+                    draggingNode = null
+                } else {
+                    draggingNode = node
+                    draggingContainer = null
+                }
+
                 return true
             }
 
             MotionEvent.ACTION_MOVE -> {
+                val dx =
+                    event.x - lastX
+
+                val dy =
+                    event.y - lastY
+
+                if (abs(dx) > 3f ||
+                    abs(dy) > 3f
+                ) {
+                    movedDuringGesture = true
+                }
+
                 if (!scaleDetector.isInProgress) {
-                    val node = draggingNode
 
-                    if (node != null) {
-                        val dx = event.x - lastX
-                        val dy = event.y - lastY
+                    val container =
+                        draggingContainer
 
+                    val node =
+                        draggingNode
+
+                    if (container != null) {
+                        moveNode(
+                            container,
+                            dx,
+                            dy
+                        )
+                    } else if (node != null) {
                         moveNode(
                             node,
                             dx,
                             dy
                         )
+
+                        updateContainerMembership(
+                            node
+                        )
                     } else {
-                        offsetX += event.x - lastX
-                        offsetY += event.y - lastY
+                        offsetX += dx
+                        offsetY += dy
+
                         invalidate()
                     }
                 }
@@ -420,6 +1195,8 @@ class CustomSerialEditorView(
             MotionEvent.ACTION_UP,
             MotionEvent.ACTION_CANCEL -> {
                 draggingNode = null
+                draggingContainer = null
+
                 return true
             }
         }
@@ -431,6 +1208,7 @@ class CustomSerialEditorView(
         scale = 1f
         offsetX = 0f
         offsetY = 0f
+
         invalidate()
     }
 }
