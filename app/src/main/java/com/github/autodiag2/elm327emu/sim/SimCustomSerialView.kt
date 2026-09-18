@@ -36,8 +36,6 @@ class SimCustomSerialView(
     ) : SimCustomSerialController.ElementView<SimCustomSerialController.Block>(model = model)
 
     open class Link(
-        val from: Int,
-        val to: Int,
         model: SimCustomSerialController.Link? = null
     ) : SimCustomSerialController.ElementView<SimCustomSerialController.Link>(model = model)
 
@@ -325,6 +323,10 @@ class SimCustomSerialView(
         model: SimCustomSerialController.Block
     ): Block {
         return Block(0f, 0f, model = model)
+    }
+
+    public fun addLink(model: SimCustomSerialController.Link): Link {
+        return Link(model = model)
     }
 
     override fun onDraw(

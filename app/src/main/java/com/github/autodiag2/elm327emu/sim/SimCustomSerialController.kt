@@ -114,7 +114,10 @@ class SimCustomSerialController(
         from: SimCustomSerialView.Block,
         to: SimCustomSerialView.Block
     ) {
-        // TODO
+        val linkModel = Link(from.model!!.id, to.model!!.id)
+        val linkView = view.addLink(model = linkModel)
+        linkModel.view = linkView
+        links.add(linkModel)
     }
 
     override fun onBlockIncluded(
