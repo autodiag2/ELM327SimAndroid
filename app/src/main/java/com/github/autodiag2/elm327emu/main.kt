@@ -245,6 +245,14 @@ class MainActivity : AppCompatActivity() {
         menu.setGroupVisible(R.id.action_menu_group_sim_custom_serial_script,
             activeScreen is SimCustomSerialScreen
         )
+        var simCustomSerialScreenIsSomeSelection = false
+        if ( activeScreen is SimCustomSerialScreen ) {
+            val simCustomSerialScreen = activeScreen as SimCustomSerialScreen
+            simCustomSerialScreenIsSomeSelection = simCustomSerialScreen.editor.isSomeSelection()
+        }
+        menu.setGroupVisible(R.id.action_menu_group_sim_custom_serial_script_any_element_selected,
+            activeScreen is SimCustomSerialScreen && simCustomSerialScreenIsSomeSelection
+        )
 
         return super.onPrepareOptionsMenu(menu)
     }
@@ -510,6 +518,10 @@ class MainActivity : AppCompatActivity() {
             }
             R.id.sim_custom_serial_script_add_container -> {
                 simView.customSerialScreen.onAddContainer()
+                true
+            }
+            R.id.sim_custom_serial_script_del -> {
+                simView.customSerialScreen.onDelete()
                 true
             }
 

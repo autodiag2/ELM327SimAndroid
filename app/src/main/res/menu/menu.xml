@@ -73,4 +73,10 @@
             android:title="@string/sim_custom_serial_script_add_container" />
     </group>
 
+    <group android:id="@+id/action_menu_group_sim_custom_serial_script_any_element_selected">
+        <item
+            android:id="@+id/sim_custom_serial_script_del"
+            android:title="@string/sim_custom_serial_script_del" />
+    </group>
+
 </menu>

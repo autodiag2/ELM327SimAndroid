@@ -23,7 +23,7 @@ class SimCustomSerialScreen(
     context: Context
 ) : LinearLayout(context) {
 
-    private var editor: CustomSerialEditorView
+    public var editor: CustomSerialEditorView
 
     enum class BlockType {
         DELAY,
@@ -92,6 +92,29 @@ class SimCustomSerialScreen(
                 blocks.find { it.id == from.id }?.let {
                     linkBlock(it)
                 }
+            }
+
+            override fun onLinkToNode(
+                from: CustomSerialEditorView.Node,
+                to: CustomSerialEditorView.Node
+            ) {
+                if (from.id == to.id) {
+                    return
+                }
+
+                links.removeAll {
+                    it.from == from.id &&
+                    it.to == to.id
+                }
+
+                links.add(
+                    Link(
+                        from = from.id,
+                        to = to.id
+                    )
+                )
+
+                rebuild()
             }
         }
     }
@@ -225,6 +248,9 @@ class SimCustomSerialScreen(
     }
     public fun onAddContainer() {
         addBlock(BlockType.CONTAINER)
+    }
+    public fun onDelete() {
+        editor.onDelete()
     }
     
     private fun editReceive(block: Block) {
