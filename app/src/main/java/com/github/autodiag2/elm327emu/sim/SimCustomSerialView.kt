@@ -229,12 +229,28 @@ class SimCustomSerialView(
                 override fun onScale(
                     detector: ScaleGestureDetector
                 ): Boolean {
-                    scale *= detector.scaleFactor
+                    val oldScale = scale
 
-                    scale = scale.coerceIn(
-                        0.35f,
-                        2.5f
-                    )
+                    val newScale =
+                        (scale * detector.scaleFactor)
+                            .coerceIn(0.35f, 2.5f)
+
+                    val focusX = detector.focusX
+                    val focusY = detector.focusY
+
+                    val worldX =
+                        (focusX - offsetX) / oldScale
+
+                    val worldY =
+                        (focusY - offsetY) / oldScale
+
+                    scale = newScale
+
+                    offsetX =
+                        focusX - worldX * newScale
+
+                    offsetY =
+                        focusY - worldY * newScale
 
                     invalidate()
 
@@ -1258,6 +1274,9 @@ class SimCustomSerialView(
             }
 
             MotionEvent.ACTION_MOVE -> {
+                if (event.pointerCount > 1) {
+                    return true
+                }
                 val dx =
                     event.x - lastX
 
@@ -1306,10 +1325,10 @@ class SimCustomSerialView(
                         offsetY += dy
                         invalidate()
                     }
-                }
 
-                lastX = event.x
-                lastY = event.y
+                    lastX = event.x
+                    lastY = event.y
+                }
 
                 return true
             }
