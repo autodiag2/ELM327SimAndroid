@@ -73,6 +73,12 @@ class Sim(
             buildAddECUToGUI(address.toByte(), getString(R.string.sim_ecu_config_ecu_name, getString(type.label_id)), type)
         }
 
+        findViewById<Button>(R.id.sim_custom_serial_script_open).setOnClickListener {
+            activity.showNestedScreen(
+                SimCustomSerialScreen(activity)
+            )
+        }
+        
         findViewById<Button>(R.id.sim_state).apply {
             setOnClickListener {
                 if (activity.isPermissionsGranted()) {
