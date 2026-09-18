@@ -5,6 +5,9 @@
         <item name="colorPrimary">@color/sol_base2</item>
         <item name="colorPrimaryDark">@color/sol_base3</item>
         <item name="colorAccent">@color/sol_blue</item>
+        <item name="colorAccentInactive">@color/sol_green</item>
+
+        <item name="colorControlNormal">?android:attr/textColor</item>
         
         <item name="android:statusBarColor">?attr/colorPrimary</item>
         <item name="android:windowLightStatusBar">true</item>

@@ -788,7 +788,7 @@ class SimCustomSerialView(
                 if (selected) {
                     0xff1976d2.toInt()
                 } else {
-                    0xff555555.toInt()
+                    getThemeColor(R.attr.colorAccentInactive)
                 }
 
             drawLink(
