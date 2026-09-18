@@ -14,14 +14,14 @@ import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sqrt
+import com.github.autodiag2.elm327emu.sim.SimCustomSerialScreen
 
 class CustomSerialEditorView(
     context: Context,
     attrs: AttributeSet? = null
 ) : View(context, attrs) {
 
-    data class Node(
-        val id: Int,
+    open class Node(
         var type: SimCustomSerialScreen.BlockType,
         var title: String,
         var x: Float,
@@ -29,12 +29,12 @@ class CustomSerialEditorView(
         var width: Float = 260f,
         var height: Float = 100f,
         val children: MutableList<Int> = mutableListOf()
-    )
+    ): SimCustomSerialScreen.ElementView()
 
-    data class Connection(
+    open class Connection(
         val from: Int,
-        val to: Int
-    )
+        val to: Int,
+    ): SimCustomSerialScreen.ElementView()
 
     interface Listener {
         fun onNodeClicked(node: Node)
@@ -300,11 +300,31 @@ class CustomSerialEditorView(
         invalidate()
     }
 
-    fun addNode(
-        node: Node
-    ) {
+    public fun rmConnection(connection: Connection) {
+        connections.remove(connection)
+        invalidate()
+    }
+
+    public fun addBlockChild(to: Node, child: Node) {
+        assert(to.type == SimCustomSerialScreen.BlockType.CONTAINER)
+        to.children.add(child.id)
+        invalidate()
+    }
+    
+    public fun blockUpdate(block: SimCustomSerialScreen.Block) {
+        val node = block.view as Node
+        node.title = block.name
+        invalidate()
+    }
+
+    public fun addBlock(
+        type: SimCustomSerialScreen.BlockType,
+        name: String = ""
+    ): Node {
+        val node = Node(type, name, 0f, 0f)
         nodes.add(node)
         invalidate()
+        return node
     }
 
     fun removeNode(

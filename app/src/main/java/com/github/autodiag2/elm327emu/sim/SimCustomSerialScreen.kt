@@ -31,29 +31,37 @@ class SimCustomSerialScreen(
         SEND,
         CONTAINER
     }
+    
+    open class ElementView(
+            val id: Int = ElementView.id_track++
+        ) { 
+        companion object {
+            private var id_track: Int = 1
+        }
+    }
 
     data class Block(
         val id: Int,
         var type: BlockType,
+        val view: ElementView,
         var delay: Int = 0,
         var text: String = "",
         var match: String = "exact",
         var includeEol: Boolean = false,
         var interpretEscapes: Boolean = true,
         var name: String = "",
-        val children: MutableList<Int> = mutableListOf()
+        val children: MutableList<Int> = mutableListOf(),
     )
 
     data class Link(
+        val id: Int,
         val from: Int,
-        val to: Int
+        val to: Int,
+        val view: ElementView,
     )
 
     private val blocks = mutableListOf<Block>()
     private val links = mutableListOf<Link>()
-
-    private var nextId = 0
-
 
     init {
         orientation = VERTICAL
@@ -65,9 +73,6 @@ class SimCustomSerialScreen(
         )
 
         editor = findViewById(R.id.custom_serial_editor)
-
-        addBlock(BlockType.CONTAINER, "Main")
-
         editor.listener = object : CustomSerialEditorView.Listener {
 
             override fun onNodeClicked(
@@ -81,118 +86,90 @@ class SimCustomSerialScreen(
             override fun onNodeLongClicked(
                 node: CustomSerialEditorView.Node
             ) {
-                blocks.find { it.id == node.id }?.let {
-                    linkBlock(it)
-                }
+                // TODO
             }
 
             override fun onCreateLink(
                 from: CustomSerialEditorView.Node
             ) {
-                blocks.find { it.id == from.id }?.let {
-                    linkBlock(it)
-                }
+                // TODO
             }
 
             override fun onLinkToNode(
                 from: CustomSerialEditorView.Node,
                 to: CustomSerialEditorView.Node
             ) {
-                if (from.id == to.id) {
-                    return
-                }
-
-                links.removeAll {
-                    it.from == from.id &&
-                    it.to == to.id
-                }
-
-                links.add(
-                    Link(
-                        from = from.id,
-                        to = to.id
-                    )
-                )
-
-                rebuild()
+                // TODO
             }
         }
     }
 
-    private fun updateEditor() {
-        val nodes = blocks.mapIndexed { index, block ->
-            CustomSerialEditorView.Node(
-                id = block.id,
-                type = block.type,
-                title = blockTitle(block),
-                x = 80f + (index % 2) * 360f,
-                y = 80f + (index / 2) * 160f
-            )
-        }
+    fun getString(resId: Int, vararg formatArgs: Any?): String {
+        return context.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
+    }
 
-        editor.setNodes(nodes)
-
-        editor.setConnections(
-            links.map {
-                CustomSerialEditorView.Connection(
-                    from = it.from,
-                    to = it.to
-                )
+    private fun rmLink(link: Any) {
+        var linko = link
+        if ( link is Int ) {
+            if ( 0 < link ) {
+                linko = blocks.find { it.id == link } as Block
             }
-        )
+        }
+        assert(linko is Link)
+        val linkm = linko as Link
+        links.remove(linkm)
+        editor.rmConnection(linkm.view as CustomSerialEditorView.Connection)
+    }
+
+    private fun rmBlock(block: Any) {
+        var blocko = block
+        if ( block is Int ) {
+            if ( 0 < block ) {
+                blocko = blocks.find { it.id == block } as Block
+            }
+        }
+        assert(blocko is Block)
+        val blockm = blocko as Block
+        for(childblock in blockm.children) {
+            rmBlock(childblock)
+        }
+        blocks.remove(blockm)
+        editor.removeNode(blockm.view.id)
+        for(link in links) {
+            if ( link.from == blockm.id || link.to == blockm.id ) {
+                rmLink(link)
+            }
+        }
     }
 
     private fun addBlock(
         type: BlockType,
+        to: Block? = null,
         name: String = ""
     ) {
-        val block = Block(
-            id = nextId++,
-            type = type,
-            name = name.ifEmpty {
-                when (type) {
-                    BlockType.DELAY -> "Delay"
-                    BlockType.RECV -> "Receive"
-                    BlockType.SEND -> "Send"
-                    BlockType.CONTAINER -> "Container"
-                }
+        var blockName = name
+        if ( name.isEmpty() ) {
+            blockName = when (type) {
+                BlockType.DELAY -> getString(R.string.sim_custom_serial_script_block_name_delay)
+                BlockType.RECV -> getString(R.string.sim_custom_serial_script_block_name_recv)
+                BlockType.SEND -> getString(R.string.sim_custom_serial_script_block_name_send)
+                BlockType.CONTAINER -> getString(R.string.sim_custom_serial_script_block_name_container)
             }
-        )
-
-        blocks.add(block)
-
-        rebuild()
-    }
-
-    private fun rebuild() {
-        val nodes = blocks.mapIndexed { index, block ->
-            CustomSerialEditorView.Node(
-                id = block.id,
-                type = block.type,
-                title = blockTitle(block),
-                x = 80f + (index % 2) * 360f,
-                y = 80f + (index / 2) * 160f
-            )
         }
-
-        editor.setNodes(nodes)
-
-        editor.setConnections(
-            links.map {
-                CustomSerialEditorView.Connection(
-                    from = it.from,
-                    to = it.to
-                )
-            }
+        val view = editor.addBlock(type, blockName)
+        val block = Block(
+            id = view.id,
+            type = type,
+            name = blockName,
+            view = view
         )
-    }
-
-    private fun createBlockView(
-        block: Block,
-        indent: Int
-    ): View {
-
-        return View(context)
+        blocks.add(block)
+        if ( to != null ) {
+            if ( to.type == BlockType.CONTAINER ) {
+                to.children.add(block.id)
+                editor.addBlockChild(to.view as CustomSerialEditorView.Node, block.view as CustomSerialEditorView.Node)
+            }
+        }
     }
 
     private fun blockTitle(block: Block): String {
@@ -220,23 +197,6 @@ class SimCustomSerialScreen(
         }
     }
 
-    private fun editDelay(block: Block) {
-        val input = EditText(context).apply {
-            inputType = InputType.TYPE_CLASS_NUMBER
-            setText(block.delay.toString())
-        }
-
-        android.app.AlertDialog.Builder(context)
-            .setTitle(R.string.sim_custom_serial_script_delay)
-            .setView(input)
-            .setPositiveButton(android.R.string.ok) { _, _ ->
-                block.delay = input.text.toString().toIntOrNull() ?: 0
-                rebuild()
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
-    }
-
     public fun onAddDelay() {
         addBlock(BlockType.DELAY)
     }
@@ -253,6 +213,23 @@ class SimCustomSerialScreen(
         editor.onDelete()
     }
     
+    private fun editDelay(block: Block) {
+        val input = EditText(context).apply {
+            inputType = InputType.TYPE_CLASS_NUMBER
+            setText(block.delay.toString())
+        }
+
+        android.app.AlertDialog.Builder(context)
+            .setTitle(R.string.sim_custom_serial_script_delay)
+            .setView(input)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                block.delay = input.text.toString().toIntOrNull() ?: 0
+                editor.blockUpdate(block)
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
     private fun editReceive(block: Block) {
         val layout = LinearLayout(context).apply {
             orientation = VERTICAL
@@ -305,7 +282,7 @@ class SimCustomSerialScreen(
                 block.text = initial_text.text.toString()
                 block.interpretEscapes = escapes.isChecked
 
-                rebuild()
+                editor.blockUpdate(block)
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
@@ -346,7 +323,7 @@ class SimCustomSerialScreen(
                 block.text = initial_text.text.toString()
                 block.includeEol = eol.isChecked
                 block.interpretEscapes = escapes.isChecked
-                rebuild()
+                editor.blockUpdate(block)
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
@@ -362,41 +339,7 @@ class SimCustomSerialScreen(
             .setView(input)
             .setPositiveButton(android.R.string.ok) { _, _ ->
                 block.name = input.text.toString()
-                rebuild()
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
-    }
-
-    private fun linkBlock(block: Block) {
-        val candidates = blocks.filter {
-            it.id != block.id
-        }
-
-        if (candidates.isEmpty()) {
-            return
-        }
-
-        val labels = candidates.map {
-            "${it.id}: ${blockTitle(it)}"
-        }
-
-        android.app.AlertDialog.Builder(context)
-            .setTitle(R.string.sim_custom_serial_script_link)
-            .setItems(labels.toTypedArray()) { _, index ->
-                val target = candidates[index]
-
-                links.removeAll {
-                    it.from == block.id &&
-                    it.to == target.id
-                }
-
-                links.add(
-                    Link(
-                        block.id,
-                        target.id
-                    )
-                )
+                editor.blockUpdate(block)
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
@@ -502,10 +445,6 @@ class SimCustomSerialScreen(
         content.put("flow", jsonFlow)
 
         return root
-    }
-
-    fun copyJson(): String {
-        return toJson().toString(2)
     }
 
     private fun dp(value: Int): Int {
