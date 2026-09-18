@@ -15,6 +15,8 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sqrt
 import com.github.autodiag2.elm327emu.sim.SimCustomSerialController
+import android.util.Log
+import com.github.autodiag2.elm327emu.BuildConfig
 
 class SimCustomSerialView(
     context: Context,
@@ -84,6 +86,7 @@ class SimCustomSerialView(
     private val containerTitleHeight = 40f
     private val portRadius = 8f
     private val portHitRadius = 28f
+    private var lastPointerCount = 0
 
     init {
         nodePaint.style = Paint.Style.FILL
@@ -991,6 +994,12 @@ class SimCustomSerialView(
         )
     }
 
+    private fun logDebug(message: String) {
+        if (BuildConfig.DEBUG) {
+            Log.d("SimCustomSerialView", message)
+        }
+    }
+
     private fun screenToWorld(
         screenX: Float,
         screenY: Float
@@ -1014,6 +1023,8 @@ class SimCustomSerialView(
 
         node.x += worldDx
         node.y += worldDy
+
+        logDebug("moveBlock: node=${node.model!!.id} dx=${dx} dy=${dy} worldDx=${worldDx} worldDy=${worldDy}")
 
         if (node.model!!.type ==
             SimCustomSerialController.Block.Type.CONTAINER
@@ -1210,6 +1221,10 @@ class SimCustomSerialView(
                         event.y
                     )
 
+                logDebug(
+                    "DOWN x=${event.x} y=${event.y} block=${node?.model?.id} type=${node?.model?.type}"
+                )
+
                 if (node?.model?.type ==
                     SimCustomSerialController.Block.Type.CONTAINER
                 ) {
@@ -1229,6 +1244,14 @@ class SimCustomSerialView(
 
                 val dy =
                     event.y - lastY
+
+                logDebug(
+                    "MOVE dx=$dx dy=$dy " +
+                        "container=${draggingContainer?.model?.id} " +
+                        "block=${draggingBlock?.model?.id} " +
+                        "scaleInProgress=${scaleDetector.isInProgress}"
+                )
+
 
                 if (abs(dx) > 3f ||
                     abs(dy) > 3f
