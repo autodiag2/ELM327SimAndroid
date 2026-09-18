@@ -54,9 +54,9 @@ class SimCustomSerialController(
         var includeEol: Boolean = false,
         var interpretEscapes: Boolean = true,
         var name: String = "",
-        view: SimCustomSerialView.Node? = null,
+        view: SimCustomSerialView.Block? = null,
         val children: MutableList<Int> = mutableListOf()
-    ) : ElementModel<SimCustomSerialView.Node>(view) {
+    ) : ElementModel<SimCustomSerialView.Block>(view) {
         enum class Type {
             DELAY,
             RECV,
@@ -68,8 +68,8 @@ class SimCustomSerialController(
     open class Link(
         val from: Int,
         val to: Int,
-        view: SimCustomSerialView.Connection? = null
-    ) : ElementModel<SimCustomSerialView.Connection>(view)
+        view: SimCustomSerialView.Link? = null
+    ) : ElementModel<SimCustomSerialView.Link>(view)
 
     private val blocks = mutableListOf<Block>()
     private val links = mutableListOf<Link>()
@@ -86,32 +86,47 @@ class SimCustomSerialController(
         view = findViewById(R.id.custom_serial_view)
         view.listener = object : SimCustomSerialView.Listener {
 
-            override fun onNodeClicked(
-                node: SimCustomSerialView.Node
+            override fun onBlockClicked(
+                node: SimCustomSerialView.Block
             ) {
                 blocks.find { it.id == node.model!!.id }?.let {
                     editBlock(it)
                 }
             }
 
-            override fun onNodeLongClicked(
-                node: SimCustomSerialView.Node
+            override fun onBlockLongClicked(
+                node: SimCustomSerialView.Block
             ) {
                 // TODO
             }
 
             override fun onCreateLink(
-                from: SimCustomSerialView.Node
+                from: SimCustomSerialView.Block
             ) {
                 // TODO
             }
 
-            override fun onLinkToNode(
-                from: SimCustomSerialView.Node,
-                to: SimCustomSerialView.Node
+            override fun onLinkToBlock(
+                from: SimCustomSerialView.Block,
+                to: SimCustomSerialView.Block
             ) {
                 // TODO
             }
+
+            override fun onBlockIncluded(
+                parent: Block,
+                child: Block
+            ) {
+                parent.children.add(child.id)
+            }
+
+            override fun onBlockExcluded(
+                parent: Block,
+                child: Block
+            ) {
+                parent.children.remove(child.id)
+            }
+
         }
     }
 
@@ -129,7 +144,7 @@ class SimCustomSerialController(
         assert(linko is Link)
         val linkm = linko as Link
         links.remove(linkm)
-        view.rmConnection(linkm.view as SimCustomSerialView.Connection)
+        view.rmLink(linkm.view as SimCustomSerialView.Link)
     }
 
     private fun rmBlock(block: Any) {
@@ -145,7 +160,7 @@ class SimCustomSerialController(
             rmBlock(childblock)
         }
         blocks.remove(blockm)
-        view.removeNode(blockm.id)
+        view.removeBlock(blockm.id)
         for(link in links) {
             if ( link.from == blockm.id || link.to == blockm.id ) {
                 rmLink(link)
@@ -171,13 +186,13 @@ class SimCustomSerialController(
             type = type,
             name = blockName
         )
-        val view = view.addBlock(model = block)
-        block.viewLink(view)
+        val blockView = view.addBlock(model = block)
+        block.viewLink(blockView)
         blocks.add(block)
         if ( to != null ) {
             if ( to.type == Block.Type.CONTAINER ) {
                 to.children.add(block.id)
-                view.addBlockChild(to.view as SimCustomSerialView.Node, block.view as SimCustomSerialView.Node)
+                view.addBlockChild(to.view as SimCustomSerialView.Block, block.view as SimCustomSerialView.Block)
             }
         }
     }
