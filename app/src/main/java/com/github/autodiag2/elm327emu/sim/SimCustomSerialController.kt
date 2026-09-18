@@ -170,7 +170,7 @@ class SimCustomSerialController(
         var linko = link
         if ( link is Int ) {
             if ( 0 < link ) {
-                linko = blocks.find { it.id == link } as Block
+                linko = links.find { it.id == link } as Link
             }
         }
         assert(linko is Link)
@@ -181,30 +181,38 @@ class SimCustomSerialController(
 
     private fun rmBlock(block: Any) {
         var blocko = block
-        if ( block is Int ) {
-            if ( 0 < block ) {
+
+        if (block is Int) {
+            if (0 < block) {
                 blocko = blocks.find { it.id == block } as Block
             }
         }
+
         assert(blocko is Block)
+
         val blockm = blocko as Block
-        for(childblock in blockm.children) {
+
+        for (childblock in blockm.children.toList()) {
             rmBlock(childblock)
         }
+
         blocks.remove(blockm)
-        if ( selectedBlock == blockm ) {
+
+        if (selectedBlock == blockm) {
             selectedBlock = null
         }
+
         selectedLink =
             selectedLink?.takeUnless {
                 it.from == blockm.id ||
                 it.to == blockm.id
             }
-        for(link in links) {
-            if ( link.from == blockm.id || link.to == blockm.id ) {
-                rmLink(link)
-            }
+
+        links.removeAll {
+            it.from == blockm.id ||
+            it.to == blockm.id
         }
+
         view.refresh()
     }
 
