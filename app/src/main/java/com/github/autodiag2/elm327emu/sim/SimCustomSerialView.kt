@@ -692,33 +692,42 @@ class SimCustomSerialView(
         screenX: Float,
         screenY: Float
     ): Block? {
-        val point =
-            screenToWorld(
-                screenX,
-                screenY
-            )
-
+        val point = screenToWorld(screenX, screenY)
         val x = point.first
         val y = point.second
 
-        for (block in model!!.blocks) {
-            val node = block.view!!
+        for (i in model!!.blocks.indices.reversed()) {
+            val block = model!!.blocks[i]
 
             if (block.type ==
                 SimCustomSerialController.Block.Type.CONTAINER
             ) {
-                updateContainerBounds(node)
-
-                if (containerRect.contains(
-                        x,
-                        y
-                    )
-                ) {
-                    return node
-                }
-
                 continue
             }
+
+            val node = block.view!!
+
+            if (x >= node.x &&
+                x <= node.x + node.width &&
+                y >= node.y &&
+                y <= node.y + node.height
+            ) {
+                return node
+            }
+        }
+
+        for (i in model!!.blocks.indices.reversed()) {
+            val block = model!!.blocks[i]
+
+            if (block.type !=
+                SimCustomSerialController.Block.Type.CONTAINER
+            ) {
+                continue
+            }
+
+            val node = block.view!!
+
+            updateContainerBounds(node)
 
             if (x >= node.x &&
                 x <= node.x + node.width &&
