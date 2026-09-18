@@ -82,10 +82,10 @@ class SimCustomSerialView(
 
     private var movedDuringGesture = false
 
-    private val containerPadding = 32f
+    private val containerPadding = 50f
     private val containerTitleHeight = 40f
-    private val portRadius = 8f
-    private val portHitRadius = 28f
+    private val portRadius = 20f
+    private val portHitRadius = 100f
     private var lastPointerCount = 0
 
     init {
