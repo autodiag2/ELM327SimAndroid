@@ -41,6 +41,8 @@ class SimCustomSerialView(
         fun onBlockLongClicked(node: Block)
         fun onCreateLink(from: Block)
         fun onLinkToBlock(from: Block, to: Block)
+        fun onBlockIncluded(parent: SimCustomSerialController.Block, child: SimCustomSerialController.Block)
+        fun onBlockExcluded(parent: SimCustomSerialController.Block, child: SimCustomSerialController.Block)
     }
 
     var listener: Listener? = null
@@ -1257,15 +1259,11 @@ class SimCustomSerialView(
                 if (container.model!!.type ==
                     SimCustomSerialController.Block.Type.CONTAINER
                 ) {
-                    container.children.remove(
-                        node.model!!.id
-                    )
+                    listener?.onBlockExcluded(container.model!!, node.model!!)
                 }
             }
 
-            target.children.add(
-                node.model!!.id
-            )
+            listener?.onBlockIncluded(target.model!!, node.model!!)
 
             updateContainerBounds(target)
 
@@ -1285,9 +1283,7 @@ class SimCustomSerialView(
                 currentContainer
             )
         ) {
-            currentContainer.children.remove(
-                node.model!!.id
-            )
+            listener?.onBlockExcluded(currentContainer.model!!, node.model!!)
 
             updateContainerBounds(
                 currentContainer
