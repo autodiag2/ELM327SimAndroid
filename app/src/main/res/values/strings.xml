@@ -74,6 +74,8 @@
     <string name="sim_ecu_random_seed_label">Seed value</string>
     <string name="sim_ecu_random_use_signals">Use signals to drive bytes expansion</string>
     <string name="sim_ecu_random_seed_validate">Validate</string>
+    <string name="sim_ecu_gui_godot_lite_unsuported_dialog_title">Not supported</string>
+    <string name="sim_ecu_gui_godot_lite_unsuported_dialog_desc">Not supported in this version\n\nPlease download the full version (com.github.autodiag2.elm327emu-full.apk) at:\n</string>
     <string name="sim_ecu_gui_add_signal">Add</string>
     <string name="sim_ecu_gui_dtc_entry_validate">Add</string>
     <string name="sim_ecu_gui_mil_state">MIL state</string>
