@@ -24,13 +24,6 @@ class SimCustomSerialScreen(
 ) : LinearLayout(context) {
 
     public var editor: CustomSerialEditorView
-
-    enum class BlockType {
-        DELAY,
-        RECV,
-        SEND,
-        CONTAINER
-    }
     
     open class ElementModel<V>(
         var view: V? = null,
@@ -54,7 +47,7 @@ class SimCustomSerialScreen(
     }
 
     open class Block(
-        var type: BlockType,
+        var type: Block.Type,
         var delay: Int = 0,
         var text: String = "",
         var match: String = "exact",
@@ -63,7 +56,14 @@ class SimCustomSerialScreen(
         var name: String = "",
         view: CustomSerialEditorView.Node? = null,
         val children: MutableList<Int> = mutableListOf()
-    ) : ElementModel<CustomSerialEditorView.Node>(view)
+    ) : ElementModel<CustomSerialEditorView.Node>(view) {
+        enum class Type {
+            DELAY,
+            RECV,
+            SEND,
+            CONTAINER
+        }
+    }
 
     open class Link(
         val from: Int,
@@ -154,29 +154,28 @@ class SimCustomSerialScreen(
     }
 
     private fun addBlock(
-        type: BlockType,
+        type: Block.Type,
         to: Block? = null,
         name: String = ""
     ) {
         var blockName = name
         if ( name.isEmpty() ) {
             blockName = when (type) {
-                BlockType.DELAY -> getString(R.string.sim_custom_serial_script_block_name_delay)
-                BlockType.RECV -> getString(R.string.sim_custom_serial_script_block_name_recv)
-                BlockType.SEND -> getString(R.string.sim_custom_serial_script_block_name_send)
-                BlockType.CONTAINER -> getString(R.string.sim_custom_serial_script_block_name_container)
+                Block.Type.DELAY -> getString(R.string.sim_custom_serial_script_block_name_delay)
+                Block.Type.RECV -> getString(R.string.sim_custom_serial_script_block_name_recv)
+                Block.Type.SEND -> getString(R.string.sim_custom_serial_script_block_name_send)
+                Block.Type.CONTAINER -> getString(R.string.sim_custom_serial_script_block_name_container)
             }
         }
-        val view = editor.addBlock(type, blockName)
         val block = Block(
             type = type,
-            name = blockName,
-            view = view
+            name = blockName
         )
-        view.modelLink(block)
+        val view = editor.addBlock(model = block)
+        block.viewLink(view)
         blocks.add(block)
         if ( to != null ) {
-            if ( to.type == BlockType.CONTAINER ) {
+            if ( to.type == Block.Type.CONTAINER ) {
                 to.children.add(block.id)
                 editor.addBlockChild(to.view as CustomSerialEditorView.Node, block.view as CustomSerialEditorView.Node)
             }
@@ -185,40 +184,40 @@ class SimCustomSerialScreen(
 
     private fun blockTitle(block: Block): String {
         return when (block.type) {
-            BlockType.DELAY ->
+            Block.Type.DELAY ->
                 "#${block.id}  Delay ${block.delay} ms"
 
-            BlockType.RECV ->
+            Block.Type.RECV ->
                 "#${block.id}  Receive: ${block.text}"
 
-            BlockType.SEND ->
+            Block.Type.SEND ->
                 "#${block.id}  Send: ${block.text}"
 
-            BlockType.CONTAINER ->
+            Block.Type.CONTAINER ->
                 "#${block.id}  ${block.name}"
         }
     }
 
     private fun editBlock(block: Block) {
         when (block.type) {
-            BlockType.DELAY -> editDelay(block)
-            BlockType.RECV -> editReceive(block)
-            BlockType.SEND -> editSend(block)
-            BlockType.CONTAINER -> editContainer(block)
+            Block.Type.DELAY -> editDelay(block)
+            Block.Type.RECV -> editReceive(block)
+            Block.Type.SEND -> editSend(block)
+            Block.Type.CONTAINER -> editContainer(block)
         }
     }
 
     public fun onAddDelay() {
-        addBlock(BlockType.DELAY)
+        addBlock(Block.Type.DELAY)
     }
     public fun onAddRecv() {
-        addBlock(BlockType.RECV)
+        addBlock(Block.Type.RECV)
     }
     public fun onAddSend() {
-        addBlock(BlockType.SEND)
+        addBlock(Block.Type.SEND)
     }
     public fun onAddContainer() {
-        addBlock(BlockType.CONTAINER)
+        addBlock(Block.Type.CONTAINER)
     }
     public fun onDelete() {
         editor.onDelete()
@@ -380,12 +379,12 @@ class SimCustomSerialScreen(
             jsonBlock.put("id", block.id)
 
             when (block.type) {
-                BlockType.DELAY -> {
+                Block.Type.DELAY -> {
                     jsonBlock.put("type", "delay")
                     jsonBlock.put("content", block.delay)
                 }
 
-                BlockType.RECV -> {
+                Block.Type.RECV -> {
                     jsonBlock.put("type", "recv")
 
                     val value = JSONObject()
@@ -400,7 +399,7 @@ class SimCustomSerialScreen(
                     jsonBlock.put("content", value)
                 }
 
-                BlockType.SEND -> {
+                Block.Type.SEND -> {
                     jsonBlock.put("type", "send")
 
                     val value = JSONObject()
@@ -418,7 +417,7 @@ class SimCustomSerialScreen(
                     jsonBlock.put("content", value)
                 }
 
-                BlockType.CONTAINER -> {
+                Block.Type.CONTAINER -> {
                     jsonBlock.put("type", "container")
 
                     val value = JSONObject()
