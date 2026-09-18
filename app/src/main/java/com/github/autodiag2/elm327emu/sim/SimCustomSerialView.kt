@@ -1213,7 +1213,7 @@ class SimCustomSerialView(
                 continue
             }
 
-            if (container.view!! == currentContainer) {
+            if (container == currentContainer) {
                 continue
             }
 
