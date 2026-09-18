@@ -520,6 +520,10 @@ class MainActivity : AppCompatActivity() {
                 simView.customSerialScreen.onAddContainer()
                 true
             }
+            R.id.sim_custom_serial_script_clear -> {
+                simView.customSerialScreen.clear()
+                true
+            }
             R.id.sim_custom_serial_script_del -> {
                 simView.customSerialScreen.onDelete()
                 true

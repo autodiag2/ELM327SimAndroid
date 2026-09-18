@@ -47,6 +47,7 @@
     <string name="sim_custom_serial_script_add_recv">Add Recv</string>
     <string name="sim_custom_serial_script_add_send">Add Send</string>
     <string name="sim_custom_serial_script_add_container">Add Container</string>
+    <string name="sim_custom_serial_script_clear">Clear</string>
     <string name="sim_custom_serial_script_delay">Delay</string>
     <string name="sim_custom_serial_script_receive">Receive</string>
     <string name="sim_custom_serial_script_send">Send</string>

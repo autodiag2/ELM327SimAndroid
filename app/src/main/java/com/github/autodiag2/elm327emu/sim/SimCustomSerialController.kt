@@ -166,6 +166,13 @@ class SimCustomSerialController(
         return context.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
     }
 
+    public fun clear() {
+        blocks.clear()
+        links.clear()
+        onUnselectAll()
+        view.refresh()
+    }
+
     private fun rmLink(link: Any) {
         var linko = link
         if ( link is Int ) {
