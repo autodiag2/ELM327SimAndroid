@@ -83,7 +83,6 @@ class SimCustomSerialView(
 
     // --------- Customization settings ---------
     private var scale = 1f
-    private val containerPadding = 50f
     private val containerTitleHeight = 40f
     private val portRadius = 20f
     private val portHitRadius = 100f
@@ -812,22 +811,9 @@ class SimCustomSerialView(
                 }
             }
 
-        if (children.isEmpty()) {
-            container.width =
-                max(
-                    container.width,
-                    260f
-                )
-
-            container.height =
-                max(
-                    container.height,
-                    140f
-                )
-
-            return
-        }
-
+        /*
+        * Update nested containers first.
+        */
         for (childBlock in children) {
             if (
                 childBlock.type ==
@@ -839,38 +825,97 @@ class SimCustomSerialView(
             }
         }
 
-        var right = 0f
-        var bottom = 0f
+        /*
+        * ------------------------------------------------------------
+        * Minimum size required by the container title.
+        * ------------------------------------------------------------
+        */
+
+        val titleWidth =
+            getTextWidth(
+                container.model!!.name
+            )
+
+        val titleHeight =
+            textPaint.fontMetrics.bottom -
+            textPaint.fontMetrics.top
+
+        val titleRequiredWidth =
+            titleWidth +
+            blockStandardContentPadding * 2f
+
+        val titleRequiredHeight =
+            titleHeight +
+            blockStandardContentPadding * 2f
+
+        /*
+        * ------------------------------------------------------------
+        * Size required by children.
+        * ------------------------------------------------------------
+        */
+
+        var childrenRequiredWidth = 0f
+        var childrenRequiredHeight = 0f
 
         for (childBlock in children) {
             val child = childBlock.view!!
 
-            right =
+            childrenRequiredWidth =
                 max(
-                    right,
+                    childrenRequiredWidth,
                     child.x + child.width
                 )
 
-            bottom =
+            childrenRequiredHeight =
                 max(
-                    bottom,
+                    childrenRequiredHeight,
                     child.y + child.height
                 )
         }
 
+        /*
+        * Children are positioned in the container's local
+        * coordinate system. Keep the existing container padding
+        * around them and reserve the title area.
+        */
+        val childrenWidth =
+            childrenRequiredWidth +
+            blockStandardContentPadding
+
+        val childrenHeight =
+            childrenRequiredHeight +
+            blockStandardContentPadding +
+            containerTitleHeight
+
+        /*
+        * ------------------------------------------------------------
+        * Final container size.
+        * ------------------------------------------------------------
+        */
+
         container.width =
             max(
                 260f,
-                right + containerPadding
+                max(
+                    titleRequiredWidth,
+                    childrenWidth
+                )
             )
 
         container.height =
             max(
                 140f,
-                bottom +
-                    containerPadding +
-                    containerTitleHeight
+                max(
+                    titleRequiredHeight + containerTitleHeight,
+                    childrenHeight
+                )
             )
+    }
+
+    private fun getTextWidth(
+        text: String
+    ): Float {
+        return textPaint.measureText(text)
     }
 
     private fun drawBlock(
@@ -987,11 +1032,11 @@ class SimCustomSerialView(
 
             val textX =
                 nodeWorldPos.x +
-                containerPadding
+                blockStandardContentPadding
 
             val textY =
                 nodeWorldPos.y +
-                containerPadding -
+                blockStandardContentPadding -
                 (fontMetrics.ascent + fontMetrics.descent) / 2f
 
             canvas.drawText(
@@ -1643,10 +1688,10 @@ class SimCustomSerialView(
         container: Block
     ): RectF {
         return RectF(
-            containerPadding,
-            containerTitleHeight + containerPadding,
-            container.width - containerPadding,
-            container.height - containerPadding
+            blockStandardContentPadding,
+            containerTitleHeight + blockStandardContentPadding,
+            container.width - blockStandardContentPadding,
+            container.height - blockStandardContentPadding
         )
     }
 
