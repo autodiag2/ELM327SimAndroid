@@ -18,6 +18,8 @@ import com.github.autodiag2.elm327emu.sim.SimCustomSerialController
 import androidx.core.content.ContextCompat
 import com.github.autodiag2.elm327emu.R
 import android.util.TypedValue
+import android.text.TextUtils
+import android.text.TextPaint
 
 class SimCustomSerialView(
     context: Context,
@@ -88,6 +90,7 @@ class SimCustomSerialView(
     private val linkArrowSize = 30f
     public val blockBorderWidthSelected: Float = 10f
     public val blockBorderWidth: Float = 3f
+    public val blockStandardContentPadding: Float = 25f
     // --------- End Customization settings ---------
 
     private val nodePaint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -293,6 +296,88 @@ class SimCustomSerialView(
                 }
             }
         )
+    }
+
+    private fun updateBlockContentSize(
+        block: SimCustomSerialController.Block,
+        node: Block
+    ) {
+        if (
+            block.type ==
+            SimCustomSerialController.Block.Type.CONTAINER
+        ) {
+            return
+        }
+
+        val title = block.name
+
+        val summary =
+            when (block.type) {
+                SimCustomSerialController.Block.Type.DELAY ->
+                    "${block.delay}ms"
+
+                SimCustomSerialController.Block.Type.SEND ->
+                    block.text
+
+                SimCustomSerialController.Block.Type.RECV ->
+                    block.text
+
+                SimCustomSerialController.Block.Type.CONTAINER ->
+                    ""
+            }
+
+        val titlePaint =
+            TextPaint(textPaint)
+
+        val summaryPaint =
+            TextPaint(textPaint)
+
+        val titleBounds =
+            android.graphics.Rect()
+
+        val summaryBounds =
+            android.graphics.Rect()
+
+        titlePaint.getTextBounds(
+            title,
+            0,
+            title.length,
+            titleBounds
+        )
+
+        summaryPaint.getTextBounds(
+            summary,
+            0,
+            summary.length,
+            summaryBounds
+        )
+
+        val lineSpacing = 4f
+
+        val requiredWidth =
+            max(
+                titleBounds.width(),
+                summaryBounds.width()
+            ) +
+            blockStandardContentPadding * 2f
+
+        val requiredHeight =
+            titleBounds.height() +
+            lineSpacing +
+            summaryBounds.height() +
+            blockStandardContentPadding * 2f
+
+        node.width =
+            max(
+                260f,
+                requiredWidth
+            )
+
+        node.height =
+            max(
+                100f,
+                requiredHeight
+            )
     }
 
     public fun logDebug(message: String) {
@@ -798,6 +883,10 @@ class SimCustomSerialView(
         }
 
         val node = block.view!!
+        updateBlockContentSize(
+            block,
+            node
+        )
         val nodeWorldPos = node.getWorldCoords()
 
         nodeRect.set(
@@ -824,44 +913,75 @@ class SimCustomSerialView(
                 android.R.attr.textColor
             )
 
-        val accentColor = getThemeColor(androidx.appcompat.R.attr.colorAccent)
+        val accentColor =
+            getThemeColor(
+                androidx.appcompat.R.attr.colorAccent
+            )
 
-        if (
+        val isContainer =
             block.type ==
-            SimCustomSerialController.Block.Type.CONTAINER
-        ) {
-            nodePaint.style =
-                Paint.Style.FILL
+                SimCustomSerialController.Block.Type.CONTAINER
 
-            nodePaint.color = colorPrimaryDark
+        /*
+        * ------------------------------------------------------------
+        * Block background
+        * ------------------------------------------------------------
+        */
 
-            canvas.drawRoundRect(
-                nodeRect,
-                18f,
-                18f,
-                nodePaint
-            )
+        nodePaint.style = Paint.Style.FILL
+        nodePaint.color = colorPrimaryDark
 
-            nodePaint.style =
-                Paint.Style.STROKE
+        val cornerRadius =
+            if (isContainer) 18f else 14f
 
-            nodePaint.strokeWidth =
-                if (selected) blockBorderWidthSelected else blockBorderWidth
+        canvas.drawRoundRect(
+            nodeRect,
+            cornerRadius,
+            cornerRadius,
+            nodePaint
+        )
 
-            nodePaint.color = if ( selected ) accentColor else textColor
+        /*
+        * ------------------------------------------------------------
+        * Block border
+        * ------------------------------------------------------------
+        */
 
-            canvas.drawRoundRect(
-                nodeRect,
-                18f,
-                18f,
-                nodePaint
-            )
+        nodePaint.style = Paint.Style.STROKE
 
-            nodePaint.style =
-                Paint.Style.FILL
+        nodePaint.strokeWidth =
+            if (selected) {
+                blockBorderWidthSelected
+            } else {
+                blockBorderWidth
+            }
 
-            textPaint.color = textColor
+        nodePaint.color =
+            if (selected) {
+                accentColor
+            } else {
+                textColor
+            }
 
+        canvas.drawRoundRect(
+            nodeRect,
+            cornerRadius,
+            cornerRadius,
+            nodePaint
+        )
+
+        /*
+        * ------------------------------------------------------------
+        * Block text
+        * ------------------------------------------------------------
+        */
+
+        textPaint.color = textColor
+
+        if (isContainer) {
+            /*
+            * Containers have their title near the top.
+            */
             val fontMetrics =
                 textPaint.fontMetrics
 
@@ -880,93 +1000,171 @@ class SimCustomSerialView(
                 textY,
                 textPaint
             )
+        } else {
+            /*
+            * Non-container blocks have:
+            *
+            *     title
+            *     summary
+            *
+            * both centered in the block.
+            */
+            val title = block.name
 
-            drawPorts(
-                canvas,
-                node
+            val summary =
+                when (block.type) {
+                    SimCustomSerialController.Block.Type.DELAY ->
+                        "${block.delay}ms"
+
+                    SimCustomSerialController.Block.Type.SEND ->
+                        block.text
+
+                    SimCustomSerialController.Block.Type.RECV ->
+                        block.text
+
+                    SimCustomSerialController.Block.Type.CONTAINER ->
+                        ""
+                }
+
+            val contentLeft =
+                nodeWorldPos.x + blockStandardContentPadding
+
+            val contentRight =
+                nodeWorldPos.x +
+                    node.width -
+                    blockStandardContentPadding
+
+            val contentTop =
+                nodeWorldPos.y + blockStandardContentPadding
+
+            val contentBottom =
+                nodeWorldPos.y +
+                    node.height -
+                    blockStandardContentPadding
+
+            val contentWidth =
+                max(
+                    0f,
+                    contentRight - contentLeft
+                )
+
+            val contentHeight =
+                max(
+                    0f,
+                    contentBottom - contentTop
+                )
+
+            val titlePaint =
+                TextPaint(textPaint).apply {
+                    color = textColor
+                }
+
+            val summaryPaint =
+                TextPaint(textPaint).apply {
+                    color =
+                        getThemeColor(
+                            android.R.attr.textColorSecondary
+                        )
+                }
+
+            val titleText =
+                TextUtils.ellipsize(
+                    title,
+                    titlePaint,
+                    contentWidth,
+                    TextUtils.TruncateAt.END
+                ).toString()
+
+            val summaryText =
+                TextUtils.ellipsize(
+                    summary,
+                    summaryPaint,
+                    contentWidth,
+                    TextUtils.TruncateAt.END
+                ).toString()
+
+            val titleWidth =
+                titlePaint.measureText(titleText)
+
+            val summaryWidth =
+                summaryPaint.measureText(summaryText)
+
+            val titleBounds =
+                android.graphics.Rect()
+
+            val summaryBounds =
+                android.graphics.Rect()
+
+            titlePaint.getTextBounds(
+                titleText,
+                0,
+                titleText.length,
+                titleBounds
             )
 
-            for (childId in block.children) {
-                val child =
-                    model!!.blocks.firstOrNull {
-                        it.id == childId
-                    }
+            summaryPaint.getTextBounds(
+                summaryText,
+                0,
+                summaryText.length,
+                summaryBounds
+            )
 
-                if (child != null) {
-                    drawBlock(
-                        canvas,
-                        child,
-                        drawn
+            val lineSpacing = 4f
+
+            val totalHeight =
+                titleBounds.height() +
+                lineSpacing +
+                summaryBounds.height()
+
+            val startTop =
+                contentTop +
+                    max(
+                        0f,
+                        (contentHeight - totalHeight) / 2f
                     )
-                }
-            }
 
-            return
+            val titleBaseline =
+                startTop - titleBounds.top
+
+            val summaryTop =
+                startTop +
+                    titleBounds.height() +
+                    lineSpacing
+
+            val summaryBaseline =
+                summaryTop - summaryBounds.top
+
+            canvas.drawText(
+                titleText,
+                (contentLeft + contentRight - titleWidth) / 2f,
+                titleBaseline,
+                titlePaint
+            )
+
+            canvas.drawText(
+                summaryText,
+                (contentLeft + contentRight - summaryWidth) / 2f,
+                summaryBaseline,
+                summaryPaint
+            )
         }
 
-        nodePaint.style =
-            Paint.Style.FILL
-
-        nodePaint.color = colorPrimaryDark
-
-        canvas.drawRoundRect(
-            nodeRect,
-            14f,
-            14f,
-            nodePaint
-        )
-
-        nodePaint.style =
-            Paint.Style.STROKE
-
-        nodePaint.strokeWidth =
-            if (selected) blockBorderWidthSelected else blockBorderWidth
-
-        nodePaint.color =
-            if (selected) {
-                accentColor
-            } else {
-                textColor
-            }
-
-        canvas.drawRoundRect(
-            nodeRect,
-            14f,
-            14f,
-            nodePaint
-        )
-
-        nodePaint.style =
-            Paint.Style.FILL
-
-        textPaint.color = textColor
-
-        val textWidth =
-            textPaint.measureText(block.name)
-
-        val fontMetrics =
-            textPaint.fontMetrics
-
-        val textX =
-            nodeWorldPos.x +
-            (node.width - textWidth) / 2f
-
-        val textY =
-            nodeWorldPos.y +
-            node.height / 2f -
-            (fontMetrics.ascent + fontMetrics.descent) / 2f
-
-        canvas.drawText(
-            block.name,
-            textX,
-            textY,
-            textPaint
-        )
+        /*
+        * ------------------------------------------------------------
+        * Ports
+        * ------------------------------------------------------------
+        */
 
         drawPorts(
             canvas,
             node
         )
+
+        /*
+        * ------------------------------------------------------------
+        * Children
+        * ------------------------------------------------------------
+        */
 
         for (childId in block.children) {
             val child =
