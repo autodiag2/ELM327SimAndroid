@@ -1114,6 +1114,10 @@ class SimCustomSerialView(
                 continue
             }
 
+            if ( node == container ) {
+                continue
+            }
+
             updateContainerBounds(container.view!!)
 
             if (isBlockOverContainer(
