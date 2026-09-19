@@ -1442,66 +1442,76 @@ class SimCustomSerialView(
         screenX: Float,
         screenY: Float
     ): Block? {
-        val point =
-            screenToWorld(
-                screenX,
-                screenY
-            )
+        val point = screenToWorld(screenX, screenY)
 
         val x = point.first
         val y = point.second
+
+        var closest: Block? = null
+        var closestDistance = Float.MAX_VALUE
 
         for (block in model!!.blocks) {
             val node = block.view!!
             val nodeWorldPos = node.getWorldCoords()
 
-            val port = Coordinates(nodeWorldPos.x + node.width, nodeWorldPos.y + node.height / 2f)
+            val portX = nodeWorldPos.x + node.width
+            val portY = nodeWorldPos.y + node.height / 2f
 
-            if (distance(
-                    x,
-                    y,
-                    port.x,
-                    port.y
-                ) <= portHitRadius
+            val portDistance = distance(
+                x,
+                y,
+                portX,
+                portY
+            )
+
+            if (
+                portDistance <= portHitRadius &&
+                portDistance < closestDistance
             ) {
-                return node
+                closest = node
+                closestDistance = portDistance
             }
         }
 
-        return null
+        return closest
     }
 
     private fun findDestinationPort(
         screenX: Float,
         screenY: Float
     ): Block? {
-        val point =
-            screenToWorld(
-                screenX,
-                screenY
-            )
+        val point = screenToWorld(screenX, screenY)
 
         val x = point.first
         val y = point.second
+
+        var closest: Block? = null
+        var closestDistance = Float.MAX_VALUE
 
         for (block in model!!.blocks) {
             val node = block.view!!
             val nodeWorldPos = node.getWorldCoords()
 
-            val port = Coordinates(nodeWorldPos.x, nodeWorldPos.y + node.height / 2f)
+            val portX = nodeWorldPos.x
+            val portY = nodeWorldPos.y + node.height / 2f
 
-            if (distance(
-                    x,
-                    y,
-                    port.x,
-                    port.y
-                ) <= portHitRadius
+            val portDistance = distance(
+                x,
+                y,
+                portX,
+                portY
+            )
+
+            if (
+                portDistance <= portHitRadius &&
+                portDistance < closestDistance
             ) {
-                return node
+                closest = node
+                closestDistance = portDistance
             }
         }
 
-        return null
+        return closest
     }
 
     private fun findLink(
