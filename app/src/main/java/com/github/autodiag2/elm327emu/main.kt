@@ -112,6 +112,26 @@ class MainActivity : AppCompatActivity() {
 
             pendingExportConfig = null
         }
+    
+    var fileExportPendingData: String? = null
+    val fileExportLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+
+            val uri = result.data?.data ?: return@registerForActivityResult
+            val fileContent = fileExportPendingData ?: return@registerForActivityResult
+
+            contentResolver.openOutputStream(uri)?.use { output ->
+                output.write(fileContent.toByteArray())
+            }
+
+            Toast.makeText(
+                this,
+                getString(R.string.activity_export_file_success),
+                Toast.LENGTH_SHORT
+            ).show()
+
+            fileExportPendingData = null
+        }
 
     private lateinit var filePickerLauncher: ActivityResultLauncher<String>
     private var pendingFileCallback: ((String) -> Unit)? = null
@@ -502,6 +522,18 @@ class MainActivity : AppCompatActivity() {
             }
             R.id.sim_list_menu_share -> {
                 simListView.shareConfigAsText()
+                true
+            }
+            R.id.sim_custom_serial_script_export_clipboard -> {
+                simView.customSerialScreen.onExportClipboard()
+                true
+            }
+            R.id.sim_custom_serial_script_export_file -> {
+                simView.customSerialScreen.onExportFile()
+                true
+            }
+            R.id.sim_custom_serial_script_export_share -> {
+                simView.customSerialScreen.shareConfigAsText()
                 true
             }
             R.id.sim_custom_serial_script_add_delay -> {

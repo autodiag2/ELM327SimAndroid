@@ -21,10 +21,12 @@ import com.github.autodiag2.elm327emu.sim.SimCustomSerialView
 import android.util.Log
 import com.github.autodiag2.elm327emu.BuildConfig
 import com.github.autodiag2.elm327emu.ui.JsonConfigurable
+import com.github.autodiag2.elm327emu.MainActivity
+import android.content.Intent
 
 class SimCustomSerialController(
-    context: Context
-) : LinearLayout(context), SimCustomSerialView.Listener, JsonConfigurable {
+    private val activity: MainActivity
+) : LinearLayout(activity), SimCustomSerialView.Listener, JsonConfigurable {
 
     public var view: SimCustomSerialView
     
@@ -83,7 +85,7 @@ class SimCustomSerialController(
     init {
         orientation = VERTICAL
 
-        LayoutInflater.from(context).inflate(
+        LayoutInflater.from(activity).inflate(
             R.layout.sim_custom_serial_screen,
             this,
             true
@@ -261,11 +263,11 @@ class SimCustomSerialController(
     }
 
     fun getString(resId: Int, vararg formatArgs: Any?): String {
-        return context.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
+        return activity.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
     }
 
     public fun clear() {
-        android.app.AlertDialog.Builder(context)
+        android.app.AlertDialog.Builder(activity)
             .setTitle(R.string.sim_custom_serial_script_clear_confirm)
             .setPositiveButton(android.R.string.ok) { _, _ ->
                 blocks.clear()
@@ -391,6 +393,49 @@ class SimCustomSerialController(
         }
     }
 
+    private fun getScriptName(): String {
+        return "TODO.json"
+    }
+
+    // ------- Action Menu listerner -------
+    public fun onExportClipboard() {
+        val text = toJson().toString()
+
+        val clipboard = activity.getSystemService(android.content.Context.CLIPBOARD_SERVICE)
+                as android.content.ClipboardManager
+
+        val clip = android.content.ClipData.newPlainText(getScriptName(), text)
+        clipboard.setPrimaryClip(clip)
+
+        Toast.makeText(activity,
+            getString(R.string.sim_custom_serial_script_export_clipboard_success),
+            Toast.LENGTH_SHORT
+        ).show()
+    }
+    public fun onExportFile() {
+        activity.fileExportPendingData = toJson().toString()
+
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "application/json"
+            putExtra(Intent.EXTRA_TITLE, getScriptName())
+        }
+
+        activity.fileExportLauncher.launch(intent)
+    }
+    public fun shareConfigAsText() {
+        val text = toJson().toString()
+
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, getScriptName())
+            putExtra(Intent.EXTRA_TEXT, text)
+        }
+
+        activity.startActivity(
+            Intent.createChooser(intent, getString(R.string.sim_custom_serial_script_share_script_title))
+        )
+    }
     public fun onAddDelay() {
         addBlock(Block.Type.DELAY)
     }
@@ -431,14 +476,15 @@ class SimCustomSerialController(
 
         view.refresh()
     }
+    // ------- End Action Menu listerner -------
     
     private fun editDelay(block: Block) {
-        val input = EditText(context).apply {
+        val input = EditText(activity).apply {
             inputType = InputType.TYPE_CLASS_NUMBER
             setText(block.delay.toString())
         }
 
-        android.app.AlertDialog.Builder(context)
+        android.app.AlertDialog.Builder(activity)
             .setTitle(R.string.sim_custom_serial_script_delay)
             .setView(input)
             .setPositiveButton(android.R.string.ok) { _, _ ->
@@ -450,15 +496,15 @@ class SimCustomSerialController(
     }
 
     private fun editReceive(block: Block) {
-        val layout = LinearLayout(context).apply {
+        val layout = LinearLayout(activity).apply {
             orientation = VERTICAL
             setPadding(dp(16))
         }
 
-        val mode = Spinner(context)
+        val mode = Spinner(activity)
 
         mode.adapter = ArrayAdapter(
-            context,
+            activity,
             android.R.layout.simple_spinner_item,
             listOf(
                 "Exact",
@@ -470,7 +516,7 @@ class SimCustomSerialController(
             if (block.match == "regex") 1 else 0
         )
 
-        val initial_text = EditText(context).apply {
+        val initial_text = EditText(activity).apply {
             hint = "Pattern"
             setText(block.text)
             inputType =
@@ -478,7 +524,7 @@ class SimCustomSerialController(
                 InputType.TYPE_TEXT_FLAG_MULTI_LINE
         }
 
-        val escapes = CheckBox(context).apply {
+        val escapes = CheckBox(activity).apply {
             text = "Interpret \\r, \\n, \\xhh..."
             isChecked = block.interpretEscapes
         }
@@ -487,7 +533,7 @@ class SimCustomSerialController(
         layout.addView(initial_text)
         layout.addView(escapes)
 
-        android.app.AlertDialog.Builder(context)
+        android.app.AlertDialog.Builder(activity)
             .setTitle(R.string.sim_custom_serial_script_receive)
             .setView(layout)
             .setPositiveButton(android.R.string.ok) { _, _ ->
@@ -508,12 +554,12 @@ class SimCustomSerialController(
     }
 
     private fun editSend(block: Block) {
-        val layout = LinearLayout(context).apply {
+        val layout = LinearLayout(activity).apply {
             orientation = VERTICAL
             setPadding(dp(16))
         }
 
-        val initial_text = EditText(context).apply {
+        val initial_text = EditText(activity).apply {
             hint = "ASCII text"
             setText(block.text)
             inputType =
@@ -521,12 +567,12 @@ class SimCustomSerialController(
                 InputType.TYPE_TEXT_FLAG_MULTI_LINE
         }
 
-        val eol = CheckBox(context).apply {
+        val eol = CheckBox(activity).apply {
             text = "Automatically append EOL"
             isChecked = block.includeEol
         }
 
-        val escapes = CheckBox(context).apply {
+        val escapes = CheckBox(activity).apply {
             text = "Interpret \\r, \\n, \\xhh..."
             isChecked = block.interpretEscapes
         }
@@ -535,7 +581,7 @@ class SimCustomSerialController(
         layout.addView(eol)
         layout.addView(escapes)
 
-        android.app.AlertDialog.Builder(context)
+        android.app.AlertDialog.Builder(activity)
             .setTitle(R.string.sim_custom_serial_script_send)
             .setView(layout)
             .setPositiveButton(android.R.string.ok) { _, _ ->
@@ -549,11 +595,11 @@ class SimCustomSerialController(
     }
 
     private fun editContainer(block: Block) {
-        val input = EditText(context).apply {
+        val input = EditText(activity).apply {
             setText(block.name)
         }
 
-        android.app.AlertDialog.Builder(context)
+        android.app.AlertDialog.Builder(activity)
             .setTitle(R.string.sim_custom_serial_script_container)
             .setView(input)
             .setPositiveButton(android.R.string.ok) { _, _ ->

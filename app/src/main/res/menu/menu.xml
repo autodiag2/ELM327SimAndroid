@@ -74,6 +74,15 @@
         <item
             android:id="@+id/sim_custom_serial_script_clear"
             android:title="@string/sim_custom_serial_script_clear" />
+        <item
+            android:id="@+id/sim_custom_serial_script_export_clipboard"
+            android:title="@string/sim_custom_serial_script_export_clipboard" />
+        <item
+            android:id="@+id/sim_custom_serial_script_export_file"
+            android:title="@string/sim_custom_serial_script_export_file" />
+        <item
+            android:id="@+id/sim_custom_serial_script_export_share"
+            android:title="@string/sim_custom_serial_script_export_share" />
     </group>
 
     <group android:id="@+id/action_menu_group_sim_custom_serial_script_any_element_selected">
