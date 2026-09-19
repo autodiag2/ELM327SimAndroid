@@ -792,21 +792,42 @@ class SimCustomSerialView(
         val x = point.first
         val y = point.second
 
-        for (block in model!!.blocks) {
+        val candidates = mutableListOf<Block>()
 
+        for (block in model!!.blocks) {
             val node = block.view!!
+
             val nodeWorldPos = node.getWorldCoords()
 
-            if (x >= nodeWorldPos.x &&
+            if (
+                x >= nodeWorldPos.x &&
                 x <= nodeWorldPos.x + node.width &&
                 y >= nodeWorldPos.y &&
                 y <= nodeWorldPos.y + node.height
             ) {
-                return node
+                candidates.add(node)
             }
         }
 
-        return null
+        if (candidates.isEmpty()) {
+            return null
+        }
+
+        var candidate =
+            candidates.firstOrNull {
+                it.model!!.parent == null
+            } ?: candidates.first()
+
+        while (true) {
+            val child =
+                candidates.firstOrNull {
+                    it.model!!.parent?.id == candidate.model!!.id
+                } ?: break
+
+            candidate = child
+        }
+
+        return candidate
     }
 
     private fun findSourcePort(
