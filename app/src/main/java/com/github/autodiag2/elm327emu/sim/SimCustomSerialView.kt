@@ -15,8 +15,6 @@ import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sqrt
 import com.github.autodiag2.elm327emu.sim.SimCustomSerialController
-import android.util.Log
-import com.github.autodiag2.elm327emu.BuildConfig
 import androidx.core.content.ContextCompat
 import com.github.autodiag2.elm327emu.R
 import android.util.TypedValue
@@ -296,10 +294,8 @@ class SimCustomSerialView(
         )
     }
 
-    private fun logDebug(message: String) {
-        if (BuildConfig.DEBUG) {
-            Log.d("SimCustomSerialView", message)
-        }
+    public fun logDebug(message: String) {
+        model!!.logDebug(message)
     }
 
     private fun screenToWorld(

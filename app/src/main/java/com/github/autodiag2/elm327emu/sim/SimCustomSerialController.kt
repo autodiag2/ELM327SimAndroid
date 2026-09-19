@@ -18,6 +18,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.sim.SimCustomSerialView
+import android.util.Log
+import com.github.autodiag2.elm327emu.BuildConfig
 
 class SimCustomSerialController(
     context: Context
@@ -167,6 +169,12 @@ class SimCustomSerialController(
         selectedLink = null
     }
     // ------------ End Listeners ------------
+
+    public fun logDebug(message: String) {
+        if (BuildConfig.DEBUG) {
+            Log.d("SimCustomSerial", message)
+        }
+    }
 
     fun getString(resId: Int, vararg formatArgs: Any?): String {
         return context.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
@@ -562,4 +570,101 @@ class SimCustomSerialController(
     private fun dp(value: Int): Int {
         return (value * resources.displayMetrics.density).toInt()
     }
+
+    private fun debugBlockTree() {
+        fun printBlock(
+            block: Block,
+            depth: Int
+        ) {
+            val indent = "  ".repeat(depth)
+
+            val parentId =
+                block.parent?.id?.toString() ?: "null"
+
+            val childrenIds =
+                if (block.children.isEmpty()) {
+                    "[]"
+                } else {
+                    block.children.joinToString(
+                        prefix = "[",
+                        postfix = "]"
+                    )
+                }
+
+            logDebug(
+                "${indent}Block #${block.id} " +
+                "type=${block.type} " +
+                "parent=$parentId " +
+                "children=$childrenIds"
+            )
+
+            for (childId in block.children) {
+                val child =
+                    blocks.find {
+                        it.id == childId
+                    }
+
+                if (child != null) {
+                    printBlock(
+                        child,
+                        depth + 1
+                    )
+                } else {
+                    logDebug(
+                        "${indent}  MISSING CHILD #$childId"
+                    )
+                }
+            }
+        }
+
+        logDebug("========== BLOCK TREE ==========")
+
+        val roots =
+            blocks.filter {
+                it.parent == null
+            }
+
+        for (root in roots) {
+            printBlock(
+                root,
+                0
+            )
+        }
+
+        logDebug("========== BLOCKS NOT REACHED ==========")
+
+        val reached = mutableSetOf<Int>()
+
+        fun collect(block: Block) {
+            if (!reached.add(block.id)) {
+                return
+            }
+
+            for (childId in block.children) {
+                blocks.find {
+                    it.id == childId
+                }?.let {
+                    collect(it)
+                }
+            }
+        }
+
+        for (root in roots) {
+            collect(root)
+        }
+
+        for (block in blocks) {
+            if (!reached.contains(block.id)) {
+                logDebug(
+                    "UNREACHED Block #${block.id} " +
+                    "type=${block.type} " +
+                    "parent=${block.parent?.id ?: "null"} " +
+                    "children=${block.children}"
+                )
+            }
+        }
+
+        logDebug("================================")
+    }
+
 }
