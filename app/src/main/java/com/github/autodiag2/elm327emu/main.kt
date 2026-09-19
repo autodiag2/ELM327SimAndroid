@@ -528,6 +528,10 @@ class MainActivity : AppCompatActivity() {
                 simView.customSerialScreen.onExportClipboard()
                 true
             }
+            R.id.sim_custom_serial_script_import_clipboard -> {
+                simView.customSerialScreen.onImportClipboard()
+                true
+            }
             R.id.sim_custom_serial_script_export_file -> {
                 simView.customSerialScreen.onExportFile()
                 true
@@ -553,7 +557,7 @@ class MainActivity : AppCompatActivity() {
                 true
             }
             R.id.sim_custom_serial_script_clear -> {
-                simView.customSerialScreen.clear()
+                simView.customSerialScreen.clearWithDialog()
                 true
             }
             R.id.sim_custom_serial_script_del -> {

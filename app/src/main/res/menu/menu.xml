@@ -78,6 +78,9 @@
             android:id="@+id/sim_custom_serial_script_export_clipboard"
             android:title="@string/sim_custom_serial_script_export_clipboard" />
         <item
+            android:id="@+id/sim_custom_serial_script_import_clipboard"
+            android:title="@string/sim_custom_serial_script_import_clipboard" />
+        <item
             android:id="@+id/sim_custom_serial_script_export_file"
             android:title="@string/sim_custom_serial_script_export_file" />
         <item

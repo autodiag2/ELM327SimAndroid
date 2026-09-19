@@ -115,7 +115,8 @@ abstract class Ecu(
         }
     }
 
-    override fun fromJson(desc: JSONObject) {
+
+    override fun fromJson(desc: JSONObject, parseErrorHandler: ((String) -> Unit)?) {
         val schema = desc.optString("schema")
 
         if(schema.isEmpty() || !schema.startsWith(SCHEMA)) {

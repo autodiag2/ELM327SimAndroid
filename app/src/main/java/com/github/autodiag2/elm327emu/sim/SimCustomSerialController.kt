@@ -23,6 +23,10 @@ import com.github.autodiag2.elm327emu.BuildConfig
 import com.github.autodiag2.elm327emu.ui.JsonConfigurable
 import com.github.autodiag2.elm327emu.MainActivity
 import android.content.Intent
+import com.github.autodiag2.elm327emu.LogLevel
+
+const val SCHEMA = "autodiag/sim/elm327/serialscript"
+const val VERSION = 1.0
 
 class SimCustomSerialController(
     private val activity: MainActivity
@@ -32,10 +36,13 @@ class SimCustomSerialController(
     
     open class ElementModel<V>(
         var view: V? = null,
-        val id: Int = id_track++
+        var id: Int = gen_id_track()
     ) {
         companion object {
             private var id_track: Int = 1
+            public fun gen_id_track(): Int {
+                return id_track++
+            }
         }
 
         fun viewLink(view_arg: V) {
@@ -61,8 +68,13 @@ class SimCustomSerialController(
         var name: String = "",
         view: SimCustomSerialView.Block? = null,
         val children: MutableList<Int> = mutableListOf(),
-        var parent: Block? = null
-    ) : ElementModel<SimCustomSerialView.Block>(view) {
+        var parent: Block? = null,
+        id: Int = ElementModel.gen_id_track()
+    ) : ElementModel<SimCustomSerialView.Block>(
+        view = view,
+        id = id
+    ) {
+
         enum class Type {
             DELAY,
             RECV,
@@ -267,13 +279,17 @@ class SimCustomSerialController(
     }
 
     public fun clear() {
+        blocks.clear()
+        links.clear()
+        onUnselectAll()
+        view.refresh()
+    }
+
+    public fun clearWithDialog() {
         android.app.AlertDialog.Builder(activity)
             .setTitle(R.string.sim_custom_serial_script_clear_confirm)
             .setPositiveButton(android.R.string.ok) { _, _ ->
-                blocks.clear()
-                links.clear()
-                onUnselectAll()
-                view.refresh()
+                clear()
             }
             .setNegativeButton(android.R.string.cancel, null)
             .show()
@@ -398,6 +414,87 @@ class SimCustomSerialController(
     }
 
     // ------- Action Menu listerner -------
+    public fun onImportClipboard() {
+        val clipboard =
+            activity.getSystemService(
+                Context.CLIPBOARD_SERVICE
+            ) as android.content.ClipboardManager
+
+        if (!clipboard.hasPrimaryClip()) {
+            Toast.makeText(
+                activity,
+                getString(
+                    R.string.sim_custom_serial_script_import_clipboard_empty
+                ),
+                Toast.LENGTH_SHORT
+            ).show()
+
+            return
+        }
+
+        val clip =
+            clipboard.primaryClip
+                ?: return
+
+        if (clip.itemCount == 0) {
+            Toast.makeText(
+                activity,
+                getString(
+                    R.string.sim_custom_serial_script_import_clipboard_empty
+                ),
+                Toast.LENGTH_SHORT
+            ).show()
+
+            return
+        }
+
+        val text =
+            clip.getItemAt(0)
+                .coerceToText(activity)
+                .toString()
+
+        if (text.isBlank()) {
+            Toast.makeText(
+                activity,
+                getString(
+                    R.string.sim_custom_serial_script_import_clipboard_empty
+                ),
+                Toast.LENGTH_SHORT
+            ).show()
+
+            return
+        }
+
+        try {
+            val json =
+                JSONObject(text)
+
+            fromJson(json)
+
+            Toast.makeText(
+                activity,
+                getString(
+                    R.string.sim_custom_serial_script_import_clipboard_success
+                ),
+                Toast.LENGTH_SHORT
+            ).show()
+
+        } catch (e: Exception) {
+            logDebug(
+                "Clipboard import failed: ${e.message}"
+            )
+
+            Toast.makeText(
+                activity,
+                getString(
+                    R.string.sim_custom_serial_script_import_clipboard_error,
+                    e.message ?: ""
+                ),
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
     public fun onExportClipboard() {
         val text = toJson().toString()
 
@@ -619,12 +716,12 @@ class SimCustomSerialController(
 
         root.put(
             "schema",
-            "autodiag/sim/elm327/serialscript"
+            SCHEMA
         )
 
         root.put(
             "version",
-            1.0
+            VERSION
         )
 
         val content = JSONObject()
@@ -812,8 +909,308 @@ class SimCustomSerialController(
         return root
     }
 
-    override fun fromJson(desc: JSONObject) {
+    override fun fromJson(desc: JSONObject, parseErrorHandler: ((String) -> Unit)?) {
+        val schema = desc.optString("schema", "")
 
+        if (schema != SCHEMA) {
+            parseErrorHandler?.invoke(
+                "Unsupported script schema: $schema"
+            )
+        }
+
+        val version = desc.optDouble("version", -VERSION)
+
+        if (version != VERSION) {
+            parseErrorHandler?.invoke(
+                "Unsupported script version: $version"
+            )
+        }
+
+        val content = desc.optJSONObject("content")
+
+        if (content == null) {
+            parseErrorHandler?.invoke("Missing script content")
+            return
+        }
+
+        val jsonBlocks =
+            content.optJSONArray("block")
+                ?: JSONArray()
+
+        val jsonFlow =
+            content.optJSONArray("flow")
+                ?: JSONArray()
+
+        /*
+        * Build the models first. This allows container references
+        * to refer to blocks appearing later in the JSON array.
+        */
+        val importedBlocks = mutableListOf<Block>()
+        val blockIds = mutableSetOf<Int>()
+
+        for (i in 0 until jsonBlocks.length()) {
+            val jsonBlock = jsonBlocks.getJSONObject(i)
+
+            val id = jsonBlock.getInt("id")
+
+            if (!blockIds.add(id)) {
+                parseErrorHandler?.invoke(
+                    "Duplicate block id: $id"
+                )
+            }
+
+            val typeString =
+                jsonBlock.getString("type")
+
+            val type =
+                when (typeString) {
+                    "delay" ->
+                        Block.Type.DELAY
+
+                    "recv" ->
+                        Block.Type.RECV
+
+                    "send" ->
+                        Block.Type.SEND
+
+                    "container" ->
+                        Block.Type.CONTAINER
+
+                    else -> {
+                        parseErrorHandler?.invoke(
+                            "Unknown block type: $typeString"
+                        )
+                        return
+                    }
+                }
+
+            val block =
+                when (type) {
+                    Block.Type.DELAY -> {
+                        Block(
+                            type = type,
+                            delay = jsonBlock
+                                .getInt("content"),
+                            id = id
+                        )
+                    }
+
+                    Block.Type.RECV -> {
+                        val value =
+                            jsonBlock
+                                .getJSONObject("content")
+
+                        Block(
+                            type = type,
+                            match = value.optString(
+                                "match",
+                                "exact"
+                            ),
+                            text = value.optString(
+                                "text",
+                                ""
+                            ),
+                            interpretEscapes =
+                                value.optBoolean(
+                                    "interpret_esc",
+                                    true
+                                ),
+                            id = id
+                        )
+                    }
+
+                    Block.Type.SEND -> {
+                        val value =
+                            jsonBlock
+                                .getJSONObject("content")
+
+                        Block(
+                            type = type,
+                            text = value.optString(
+                                "text",
+                                ""
+                            ),
+                            includeEol =
+                                value.optBoolean(
+                                    "include_eol",
+                                    false
+                                ),
+                            interpretEscapes =
+                                value.optBoolean(
+                                    "interpret_esc",
+                                    true
+                                ),
+                            id = id
+                        )
+                    }
+
+                    Block.Type.CONTAINER -> {
+                        val value =
+                            jsonBlock
+                                .getJSONObject("content")
+
+                        val children =
+                            mutableListOf<Int>()
+
+                        val jsonChildren =
+                            value.optJSONArray("blocks")
+
+                        if (jsonChildren != null) {
+                            for (j in 0 until jsonChildren.length()) {
+                                children.add(
+                                    jsonChildren.getInt(j)
+                                )
+                            }
+                        }
+
+                        Block(
+                            type = type,
+                            name = value.optString(
+                                "name",
+                                ""
+                            ),
+                            children = children,
+                            id = id
+                        )
+                    }
+                }
+
+
+            importedBlocks.add(block)
+
+        }
+
+        /*
+        * Validate and rebuild parent relationships.
+        */
+        for (parent in importedBlocks) {
+            for (childId in parent.children) {
+                val child =
+                    importedBlocks.find {
+                        it.id == childId
+                    }
+                if ( child == null ) {
+                    parseErrorHandler?.invoke(
+                        "Block #$childId referenced by " +
+                        "container #${parent.id} does not exist"
+                    )
+                    return
+                }
+
+                if (child === parent) {
+                    parseErrorHandler?.invoke(
+                        "Block #${parent.id} cannot contain itself"
+                    )
+                }
+
+                if (child.parent != null &&
+                    child.parent !== parent
+                ) {
+                    parseErrorHandler?.invoke(
+                        "Block #$childId has multiple parents"
+                    )
+                }
+
+                child.parent = parent
+            }
+        }
+
+        /*
+        * Replace the current script.
+        */
+        clear()
+
+        /*
+        * Add blocks to the view.
+        */
+        for (block in importedBlocks) {
+
+            val blockView =
+                view.addBlock(model = block)
+            block.viewLink(blockView)
+        }
+        for(block in importedBlocks) {
+            blocks.add(block)
+        }
+        /*
+        * Restore exact saved coordinates.
+        *
+        * x/y are:
+        *   - world coordinates for root blocks
+        *   - parent-relative coordinates for children
+        */
+        for (i in 0 until jsonBlocks.length()) {
+            val jsonBlock =
+                jsonBlocks.getJSONObject(i)
+
+            val blockId =
+                jsonBlock.getInt("id")
+
+            val block =
+                blocks.find {
+                    it.id == blockId
+                }
+                    ?: continue
+
+            val jsonView =
+                jsonBlock.optJSONObject("view")
+                    ?: continue
+
+            block.view?.x =
+                jsonView.optDouble(
+                    "x",
+                    block.view?.x?.toDouble() ?: 0.0
+                ).toFloat()
+
+            block.view?.y =
+                jsonView.optDouble(
+                    "y",
+                    block.view?.y?.toDouble() ?: 0.0
+                ).toFloat()
+        }
+
+        /*
+        * Restore links.
+        */
+        for (i in 0 until jsonFlow.length()) {
+            val jsonLink =
+                jsonFlow.getJSONObject(i)
+
+            val from =
+                jsonLink.getInt("from")
+
+            val to =
+                jsonLink.getInt("to")
+
+            if (blocks.none { it.id == from }) {
+                parseErrorHandler?.invoke(
+                    "Link source block #$from does not exist"
+                )
+            }
+
+            if (blocks.none { it.id == to }) {
+                parseErrorHandler?.invoke(
+                    "Link destination block #$to does not exist"
+                )
+            }
+
+            val link =
+                Link(
+                    from = from,
+                    to = to
+                )
+
+            val linkView =
+                view.addLink(model = link)
+
+            link.viewLink(linkView)
+
+            links.add(link)
+        }
+
+        view.refresh()
+
+        debugBlockTree()
     }
 
     private fun dp(value: Int): Int {

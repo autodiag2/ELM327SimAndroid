@@ -34,6 +34,10 @@
     <string name="settings_ble_profile_tx_uuid">TX Characteristic UUID</string>
     <string name="settings_ble_profile_rx_uuid">RX Characteristic UUID</string>
     <string name="sim_managed_responses">Managed responses</string>
+    <string name="sim_custom_serial_script_import_clipboard_empty">Clipboard is empty</string>
+    <string name="sim_custom_serial_script_import_clipboard_success">Script imported from clipboard</string>
+    <string name="sim_custom_serial_script_import_clipboard_error">Failed to import script: %1$s</string>
+    <string name="sim_custom_serial_script_import_clipboard">Import (clipboard)</string>
     <string name="sim_custom_serial_script_export_clipboard">Export (clipboard)</string>
     <string name="sim_custom_serial_script_export_clipboard_success">Exported to clipboard</string>
     <string name="sim_custom_serial_script_export_file">Export (file)</string>
