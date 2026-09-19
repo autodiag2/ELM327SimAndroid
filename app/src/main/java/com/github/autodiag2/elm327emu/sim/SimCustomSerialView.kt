@@ -498,9 +498,6 @@ class SimCustomSerialView(
                 model!!.blocks.find {
                     it.id == childId
                 }
-            }.filter {
-                it.type !=
-                    SimCustomSerialController.Block.Type.CONTAINER
             }
 
         if (children.isEmpty()) {
@@ -517,6 +514,17 @@ class SimCustomSerialView(
                 )
 
             return
+        }
+
+        for (childBlock in children) {
+            if (
+                childBlock.type ==
+                SimCustomSerialController.Block.Type.CONTAINER
+            ) {
+                updateContainerBounds(
+                    childBlock.view!!
+                )
+            }
         }
 
         var right = 0f
