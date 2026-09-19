@@ -34,6 +34,7 @@
     <string name="settings_ble_profile_tx_uuid">TX Characteristic UUID</string>
     <string name="settings_ble_profile_rx_uuid">RX Characteristic UUID</string>
     <string name="sim_managed_responses">Managed responses</string>
+    <string name="sim_custom_serial_script_clear_confirm">This will delete completely your script, are you sure ?</string>
     <string name="sim_custom_serial_script_block_name_container">Container</string>
     <string name="sim_custom_serial_script_block_name_delay">Delay</string>
     <string name="sim_custom_serial_script_block_name_send">Send</string>

@@ -183,10 +183,16 @@ class SimCustomSerialController(
     }
 
     public fun clear() {
-        blocks.clear()
-        links.clear()
-        onUnselectAll()
-        view.refresh()
+        android.app.AlertDialog.Builder(context)
+            .setTitle(R.string.sim_custom_serial_script_clear_confirm)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                blocks.clear()
+                links.clear()
+                onUnselectAll()
+                view.refresh()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     private fun rmLink(link: Any) {
