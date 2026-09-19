@@ -125,7 +125,10 @@ class SimCustomSerialController(
         parent: SimCustomSerialView.Block,
         child: SimCustomSerialView.Block
     ) {
-        parent.children.add(child.model!!.id)
+        assert(parent != child)
+        if (!parent.children.contains(child.model!!.id)) {
+            parent.children.add(child.model!!.id)
+        }
         child.model!!.parent = parent.model!!
     }
 
@@ -134,7 +137,7 @@ class SimCustomSerialController(
         child: SimCustomSerialView.Block
     ) {
         parent.children.remove(child.model!!.id)
-        child.model!!.parent
+        child.model!!.parent = null
     }
 
     override fun onElementSelected(view: ElementView<*>) {
@@ -209,6 +212,7 @@ class SimCustomSerialController(
             blockm.parent!!.children.removeAll {
                 it == blockm.id
             }
+            blockm.parent = null
         }
 
         blocks.remove(blockm)
@@ -252,12 +256,11 @@ class SimCustomSerialController(
         val blockView = view.addBlock(model = block)
         block.viewLink(blockView)
         blocks.add(block)
-        if ( to != null ) {
-            if ( to.type == Block.Type.CONTAINER ) {
-                to.children.add(block.id)
-            }
+        if (to?.type == Block.Type.CONTAINER) {
+            to.children.add(block.id)
+            block.parent = to
         }
-        view?.refresh()
+        view.refresh()
     }
 
     private fun blockTitle(block: Block): String {
@@ -298,9 +301,14 @@ class SimCustomSerialController(
         addBlock(Block.Type.CONTAINER)
     }
     public fun onDelete() {
-        rmBlock(selectedBlock!!)
+        selectedBlock?.let {
+            rmBlock(it)
+        }
+        selectedLink?.let {
+            rmLink(it)
+        }
+        onUnselectAll()
         view.refresh()
-        // TODO rm selected link
     }
     
     private fun editDelay(block: Block) {
