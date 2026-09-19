@@ -1081,12 +1081,6 @@ class SimCustomSerialView(
     private fun updateContainerMembership(
         node: Block
     ) {
-        if (node.model!!.type ==
-            SimCustomSerialController.Block.Type.CONTAINER
-        ) {
-            return
-        }
-
         val currentContainer =
             model!!.blocks.firstOrNull {
                 it.type ==
@@ -1125,6 +1119,9 @@ class SimCustomSerialView(
                     currentContainer.view!!,
                     node
                 )
+                updateContainerBounds(
+                    currentContainer.view!!
+                )
             }
 
             node.x -= target.x
@@ -1133,6 +1130,10 @@ class SimCustomSerialView(
             model!!.onBlockIncluded(
                 target,
                 node
+            )
+
+            updateContainerBounds(
+                target
             )
 
             return
@@ -1159,7 +1160,11 @@ class SimCustomSerialView(
         node: Block,
         container: Block
     ): Boolean {
+        if ( node == container ) {
+            return false
+        }
         val nodeWorldPos = node.getWorldCoords()
+        val containerWorldPos = container.getWorldCoords()
         val centerX =
             nodeWorldPos.x + node.width / 2f
 
@@ -1167,16 +1172,22 @@ class SimCustomSerialView(
             nodeWorldPos.y + node.height / 2f
 
         containerRect.set(
-            container.x,
-            container.y,
-            container.x + container.width,
-            container.y + container.height
+            containerWorldPos.x,
+            containerWorldPos.y,
+            containerWorldPos.x + container.width,
+            containerWorldPos.y + container.height
         )
 
-        return containerRect.contains(
+        val result = containerRect.contains(
             centerX,
             centerY
         )
+        if ( result ) {
+            logDebug("OVER CONTAINER node=${node.model!!.id} container=${container.model!!.id}")
+        } else {
+            logDebug("NOT OVER CONTAINER node=${node.model!!.id} (${centerX},${centerY}) container=${container.model!!.id} (${containerWorldPos.x},${containerWorldPos.y})")
+        }
+        return result
     }
 
     override fun onTouchEvent(
@@ -1324,11 +1335,9 @@ class SimCustomSerialView(
                             dy
                         )
 
-                        if ( node.model!!.type == SimCustomSerialController.Block.Type.CONTAINER) {
-                            updateContainerMembership(
-                                node
-                            )
-                        }
+                        updateContainerMembership(
+                            node
+                        )
                     } else {
                         offsetX += dx
                         offsetY += dy
