@@ -69,8 +69,6 @@ class SimCustomSerialView(
 
     interface Listener {
         fun onBlockClicked(node: Block)
-        fun onBlockLongClicked(node: Block)
-        fun onCreateLink(from: Block)
         fun onLinkToBlock(from: Block, to: Block)
         fun onBlockIncluded(parent: Block, child: Block)
         fun onBlockExcluded(parent: Block, child: Block)

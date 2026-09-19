@@ -101,18 +101,6 @@ class SimCustomSerialController(
         }
     }
 
-    override fun onBlockLongClicked(
-        node: SimCustomSerialView.Block
-    ) {
-        // TODO
-    }
-
-    override fun onCreateLink(
-        from: SimCustomSerialView.Block
-    ) {
-        // TODO
-    }
-
     override fun onLinkToBlock(
         from: SimCustomSerialView.Block,
         to: SimCustomSerialView.Block
