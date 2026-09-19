@@ -567,6 +567,7 @@ class SimCustomSerialView(
                 nodeWorldPos.x + node.width,
                 nodeWorldPos.y + node.height
             )
+            logDebug("DRAW BLOCK ${block.id} at ${nodeRect}")
 
             val selected =
                 model!!.isBlockSelected(block)
@@ -1054,6 +1055,10 @@ class SimCustomSerialView(
         )
     }
 
+    private fun containerGetUsableArea(container: Block): RectF {
+        return RectF(containerPadding, containerPadding, container.width - containerPadding, container.height - containerPadding)
+    }
+
     private fun moveBlock(
         node: Block,
         dx: Float,
@@ -1062,16 +1067,43 @@ class SimCustomSerialView(
         val worldDx = dx / scale
         val worldDy = dy / scale
 
-        node.x += worldDx
-        node.y += worldDy
+        var remainingDx = worldDx
+        var remainingDy = worldDy
 
-        val block_model = node.model!!
-        if ( block_model.type == SimCustomSerialController.Block.Type.CONTAINER) {
-            for(childId in block_model.children) {
-                val child_block_model = model!!.blocks.firstOrNull { it.id == childId }
-                if ( child_block_model != null ) {
-                    moveBlock(child_block_model.view!!, dx, dy)
-                }
+        if (node.model!!.parent == null) {
+            node.x += worldDx
+            node.y += worldDy
+        } else {
+            val parent = node.model!!.parent!!.view!!
+            val usableArea = containerGetUsableArea(parent)
+
+            val oldX = node.x
+            val oldY = node.y
+
+            node.x = max(
+                usableArea.left,
+                node.x + worldDx
+            )
+
+            node.y = max(
+                usableArea.top,
+                node.y + worldDy
+            )
+
+            remainingDx = worldDx - (node.x - oldX)
+            remainingDy = worldDy - (node.y - oldY)
+        }
+
+        if (
+            remainingDx != 0f ||
+            remainingDy != 0f
+        ) {
+            node.model!!.parent?.view?.let { parent ->
+                moveBlock(
+                    parent,
+                    remainingDx * scale,
+                    remainingDy * scale
+                )
             }
         }
 
