@@ -571,7 +571,6 @@ class SimCustomSerialView(
         }
 
         val node = block.view!!
-
         val nodeWorldPos = node.getWorldCoords()
 
         nodeRect.set(
@@ -597,6 +596,90 @@ class SimCustomSerialView(
             getThemeColor(
                 android.R.attr.textColor
             )
+
+        if (
+            block.type ==
+            SimCustomSerialController.Block.Type.CONTAINER
+        ) {
+            nodePaint.style =
+                Paint.Style.FILL
+
+            nodePaint.color =
+                if (selected) {
+                    0x332196f3
+                } else {
+                    0x18000000
+                }
+
+            canvas.drawRoundRect(
+                nodeRect,
+                18f,
+                18f,
+                nodePaint
+            )
+
+            nodePaint.style =
+                Paint.Style.STROKE
+
+            nodePaint.strokeWidth =
+                if (selected) 5f else 3f
+
+            nodePaint.color =
+                if (selected) {
+                    colorPrimaryDark
+                } else {
+                    textColor
+                }
+
+            canvas.drawRoundRect(
+                nodeRect,
+                18f,
+                18f,
+                nodePaint
+            )
+
+            nodePaint.style =
+                Paint.Style.FILL
+
+            textPaint.color =
+                textColor
+
+            val fontMetrics =
+                textPaint.fontMetrics
+
+            val textX =
+                nodeWorldPos.x +
+                containerPadding
+
+            val textY =
+                nodeWorldPos.y +
+                containerPadding -
+                (fontMetrics.ascent + fontMetrics.descent) / 2f
+
+            canvas.drawText(
+                block.name,
+                textX,
+                textY,
+                textPaint
+            )
+
+            for (childId in block.children) {
+                val child =
+                    model!!.blocks.firstOrNull {
+                        it.id == childId
+                    }
+
+                if (child != null) {
+                    drawBlock(
+                        canvas,
+                        child,
+                        drawn
+                    )
+                }
+            }
+
+            return
+        }
 
         nodePaint.style =
             Paint.Style.FILL
@@ -1133,8 +1216,15 @@ class SimCustomSerialView(
         )
     }
 
-    private fun containerGetUsableArea(container: Block): RectF {
-        return RectF(containerPadding, containerPadding, container.width - containerPadding, container.height - containerPadding)
+    private fun containerGetUsableArea(
+        container: Block
+    ): RectF {
+        return RectF(
+            containerPadding,
+            containerTitleHeight + containerPadding,
+            container.width - containerPadding,
+            container.height - containerPadding
+        )
     }
 
     private fun moveBlock(
