@@ -20,10 +20,11 @@ import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.sim.SimCustomSerialView
 import android.util.Log
 import com.github.autodiag2.elm327emu.BuildConfig
+import com.github.autodiag2.elm327emu.ui.JsonConfigurable
 
 class SimCustomSerialController(
     context: Context
-) : LinearLayout(context), SimCustomSerialView.Listener {
+) : LinearLayout(context), SimCustomSerialView.Listener, JsonConfigurable {
 
     public var view: SimCustomSerialView
     
@@ -567,7 +568,7 @@ class SimCustomSerialController(
         return !selectedBlocks.isEmpty() || !selectedLinks.isEmpty()
     }
 
-    fun toJson(): JSONObject {
+    override fun toJson(): JSONObject {
         val root = JSONObject()
 
         root.put(
@@ -581,60 +582,105 @@ class SimCustomSerialController(
         )
 
         val content = JSONObject()
-        root.put("content", content)
+
+        root.put(
+            "content",
+            content
+        )
 
         val jsonBlocks = JSONArray()
 
         for (block in blocks) {
             val jsonBlock = JSONObject()
 
-            jsonBlock.put("id", block.id)
+            jsonBlock.put(
+                "id",
+                block.id
+            )
 
             when (block.type) {
                 Block.Type.DELAY -> {
-                    jsonBlock.put("type", "delay")
-                    jsonBlock.put("content", block.delay)
+                    jsonBlock.put(
+                        "type",
+                        "delay"
+                    )
+
+                    jsonBlock.put(
+                        "content",
+                        block.delay
+                    )
                 }
 
                 Block.Type.RECV -> {
-                    jsonBlock.put("type", "recv")
+                    jsonBlock.put(
+                        "type",
+                        "recv"
+                    )
 
                     val value = JSONObject()
 
-                    value.put("match", block.match)
-                    value.put("text", block.text)
+                    value.put(
+                        "match",
+                        block.match
+                    )
+
+                    value.put(
+                        "text",
+                        block.text
+                    )
+
                     value.put(
                         "interpret_esc",
                         block.interpretEscapes
                     )
 
-                    jsonBlock.put("content", value)
+                    jsonBlock.put(
+                        "content",
+                        value
+                    )
                 }
 
                 Block.Type.SEND -> {
-                    jsonBlock.put("type", "send")
+                    jsonBlock.put(
+                        "type",
+                        "send"
+                    )
 
                     val value = JSONObject()
 
-                    value.put("text", block.text)
+                    value.put(
+                        "text",
+                        block.text
+                    )
+
                     value.put(
                         "include_eol",
                         block.includeEol
                     )
+
                     value.put(
                         "interpret_esc",
                         block.interpretEscapes
                     )
 
-                    jsonBlock.put("content", value)
+                    jsonBlock.put(
+                        "content",
+                        value
+                    )
                 }
 
                 Block.Type.CONTAINER -> {
-                    jsonBlock.put("type", "container")
+                    jsonBlock.put(
+                        "type",
+                        "container"
+                    )
 
                     val value = JSONObject()
 
-                    value.put("name", block.name)
+                    value.put(
+                        "name",
+                        block.name
+                    )
 
                     val children = JSONArray()
 
@@ -642,31 +688,86 @@ class SimCustomSerialController(
                         children.put(child)
                     }
 
-                    value.put("blocks", children)
+                    value.put(
+                        "blocks",
+                        children
+                    )
 
-                    jsonBlock.put("content", value)
+                    jsonBlock.put(
+                        "content",
+                        value
+                    )
                 }
             }
 
-            jsonBlocks.put(jsonBlock)
+            /*
+            * View position.
+            *
+            * x/y remain in the block's current coordinate system:
+            * root blocks use world coordinates,
+            * child blocks use coordinates relative to their container.
+            */
+            val blockView = block.view
+
+            if (blockView != null) {
+                val view = JSONObject()
+
+                view.put(
+                    "x",
+                    blockView.x
+                )
+
+                view.put(
+                    "y",
+                    blockView.y
+                )
+
+                jsonBlock.put(
+                    "view",
+                    view
+                )
+            }
+
+            jsonBlocks.put(
+                jsonBlock
+            )
         }
 
-        content.put("block", jsonBlocks)
+        content.put(
+            "block",
+            jsonBlocks
+        )
 
         val jsonFlow = JSONArray()
 
         for (link in links) {
             val linkObject = JSONObject()
 
-            linkObject.put("from", link.from)
-            linkObject.put("to", link.to)
+            linkObject.put(
+                "from",
+                link.from
+            )
 
-            jsonFlow.put(linkObject)
+            linkObject.put(
+                "to",
+                link.to
+            )
+
+            jsonFlow.put(
+                linkObject
+            )
         }
 
-        content.put("flow", jsonFlow)
+        content.put(
+            "flow",
+            jsonFlow
+        )
 
         return root
+    }
+
+    override fun fromJson(desc: JSONObject) {
+
     }
 
     private fun dp(value: Int): Int {
