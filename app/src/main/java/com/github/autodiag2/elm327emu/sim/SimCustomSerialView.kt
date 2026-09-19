@@ -321,6 +321,23 @@ class SimCustomSerialView(
         return typedValue.data
     }
 
+    private fun isAncestor(
+        ancestor: Block,
+        node: Block
+    ): Boolean {
+        var current = node.model?.parent
+
+        while (current != null) {
+            if (current === ancestor.model) {
+                return true
+            }
+
+            current = current.parent
+        }
+
+        return false
+    }
+
     private fun isDescendant(
         node: Block,
         possibleDescendant: Block
@@ -1485,6 +1502,10 @@ class SimCustomSerialView(
                 continue
             }
 
+            if (isAncestor(container.view!!, node)) {
+                continue
+            }
+
             updateContainerBounds(container.view!!)
 
             if (isBlockOverContainer(
@@ -1725,10 +1746,6 @@ class SimCustomSerialView(
                             node,
                             dx,
                             dy
-                        )
-
-                        updateContainerMembership(
-                            node
                         )
                     } else {
                         offsetX += dx
