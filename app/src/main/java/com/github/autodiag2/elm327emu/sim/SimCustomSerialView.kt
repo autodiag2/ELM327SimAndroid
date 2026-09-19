@@ -1099,12 +1099,7 @@ class SimCustomSerialView(
     private fun updateContainerMembership(
         node: Block
     ) {
-        val currentContainer =
-            model!!.blocks.firstOrNull {
-                it.type ==
-                    SimCustomSerialController.Block.Type.CONTAINER &&
-                it.children.contains(node.model!!.id)
-            }
+        val currentContainer = node.model!!.parent
 
         var target: Block? = null
 
