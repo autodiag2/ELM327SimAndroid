@@ -748,9 +748,18 @@ class SimCustomSerialController(
                         "delay"
                     )
 
+                    val value = JSONObject()
+                    value.put(
+                        "name",
+                        block.name
+                    )
+                    value.put(
+                        "delay",
+                        block.delay
+                    )
                     jsonBlock.put(
                         "content",
-                        block.delay
+                        value
                     )
                 }
 
@@ -761,6 +770,11 @@ class SimCustomSerialController(
                     )
 
                     val value = JSONObject()
+
+                    value.put(
+                        "name",
+                        block.name
+                    )
 
                     value.put(
                         "match",
@@ -790,6 +804,11 @@ class SimCustomSerialController(
                     )
 
                     val value = JSONObject()
+
+                    value.put(
+                        "name",
+                        block.name
+                    )
 
                     value.put(
                         "text",
@@ -916,6 +935,7 @@ class SimCustomSerialController(
             parseErrorHandler?.invoke(
                 "Unsupported script schema: $schema"
             )
+            return
         }
 
         val version = desc.optDouble("version", -VERSION)
@@ -924,6 +944,7 @@ class SimCustomSerialController(
             parseErrorHandler?.invoke(
                 "Unsupported script version: $version"
             )
+            return
         }
 
         val content = desc.optJSONObject("content")
@@ -957,6 +978,7 @@ class SimCustomSerialController(
                 parseErrorHandler?.invoke(
                     "Duplicate block id: $id"
                 )
+                return
             }
 
             val typeString =
@@ -984,34 +1006,32 @@ class SimCustomSerialController(
                     }
                 }
 
+            val blockContent = jsonBlock.getJSONObject("content")
             val block =
                 when (type) {
                     Block.Type.DELAY -> {
                         Block(
                             type = type,
-                            delay = jsonBlock
-                                .getInt("content"),
-                            id = id
+                            delay = blockContent.optInt("delay", 10),
+                            name = blockContent.optString("name", "Delay"),
+                            id = id,
                         )
                     }
 
                     Block.Type.RECV -> {
-                        val value =
-                            jsonBlock
-                                .getJSONObject("content")
-
                         Block(
                             type = type,
-                            match = value.optString(
+                            name = blockContent.optString("name", "Recv"),
+                            match = blockContent.optString(
                                 "match",
                                 "exact"
                             ),
-                            text = value.optString(
+                            text = blockContent.optString(
                                 "text",
                                 ""
                             ),
                             interpretEscapes =
-                                value.optBoolean(
+                                blockContent.optBoolean(
                                     "interpret_esc",
                                     true
                                 ),
@@ -1020,23 +1040,20 @@ class SimCustomSerialController(
                     }
 
                     Block.Type.SEND -> {
-                        val value =
-                            jsonBlock
-                                .getJSONObject("content")
-
                         Block(
                             type = type,
-                            text = value.optString(
+                            name = blockContent.optString("name", "Send"),
+                            text = blockContent.optString(
                                 "text",
                                 ""
                             ),
                             includeEol =
-                                value.optBoolean(
+                                blockContent.optBoolean(
                                     "include_eol",
                                     false
                                 ),
                             interpretEscapes =
-                                value.optBoolean(
+                                blockContent.optBoolean(
                                     "interpret_esc",
                                     true
                                 ),
@@ -1045,15 +1062,11 @@ class SimCustomSerialController(
                     }
 
                     Block.Type.CONTAINER -> {
-                        val value =
-                            jsonBlock
-                                .getJSONObject("content")
-
                         val children =
                             mutableListOf<Int>()
 
                         val jsonChildren =
-                            value.optJSONArray("blocks")
+                            blockContent.optJSONArray("blocks")
 
                         if (jsonChildren != null) {
                             for (j in 0 until jsonChildren.length()) {
@@ -1065,7 +1078,7 @@ class SimCustomSerialController(
 
                         Block(
                             type = type,
-                            name = value.optString(
+                            name = blockContent.optString(
                                 "name",
                                 ""
                             ),
@@ -1101,6 +1114,7 @@ class SimCustomSerialController(
                     parseErrorHandler?.invoke(
                         "Block #${parent.id} cannot contain itself"
                     )
+                    return
                 }
 
                 if (child.parent != null &&
@@ -1109,6 +1123,7 @@ class SimCustomSerialController(
                     parseErrorHandler?.invoke(
                         "Block #$childId has multiple parents"
                     )
+                    return
                 }
 
                 child.parent = parent
@@ -1186,12 +1201,14 @@ class SimCustomSerialController(
                 parseErrorHandler?.invoke(
                     "Link source block #$from does not exist"
                 )
+                return
             }
 
             if (blocks.none { it.id == to }) {
                 parseErrorHandler?.invoke(
                     "Link destination block #$to does not exist"
                 )
+                return
             }
 
             val link =
