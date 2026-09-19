@@ -33,7 +33,8 @@ class SimCustomSerialController(
 ) : LinearLayout(activity), SimCustomSerialView.Listener, JsonConfigurable {
 
     public var view: SimCustomSerialView
-    
+    private val stateMachine = StateMachine(this)
+
     open class ElementModel<V>(
         var view: V? = null,
         var id: Int = gen_id_track()
@@ -185,6 +186,42 @@ class SimCustomSerialController(
     }
 
     // ------------ End Listeners ------------
+
+    // ------------ StateMachine ------------
+    private val stateHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val stateRunnable =
+        object : Runnable {
+            override fun run() {
+                stateMachine.process()
+
+                if (stateMachine.isRunning()) {
+                    stateHandler.postDelayed(this, 10L)
+                }
+            }
+        }
+    
+    fun startScript() {
+        stateMachine.start()
+        stateHandler.post(stateRunnable)
+    }
+
+    fun stopScript() {
+        stateMachine.stop()
+        stateHandler.removeCallbacks(stateRunnable)
+    }
+
+    fun onExecuteSend(data: ByteArray) {
+        activity.bridgeOrchestrator.send(data, data.size)
+    }
+    // ------------ End StateMachine ------------
+
+    fun onRunStateChange(state: Boolean) {
+        if ( state ) {
+            startScript()
+        } else {
+            stopScript()
+        }
+    }
 
     fun isBlockSelected(block: Any?): Boolean {
         val blockId = when (block) {
@@ -414,6 +451,9 @@ class SimCustomSerialController(
     }
 
     // ------- Action Menu listerner -------
+    public fun onScriptReceive(text: String) {
+        stateMachine.onReceive(text)
+    }
     public fun onImportClipboard() {
         val clipboard =
             activity.getSystemService(
@@ -494,7 +534,6 @@ class SimCustomSerialController(
             ).show()
         }
     }
-
     public fun onExportClipboard() {
         val text = toJson().toString()
 

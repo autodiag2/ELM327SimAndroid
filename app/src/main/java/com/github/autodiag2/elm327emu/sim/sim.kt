@@ -78,6 +78,14 @@ class Sim(
         findViewById<Button>(R.id.sim_custom_serial_script_open).setOnClickListener {
             activity.showNestedScreen(customSerialScreen)
         }
+        val customSerialSwitch =
+            findViewById<androidx.appcompat.widget.SwitchCompat>(
+                R.id.sim_custom_serial_script_enabled
+            )
+
+        customSerialSwitch.setOnClickListener {
+            customSerialScreen.onRunStateChange(customSerialSwitch.isChecked)
+        }
         
         findViewById<Button>(R.id.sim_state).apply {
             setOnClickListener {
