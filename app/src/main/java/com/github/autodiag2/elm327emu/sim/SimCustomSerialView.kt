@@ -561,107 +561,156 @@ class SimCustomSerialView(
             )
     }
 
+    private fun drawBlock(
+        canvas: Canvas,
+        block: SimCustomSerialController.Block,
+        drawn: MutableSet<Int>
+    ) {
+        if (!drawn.add(block.id)) {
+            return
+        }
+
+        val node = block.view!!
+
+        val nodeWorldPos = node.getWorldCoords()
+
+        nodeRect.set(
+            nodeWorldPos.x,
+            nodeWorldPos.y,
+            nodeWorldPos.x + node.width,
+            nodeWorldPos.y + node.height
+        )
+
+        logDebug(
+            "DRAW BLOCK ${block.id} at ${nodeRect}"
+        )
+
+        val selected =
+            model!!.isBlockSelected(block)
+
+        val colorPrimaryDark =
+            getThemeColor(
+                androidx.appcompat.R.attr.colorPrimaryDark
+            )
+
+        val textColor =
+            getThemeColor(
+                android.R.attr.textColor
+            )
+
+        nodePaint.style =
+            Paint.Style.FILL
+
+        nodePaint.color =
+            if (selected) {
+                textColor
+            } else {
+                colorPrimaryDark
+            }
+
+        canvas.drawRoundRect(
+            nodeRect,
+            14f,
+            14f,
+            nodePaint
+        )
+
+        nodePaint.style =
+            Paint.Style.STROKE
+
+        nodePaint.strokeWidth = 3f
+
+        nodePaint.color =
+            if (selected) {
+                colorPrimaryDark
+            } else {
+                textColor
+            }
+
+        canvas.drawRoundRect(
+            nodeRect,
+            14f,
+            14f,
+            nodePaint
+        )
+
+        nodePaint.style =
+            Paint.Style.FILL
+
+        textPaint.color =
+            if (selected) {
+                colorPrimaryDark
+            } else {
+                textColor
+            }
+
+        val textWidth =
+            textPaint.measureText(block.name)
+
+        val fontMetrics =
+            textPaint.fontMetrics
+
+        val textX =
+            nodeWorldPos.x +
+            (node.width - textWidth) / 2f
+
+        val textY =
+            nodeWorldPos.y +
+            node.height / 2f -
+            (fontMetrics.ascent + fontMetrics.descent) / 2f
+
+        canvas.drawText(
+            block.name,
+            textX,
+            textY,
+            textPaint
+        )
+
+        drawPorts(
+            canvas,
+            node
+        )
+
+        for (childId in block.children) {
+            val child =
+                model!!.blocks.firstOrNull {
+                    it.id == childId
+                }
+
+            if (child != null) {
+                drawBlock(
+                    canvas,
+                    child,
+                    drawn
+                )
+            }
+        }
+    }
+
     private fun drawBlocks(
         canvas: Canvas
     ) {
+        val drawn =
+            mutableSetOf<Int>()
+
         for (block in model!!.blocks) {
-
-            val node = block.view!!
-            val nodeWorldPos = node.getWorldCoords()
-
-            nodeRect.set(
-                nodeWorldPos.x,
-                nodeWorldPos.y,
-                nodeWorldPos.x + node.width,
-                nodeWorldPos.y + node.height
-            )
-            logDebug("DRAW BLOCK ${block.id} at ${nodeRect}")
-
-            val selected =
-                model!!.isBlockSelected(block)
-
-            val colorPrimaryDark =
-                getThemeColor(
-                    androidx.appcompat.R.attr.colorPrimaryDark
+            if (block.parent == null) {
+                drawBlock(
+                    canvas,
+                    block,
+                    drawn
                 )
+            }
+        }
 
-            val textColor =
-                getThemeColor(
-                    android.R.attr.textColor
+        for (block in model!!.blocks) {
+            if (!drawn.contains(block.id)) {
+                drawBlock(
+                    canvas,
+                    block,
+                    drawn
                 )
-
-            nodePaint.style =
-                Paint.Style.FILL
-
-            nodePaint.color =
-                if (selected) {
-                    textColor
-                } else {
-                    colorPrimaryDark
-                }
-
-            canvas.drawRoundRect(
-                nodeRect,
-                14f,
-                14f,
-                nodePaint
-            )
-
-            nodePaint.style =
-                Paint.Style.STROKE
-
-            nodePaint.strokeWidth = 3f
-
-            nodePaint.color =
-                if (selected) {
-                    colorPrimaryDark
-                } else {
-                    textColor
-                }
-
-            canvas.drawRoundRect(
-                nodeRect,
-                14f,
-                14f,
-                nodePaint
-            )
-
-            nodePaint.style =
-                Paint.Style.FILL
-
-            textPaint.color =
-                if (selected) {
-                    colorPrimaryDark
-                } else {
-                    textColor
-                }
-
-            val textWidth =
-                textPaint.measureText(block.name)
-
-            val fontMetrics =
-                textPaint.fontMetrics
-
-            val textX =
-                nodeWorldPos.x +
-                (node.width - textWidth) / 2f
-
-            val textY =
-                nodeWorldPos.y +
-                node.height / 2f -
-                (fontMetrics.ascent + fontMetrics.descent) / 2f
-
-            canvas.drawText(
-                block.name,
-                textX,
-                textY,
-                textPaint
-            )
-
-            drawPorts(
-                canvas,
-                node
-            )
+            }
         }
     }
 
