@@ -1787,16 +1787,35 @@ class SimCustomSerialView(
             return
         }
 
-        if (currentContainer != null &&
+        if (
+            currentContainer != null &&
             !isBlockOverContainer(
                 node,
                 currentContainer.view!!
             )
         ) {
+            /*
+            * node.x / node.y are currently relative to the
+            * current container. Preserve the absolute position
+            * before removing the parent.
+            */
+            val nodeWorldPos =
+                node.getWorldCoords()
+
             model?.onBlockExcluded(
                 currentContainer.view!!,
                 node
             )
+
+            /*
+            * The node is now a root node, so its local coordinates
+            * are its world coordinates.
+            */
+            node.x =
+                nodeWorldPos.x
+
+            node.y =
+                nodeWorldPos.y
 
             updateContainerBounds(
                 currentContainer.view!!
