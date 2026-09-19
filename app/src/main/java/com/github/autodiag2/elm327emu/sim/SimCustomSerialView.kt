@@ -90,6 +90,7 @@ class SimCustomSerialView(
     public val blockBorderWidthSelected: Float = 10f
     public val blockBorderWidth: Float = 3f
     public val blockStandardContentPadding: Float = 40f
+    private val autoPlacementMargin: Float = 80f
     // --------- End Customization settings ---------
 
     private val nodePaint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -631,24 +632,34 @@ class SimCustomSerialView(
 
         for (other in model!!.blocks) {
             val node = other.view!!
+            val otherPos = node.getWorldCoords()
 
-            if (node.model!!.children.isNotEmpty()) {
-                continue
-            }
+            val otherLeft =
+                otherPos.x - autoPlacementMargin
 
-            val otherPos =
-                node.getWorldCoords()
+            val otherTop =
+                otherPos.y - autoPlacementMargin
+
+            val otherRight =
+                otherPos.x +
+                node.width +
+                autoPlacementMargin
+
+            val otherBottom =
+                otherPos.y +
+                node.height +
+                autoPlacementMargin
 
             val overlapX =
                 max(
                     0f,
                     min(
                         x + width,
-                        otherPos.x + node.width
+                        otherRight
                     ) -
                     max(
                         x,
-                        otherPos.x
+                        otherLeft
                     )
                 )
 
@@ -657,11 +668,11 @@ class SimCustomSerialView(
                     0f,
                     min(
                         y + height,
-                        otherPos.y + node.height
+                        otherBottom
                     ) -
                     max(
                         y,
-                        otherPos.y
+                        otherTop
                     )
                 )
 
