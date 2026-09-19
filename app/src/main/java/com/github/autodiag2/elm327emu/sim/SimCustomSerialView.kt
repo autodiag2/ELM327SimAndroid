@@ -26,6 +26,10 @@ class SimCustomSerialView(
     attrs: AttributeSet? = null
 ) : View(context, attrs) {
 
+    data class Coordinates(
+        public var x: Float = 0f,
+        public var y: Float = 0f
+    )
     open class Block(
         /**
          * Relative to container
@@ -39,7 +43,26 @@ class SimCustomSerialView(
         var height: Float = 100f,
         val children: MutableList<Int> = mutableListOf(),
         model: SimCustomSerialController.Block? = null
-    ) : SimCustomSerialController.ElementView<SimCustomSerialController.Block>(model = model)
+    ) : SimCustomSerialController.ElementView<SimCustomSerialController.Block>(model = model) {
+        
+        private fun getWorldCoordsRecurse(node: Block): Coordinates {
+            if ( node.model!!.parent == null ) {
+                return Coordinates(node.x, node.y)
+            } else {
+                val coords = getWorldCoordsRecurse(node.model!!.parent!!.view!!)
+                coords.x += node.x
+                coords.y += node.y
+                return coords
+            }
+        }
+
+        /**
+         * Get absolute position from the node contained relative ones
+         */
+        public fun getWorldCoords(): Coordinates {
+            return getWorldCoordsRecurse(this)
+        }
+    }
 
     open class Link(
         model: SimCustomSerialController.Link? = null
@@ -273,38 +296,20 @@ class SimCustomSerialView(
         )
     }
 
-    private fun getWorldXRecurse(node: Block): Float {
-        if ( node.model!!.parent == null ) {
-            return node.x
-        } else {
-            return getWorldXRecurse(node.model!!.parent!!.view!!) + node.x
+    private fun logDebug(message: String) {
+        if (BuildConfig.DEBUG) {
+            Log.d("SimCustomSerialView", message)
         }
     }
 
-    private fun getWorldYRecurse(node: Block): Float {
-        if ( node.model!!.parent == null ) {
-            return node.y
-        } else {
-            return getWorldYRecurse(node.model!!.parent!!.view!!) + node.y
-        }
-    }
-
-    /**
-     * Get absolute position x of a node in the view (node.x is relative to container)
-     */
-    private fun getWorldX(
-        node: Block
-    ): Float {
-        return getWorldXRecurse(node)
-    }
-
-    /**
-     * Get absolute position y of a node in the view (node.y is relative to container)
-     */
-    private fun getWorldY(
-        node: Block
-    ): Float {
-        return getWorldYRecurse(node)
+    private fun screenToWorld(
+        screenX: Float,
+        screenY: Float
+    ): Pair<Float, Float> {
+        return Pair(
+            (screenX - offsetX) / scale,
+            (screenY - offsetY) / scale
+        )
     }
 
     private fun getThemeColor(
@@ -387,7 +392,6 @@ class SimCustomSerialView(
 
         updateAllContainerBounds()
 
-        drawContainers(canvas)
         drawLinks(canvas)
         drawLinkPreview(canvas)
         drawBlocks(canvas)
@@ -549,101 +553,19 @@ class SimCustomSerialView(
             )
     }
 
-    private fun drawContainers(
-        canvas: Canvas
-    ) {
-        for (block in model!!.blocks) {
-            if (block.type !=
-                SimCustomSerialController.Block.Type.CONTAINER
-            ) {
-                continue
-            }
-
-            val node = block.view!!
-
-            containerRect.set(
-                node.x,
-                node.y,
-                node.x + node.width,
-                node.y + node.height
-            )
-
-            containerPaint.style =
-                Paint.Style.FILL
-
-            containerPaint.color =
-                if ( model!!.isBlockSelected(block) ) {
-                    0x332196f3
-                } else {
-                    0x18000000
-                }
-
-            canvas.drawRoundRect(
-                containerRect,
-                18f,
-                18f,
-                containerPaint
-            )
-
-            containerPaint.style =
-                Paint.Style.STROKE
-
-            containerPaint.strokeWidth =
-                if ( model!!.isBlockSelected(block) ) {
-                    5f
-                } else {
-                    3f
-                }
-
-            containerPaint.color =
-                0xff777777.toInt()
-
-            canvas.drawRoundRect(
-                containerRect,
-                18f,
-                18f,
-                containerPaint
-            )
-
-            containerPaint.style =
-                Paint.Style.FILL
-
-            textPaint.color =
-                0xff333333.toInt()
-
-            canvas.drawText(
-                node.model!!.name,
-                node.x + 16f,
-                node.y + 28f,
-                textPaint
-            )
-
-            drawPorts(
-                canvas,
-                node
-            )
-        }
-    }
-
     private fun drawBlocks(
         canvas: Canvas
     ) {
         for (block in model!!.blocks) {
-            if (block.type ==
-                SimCustomSerialController.Block.Type.CONTAINER
-            ) {
-                continue
-            }
 
             val node = block.view!!
-            val worldX = getWorldX(node)
-            val worldY = getWorldY(node)
+            val nodeWorldPos = node.getWorldCoords()
 
             nodeRect.set(
-                worldX,
-                worldY,
-                worldX + node.width,
-                worldY + node.height
+                nodeWorldPos.x,
+                nodeWorldPos.y,
+                nodeWorldPos.x + node.width,
+                nodeWorldPos.y + node.height
             )
 
             val selected =
@@ -712,11 +634,11 @@ class SimCustomSerialView(
                 textPaint.fontMetrics
 
             val textX =
-                worldX +
+                nodeWorldPos.x +
                 (node.width - textWidth) / 2f
 
             val textY =
-                worldY +
+                nodeWorldPos.y +
                 node.height / 2f -
                 (fontMetrics.ascent + fontMetrics.descent) / 2f
 
@@ -744,8 +666,7 @@ class SimCustomSerialView(
         val isDestination =
             hoveredDestination?.model?.id == node.model!!.id
 
-        val worldX = getWorldX(node)
-        val worldY = getWorldY(node)
+        val nodeWorldPos = node.getWorldCoords()
 
         portPaint.color =
             if (isDestination) {
@@ -757,8 +678,8 @@ class SimCustomSerialView(
             }
 
         canvas.drawCircle(
-            worldX,
-            worldY + node.height / 2f,
+            nodeWorldPos.x,
+            nodeWorldPos.y + node.height / 2f,
             portRadius,
             portPaint
         )
@@ -773,8 +694,8 @@ class SimCustomSerialView(
             }
 
         canvas.drawCircle(
-            worldX + node.width,
-            worldY + node.height / 2f,
+            nodeWorldPos.x + node.width,
+            nodeWorldPos.y + node.height / 2f,
             portRadius,
             portPaint
         )
@@ -831,12 +752,14 @@ class SimCustomSerialView(
         to: Block,
         paint: Paint
     ) {
+        val fromWorldPos = from.getWorldCoords()
+        val toWorldPos = to.getWorldCoords()
         drawLinkCurve(
             canvas,
-            getWorldX(from) + from.width,
-            getWorldY(from) + from.height / 2f,
-            getWorldX(to),
-            getWorldY(to) + to.height / 2f,
+            fromWorldPos.x + from.width,
+            fromWorldPos.y + from.height / 2f,
+            toWorldPos.x,
+            toWorldPos.y + to.height / 2f,
             paint
         )
     }
@@ -848,11 +771,12 @@ class SimCustomSerialView(
             ?: return
 
         linkPreviewPaint.color = getThemeColor(androidx.appcompat.R.attr.colorAccent)
+        val fromWorldPos = from.getWorldCoords()
 
         drawLinkCurve(
             canvas,
-            getWorldX(from) + from.width,
-            getWorldY(from) + from.height / 2f,
+            fromWorldPos.x + from.width,
+            fromWorldPos.y + from.height / 2f,
             linkX,
             linkY,
             linkPreviewPaint
@@ -867,49 +791,15 @@ class SimCustomSerialView(
         val x = point.first
         val y = point.second
 
-        for (i in model!!.blocks.indices.reversed()) {
-            val block = model!!.blocks[i]
-
-            if (block.type ==
-                SimCustomSerialController.Block.Type.CONTAINER
-            ) {
-                continue
-            }
+        for (block in model!!.blocks) {
 
             val node = block.view!!
+            val nodeWorldPos = node.getWorldCoords()
 
-            val worldX = getWorldX(node)
-            val worldY = getWorldY(node)
-
-            if (x >= worldX &&
-                x <= worldX + node.width &&
-                y >= worldY &&
-                y <= worldY + node.height
-            ) {
-                return node
-            }
-        }
-
-        for (i in model!!.blocks.indices.reversed()) {
-            val block = model!!.blocks[i]
-
-            if (block.type !=
-                SimCustomSerialController.Block.Type.CONTAINER
-            ) {
-                continue
-            }
-
-            val node = block.view!!
-
-            updateContainerBounds(node)
-
-            val worldX = getWorldX(node)
-            val worldY = getWorldY(node)
-
-            if (x >= worldX &&
-                x <= worldX + node.width &&
-                y >= worldY &&
-                y <= worldY + node.height
+            if (x >= nodeWorldPos.x &&
+                x <= nodeWorldPos.x + node.width &&
+                y >= nodeWorldPos.y &&
+                y <= nodeWorldPos.y + node.height
             ) {
                 return node
             }
@@ -933,18 +823,15 @@ class SimCustomSerialView(
 
         for (block in model!!.blocks) {
             val node = block.view!!
+            val nodeWorldPos = node.getWorldCoords()
 
-            val worldX = getWorldX(node)
-            val worldY = getWorldY(node)
-
-            val portX = worldX + node.width
-            val portY = worldY + node.height / 2f
+            val port = Coordinates(nodeWorldPos.x + node.width, nodeWorldPos.y + node.height / 2f)
 
             if (distance(
                     x,
                     y,
-                    portX,
-                    portY
+                    port.x,
+                    port.y
                 ) <= portHitRadius
             ) {
                 return node
@@ -969,18 +856,15 @@ class SimCustomSerialView(
 
         for (block in model!!.blocks) {
             val node = block.view!!
+            val nodeWorldPos = node.getWorldCoords()
 
-            val worldX = getWorldX(node)
-            val worldY = getWorldY(node)
-
-            val portX = worldX
-            val portY = worldY + node.height / 2f
+            val port = Coordinates(nodeWorldPos.x, nodeWorldPos.y + node.height / 2f)
 
             if (distance(
                     x,
                     y,
-                    portX,
-                    portY
+                    port.x,
+                    port.y
                 ) <= portHitRadius
             ) {
                 return node
@@ -1038,17 +922,19 @@ class SimCustomSerialView(
         from: Block,
         to: Block
     ): Boolean {
+        val fromWorldPos = from.getWorldCoords()
+        val toWorldPos = to.getWorldCoords()
         val startX =
-            getWorldX(from) + from.width
+            fromWorldPos.x + from.width
 
         val startY =
-            getWorldY(from) + from.height / 2f
+            fromWorldPos.y + from.height / 2f
 
         val endX =
-            to.x
+            toWorldPos.x
 
         val endY =
-            to.y + to.height / 2f
+            toWorldPos.y + to.height / 2f
 
         val controlDistance =
             max(
@@ -1168,22 +1054,6 @@ class SimCustomSerialView(
         )
     }
 
-    private fun logDebug(message: String) {
-        if (BuildConfig.DEBUG) {
-            Log.d("SimCustomSerialView", message)
-        }
-    }
-
-    private fun screenToWorld(
-        screenX: Float,
-        screenY: Float
-    ): Pair<Float, Float> {
-        return Pair(
-            (screenX - offsetX) / scale,
-            (screenY - offsetY) / scale
-        )
-    }
-
     private fun moveBlock(
         node: Block,
         dx: Float,
@@ -1289,11 +1159,12 @@ class SimCustomSerialView(
         node: Block,
         container: Block
     ): Boolean {
+        val nodeWorldPos = node.getWorldCoords()
         val centerX =
-            getWorldX(node) + node.width / 2f
+            nodeWorldPos.x + node.width / 2f
 
         val centerY =
-            getWorldY(node) + node.height / 2f
+            nodeWorldPos.y + node.height / 2f
 
         containerRect.set(
             container.x,
