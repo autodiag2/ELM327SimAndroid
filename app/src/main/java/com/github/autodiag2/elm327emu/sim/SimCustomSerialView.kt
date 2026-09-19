@@ -74,8 +74,8 @@ class SimCustomSerialView(
         fun onLinkToBlock(from: Block, to: Block)
         fun onBlockIncluded(parent: Block, child: Block)
         fun onBlockExcluded(parent: Block, child: Block)
-        fun onElementSelected(view: SimCustomSerialController.ElementView<*>)
-        fun onElementUnselected(view: SimCustomSerialController.ElementView<*>)
+        fun onElementSelected(element: SimCustomSerialController.ElementView<*>)
+        fun onElementUnselected(element: SimCustomSerialController.ElementView<*>)
         fun onUnselectAll()
     }
 
@@ -174,9 +174,10 @@ class SimCustomSerialView(
                     )
 
                     if (node != null) {
-                        model?.onUnselectAll()
-                        model?.onElementSelected(node)
-                        model?.onBlockClicked(node)
+                        model?.toggleBlockSelection(node.model!!)
+                        if (node.model!!.id in model!!.selectedBlocks) {
+                            model?.onBlockClicked(node)
+                        }
 
                         invalidate()
                         return true
@@ -188,8 +189,7 @@ class SimCustomSerialView(
                     )
 
                     if (link != null) {
-                        model?.onUnselectAll()
-                        model?.onElementSelected(link)
+                        model?.toggleLinkSelection(link.model!!)
 
                         invalidate()
                         return true
@@ -233,7 +233,6 @@ class SimCustomSerialView(
                     )
 
                     if (node != null) {
-                        model?.onUnselectAll()
                         model?.onElementSelected(node)
 
                         invalidate()
@@ -246,7 +245,6 @@ class SimCustomSerialView(
                     )
 
                     if (link != null) {
-                        model?.onUnselectAll()
                         model?.onElementSelected(link)
 
                         invalidate()
@@ -1370,9 +1368,7 @@ class SimCustomSerialView(
                 continue
             }
 
-            val selected = 
-                link.from == model!!.selectedLink?.from && 
-                link.to == model!!.selectedLink?.to
+            val selected = model!!.isLinkSelected(link)
 
             val paint =
                 if (selected) {

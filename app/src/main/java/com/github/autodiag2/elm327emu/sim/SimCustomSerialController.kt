@@ -76,8 +76,8 @@ class SimCustomSerialController(
 
     public val blocks = mutableListOf<Block>()
     public val links = mutableListOf<Link>()
-    public var selectedBlock: Block? = null
-    public var selectedLink: Link? = null
+    val selectedBlocks = mutableSetOf<Int>()
+    val selectedLinks = mutableSetOf<Pair<Int, Int>>()
 
     init {
         orientation = VERTICAL
@@ -144,33 +144,126 @@ class SimCustomSerialController(
         child.model!!.parent = null
     }
 
-    override fun onElementSelected(view: ElementView<*>) {
-        val element_model = view.model
-        if ( element_model is Block ) {
-            selectedBlock = element_model
-        } else if ( element_model is Link ) {
-            selectedLink = element_model
-        } else {
-            assert(false)
+    override fun onElementSelected(element: ElementView<*>) {
+        when (element) {
+            is SimCustomSerialView.Block -> {
+                selectedBlocks.add(element.model!!.id)
+            }
+
+            is SimCustomSerialView.Link -> {
+                val link = element.model!!
+                selectedLinks.add(
+                    Pair(link.from, link.to)
+                )
+            }
         }
     }
 
-    override fun onElementUnselected(view: ElementView<*>) {
-        val element_model = view.model
-        if ( element_model is Block ) {
-            selectedBlock = null
-        } else if ( element_model is Link ) {
-            selectedLink = null
-        } else {
-            assert(false)
+    override fun onElementUnselected(
+        element: SimCustomSerialController.ElementView<*>
+    ) {
+        when (element) {
+            is SimCustomSerialView.Block -> {
+                selectedBlocks.remove(element.model!!.id)
+            }
+
+            is SimCustomSerialView.Link -> {
+                val link = element.model!!
+                selectedLinks.remove(
+                    Pair(link.from, link.to)
+                )
+            }
         }
     }
     
     override fun onUnselectAll() {
-        selectedBlock = null
-        selectedLink = null
+        selectedBlocks.clear()
+        selectedLinks.clear()
     }
+
     // ------------ End Listeners ------------
+
+    fun isBlockSelected(block: Any?): Boolean {
+        val blockId = when (block) {
+            is Int -> block
+
+            is Block ->
+                block.id
+
+            null ->
+                return false
+
+            else ->
+                return false
+        }
+
+        return selectedBlocks.contains(blockId)
+    }
+
+    fun isLinkSelected(link: Any?): Boolean {
+        val linkKey = when (link) {
+            is Pair<*, *> -> {
+                val from = link.first as? Int ?: return false
+                val to = link.second as? Int ?: return false
+
+                Pair(from, to)
+            }
+
+            is Int -> {
+                val linkModel =
+                    links.find { it.id == link }
+                        ?: return false
+
+                Pair(
+                    linkModel.from,
+                    linkModel.to
+                )
+            }
+
+            is Link ->
+                Pair(
+                    link.from,
+                    link.to
+                )
+
+            null ->
+                return false
+
+            else ->
+                return false
+        }
+
+        return selectedLinks.contains(linkKey)
+    }
+
+    fun toggleBlockSelection(block: Block) {
+        if (!selectedBlocks.add(block.id)) {
+            selectedBlocks.remove(block.id)
+        }
+
+        view.refresh()
+    }
+
+    fun toggleLinkSelection(link: Link) {
+        val key = Pair(link.from, link.to)
+
+        if (!selectedLinks.add(key)) {
+            selectedLinks.remove(key)
+        }
+
+        view.refresh()
+    }
+
+    fun clearSelection() {
+        selectedBlocks.clear()
+        selectedLinks.clear()
+        view.refresh()
+    }
+
+    fun hasSelection(): Boolean {
+        return selectedBlocks.isNotEmpty() ||
+            selectedLinks.isNotEmpty()
+    }
 
     public fun logDebug(message: String) {
         if (BuildConfig.DEBUG) {
@@ -204,6 +297,12 @@ class SimCustomSerialController(
         }
         assert(linko is Link)
         val linkm = linko as Link
+        selectedLinks.remove(
+            Pair(
+                linkm.from,
+                linkm.to
+            )
+        )
         links.remove(linkm)
         view.refresh()
     }
@@ -233,19 +332,17 @@ class SimCustomSerialController(
 
         blocks.remove(blockm)
 
-        if (selectedBlock == blockm) {
-            selectedBlock = null
+        if ( isBlockSelected(blockm) ) {
+            toggleBlockSelection(blockm)
         }
 
-        selectedLink =
-            selectedLink?.takeUnless {
-                it.from == blockm.id ||
-                it.to == blockm.id
+        for (link in links.toList()) {
+            if (
+                link.from == blockm.id ||
+                link.to == blockm.id
+            ) {
+                rmLink(link)
             }
-
-        links.removeAll {
-            it.from == blockm.id ||
-            it.to == blockm.id
         }
 
         view.refresh()
@@ -318,13 +415,31 @@ class SimCustomSerialController(
         addBlock(Block.Type.CONTAINER)
     }
     public fun onDelete() {
-        selectedBlock?.let {
-            rmBlock(it)
+        val blocksToDelete =
+            selectedBlocks
+                .mapNotNull { blockId ->
+                    blocks.find { it.id == blockId }
+                }
+                .toList()
+
+        val linksToDelete =
+            selectedLinks
+                .mapNotNull { (from, to) ->
+                    links.find {
+                        it.from == from &&
+                        it.to == to
+                    }
+                }
+                .toList()
+
+        for (block in blocksToDelete) {
+            rmBlock(block)
         }
-        selectedLink?.let {
-            rmLink(it)
+
+        for (link in linksToDelete) {
+            rmLink(link)
         }
-        onUnselectAll()
+
         view.refresh()
     }
     
@@ -460,18 +575,8 @@ class SimCustomSerialController(
             .show()
     }
 
-    fun isBlockSelected(block: Any?): Boolean {
-        if ( block == null ) {
-            return false
-        } else if ( block is Int ) {
-            return isBlockSelected(blocks.find { it.id == block })
-        } else {
-            return selectedBlock != null && selectedBlock == block
-        }
-    }
-
     fun isSomeSelection(): Boolean {
-        return selectedBlock != null || selectedLink != null
+        return !selectedBlocks.isEmpty() || !selectedLinks.isEmpty()
     }
 
     fun toJson(): JSONObject {
