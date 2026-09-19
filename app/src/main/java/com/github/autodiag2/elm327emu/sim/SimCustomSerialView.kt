@@ -91,12 +91,13 @@ class SimCustomSerialView(
     public val blockBorderWidth: Float = 3f
     public val blockStandardContentPadding: Float = 40f
     private val autoPlacementMargin: Float = 80f
+    private val linkSelectionSensitivity = 60f
     // --------- End Customization settings ---------
 
     private val nodePaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val containerPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val connectionPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val linkPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val selectedLinkPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val linkPreviewPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val portPaint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -132,9 +133,9 @@ class SimCustomSerialView(
         textPaint.textSize =
             16f * resources.displayMetrics.scaledDensity
 
-        connectionPaint.style = Paint.Style.STROKE
-        connectionPaint.strokeWidth = 4f
-        connectionPaint.strokeCap = Paint.Cap.ROUND
+        linkPaint.style = Paint.Style.STROKE
+        linkPaint.strokeWidth = 4f
+        linkPaint.strokeCap = Paint.Cap.ROUND
 
         arrowPaint.style = Paint.Style.FILL
 
@@ -181,14 +182,14 @@ class SimCustomSerialView(
                         return true
                     }
 
-                    val connection = findLink(
+                    val link = findLink(
                         event.x,
                         event.y
                     )
 
-                    if (connection != null) {
+                    if (link != null) {
                         model?.onUnselectAll()
-                        model?.onElementSelected(connection)
+                        model?.onElementSelected(link)
 
                         invalidate()
                         return true
@@ -239,14 +240,14 @@ class SimCustomSerialView(
                         return
                     }
 
-                    val connection = findLink(
+                    val link = findLink(
                         event.x,
                         event.y
                     )
 
-                    if (connection != null) {
+                    if (link != null) {
                         model?.onUnselectAll()
-                        model?.onElementSelected(connection)
+                        model?.onElementSelected(link)
 
                         invalidate()
                         return
@@ -1377,12 +1378,14 @@ class SimCustomSerialView(
                 if (selected) {
                     selectedLinkPaint
                 } else {
-                    connectionPaint
+                    linkPaint
                 }
 
             paint.color =
                 if (selected) {
-                    0xff1976d2.toInt()
+                    getThemeColor(
+                        androidx.appcompat.R.attr.colorAccent
+                    )
                 } else {
                     getThemeColor(R.attr.colorAccentInactive)
                 }
@@ -1666,7 +1669,7 @@ class SimCustomSerialView(
                     previousY,
                     currentX,
                     currentY
-                ) <= 18f
+                ) <= linkSelectionSensitivity
             ) {
                 return true
             }
