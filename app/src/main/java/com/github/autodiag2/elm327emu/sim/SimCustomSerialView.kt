@@ -958,6 +958,10 @@ class SimCustomSerialView(
                 it.model!!.parent == null
             } ?: candidates.first()
 
+        var higherPriority = candidates.firstOrNull {
+                it.model!!.parent == null && it.model!!.type != SimCustomSerialController.Block.Type.CONTAINER
+            } ?: candidates.first()
+
         while (true) {
             val child =
                 candidates.firstOrNull {
@@ -967,7 +971,11 @@ class SimCustomSerialView(
             candidate = child
         }
 
-        return candidate
+        if ( higherPriority == null ) {
+            return candidate
+        } else {
+            return higherPriority
+        }
     }
 
     private fun findSourcePort(
