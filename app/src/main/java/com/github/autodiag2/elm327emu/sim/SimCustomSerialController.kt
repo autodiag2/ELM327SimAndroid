@@ -55,7 +55,8 @@ class SimCustomSerialController(
         var interpretEscapes: Boolean = true,
         var name: String = "",
         view: SimCustomSerialView.Block? = null,
-        val children: MutableList<Int> = mutableListOf()
+        val children: MutableList<Int> = mutableListOf(),
+        var parent: Block? = null
     ) : ElementModel<SimCustomSerialView.Block>(view) {
         enum class Type {
             DELAY,
@@ -125,6 +126,7 @@ class SimCustomSerialController(
         child: SimCustomSerialView.Block
     ) {
         parent.children.add(child.model!!.id)
+        child.model!!.parent = parent.model!!
     }
 
     override fun onBlockExcluded(
@@ -132,6 +134,7 @@ class SimCustomSerialController(
         child: SimCustomSerialView.Block
     ) {
         parent.children.remove(child.model!!.id)
+        child.model!!.parent
     }
 
     override fun onElementSelected(view: ElementView<*>) {
@@ -201,6 +204,11 @@ class SimCustomSerialController(
 
         for (childblock in blockm.children.toList()) {
             rmBlock(childblock)
+        }
+        if ( blockm.parent != null ) {
+            blockm.parent!!.children.removeAll {
+                it == blockm.id
+            }
         }
 
         blocks.remove(blockm)

@@ -27,7 +27,13 @@ class SimCustomSerialView(
 ) : View(context, attrs) {
 
     open class Block(
+        /**
+         * Relative to container
+         */
         var x: Float,
+        /**
+         * Relative to container
+         */
         var y: Float,
         var width: Float = 260f,
         var height: Float = 100f,
@@ -81,7 +87,6 @@ class SimCustomSerialView(
     private var offsetY = 0f
 
     private var draggingBlock: Block? = null
-    private var draggingContainer: Block? = null
 
     private var linkingFrom: Block? = null
     private var hoveredDestination: Block? = null
@@ -266,6 +271,40 @@ class SimCustomSerialView(
                 }
             }
         )
+    }
+
+    private fun getWorldXRecurse(node: Block): Float {
+        if ( node.model!!.parent == null ) {
+            return node.x
+        } else {
+            return getWorldXRecurse(node.model!!.parent!!.view!!) + node.x
+        }
+    }
+
+    private fun getWorldYRecurse(node: Block): Float {
+        if ( node.model!!.parent == null ) {
+            return node.y
+        } else {
+            return getWorldYRecurse(node.model!!.parent!!.view!!) + node.y
+        }
+    }
+
+    /**
+     * Get absolute position x of a node in the view (node.x is relative to container)
+     */
+    private fun getWorldX(
+        node: Block
+    ): Float {
+        return getWorldXRecurse(node)
+    }
+
+    /**
+     * Get absolute position y of a node in the view (node.y is relative to container)
+     */
+    private fun getWorldY(
+        node: Block
+    ): Float {
+        return getWorldYRecurse(node)
     }
 
     private fun getThemeColor(
@@ -1156,41 +1195,17 @@ class SimCustomSerialView(
         node.x += worldDx
         node.y += worldDy
 
-        invalidate()
-    }
-
-    private fun getWorldX(
-    node: Block
-): Float {
-    val parent =
-        model!!.blocks.firstOrNull {
-            it.type ==
-                SimCustomSerialController.Block.Type.CONTAINER &&
-            it.children.contains(node.model!!.id)
-        }
-
-    return if (parent != null) {
-        parent.view!!.x + node.x
-    } else {
-        node.x
-    }
-}
-
-    private fun getWorldY(
-        node: Block
-    ): Float {
-        val parent =
-            model!!.blocks.firstOrNull {
-                it.type ==
-                    SimCustomSerialController.Block.Type.CONTAINER &&
-                it.children.contains(node.model!!.id)
+        val block_model = node.model!!
+        if ( block_model.type == SimCustomSerialController.Block.Type.CONTAINER) {
+            for(childId in block_model.children) {
+                val child_block_model = model!!.blocks.firstOrNull { it.id == childId }
+                if ( child_block_model != null ) {
+                    moveBlock(child_block_model.view!!, dx, dy)
+                }
             }
-
-        return if (parent != null) {
-            parent.view!!.y + node.y
-        } else {
-            node.y
         }
+
+        invalidate()
     }
 
     private fun updateContainerMembership(
@@ -1308,7 +1323,6 @@ class SimCustomSerialView(
 
             if (pointerCount > 1) {
                 draggingBlock = null
-                draggingContainer = null
                 movedDuringGesture = true
             }
 
@@ -1399,15 +1413,7 @@ class SimCustomSerialView(
                     "DOWN x=${event.x} y=${event.y} block=${node?.model?.id} type=${node?.model?.type}"
                 )
 
-                if (node?.model?.type ==
-                    SimCustomSerialController.Block.Type.CONTAINER
-                ) {
-                    draggingContainer = node
-                    draggingBlock = null
-                } else {
-                    draggingBlock = node
-                    draggingContainer = null
-                }
+                draggingBlock = node
 
                 return true
             }
@@ -1424,7 +1430,6 @@ class SimCustomSerialView(
 
                 logDebug(
                     "MOVE dx=$dx dy=$dy " +
-                        "container=${draggingContainer?.model?.id} " +
                         "block=${draggingBlock?.model?.id} " +
                         "scaleInProgress=${scaleDetector.isInProgress}"
                 )
@@ -1437,28 +1442,22 @@ class SimCustomSerialView(
                 }
 
                 if (!scaleDetector.isInProgress) {
-                    val container =
-                        draggingContainer
-
                     val node =
                         draggingBlock
 
-                    if (container != null) {
-                        moveBlock(
-                            container,
-                            dx,
-                            dy
-                        )
-                    } else if (node != null) {
+
+                    if (node != null) {
                         moveBlock(
                             node,
                             dx,
                             dy
                         )
 
-                        updateContainerMembership(
-                            node
-                        )
+                        if ( node.model!!.type == SimCustomSerialController.Block.Type.CONTAINER) {
+                            updateContainerMembership(
+                                node
+                            )
+                        }
                     } else {
                         offsetX += dx
                         offsetY += dy
@@ -1475,7 +1474,6 @@ class SimCustomSerialView(
             MotionEvent.ACTION_UP,
             MotionEvent.ACTION_CANCEL -> {
                 draggingBlock = null
-                draggingContainer = null
 
                 return true
             }
