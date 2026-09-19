@@ -225,18 +225,6 @@ class SimCustomSerialView(
                         return
                     }
 
-                    val node = findBlock(
-                        event.x,
-                        event.y
-                    )
-
-                    if (node != null) {
-                        model?.onElementSelected(node)
-
-                        invalidate()
-                        return
-                    }
-
                     val link = findLink(
                         event.x,
                         event.y
@@ -244,6 +232,18 @@ class SimCustomSerialView(
 
                     if (link != null) {
                         model?.onElementSelected(link)
+
+                        invalidate()
+                        return
+                    }
+
+                    val node = findBlock(
+                        event.x,
+                        event.y
+                    )
+
+                    if (node != null) {
+                        model?.onElementSelected(node)
 
                         invalidate()
                         return
