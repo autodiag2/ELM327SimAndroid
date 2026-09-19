@@ -366,7 +366,192 @@ class SimCustomSerialView(
     public fun addBlock(
         model: SimCustomSerialController.Block
     ): Block {
-        return Block(0f, 0f, model = model)
+        val block = Block(
+            0f,
+            0f,
+            model = model
+        )
+
+        val worldCenterX =
+            (width / 2f - offsetX) / scale
+
+        val worldCenterY =
+            (height / 2f - offsetY) / scale
+
+        val strength = 1f
+
+        val position =
+            findFreeBlockPosition(
+                block,
+                worldCenterX,
+                worldCenterY,
+                strength
+            )
+
+        block.x = position.x
+        block.y = position.y
+
+        return block
+    }
+
+    private fun findFreeBlockPosition(
+        block: Block,
+        centerX: Float,
+        centerY: Float,
+        strength: Float
+    ): Coordinates {
+        val minimumDistance = 20f
+        val step = max(
+            20f,
+            min(block.width, block.height) * 0.25f
+        )
+
+        val maxRadius =
+            max(width, height).toFloat() / scale
+
+        var best =
+            Coordinates(
+                centerX - block.width / 2f,
+                centerY - block.height / 2f
+            )
+
+        var bestScore = Float.MAX_VALUE
+
+        var radius = 0f
+
+        while (radius <= maxRadius) {
+            val circumference =
+                max(
+                    1f,
+                    2f * Math.PI.toFloat() * radius
+                )
+
+            val count =
+                max(
+                    1,
+                    (circumference / step).toInt()
+                )
+
+            for (i in 0 until count) {
+                val angle =
+                    2f *
+                    Math.PI.toFloat() *
+                    i.toFloat() /
+                    count.toFloat()
+
+                val x =
+                    centerX +
+                    kotlin.math.cos(angle) * radius -
+                    block.width / 2f
+
+                val y =
+                    centerY +
+                    kotlin.math.sin(angle) * radius -
+                    block.height / 2f
+
+                val overlap =
+                    blockOverlapScore(
+                        x,
+                        y,
+                        block.width,
+                        block.height,
+                        strength
+                    )
+
+                val distance =
+                    sqrt(
+                        (x + block.width / 2f - centerX) *
+                        (x + block.width / 2f - centerX) +
+                        (y + block.height / 2f - centerY) *
+                        (y + block.height / 2f - centerY)
+                    )
+
+                val score =
+                    overlap * 100000f +
+                    distance
+
+                if (score < bestScore) {
+                    bestScore = score
+
+                    best =
+                        Coordinates(
+                            x,
+                            y
+                        )
+                }
+
+                if (overlap == 0f) {
+                    return Coordinates(
+                        x,
+                        y
+                    )
+                }
+            }
+
+            radius += step
+        }
+
+        return best
+    }
+
+    private fun blockOverlapScore(
+        x: Float,
+        y: Float,
+        width: Float,
+        height: Float,
+        strength: Float
+    ): Float {
+        var score = 0f
+
+        for (other in model!!.blocks) {
+            val node = other.view!!
+
+            if (node.model!!.children.isNotEmpty()) {
+                continue
+            }
+
+            val otherPos =
+                node.getWorldCoords()
+
+            val overlapX =
+                max(
+                    0f,
+                    min(
+                        x + width,
+                        otherPos.x + node.width
+                    ) -
+                    max(
+                        x,
+                        otherPos.x
+                    )
+                )
+
+            val overlapY =
+                max(
+                    0f,
+                    min(
+                        y + height,
+                        otherPos.y + node.height
+                    ) -
+                    max(
+                        y,
+                        otherPos.y
+                    )
+                )
+
+            val overlap =
+                overlapX * overlapY
+
+            val area =
+                width * height
+
+            if (area > 0f) {
+                score +=
+                    (overlap / area) * strength
+            }
+        }
+
+        return score
     }
 
     public fun addLink(model: SimCustomSerialController.Link): Link {
@@ -960,7 +1145,7 @@ class SimCustomSerialView(
 
         var higherPriority = candidates.firstOrNull {
                 it.model!!.parent == null && it.model!!.type != SimCustomSerialController.Block.Type.CONTAINER
-            } ?: candidates.first()
+            }
 
         while (true) {
             val child =
