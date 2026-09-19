@@ -392,9 +392,9 @@ class SimCustomSerialView(
 
         updateAllContainerBounds()
 
+        drawBlocks(canvas)
         drawLinks(canvas)
         drawLinkPreview(canvas)
-        drawBlocks(canvas)
 
         canvas.restore()
     }
