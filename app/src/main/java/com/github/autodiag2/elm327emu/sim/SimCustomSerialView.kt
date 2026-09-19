@@ -1088,45 +1088,10 @@ class SimCustomSerialView(
         val worldDx = dx / scale
         val worldDy = dy / scale
 
-        var remainingDx = worldDx
-        var remainingDy = worldDy
+        node.x += worldDx
+        node.y += worldDy
 
-        if (node.model!!.parent == null) {
-            node.x += worldDx
-            node.y += worldDy
-        } else {
-            val parent = node.model!!.parent!!.view!!
-            val usableArea = containerGetUsableArea(parent)
-
-            val oldX = node.x
-            val oldY = node.y
-
-            node.x = max(
-                usableArea.left,
-                node.x + worldDx
-            )
-
-            node.y = max(
-                usableArea.top,
-                node.y + worldDy
-            )
-
-            remainingDx = worldDx - (node.x - oldX)
-            remainingDy = worldDy - (node.y - oldY)
-        }
-
-        if (
-            remainingDx != 0f ||
-            remainingDy != 0f
-        ) {
-            node.model!!.parent?.view?.let { parent ->
-                moveBlock(
-                    parent,
-                    remainingDx * scale,
-                    remainingDy * scale
-                )
-            }
-        }
+        updateContainerMembership(node)
 
         invalidate()
     }
@@ -1177,8 +1142,14 @@ class SimCustomSerialView(
                 )
             }
 
-            node.x -= target.x
-            node.y -= target.y
+            val nodeWorldPos = node.getWorldCoords()
+            val targetWorldPos = target.getWorldCoords()
+
+            node.x =
+                nodeWorldPos.x - targetWorldPos.x
+
+            node.y =
+                nodeWorldPos.y - targetWorldPos.y
 
             model!!.onBlockIncluded(
                 target,
