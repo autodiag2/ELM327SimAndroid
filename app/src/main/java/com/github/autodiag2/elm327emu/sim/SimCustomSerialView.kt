@@ -729,18 +729,47 @@ class SimCustomSerialView(
         endY: Float,
         paint: Paint
     ) {
-        val distance =
-            max(
-                40f,
-                abs(endX - startX) * 0.5f
-            )
-
-        val control1X = startX + distance
-        val control1Y = startY
-        val control2X = endX - distance
-        val control2Y = endY
-
         val path = Path()
+
+        val control1X: Float
+        val control1Y: Float
+        val control2X: Float
+        val control2Y: Float
+
+        if (endX < startX) {
+            /*
+            * Backward edge.
+            *
+            * Route below the blocks to produce a pronounced
+            * U / half-circle-like curve instead of a straight line.
+            */
+            val curveOffset =
+                max(
+                    100f,
+                    abs(startX - endX) * 0.5f
+                )
+
+            control1X = startX
+            control1Y = startY + curveOffset
+
+            control2X = endX
+            control2Y = endY + curveOffset
+        } else {
+            /*
+            * Normal forward edge.
+            */
+            val controlDistance =
+                max(
+                    40f,
+                    (endX - startX) * 0.5f
+                )
+
+            control1X = startX + controlDistance
+            control1Y = startY
+
+            control2X = endX - controlDistance
+            control2Y = endY
+        }
 
         path.moveTo(
             startX,
@@ -761,6 +790,9 @@ class SimCustomSerialView(
             paint
         )
 
+        /*
+        * Arrow at the middle of the Bézier curve.
+        */
         val t = 0.5f
         val inverse = 1f - t
 
@@ -777,14 +809,20 @@ class SimCustomSerialView(
             t * t * t * endY
 
         val tangentX =
-            3f * inverse * inverse * (control1X - startX) +
-            6f * inverse * t * (control2X - control1X) +
-            3f * t * t * (endX - control2X)
+            3f * inverse * inverse *
+                (control1X - startX) +
+            6f * inverse * t *
+                (control2X - control1X) +
+            3f * t * t *
+                (endX - control2X)
 
         val tangentY =
-            3f * inverse * inverse * (control1Y - startY) +
-            6f * inverse * t * (control2Y - control1Y) +
-            3f * t * t * (endY - control2Y)
+            3f * inverse * inverse *
+                (control1Y - startY) +
+            6f * inverse * t *
+                (control2Y - control1Y) +
+            3f * t * t *
+                (endY - control2Y)
 
         val angle =
             kotlin.math.atan2(
