@@ -321,6 +321,23 @@ class SimCustomSerialView(
         return typedValue.data
     }
 
+    private fun isDescendant(
+        node: Block,
+        possibleDescendant: Block
+    ): Boolean {
+        var current = possibleDescendant.model?.parent
+
+        while (current != null) {
+            if (current === node.model) {
+                return true
+            }
+
+            current = current.parent
+        }
+
+        return false
+    }
+
     private fun drawArrow(
         canvas: Canvas,
         x: Float,
@@ -1461,6 +1478,10 @@ class SimCustomSerialView(
             }
 
             if ( node == container ) {
+                continue
+            }
+
+            if (isDescendant(node, container.view!!)) {
                 continue
             }
 
