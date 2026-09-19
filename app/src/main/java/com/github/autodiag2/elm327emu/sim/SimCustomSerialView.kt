@@ -89,7 +89,7 @@ class SimCustomSerialView(
     private val linkArrowSize = 30f
     public val blockBorderWidthSelected: Float = 10f
     public val blockBorderWidth: Float = 3f
-    public val blockStandardContentPadding: Float = 25f
+    public val blockStandardContentPadding: Float = 40f
     // --------- End Customization settings ---------
 
     private val nodePaint = Paint(Paint.ANTI_ALIAS_FLAG)
