@@ -388,8 +388,19 @@ class SimCustomSerialView(
                 strength
             )
 
-        block.x = position.x
-        block.y = position.y
+        val parent = model.parent?.view
+        if (parent == null) {
+            block.x = position.x
+            block.y = position.y
+        } else {
+            val parentWorldPos = parent.getWorldCoords()
+
+            block.x =
+                position.x - parentWorldPos.x
+
+            block.y =
+                position.y - parentWorldPos.y
+        }
 
         return block
     }
@@ -1471,17 +1482,19 @@ class SimCustomSerialView(
         }
 
         if (target != null) {
+            val nodeWorldPos = node.getWorldCoords()
+
             if (currentContainer != null) {
                 model!!.onBlockExcluded(
                     currentContainer.view!!,
                     node
                 )
+
                 updateContainerBounds(
                     currentContainer.view!!
                 )
             }
 
-            val nodeWorldPos = node.getWorldCoords()
             val targetWorldPos = target.getWorldCoords()
 
             node.x =
