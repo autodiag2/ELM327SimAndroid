@@ -24,6 +24,10 @@ import com.github.autodiag2.elm327emu.ui.JsonConfigurable
 import com.github.autodiag2.elm327emu.MainActivity
 import android.content.Intent
 import com.github.autodiag2.elm327emu.LogLevel
+import java.io.InputStream
+import java.io.OutputStream
+import java.io.PipedInputStream
+import java.io.PipedOutputStream
 
 const val SCHEMA = "autodiag/sim/elm327/serialscript"
 const val VERSION = 1.0
@@ -95,6 +99,11 @@ class SimCustomSerialController(
     val selectedBlocks = mutableSetOf<Int>()
     val selectedLinks = mutableSetOf<Pair<Int, Int>>()
 
+    private lateinit var emuInput: InputStream
+    private lateinit var emuOutput: OutputStream
+    private lateinit var emuInputWriter: PipedOutputStream
+    private lateinit var emuOutputReader: PipedInputStream
+
     init {
         orientation = VERTICAL
 
@@ -106,6 +115,14 @@ class SimCustomSerialController(
 
         view = findViewById(R.id.custom_serial_view)
         view.model = this
+
+        val inputPipe = PipedInputStream()
+        emuInputWriter = PipedOutputStream(inputPipe)
+        emuInput = inputPipe
+
+        val outputPipe = PipedInputStream()
+        emuOutputReader = outputPipe
+        emuOutput = PipedOutputStream(outputPipe)
     }
 
     // ------------ Listeners ------------
@@ -199,8 +216,9 @@ class SimCustomSerialController(
                 }
             }
         }
-    
+
     fun startScript() {
+        activity.bridgeOrchestrator.emuHookStreams(emuInput, emuOutput)
         stateMachine.start()
         stateHandler.post(stateRunnable)
     }
@@ -208,10 +226,27 @@ class SimCustomSerialController(
     fun stopScript() {
         stateMachine.stop()
         stateHandler.removeCallbacks(stateRunnable)
+        activity.bridgeOrchestrator.emuUnHookStreams()
     }
 
     fun onExecuteSend(data: ByteArray) {
-        activity.bridgeOrchestrator.send(data, data.size)
+        emuInputWriter.write(data)
+        emuInputWriter.flush()
+    }
+
+    fun onExecuteRecv(): ByteArray {
+        val available = emuOutputReader.available()
+
+        if (available <= 0)
+            return ByteArray(0)
+
+        val data = ByteArray(available)
+        val count = emuOutputReader.read(data)
+
+        return if (count == data.size)
+            data
+        else
+            data.copyOf(count)
     }
     // ------------ End StateMachine ------------
 
@@ -451,9 +486,6 @@ class SimCustomSerialController(
     }
 
     // ------- Action Menu listerner -------
-    public fun onScriptReceive(text: String) {
-        stateMachine.onReceive(text)
-    }
     public fun onImportClipboard() {
         val clipboard =
             activity.getSystemService(

@@ -207,6 +207,7 @@ class StateMachine(
 
             Block.Type.RECV -> {
                 path.state = State.WAIT_RECV
+                val bytes: ByteArray = controller.onExecuteRecv()
             }
 
             Block.Type.CONTAINER -> {

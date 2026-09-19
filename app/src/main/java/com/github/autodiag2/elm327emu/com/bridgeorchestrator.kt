@@ -64,6 +64,29 @@ class BridgeOrchestrator(
         setupBridges()
     }
 
+    private var emuInitialInput: InputStream? = null
+    private var emuInitialOutput: OutputStream? = null
+
+    fun emuHookStreams(hookInput: InputStream, hookOutput: OutputStream) {
+        if ( emuInitialInput == null ) {
+            emuInitialInput = loopbackInput
+        }
+        if ( emuInitialOutput == null ) {
+            emuInitialOutput = loopbackOutput
+        }
+        loopbackInput = hookInput
+        loopbackOutput = hookOutput
+    }
+
+    fun emuUnHookStreams() {
+        if ( emuInitialInput != null ) {
+            loopbackInput = emuInitialInput
+        }
+        if ( emuInitialOutput != null ) {
+            loopbackOutput = emuInitialOutput
+        }
+    }
+
     fun setupNetworkBridge() {
         scope.launch {
             setupBridge("com_nt_enabled", ntBridge, true)
