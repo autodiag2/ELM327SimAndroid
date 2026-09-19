@@ -252,25 +252,21 @@ class Sim(
     private fun selectedType(): EcuType = EcuType.entries[ecuAddSelect.selectedItemPosition]
 
     fun ecuClear() {
-        // iterate backwards to safely remove
-        val offset_in_layout = 1
         for (i in ecus.indices.reversed()) {
             val ecu = ecus[i]
 
             libautodiag.removeEcuByAddress(ecu.address)
-            ecuListView.removeViewAt(i + offset_in_layout)
+            ecuListView.removeViewAt(i)
             ecus.removeAt(i)
         }
     }
     fun ecuRemoveByAddress(address: EcuAddress) {
-        // iterate backwards to safely remove
-        val offset_in_layout = 1
         for (i in ecus.indices.reversed()) {
             val ecu = ecus[i]
 
             if (ecu.address == address) {
                 libautodiag.removeEcuByAddress(ecu.address)
-                ecuListView.removeViewAt(i + offset_in_layout)
+                ecuListView.removeViewAt(i)
                 ecus.removeAt(i)
             }
         }
