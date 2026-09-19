@@ -86,6 +86,8 @@ class SimCustomSerialView(
     private val portRadius = 20f
     private val portHitRadius = 100f
     private val linkArrowSize = 30f
+    public val blockBorderWidthSelected: Float = 10f
+    public val blockBorderWidth: Float = 3f
     // --------- End Customization settings ---------
 
     private val nodePaint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -822,6 +824,8 @@ class SimCustomSerialView(
                 android.R.attr.textColor
             )
 
+        val accentColor = getThemeColor(androidx.appcompat.R.attr.colorAccent)
+
         if (
             block.type ==
             SimCustomSerialController.Block.Type.CONTAINER
@@ -829,12 +833,7 @@ class SimCustomSerialView(
             nodePaint.style =
                 Paint.Style.FILL
 
-            nodePaint.color =
-                if (selected) {
-                    0x332196f3
-                } else {
-                    0x18000000
-                }
+            nodePaint.color = colorPrimaryDark
 
             canvas.drawRoundRect(
                 nodeRect,
@@ -847,14 +846,9 @@ class SimCustomSerialView(
                 Paint.Style.STROKE
 
             nodePaint.strokeWidth =
-                if (selected) 5f else 3f
+                if (selected) blockBorderWidthSelected else blockBorderWidth
 
-            nodePaint.color =
-                if (selected) {
-                    colorPrimaryDark
-                } else {
-                    textColor
-                }
+            nodePaint.color = if ( selected ) accentColor else textColor
 
             canvas.drawRoundRect(
                 nodeRect,
@@ -866,8 +860,7 @@ class SimCustomSerialView(
             nodePaint.style =
                 Paint.Style.FILL
 
-            textPaint.color =
-                textColor
+            textPaint.color = textColor
 
             val fontMetrics =
                 textPaint.fontMetrics
@@ -886,6 +879,11 @@ class SimCustomSerialView(
                 textX,
                 textY,
                 textPaint
+            )
+
+            drawPorts(
+                canvas,
+                node
             )
 
             for (childId in block.children) {
@@ -909,12 +907,7 @@ class SimCustomSerialView(
         nodePaint.style =
             Paint.Style.FILL
 
-        nodePaint.color =
-            if (selected) {
-                textColor
-            } else {
-                colorPrimaryDark
-            }
+        nodePaint.color = colorPrimaryDark
 
         canvas.drawRoundRect(
             nodeRect,
@@ -926,11 +919,12 @@ class SimCustomSerialView(
         nodePaint.style =
             Paint.Style.STROKE
 
-        nodePaint.strokeWidth = 3f
+        nodePaint.strokeWidth =
+            if (selected) blockBorderWidthSelected else blockBorderWidth
 
         nodePaint.color =
             if (selected) {
-                colorPrimaryDark
+                accentColor
             } else {
                 textColor
             }
@@ -945,12 +939,7 @@ class SimCustomSerialView(
         nodePaint.style =
             Paint.Style.FILL
 
-        textPaint.color =
-            if (selected) {
-                colorPrimaryDark
-            } else {
-                textColor
-            }
+        textPaint.color = textColor
 
         val textWidth =
             textPaint.measureText(block.name)
@@ -1026,6 +1015,13 @@ class SimCustomSerialView(
         canvas: Canvas,
         node: Block
     ) {
+        val selected =
+            model!!.isBlockSelected(node.model!!)
+
+        val colorAccent = getThemeColor(
+            androidx.appcompat.R.attr.colorAccent
+        )
+
         val isSource =
             linkingFrom?.model?.id == node.model!!.id
 
@@ -1035,10 +1031,8 @@ class SimCustomSerialView(
         val nodeWorldPos = node.getWorldCoords()
 
         portPaint.color =
-            if (isDestination) {
-                getThemeColor(
-                    androidx.appcompat.R.attr.colorAccent
-                )
+            if ( isDestination || selected ) {
+                colorAccent
             } else {
                 0xff555555.toInt()
             }
@@ -1051,10 +1045,8 @@ class SimCustomSerialView(
         )
 
         portPaint.color =
-            if (isSource) {
-                getThemeColor(
-                    androidx.appcompat.R.attr.colorAccent
-                )
+            if (isSource || selected) {
+                colorAccent
             } else {
                 0xff555555.toInt()
             }
