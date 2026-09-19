@@ -39,7 +39,6 @@ class SimCustomSerialView(
         var y: Float,
         var width: Float = 260f,
         var height: Float = 100f,
-        val children: MutableList<Int> = mutableListOf(),
         model: SimCustomSerialController.Block? = null
     ) : SimCustomSerialController.ElementView<SimCustomSerialController.Block>(model = model) {
         
@@ -686,7 +685,7 @@ class SimCustomSerialView(
         container: Block
     ) {
         val children =
-            container.children.mapNotNull { childId ->
+            container.model!!.children.mapNotNull { childId ->
                 model!!.blocks.find {
                     it.id == childId
                 }

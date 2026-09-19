@@ -128,17 +128,19 @@ class SimCustomSerialController(
         child: SimCustomSerialView.Block
     ) {
         assert(parent != child)
-        if (!parent.children.contains(child.model!!.id)) {
-            parent.children.add(child.model!!.id)
+        if (! parent.model!!.children.contains(child.model!!.id)) {
+            parent.model!!.children.add(child.model!!.id)
         }
         child.model!!.parent = parent.model!!
+        debugBlockTree()
     }
 
     override fun onBlockExcluded(
         parent: SimCustomSerialView.Block,
         child: SimCustomSerialView.Block
     ) {
-        parent.children.remove(child.model!!.id)
+        assert(parent != child)
+        parent.model!!.children.remove(child.model!!.id)
         child.model!!.parent = null
     }
 
@@ -269,6 +271,7 @@ class SimCustomSerialController(
             block.parent = to
         }
         view.refresh()
+        debugBlockTree()
     }
 
     private fun blockTitle(block: Block): String {
@@ -572,6 +575,9 @@ class SimCustomSerialController(
     }
 
     private fun debugBlockTree() {
+        if ( ! BuildConfig.DEBUG ) {
+            return
+        }
         fun printBlock(
             block: Block,
             depth: Int
