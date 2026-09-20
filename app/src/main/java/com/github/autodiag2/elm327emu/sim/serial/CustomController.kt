@@ -34,7 +34,7 @@ const val SCHEMA = "autodiag/sim/elm327/serialscript"
 const val VERSION = 1.0
 
 class CustomController(
-    private val activity: MainActivity
+    public val activity: MainActivity
 ) : LinearLayout(activity), CustomView.Listener, JsonConfigurable {
 
     public var view: CustomView

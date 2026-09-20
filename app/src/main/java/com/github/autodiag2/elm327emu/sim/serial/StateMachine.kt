@@ -5,6 +5,7 @@ import com.github.autodiag2.elm327emu.sim.serial.CustomController.*
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.io.OutputStream
+import com.github.autodiag2.elm327emu.LogLevel
 
 class StateMachine(
     private val controller: CustomController
@@ -23,6 +24,14 @@ class StateMachine(
         var state: State = State.READY,
         var wakeTime: Long = 0L
     )
+
+    fun getString(resId: Int, vararg formatArgs: Any?): String {
+        return controller.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
+    }
+
+    fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {
+        controller.activity.appendLog(text, level)
+    }
 
     private var nextPathId = 1
 
@@ -57,23 +66,6 @@ class StateMachine(
     fun isRunning(): Boolean =
         paths.isNotEmpty()
 
-    fun executeSend(data: ByteArray) {
-        output?.write(data)
-        output?.flush()
-    }
-
-    fun executeRecv(): ByteArray {
-        val inputStream = input ?: return ByteArray(0)
-
-        val buffer = ByteArray(512)
-        val count = inputStream.read(buffer)
-
-        return if (count > 0) {
-            buffer.copyOf(count)
-        } else {
-            ByteArray(0)
-        }
-    }
     private fun parseEscapedBytes(text: String): ByteArray {
 
         val result = ByteArrayOutputStream()
@@ -224,14 +216,27 @@ class StateMachine(
                     sendBytes = sendText.toByteArray(Charsets.ISO_8859_1)
                 }
 
-                executeSend(sendBytes)
+                output?.write(sendBytes)
+                output?.flush()
 
                 advance(path)
             }
 
             Block.Type.RECV -> {
                 path.state = State.WAIT_RECV
-                val bytes: ByteArray = executeRecv()
+                if ( input == null ) {
+                    appendLog("no hook installed cannot process", LogLevel.ERROR)
+                } else {
+                    val buffer = ByteArray(512)
+                    val count = input?.read(buffer) ?: 0
+
+                    val bytes = if (count > 0) {
+                        buffer.copyOf(count)
+                    } else {
+                        ByteArray(0)
+                    }
+                    advance(path)
+                }
             }
 
             Block.Type.CONTAINER -> {
