@@ -1,4 +1,4 @@
-package com.github.autodiag2.elm327emu.sim
+package com.github.autodiag2.elm327emu.sim.serial
 
 import android.content.Context
 import android.graphics.Canvas
@@ -14,14 +14,14 @@ import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sqrt
-import com.github.autodiag2.elm327emu.sim.SimCustomSerialController
+import com.github.autodiag2.elm327emu.sim.serial.CustomController
 import androidx.core.content.ContextCompat
 import com.github.autodiag2.elm327emu.R
 import android.util.TypedValue
 import android.text.TextUtils
 import android.text.TextPaint
 
-class SimCustomSerialView(
+class CustomView(
     context: Context,
     attrs: AttributeSet? = null
 ) : View(context, attrs) {
@@ -41,8 +41,8 @@ class SimCustomSerialView(
         var y: Float,
         var width: Float = 260f,
         var height: Float = 100f,
-        model: SimCustomSerialController.Block? = null
-    ) : SimCustomSerialController.ElementView<SimCustomSerialController.Block>(model = model) {
+        model: CustomController.Block? = null
+    ) : CustomController.ElementView<CustomController.Block>(model = model) {
         
         private fun getWorldCoordsRecurse(node: Block): Coordinates {
             if ( node.model!!.parent == null ) {
@@ -64,20 +64,20 @@ class SimCustomSerialView(
     }
 
     open class Link(
-        model: SimCustomSerialController.Link? = null
-    ) : SimCustomSerialController.ElementView<SimCustomSerialController.Link>(model = model)
+        model: CustomController.Link? = null
+    ) : CustomController.ElementView<CustomController.Link>(model = model)
 
     interface Listener {
         fun onBlockClicked(node: Block)
         fun onLinkToBlock(from: Block, to: Block)
         fun onBlockIncluded(parent: Block, child: Block)
         fun onBlockExcluded(parent: Block, child: Block)
-        fun onElementSelected(element: SimCustomSerialController.ElementView<*>)
-        fun onElementUnselected(element: SimCustomSerialController.ElementView<*>)
+        fun onElementSelected(element: CustomController.ElementView<*>)
+        fun onElementUnselected(element: CustomController.ElementView<*>)
         fun onUnselectAll()
     }
 
-    var model: SimCustomSerialController? = null
+    var model: CustomController? = null
 
     // --------- Customization settings ---------
     private var scale = 1f
@@ -296,12 +296,12 @@ class SimCustomSerialView(
     }
 
     private fun updateBlockContentSize(
-        block: SimCustomSerialController.Block,
+        block: CustomController.Block,
         node: Block
     ) {
         if (
             block.type ==
-            SimCustomSerialController.Block.Type.CONTAINER
+            CustomController.Block.Type.CONTAINER
         ) {
             return
         }
@@ -310,16 +310,16 @@ class SimCustomSerialView(
 
         val summary =
             when (block.type) {
-                SimCustomSerialController.Block.Type.DELAY ->
+                CustomController.Block.Type.DELAY ->
                     "${block.delay}ms"
 
-                SimCustomSerialController.Block.Type.SEND ->
+                CustomController.Block.Type.SEND ->
                     block.text
 
-                SimCustomSerialController.Block.Type.RECV ->
+                CustomController.Block.Type.RECV ->
                     block.text
 
-                SimCustomSerialController.Block.Type.CONTAINER ->
+                CustomController.Block.Type.CONTAINER ->
                     ""
             }
 
@@ -477,7 +477,7 @@ class SimCustomSerialView(
     }
 
     public fun addBlock(
-        model: SimCustomSerialController.Block
+        model: CustomController.Block
     ): Block {
         val block = Block(
             0f,
@@ -688,7 +688,7 @@ class SimCustomSerialView(
         return score
     }
 
-    public fun addLink(model: SimCustomSerialController.Link): Link {
+    public fun addLink(model: CustomController.Link): Link {
         return Link(model = model)
     }
 
@@ -840,7 +840,7 @@ class SimCustomSerialView(
     private fun updateAllContainerBounds() {
         for (block in model!!.blocks) {
             if (block.type ==
-                SimCustomSerialController.Block.Type.CONTAINER
+                CustomController.Block.Type.CONTAINER
             ) {
                 updateContainerBounds(block.view!!)
             }
@@ -863,7 +863,7 @@ class SimCustomSerialView(
         for (childBlock in children) {
             if (
                 childBlock.type ==
-                SimCustomSerialController.Block.Type.CONTAINER
+                CustomController.Block.Type.CONTAINER
             ) {
                 updateContainerBounds(
                     childBlock.view!!
@@ -966,7 +966,7 @@ class SimCustomSerialView(
 
     private fun drawBlock(
         canvas: Canvas,
-        block: SimCustomSerialController.Block,
+        block: CustomController.Block,
         drawn: MutableSet<Int>
     ) {
         if (!drawn.add(block.id)) {
@@ -1011,7 +1011,7 @@ class SimCustomSerialView(
 
         val isContainer =
             block.type ==
-                SimCustomSerialController.Block.Type.CONTAINER
+                CustomController.Block.Type.CONTAINER
 
         /*
         * ------------------------------------------------------------
@@ -1104,16 +1104,16 @@ class SimCustomSerialView(
 
             val summary =
                 when (block.type) {
-                    SimCustomSerialController.Block.Type.DELAY ->
+                    CustomController.Block.Type.DELAY ->
                         "${block.delay}ms"
 
-                    SimCustomSerialController.Block.Type.SEND ->
+                    CustomController.Block.Type.SEND ->
                         block.text
 
-                    SimCustomSerialController.Block.Type.RECV ->
+                    CustomController.Block.Type.RECV ->
                         block.text
 
-                    SimCustomSerialController.Block.Type.CONTAINER ->
+                    CustomController.Block.Type.CONTAINER ->
                         ""
                 }
 
@@ -1465,7 +1465,7 @@ class SimCustomSerialView(
             } ?: candidates.first()
 
         var higherPriority = candidates.firstOrNull {
-                it.model!!.parent == null && it.model!!.type != SimCustomSerialController.Block.Type.CONTAINER
+                it.model!!.parent == null && it.model!!.type != CustomController.Block.Type.CONTAINER
             }
 
         while (true) {
@@ -1776,7 +1776,7 @@ class SimCustomSerialView(
 
         for (container in model!!.blocks) {
             if (container.type !=
-                SimCustomSerialController.Block.Type.CONTAINER
+                CustomController.Block.Type.CONTAINER
             ) {
                 continue
             }

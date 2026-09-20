@@ -24,12 +24,13 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import com.github.autodiag2.elm327emu.IgnitionState
+import com.github.autodiag2.elm327emu.sim.serial.CustomController
 
 class Sim(
     private val activity: MainActivity
 ) : FrameLayout(activity), JsonConfigurable {
 
-    public val customSerialScreen: SimCustomSerialController
+    public val customSerialScreen: CustomController
     private val ecuListView: ViewGroup
     val ecus = mutableListOf<Ecu>()
     private val ecuAddSelect: Spinner
@@ -74,7 +75,7 @@ class Sim(
             buildAddECUToGUI(address.toByte(), getString(R.string.sim_ecu_config_ecu_name, getString(type.label_id)), type)
         }
 
-        customSerialScreen = SimCustomSerialController(activity)
+        customSerialScreen = CustomController(activity)
         findViewById<Button>(R.id.sim_custom_serial_script_open).setOnClickListener {
             activity.showNestedScreen(customSerialScreen)
         }

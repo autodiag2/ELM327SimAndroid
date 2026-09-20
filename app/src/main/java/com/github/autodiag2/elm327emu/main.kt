@@ -39,7 +39,7 @@ import com.github.autodiag2.elm327emu.LogEntryType
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.whenResumed
 import com.github.autodiag2.elm327emu.ui.settings.SettingsFragment
-import com.github.autodiag2.elm327emu.sim.SimCustomSerialController
+import com.github.autodiag2.elm327emu.sim.serial.CustomController
 
 private const val REQUEST_CODE = 1
 
@@ -263,15 +263,15 @@ class MainActivity : AppCompatActivity() {
             activeScreen is EcuGui
         )
         menu.setGroupVisible(R.id.action_menu_group_sim_custom_serial_script,
-            activeScreen is SimCustomSerialController
+            activeScreen is CustomController
         )
         var simCustomSerialScreenIsSomeSelection = false
-        if ( activeScreen is SimCustomSerialController ) {
-            val simCustomSerialScreen = activeScreen as SimCustomSerialController
+        if ( activeScreen is CustomController ) {
+            val simCustomSerialScreen = activeScreen as CustomController
             simCustomSerialScreenIsSomeSelection = simCustomSerialScreen.isSomeSelection()
         }
         menu.setGroupVisible(R.id.action_menu_group_sim_custom_serial_script_any_element_selected,
-            activeScreen is SimCustomSerialController && simCustomSerialScreenIsSomeSelection
+            activeScreen is CustomController && simCustomSerialScreenIsSomeSelection
         )
 
         return super.onPrepareOptionsMenu(menu)

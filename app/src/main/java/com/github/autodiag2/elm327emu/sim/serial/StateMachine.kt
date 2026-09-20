@@ -1,11 +1,11 @@
-package com.github.autodiag2.elm327emu.sim
+package com.github.autodiag2.elm327emu.sim.serial
 
-import com.github.autodiag2.elm327emu.sim.SimCustomSerialController
-import com.github.autodiag2.elm327emu.sim.SimCustomSerialController.*
+import com.github.autodiag2.elm327emu.sim.serial.CustomController
+import com.github.autodiag2.elm327emu.sim.serial.CustomController.*
 import java.io.ByteArrayOutputStream
 
 class StateMachine(
-    private val controller: SimCustomSerialController
+    private val controller: CustomController
 ) {
 
     enum class State {

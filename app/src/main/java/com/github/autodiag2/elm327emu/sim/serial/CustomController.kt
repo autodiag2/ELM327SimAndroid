@@ -1,4 +1,4 @@
-package com.github.autodiag2.elm327emu.sim
+package com.github.autodiag2.elm327emu.sim.serial
 
 import android.app.AlertDialog
 import android.content.Context
@@ -17,7 +17,7 @@ import androidx.core.view.setPadding
 import org.json.JSONArray
 import org.json.JSONObject
 import com.github.autodiag2.elm327emu.R
-import com.github.autodiag2.elm327emu.sim.SimCustomSerialView
+import com.github.autodiag2.elm327emu.sim.serial.CustomView
 import android.util.Log
 import com.github.autodiag2.elm327emu.BuildConfig
 import com.github.autodiag2.elm327emu.ui.JsonConfigurable
@@ -32,11 +32,11 @@ import java.io.PipedOutputStream
 const val SCHEMA = "autodiag/sim/elm327/serialscript"
 const val VERSION = 1.0
 
-class SimCustomSerialController(
+class CustomController(
     private val activity: MainActivity
-) : LinearLayout(activity), SimCustomSerialView.Listener, JsonConfigurable {
+) : LinearLayout(activity), CustomView.Listener, JsonConfigurable {
 
-    public var view: SimCustomSerialView
+    public var view: CustomView
     private val stateMachine = StateMachine(this)
 
     open class ElementModel<V>(
@@ -71,11 +71,11 @@ class SimCustomSerialController(
         var includeEol: Boolean = false,
         var interpretEscapes: Boolean = true,
         var name: String = "",
-        view: SimCustomSerialView.Block? = null,
+        view: CustomView.Block? = null,
         val children: MutableList<Int> = mutableListOf(),
         var parent: Block? = null,
         id: Int = ElementModel.gen_id_track()
-    ) : ElementModel<SimCustomSerialView.Block>(
+    ) : ElementModel<CustomView.Block>(
         view = view,
         id = id
     ) {
@@ -91,8 +91,8 @@ class SimCustomSerialController(
     open class Link(
         val from: Int,
         val to: Int,
-        view: SimCustomSerialView.Link? = null
-    ) : ElementModel<SimCustomSerialView.Link>(view)
+        view: CustomView.Link? = null
+    ) : ElementModel<CustomView.Link>(view)
 
     public val blocks = mutableListOf<Block>()
     public val links = mutableListOf<Link>()
@@ -127,7 +127,7 @@ class SimCustomSerialController(
 
     // ------------ Listeners ------------
     override fun onBlockClicked(
-        node: SimCustomSerialView.Block
+        node: CustomView.Block
     ) {
         blocks.find { it.id == node.model!!.id }?.let {
             editBlock(it)
@@ -135,8 +135,8 @@ class SimCustomSerialController(
     }
 
     override fun onLinkToBlock(
-        from: SimCustomSerialView.Block,
-        to: SimCustomSerialView.Block
+        from: CustomView.Block,
+        to: CustomView.Block
     ) {
         val linkModel = Link(from.model!!.id, to.model!!.id)
         val linkView = view.addLink(model = linkModel)
@@ -145,8 +145,8 @@ class SimCustomSerialController(
     }
 
     override fun onBlockIncluded(
-        parent: SimCustomSerialView.Block,
-        child: SimCustomSerialView.Block
+        parent: CustomView.Block,
+        child: CustomView.Block
     ) {
         assert(parent != child)
         if (! parent.model!!.children.contains(child.model!!.id)) {
@@ -157,8 +157,8 @@ class SimCustomSerialController(
     }
 
     override fun onBlockExcluded(
-        parent: SimCustomSerialView.Block,
-        child: SimCustomSerialView.Block
+        parent: CustomView.Block,
+        child: CustomView.Block
     ) {
         assert(parent != child)
         parent.model!!.children.remove(child.model!!.id)
@@ -167,11 +167,11 @@ class SimCustomSerialController(
 
     override fun onElementSelected(element: ElementView<*>) {
         when (element) {
-            is SimCustomSerialView.Block -> {
+            is CustomView.Block -> {
                 selectedBlocks.add(element.model!!.id)
             }
 
-            is SimCustomSerialView.Link -> {
+            is CustomView.Link -> {
                 val link = element.model!!
                 selectedLinks.add(
                     Pair(link.from, link.to)
@@ -181,14 +181,14 @@ class SimCustomSerialController(
     }
 
     override fun onElementUnselected(
-        element: SimCustomSerialController.ElementView<*>
+        element: CustomController.ElementView<*>
     ) {
         when (element) {
-            is SimCustomSerialView.Block -> {
+            is CustomView.Block -> {
                 selectedBlocks.remove(element.model!!.id)
             }
 
-            is SimCustomSerialView.Link -> {
+            is CustomView.Link -> {
                 val link = element.model!!
                 selectedLinks.remove(
                     Pair(link.from, link.to)
