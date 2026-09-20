@@ -28,6 +28,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.io.PipedInputStream
 import java.io.PipedOutputStream
+import com.github.autodiag2.elm327emu.sim.EmuInterface
 
 const val SCHEMA = "autodiag/sim/elm327/serialscript"
 const val VERSION = 1.0
@@ -99,10 +100,8 @@ class CustomController(
     val selectedBlocks = mutableSetOf<Int>()
     val selectedLinks = mutableSetOf<Pair<Int, Int>>()
 
-    private lateinit var emuInput: InputStream
-    private lateinit var emuOutput: OutputStream
-    private lateinit var emuInputWriter: PipedOutputStream
-    private lateinit var emuOutputReader: PipedInputStream
+    public lateinit var emuInput: PipedOutputStream
+    public lateinit var emuOutput: PipedInputStream
 
     init {
         orientation = VERTICAL
@@ -115,14 +114,6 @@ class CustomController(
 
         view = findViewById(R.id.custom_serial_view)
         view.model = this
-
-        val inputPipe = PipedInputStream()
-        emuInputWriter = PipedOutputStream(inputPipe)
-        emuInput = inputPipe
-
-        val outputPipe = PipedInputStream()
-        emuOutputReader = outputPipe
-        emuOutput = PipedOutputStream(outputPipe)
     }
 
     // ------------ Listeners ------------
@@ -218,35 +209,25 @@ class CustomController(
         }
 
     fun startScript() {
-        activity.bridgeOrchestrator.emuHookStreams(emuInput, emuOutput)
+        val emu = activity.bridgeOrchestrator as EmuInterface
+        val inputPipe = PipedInputStream()
+        emuInput = PipedOutputStream(inputPipe)
+        val input = inputPipe
+
+        val outputPipe = PipedInputStream()
+        emuOutput = outputPipe
+        val output = PipedOutputStream(outputPipe)
+
+        emu.emuHookStreams(input, output)
         stateMachine.start()
         stateHandler.post(stateRunnable)
     }
 
     fun stopScript() {
+        val emu = activity.bridgeOrchestrator as EmuInterface
         stateMachine.stop()
         stateHandler.removeCallbacks(stateRunnable)
-        activity.bridgeOrchestrator.emuUnHookStreams()
-    }
-
-    fun onExecuteSend(data: ByteArray) {
-        emuInputWriter.write(data)
-        emuInputWriter.flush()
-    }
-
-    fun onExecuteRecv(): ByteArray {
-        val available = emuOutputReader.available()
-
-        if (available <= 0)
-            return ByteArray(0)
-
-        val data = ByteArray(available)
-        val count = emuOutputReader.read(data)
-
-        return if (count == data.size)
-            data
-        else
-            data.copyOf(count)
+        emu.emuUnHookStreams()
     }
     // ------------ End StateMachine ------------
 

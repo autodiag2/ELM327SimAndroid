@@ -10,6 +10,7 @@ import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.LogLevel
 import com.github.autodiag2.elm327emu.MainActivity
 import kotlinx.coroutines.channels.Channel
+import com.github.autodiag2.elm327emu.sim.EmuInterface
 
 class BluetoothBridge(
     emu: EmuInterface,

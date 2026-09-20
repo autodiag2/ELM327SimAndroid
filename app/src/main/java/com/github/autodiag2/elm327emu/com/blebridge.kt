@@ -18,6 +18,7 @@ import android.os.Build
 import kotlinx.coroutines.channels.Channel
 import kotlin.reflect.typeOf
 import androidx.annotation.RequiresApi
+import com.github.autodiag2.elm327emu.sim.EmuInterface
 
 private data class PendingRequest(
     val device: BluetoothDevice,

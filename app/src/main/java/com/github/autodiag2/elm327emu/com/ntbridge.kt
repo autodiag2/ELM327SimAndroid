@@ -10,6 +10,7 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.net.ServerSocket
 import kotlinx.coroutines.channels.Channel
+import com.github.autodiag2.elm327emu.sim.EmuInterface
 
 class NetworkBridge(
     emu: EmuInterface,

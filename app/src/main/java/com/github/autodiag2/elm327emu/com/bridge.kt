@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import java.io.InputStream
 import java.io.OutputStream
 import kotlinx.coroutines.isActive
+import com.github.autodiag2.elm327emu.sim.EmuInterface
 
 open class Bridge(
     protected val emu: EmuInterface,

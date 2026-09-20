@@ -3,6 +3,8 @@ package com.github.autodiag2.elm327emu.sim.serial
 import com.github.autodiag2.elm327emu.sim.serial.CustomController
 import com.github.autodiag2.elm327emu.sim.serial.CustomController.*
 import java.io.ByteArrayOutputStream
+import java.io.InputStream
+import java.io.OutputStream
 
 class StateMachine(
     private val controller: CustomController
@@ -25,6 +27,11 @@ class StateMachine(
     private var nextPathId = 1
 
     private val paths = mutableListOf<Path>()
+    private val input: InputStream?
+        get() = controller.emuOutput
+
+    private val output: OutputStream?
+        get() = controller.emuInput
 
     /**
      * Start execution from every top-level block.
@@ -50,6 +57,23 @@ class StateMachine(
     fun isRunning(): Boolean =
         paths.isNotEmpty()
 
+    fun executeSend(data: ByteArray) {
+        output?.write(data)
+        output?.flush()
+    }
+
+    fun executeRecv(): ByteArray {
+        val inputStream = input ?: return ByteArray(0)
+
+        val buffer = ByteArray(512)
+        val count = inputStream.read(buffer)
+
+        return if (count > 0) {
+            buffer.copyOf(count)
+        } else {
+            ByteArray(0)
+        }
+    }
     private fun parseEscapedBytes(text: String): ByteArray {
 
         val result = ByteArrayOutputStream()
@@ -200,14 +224,14 @@ class StateMachine(
                     sendBytes = sendText.toByteArray(Charsets.ISO_8859_1)
                 }
 
-                controller.onExecuteSend(sendBytes)
+                executeSend(sendBytes)
 
                 advance(path)
             }
 
             Block.Type.RECV -> {
                 path.state = State.WAIT_RECV
-                val bytes: ByteArray = controller.onExecuteRecv()
+                val bytes: ByteArray = executeRecv()
             }
 
             Block.Type.CONTAINER -> {

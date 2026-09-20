@@ -18,23 +18,7 @@ import kotlinx.coroutines.Job
 import android.bluetooth.BluetoothAdapter
 import android.content.Context
 import android.content.SharedPreferences
-
-abstract class EmuInterface {
-
-    protected var loopbackInput: InputStream? = null
-    protected var loopbackOutput: OutputStream? = null
-    protected var loopbackSocket: LocalSocket? = null
-    
-    public fun send(buffer: ByteArray, size: Int) {
-        loopbackOutput?.write(buffer, 0, size)
-        loopbackOutput?.flush()
-    }
-
-    public fun recv(buffer: ByteArray): Int {
-        return loopbackInput?.read(buffer) ?: -1
-    }
-
-}
+import com.github.autodiag2.elm327emu.sim.EmuInterface
 
 /**
  * Driven by the need of hotpluging and unplugging interfaces, this class orchestrates the bridges and the emulator.
@@ -62,29 +46,6 @@ class BridgeOrchestrator(
 
         started = true
         setupBridges()
-    }
-
-    private var emuInitialInput: InputStream? = null
-    private var emuInitialOutput: OutputStream? = null
-
-    fun emuHookStreams(hookInput: InputStream, hookOutput: OutputStream) {
-        if ( emuInitialInput == null ) {
-            emuInitialInput = loopbackInput
-        }
-        if ( emuInitialOutput == null ) {
-            emuInitialOutput = loopbackOutput
-        }
-        loopbackInput = hookInput
-        loopbackOutput = hookOutput
-    }
-
-    fun emuUnHookStreams() {
-        if ( emuInitialInput != null ) {
-            loopbackInput = emuInitialInput
-        }
-        if ( emuInitialOutput != null ) {
-            loopbackOutput = emuInitialOutput
-        }
     }
 
     fun setupNetworkBridge() {
@@ -175,20 +136,20 @@ class BridgeOrchestrator(
         appendLog(getString(R.string.log_network_native_sim_location, location),
             LogLevel.DEBUG
         )
-        loopbackSocket = LocalSocket()
-        loopbackSocket?.connect(
+        socket = LocalSocket()
+        socket?.connect(
             LocalSocketAddress(location, LocalSocketAddress.Namespace.FILESYSTEM)
         )
         appendLog(getString(R.string.log_network_loopback_connected), LogLevel.DEBUG)
 
-        loopbackInput = loopbackSocket?.inputStream
-        loopbackOutput = loopbackSocket?.outputStream
+        input = socket?.inputStream
+        output = socket?.outputStream
     }
 
     protected fun emuStop() {
-        loopbackInput?.close()
-        loopbackOutput?.close()
-        loopbackSocket?.close()
+        input?.close()
+        output?.close()
+        socket?.close()
     }
 
 }
