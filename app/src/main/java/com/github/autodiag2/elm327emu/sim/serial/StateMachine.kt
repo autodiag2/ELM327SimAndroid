@@ -55,7 +55,6 @@ class StateMachine(
         for (block in initialBlocks) {
             createPath(block)
         }
-
         process()
     }
 

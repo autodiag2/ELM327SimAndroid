@@ -29,6 +29,10 @@ import java.io.OutputStream
 import java.io.PipedInputStream
 import java.io.PipedOutputStream
 import com.github.autodiag2.elm327emu.sim.EmuInterface
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 const val SCHEMA = "autodiag/sim/elm327/serialscript"
 const val VERSION = 1.0
@@ -39,6 +43,7 @@ class CustomController(
 
     public var view: CustomView
     private val stateMachine = StateMachine(this)
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     open class ElementModel<V>(
         var view: V? = null,
@@ -209,25 +214,30 @@ class CustomController(
         }
 
     fun startScript() {
-        val emu = activity.bridgeOrchestrator as EmuInterface
-        val inputPipe = PipedInputStream()
-        emuInput = PipedOutputStream(inputPipe)
-        val input = inputPipe
+        scope.launch {
+            val emu = activity.bridgeOrchestrator as EmuInterface
+            
+            val inputPipe = PipedInputStream()
+            emuInput = PipedOutputStream(inputPipe)
+            val input = inputPipe
+            
+            val outputPipe = PipedInputStream()
+            emuOutput = outputPipe
+            val output = PipedOutputStream(outputPipe)
 
-        val outputPipe = PipedInputStream()
-        emuOutput = outputPipe
-        val output = PipedOutputStream(outputPipe)
-
-        emu.emuHookStreams(input, output)
-        stateMachine.start()
-        stateHandler.post(stateRunnable)
+            emu.emuHookStreams(input, output)
+            stateMachine.start()
+            stateHandler.post(stateRunnable)
+        }
     }
 
     fun stopScript() {
-        val emu = activity.bridgeOrchestrator as EmuInterface
-        stateMachine.stop()
-        stateHandler.removeCallbacks(stateRunnable)
-        emu.emuUnHookStreams()
+        scope.launch {
+            val emu = activity.bridgeOrchestrator as EmuInterface
+            stateMachine.stop()
+            stateHandler.removeCallbacks(stateRunnable)
+            emu.emuUnHookStreams()
+        }
     }
     // ------------ End StateMachine ------------
 
@@ -323,7 +333,7 @@ class CustomController(
 
     public fun logDebug(message: String) {
         if (BuildConfig.DEBUG) {
-            Log.d("SimCustomSerial", message)
+            Log.d("sim.serial.Custom", message)
         }
     }
 
