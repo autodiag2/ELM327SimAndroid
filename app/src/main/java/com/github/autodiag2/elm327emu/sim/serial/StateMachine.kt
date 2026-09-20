@@ -53,6 +53,7 @@ class StateMachine(
 
     private var stateJob: Job? = null
     private var inputJob: Job? = null
+    private val inputChunks = Channel<ByteArray>(Channel.UNLIMITED)
 
     private var nextPathId = 1
 
@@ -73,6 +74,123 @@ class StateMachine(
     init {
         stateJob = scope.launch {
             stateLoop()
+        }
+    }
+
+    private fun startInputReader() {
+        inputJob?.cancel()
+
+        inputJob = scope.launch {
+            val inputStream = input ?: run {
+                appendLog(
+                    "no hook installed cannot process",
+                    LogLevel.ERROR
+                )
+
+                events.trySend(Event.Stop)
+                return@launch
+            }
+
+            val buffer = ByteArray(512)
+
+            try {
+                while (isActive && running) {
+                    val count = inputStream.read(buffer)
+
+                    if (count <= 0) {
+                        continue
+                    }
+
+                    inputChunks.send(
+                        buffer.copyOf(count)
+                    )
+                }
+            } catch (_: CancellationException) {
+                // Normal shutdown.
+            } catch (e: Exception) {
+                appendLog(
+                    "input reader error: ${e.message}",
+                    LogLevel.ERROR
+                )
+
+                events.trySend(Event.Stop)
+            }
+        }
+
+        scope.launch {
+            accumulateInput()
+        }
+    }
+
+    private fun findReceiveDelimiter(
+        data: ByteArray
+    ): Int {
+        for (i in data.indices) {
+            if (data[i] != '\r'.code.toByte()) {
+                continue
+            }
+
+            /*
+            * CRLF
+            */
+            if (
+                i + 1 < data.size &&
+                data[i + 1] == '\n'.code.toByte()
+            ) {
+                return i + 2
+            }
+
+            /*
+            * CR alone
+            */
+            return i + 1
+        }
+
+        return -1
+    }
+
+    private suspend fun accumulateInput() {
+        val pending =
+            java.io.ByteArrayOutputStream()
+
+        for (chunk in inputChunks) {
+            pending.write(chunk)
+
+            while (true) {
+                val data = pending.toByteArray()
+
+                val end =
+                    findReceiveDelimiter(data)
+
+                if (end < 0) {
+                    break
+                }
+
+                val message =
+                    data.copyOfRange(0, end)
+
+                logDebug(
+                    "Input message: " +
+                        message.toDebugString()
+                )
+
+                events.send(
+                    Event.Receive(message)
+                )
+
+                /*
+                * Pop the consumed message.
+                */
+                pending.reset()
+
+                if (end < data.size) {
+                    pending.write(
+                        data,
+                        end,
+                        data.size - end
+                    )
+                }
+            }
         }
     }
 
@@ -193,56 +311,6 @@ class StateMachine(
 
         paths.clear()
         nextPathId = 1
-    }
-
-    /*
-     * Serial input is read on its own IO coroutine.
-     *
-     * It NEVER accesses paths.
-     * It only sends Receive events to stateLoop().
-     */
-    private fun startInputReader() {
-        inputJob?.cancel()
-
-        inputJob = scope.launch {
-            val inputStream = input ?: run {
-                appendLog(
-                    "no hook installed cannot process",
-                    LogLevel.ERROR
-                )
-
-                events.trySend(Event.Stop)
-
-                return@launch
-            }
-
-            val buffer = ByteArray(512)
-
-            try {
-                while (isActive && running) {
-                    val count = inputStream.read(buffer)
-
-                    if (count <= 0) {
-                        continue
-                    }
-
-                    events.send(
-                        Event.Receive(
-                            buffer.copyOf(count)
-                        )
-                    )
-                }
-            } catch (_: CancellationException) {
-                // Normal shutdown.
-            } catch (e: Exception) {
-                appendLog(
-                    "input reader error: ${e.message}",
-                    LogLevel.ERROR
-                )
-
-                events.trySend(Event.Stop)
-            }
-        }
     }
 
     /*
@@ -370,12 +438,17 @@ class StateMachine(
                 )
             }
 
-        output?.write(bytes)
-        output?.flush()
+        logDebug(
+            "SEND WRITE -> " +
+                bytes.toDebugString()
+        )
+
+        output!!.write(bytes)
+        output!!.flush()
 
         logDebug(
-            "SEND block ${block.id} " +
-                "${bytes.size} bytes"
+            "SEND WRITE DONE -> " +
+                bytes.toDebugString()
         )
     }
 
