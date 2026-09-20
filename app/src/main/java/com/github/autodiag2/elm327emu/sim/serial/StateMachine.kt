@@ -77,6 +77,32 @@ class StateMachine(
         }
     }
 
+    private fun rewindToFirstBlock(block: Block): Block {
+        var current = block
+        val seenBlocks = mutableSetOf<Int>()
+
+        while (true) {
+            seenBlocks.add(current.id)
+
+            val previous =
+                controller.links
+                    .asSequence()
+                    .filter { it.to == current.id }
+                    .firstOrNull { it.from !in seenBlocks }
+                    ?.let { link ->
+                        controller.blocks.find {
+                            it.id == link.from
+                        }
+                    }
+
+            if (previous == null) {
+                return current
+            }
+
+            current = previous
+        }
+    }
+
     private fun startInputReader() {
         inputJob?.cancel()
 
@@ -599,24 +625,24 @@ class StateMachine(
                 }
 
         if (nextBlocks.isEmpty()) {
-            path.state = State.FINISHED
+            val firstBlock =
+                rewindToFirstBlock(path.block)
 
             logDebug(
-                "path=${path.id} finished"
+                "path=${path.id} reached end at " +
+                    "block=${path.block.id}, " +
+                    "rewind to block=${firstBlock.id}"
             )
+
+            path.block = firstBlock
+            path.state = State.READY
 
             return
         }
 
-        /*
-         * First outgoing link continues the current path.
-         */
         path.block = nextBlocks.first()
         path.state = State.READY
 
-        /*
-         * Additional outgoing links represent branches.
-         */
         for (block in nextBlocks.drop(1)) {
             createPath(block)
         }
