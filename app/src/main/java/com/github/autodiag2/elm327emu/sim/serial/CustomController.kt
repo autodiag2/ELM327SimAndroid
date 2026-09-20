@@ -201,17 +201,6 @@ class CustomController(
     // ------------ End Listeners ------------
 
     // ------------ StateMachine ------------
-    private val stateHandler = android.os.Handler(android.os.Looper.getMainLooper())
-    private val stateRunnable =
-        object : Runnable {
-            override fun run() {
-                stateMachine.process()
-
-                if (stateMachine.isRunning()) {
-                    stateHandler.postDelayed(this, 10L)
-                }
-            }
-        }
 
     fun startScript() {
         scope.launch {
@@ -227,7 +216,6 @@ class CustomController(
 
             emu.emuHookStreams(input, output)
             stateMachine.start()
-            stateHandler.post(stateRunnable)
         }
     }
 
@@ -235,7 +223,6 @@ class CustomController(
         scope.launch {
             val emu = activity.bridgeOrchestrator as EmuInterface
             stateMachine.stop()
-            stateHandler.removeCallbacks(stateRunnable)
             emu.emuUnHookStreams()
         }
     }

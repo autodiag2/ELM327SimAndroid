@@ -1,16 +1,17 @@
 package com.github.autodiag2.elm327emu.sim.serial
 
-import com.github.autodiag2.elm327emu.sim.serial.CustomController
+import android.util.Log
+import com.github.autodiag2.elm327emu.BuildConfig
+import com.github.autodiag2.elm327emu.LogLevel
 import com.github.autodiag2.elm327emu.sim.serial.CustomController.*
-import java.io.ByteArrayOutputStream
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import java.io.InputStream
 import java.io.OutputStream
-import com.github.autodiag2.elm327emu.LogLevel
 
 class StateMachine(
     private val controller: CustomController
 ) {
-
     enum class State {
         READY,
         WAIT_DELAY,
@@ -25,140 +26,239 @@ class StateMachine(
         var wakeTime: Long = 0L
     )
 
-    fun getString(resId: Int, vararg formatArgs: Any?): String {
-        return controller.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
+    /*
+     * All interaction with the state machine goes through this channel.
+     *
+     * The coroutine consuming this channel is the only code allowed to
+     * modify paths or execute state transitions.
+     */
+    private sealed class Event {
+        data object Start : Event()
+        data object Stop : Event()
+        data class Receive(val bytes: ByteArray) : Event()
+        data object Tick : Event()
     }
 
-    fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {
-        controller.activity.appendLog(text, level)
-    }
+    private val scope =
+        CoroutineScope(Dispatchers.IO + SupervisorJob())
+
+    private val events =
+        Channel<Event>(Channel.UNLIMITED)
+
+    /*
+     * ONLY stateLoop() accesses this list.
+     */
+    private val paths =
+        mutableListOf<Path>()
+
+    private var stateJob: Job? = null
+    private var inputJob: Job? = null
 
     private var nextPathId = 1
 
-    private val paths = mutableListOf<Path>()
+    /*
+     * True only while the execution graph is running.
+     *
+     * Accessed outside the state-machine coroutine, therefore volatile.
+     */
+    @Volatile
+    private var running = false
+
     private val input: InputStream?
         get() = controller.emuOutput
 
     private val output: OutputStream?
         get() = controller.emuInput
 
-    /**
-     * Start execution from every top-level block.
+    init {
+        stateJob = scope.launch {
+            stateLoop()
+        }
+    }
+
+    fun getString(
+        resId: Int,
+        vararg formatArgs: Any?
+    ): String {
+        return controller.getString(
+            resId,
+            *formatArgs.map { it ?: "" }.toTypedArray()
+        )
+    }
+
+    fun appendLog(
+        text: String,
+        level: LogLevel = LogLevel.DEBUG
+    ) {
+        controller.activity.appendLog(text, level)
+    }
+
+    fun logDebug(message: String) {
+        if (BuildConfig.DEBUG) {
+            Log.d(
+                "sim.serial.StateMachine",
+                message
+            )
+        }
+    }
+
+    /*
+     * Public API.
+     *
+     * These methods NEVER execute state-machine logic directly.
+     * They only enqueue events.
      */
+
     fun start() {
-        stop()
+        events.trySend(Event.Start)
+    }
+
+    fun stop() {
+        events.trySend(Event.Stop)
+    }
+
+    fun onReceive(bytes: ByteArray) {
+        events.trySend(
+            Event.Receive(bytes.copyOf())
+        )
+    }
+
+    /*
+     * The ONLY owner of paths and execution state.
+     */
+    private suspend fun stateLoop() {
+        for (event in events) {
+            when (event) {
+                Event.Start -> {
+                    handleStart()
+                }
+
+                Event.Stop -> {
+                    handleStop()
+                }
+
+                is Event.Receive -> {
+                    handleReceive(event.bytes)
+                }
+
+                Event.Tick -> {
+                    handleTick()
+                }
+            }
+        }
+    }
+
+    private fun handleStart() {
+        handleStop()
+
+        /*
+         * Execution roots are blocks with NO incoming execution link.
+         *
+         * Block.parent is the visual/container hierarchy and must not
+         * be used to determine execution roots.
+         */
+        val linkedBlockIds =
+            controller.links
+                .map { it.to }
+                .toSet()
 
         val initialBlocks =
             controller.blocks
-                .filter { it.parent == null }
+                .filter { it.id !in linkedBlockIds }
+
+        logDebug(
+            "Execution roots: " +
+                initialBlocks.joinToString(", ") {
+                    it.id.toString()
+                }
+        )
+
+        running = initialBlocks.isNotEmpty()
 
         for (block in initialBlocks) {
             createPath(block)
         }
-        process()
+
+        if (running) {
+            startInputReader()
+            handleTick()
+        }
     }
 
-    fun stop() {
+    private fun handleStop() {
+        running = false
+
+        inputJob?.cancel()
+        inputJob = null
+
         paths.clear()
+        nextPathId = 1
     }
 
-    fun isRunning(): Boolean =
-        paths.isNotEmpty()
+    /*
+     * Serial input is read on its own IO coroutine.
+     *
+     * It NEVER accesses paths.
+     * It only sends Receive events to stateLoop().
+     */
+    private fun startInputReader() {
+        inputJob?.cancel()
 
-    private fun parseEscapedBytes(text: String): ByteArray {
-
-        val result = ByteArrayOutputStream()
-        var i = 0
-
-        while (i < text.length) {
-
-            if (text[i] != '\\') {
-                result.write(
-                    text[i].code and 0xFF
+        inputJob = scope.launch {
+            val inputStream = input ?: run {
+                appendLog(
+                    "no hook installed cannot process",
+                    LogLevel.ERROR
                 )
-                i++
-                continue
+
+                events.trySend(Event.Stop)
+
+                return@launch
             }
 
-            // Trailing '\'
-            if (i + 1 >= text.length) {
-                result.write('\\'.code)
-                i++
-                continue
-            }
+            val buffer = ByteArray(512)
 
-            when (text[i + 1]) {
+            try {
+                while (isActive && running) {
+                    val count = inputStream.read(buffer)
 
-                'r' -> {
-                    result.write('\r'.code)
-                    i += 2
-                }
-
-                'n' -> {
-                    result.write('\n'.code)
-                    i += 2
-                }
-
-                't' -> {
-                    result.write('\t'.code)
-                    i += 2
-                }
-
-                '\\' -> {
-                    result.write('\\'.code)
-                    i += 2
-                }
-
-                '0' -> {
-                    result.write(0)
-                    i += 2
-                }
-
-                'x' -> {
-                    // \xNN
-                    if (i + 3 < text.length) {
-
-                        val hex =
-                            text.substring(i + 2, i + 4)
-
-                        val value =
-                            hex.toIntOrNull(16)
-
-                        if (value != null) {
-                            result.write(value)
-                            i += 4
-                        } else {
-                            result.write('\\'.code)
-                            i++
-                        }
-
-                    } else {
-                        result.write('\\'.code)
-                        i++
+                    if (count <= 0) {
+                        continue
                     }
-                }
 
-                else -> {
-                    // Unknown escape: preserve the '\'
-                    result.write('\\'.code)
-                    i++
+                    events.send(
+                        Event.Receive(
+                            buffer.copyOf(count)
+                        )
+                    )
                 }
+            } catch (_: CancellationException) {
+                // Normal shutdown.
+            } catch (e: Exception) {
+                appendLog(
+                    "input reader error: ${e.message}",
+                    LogLevel.ERROR
+                )
+
+                events.trySend(Event.Stop)
             }
         }
-
-        return result.toByteArray()
     }
 
-    /**
-     * Called periodically, e.g. from a Handler/Runnable.
+    /*
+     * Execute one pass through every active path.
+     *
+     * This is ONLY called by stateLoop().
      */
-    fun process() {
+    private fun handleTick() {
+        if (!running) {
+            return
+        }
+
         val now = System.currentTimeMillis()
 
         for (path in paths.toList()) {
-
             when (path.state) {
-
                 State.READY -> {
                     execute(path)
                 }
@@ -171,8 +271,7 @@ class StateMachine(
                 }
 
                 State.WAIT_RECV -> {
-                    // Nothing to do.
-                    // The path will be resumed by onReceive().
+                    // Waiting for a Receive event.
                 }
 
                 State.FINISHED -> {
@@ -180,83 +279,236 @@ class StateMachine(
                 }
             }
         }
+
+        /*
+         * Remove finished paths before deciding whether the graph
+         * is still running.
+         */
+        paths.removeAll {
+            it.state == State.FINISHED
+        }
+
+        if (paths.isEmpty()) {
+            running = false
+            inputJob?.cancel()
+            inputJob = null
+            return
+        }
+
+        /*
+         * Schedule another state-machine tick.
+         *
+         * This does NOT execute the state machine directly.
+         * It only posts another event.
+         */
+        scope.launch {
+            delay(10L)
+
+            if (isActive && running) {
+                events.trySend(Event.Tick)
+            }
+        }
     }
 
-    /**
-     * Execute the current block of one path.
-     */
     private fun execute(path: Path) {
+        logDebug(
+            "Executing ${path.block.type} " +
+                "path=${path.id} " +
+                "block=${path.block.id}"
+        )
 
-        when (val block = path.block.type) {
-
+        when (path.block.type) {
             Block.Type.DELAY -> {
-                val delayBlock = path.block
-
                 path.wakeTime =
                     System.currentTimeMillis() +
-                    delayBlock.delay.toLong()
+                        path.block.delay
 
                 path.state = State.WAIT_DELAY
             }
 
             Block.Type.SEND -> {
-                val sendBlock = path.block
-                var sendText = sendBlock.text
-                val eol = "\r\n"
-
-                if (sendBlock.includeEol && !sendText.endsWith(eol)) {
-                    sendText += eol
-                }
-
-                val sendBytes: ByteArray
-                if (sendBlock.interpretEscapes) {
-                    sendBytes = parseEscapedBytes(sendText)
-                } else {
-                    sendBytes = sendText.toByteArray(Charsets.ISO_8859_1)
-                }
-
-                output?.write(sendBytes)
-                output?.flush()
-
+                executeSend(path.block)
                 advance(path)
             }
 
             Block.Type.RECV -> {
                 path.state = State.WAIT_RECV
-                if ( input == null ) {
-                    appendLog("no hook installed cannot process", LogLevel.ERROR)
-                } else {
-                    val buffer = ByteArray(512)
-                    val count = input?.read(buffer) ?: 0
-
-                    val bytes = if (count > 0) {
-                        buffer.copyOf(count)
-                    } else {
-                        ByteArray(0)
-                    }
-                    advance(path)
-                }
             }
 
             Block.Type.CONTAINER -> {
-                /*
-                 * Containers are structural only.
-                 *
-                 * Their children are already represented as graph
-                 * nodes. The container itself does not execute.
-                 */
                 advance(path)
+            }
+        }
+
+        logDebug(
+            "Execution end " +
+                "path=${path.id} " +
+                "block=${path.block.id}"
+        )
+    }
+
+    private fun executeSend(block: Block) {
+        var text = block.text
+
+        if (
+            block.includeEol &&
+            !text.endsWith("\r\n")
+        ) {
+            text += "\r\n"
+        }
+
+        val bytes =
+            if (block.interpretEscapes) {
+                parseEscapedBytes(text)
+            } else {
+                text.toByteArray(
+                    Charsets.ISO_8859_1
+                )
+            }
+
+        output?.write(bytes)
+        output?.flush()
+
+        logDebug(
+            "SEND block ${block.id} " +
+                "${bytes.size} bytes"
+        )
+    }
+
+    private fun ByteArray.toDebugString(): String {
+        return buildString {
+            for (byte in this@toDebugString) {
+                val value = byte.toInt() and 0xFF
+
+                when (value) {
+                    0x0D -> append("\\r")
+                    0x0A -> append("\\n")
+                    0x09 -> append("\\t")
+                    0x00 -> append("\\0")
+                    0x5C -> append("\\\\")
+                    else -> {
+                        if (value in 0x20..0x7E) {
+                            append(value.toChar())
+                        } else {
+                            append(
+                                "\\x%02X".format(value)
+                            )
+                        }
+                    }
+                }
             }
         }
     }
 
-    /**
-     * Continue a path through all outgoing links.
+    private fun handleReceive(bytes: ByteArray) {
+        if (!running) {
+            return
+        }
+
+        logDebug(
+            "RECV ${bytes.size} bytes: " +
+                bytes.toDebugString()
+        )
+
+        /*
+        * Only paths which were already waiting before this receive
+        * event can consume it.
+        */
+        val waitingPaths =
+            paths
+                .filter {
+                    it.state == State.WAIT_RECV
+                }
+                .toList()
+
+        for (path in waitingPaths) {
+            if (matches(path.block, bytes)) {
+                logDebug(
+                    "RECV matched " +
+                        "path=${path.id} " +
+                        "block=${path.block.id}"
+                )
+
+                path.state = State.READY
+            }
+        }
+
+        handleTick()
+    }
+
+    private fun matches(
+        block: Block,
+        received: ByteArray
+    ): Boolean {
+        val expected =
+            if (block.interpretEscapes) {
+                parseEscapedBytes(block.text)
+            } else {
+                block.text.toByteArray(
+                    Charsets.ISO_8859_1
+                )
+            }
+
+        logDebug(
+            "MATCH block=${block.id} " +
+                "mode=${block.match} " +
+                "expected=${expected.toDebugString()} " +
+                "received=${received.toDebugString()}"
+        )
+
+        return when (block.match.lowercase()) {
+            "exact" -> {
+                received.contentEquals(expected)
+            }
+
+            "regex" -> {
+                val pattern =
+                    if (block.interpretEscapes) {
+                        /*
+                        * Decode escaped sequences before creating
+                        * the regex. For example:
+                        *
+                        * ATZ\\r
+                        *
+                        * becomes:
+                        *
+                        * ATZ + byte 0x0D
+                        */
+                        parseEscapedBytes(block.text)
+                            .toString(Charsets.ISO_8859_1)
+                    } else {
+                        block.text
+                    }
+
+                Regex(pattern)
+                    .containsMatchIn(
+                        received.toString(
+                            Charsets.ISO_8859_1
+                        )
+                    )
+            }
+
+            else -> {
+                logDebug(
+                    "Unknown match mode '${block.match}', " +
+                        "using exact"
+                )
+
+                received.contentEquals(expected)
+            }
+        }
+    }
+
+    /*
+     * Follow ONLY execution links.
      *
-     * If there are multiple outgoing links, the current path follows
-     * the first one and additional branches get their own Path.
+     * Block.parent is deliberately not considered here.
      */
     private fun advance(path: Path) {
+        logDebug(
+            "advance path=${path.id} " +
+                "block=${path.block.id}"
+        )
 
         val fromId = path.block.id
 
@@ -264,75 +516,36 @@ class StateMachine(
             controller.links
                 .filter { it.from == fromId }
                 .mapNotNull { link ->
-                    controller.blocks.find { it.id == link.to }
+                    controller.blocks.find {
+                        it.id == link.to
+                    }
                 }
 
         if (nextBlocks.isEmpty()) {
             path.state = State.FINISHED
+
+            logDebug(
+                "path=${path.id} finished"
+            )
+
             return
         }
 
         /*
-         * Continue the current path with the first branch.
+         * First outgoing link continues the current path.
          */
         path.block = nextBlocks.first()
         path.state = State.READY
 
         /*
-         * Create independent paths for additional branches.
+         * Additional outgoing links represent branches.
          */
         for (block in nextBlocks.drop(1)) {
             createPath(block)
         }
-
-        /*
-         * Immediately process the new block.
-         */
-        execute(path)
     }
 
-    /**
-     * Feed an incoming message to all paths waiting on RECV.
-     */
-    fun onReceive(text: String) {
-
-        for (path in paths.toList()) {
-
-            if (path.state != State.WAIT_RECV)
-                continue
-
-            val block = path.block
-
-            if (matches(block, text)) {
-                path.state = State.READY
-                execute(path)
-            }
-        }
-    }
-
-    private fun matches(
-        block: Block,
-        received: String
-    ): Boolean {
-
-        return when (block.match) {
-
-            "exact" ->
-                received == block.text
-
-            "contains" ->
-                received.contains(block.text)
-
-            "prefix" ->
-                received.startsWith(block.text)
-
-            else ->
-                received == block.text
-        }
-    }
-
-    private fun createPath(block: Block): Path {
-
+    private fun createPath(block: Block) {
         val path =
             Path(
                 id = nextPathId++,
@@ -341,6 +554,122 @@ class StateMachine(
 
         paths.add(path)
 
-        return path
+        logDebug(
+            "createPath " +
+                "path=${path.id} " +
+                "block=${block.id}"
+        )
+    }
+
+    fun isRunning(): Boolean {
+        return running
+    }
+
+    private fun parseEscapedBytes(
+        text: String
+    ): ByteArray {
+        val output =
+            java.io.ByteArrayOutputStream()
+
+        var i = 0
+
+        while (i < text.length) {
+            val c = text[i]
+
+            if (c != '\\') {
+                output.write(c.code)
+                i++
+                continue
+            }
+
+            if (i + 1 >= text.length) {
+                output.write('\\'.code)
+                i++
+                continue
+            }
+
+            when (text[i + 1]) {
+                'r' -> {
+                    output.write('\r'.code)
+                    i += 2
+                }
+
+                'n' -> {
+                    output.write('\n'.code)
+                    i += 2
+                }
+
+                't' -> {
+                    output.write('\t'.code)
+                    i += 2
+                }
+
+                '\\' -> {
+                    output.write('\\'.code)
+                    i += 2
+                }
+
+                '0' -> {
+                    output.write(0)
+                    i += 2
+                }
+
+                'x' -> {
+                    if (i + 3 < text.length) {
+                        val hex =
+                            text.substring(
+                                i + 2,
+                                i + 4
+                            )
+
+                        val value =
+                            hex.toIntOrNull(16)
+
+                        if (value != null) {
+                            output.write(value)
+                            i += 4
+                        } else {
+                            output.write('\\'.code)
+                            i++
+                        }
+                    } else {
+                        output.write('\\'.code)
+                        i++
+                    }
+                }
+
+                else -> {
+                    /*
+                     * Preserve unknown escapes.
+                     * Example: "\q" remains "\q".
+                     */
+                    output.write('\\'.code)
+                    i++
+                }
+            }
+        }
+
+        return output.toByteArray()
+    }
+
+    private fun String.escape(): String {
+        return this
+            .replace("\\", "\\\\")
+            .replace("\r", "\\r")
+            .replace("\n", "\\n")
+            .replace("\t", "\\t")
+    }
+
+    fun destroy() {
+        running = false
+
+        inputJob?.cancel()
+        inputJob = null
+
+        stateJob?.cancel()
+        stateJob = null
+
+        events.close()
+        scope.cancel()
     }
 }
