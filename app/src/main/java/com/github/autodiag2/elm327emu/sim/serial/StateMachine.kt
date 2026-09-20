@@ -96,7 +96,7 @@ class StateMachine(
             try {
                 while (isActive && running) {
                     val count = inputStream.read(buffer)
-
+                    logDebug("received ${count} bytes")
                     if (count <= 0) {
                         continue
                     }
