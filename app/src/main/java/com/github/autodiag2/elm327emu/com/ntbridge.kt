@@ -17,7 +17,7 @@ class NetworkBridge(
     scope: CoroutineScope,
     activity: MainActivity,
     private val basePort: Int = 35000
-): Bridge(emu, scope, activity) {
+): Bridge(emu, scope, activity, "NT") {
 
     private var serverSocket: ServerSocket? = null
     private var clientSocket: Socket? = null

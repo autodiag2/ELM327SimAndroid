@@ -16,7 +16,7 @@ class BluetoothBridge(
     emu: EmuInterface,
     scope: CoroutineScope,
     activity: MainActivity
-) : Bridge(emu,scope,activity) {
+) : Bridge(emu,scope,activity, "BT SPP") {
 
     private val classicalBtUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
     private val requestQueue = Channel<ByteArray>(Channel.UNLIMITED)

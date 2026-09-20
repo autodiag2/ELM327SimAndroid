@@ -20,10 +20,10 @@ open class Bridge(
     protected val emu: EmuInterface,
     protected val scope: CoroutineScope,
     protected val activity: MainActivity,
+    private val LOG_TAG: String
 ) {
-
     protected fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {
-        activity.appendLog(text, level)
+        activity.appendLog(LOG_TAG + ": " + text, level)
     }
 
     protected fun getString(resId: Int, vararg formatArgs: Any?): String {

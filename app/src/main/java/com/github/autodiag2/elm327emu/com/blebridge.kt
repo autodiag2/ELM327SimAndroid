@@ -31,7 +31,7 @@ class BLEBridge(
     emu: EmuInterface,
     scope: CoroutineScope,
     activity: MainActivity
-) : Bridge(emu, scope, activity) {
+) : Bridge(emu, scope, activity, "BLE") {
     private val prefs =
         activity.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
 
