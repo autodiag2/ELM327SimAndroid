@@ -311,23 +311,27 @@ class StateMachine(
     }
 
     private fun execute(path: Path) {
+        val block = path.block
+        val blockId = block.id
+        val blockType = block.type
+
         logDebug(
-            "Executing ${path.block.type} " +
+            "Executing $blockType " +
                 "path=${path.id} " +
-                "block=${path.block.id}"
+                "block=$blockId"
         )
 
-        when (path.block.type) {
+        when (blockType) {
             Block.Type.DELAY -> {
                 path.wakeTime =
                     System.currentTimeMillis() +
-                        path.block.delay
+                        block.delay
 
                 path.state = State.WAIT_DELAY
             }
 
             Block.Type.SEND -> {
-                executeSend(path.block)
+                executeSend(block)
                 advance(path)
             }
 
@@ -343,7 +347,7 @@ class StateMachine(
         logDebug(
             "Execution end " +
                 "path=${path.id} " +
-                "block=${path.block.id}"
+                "block=$blockId"
         )
     }
 
@@ -429,7 +433,7 @@ class StateMachine(
                         "block=${path.block.id}"
                 )
 
-                path.state = State.READY
+                advance(path)
             }
         }
 
