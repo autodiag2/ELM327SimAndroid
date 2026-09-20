@@ -77,32 +77,6 @@ class StateMachine(
         }
     }
 
-    private fun rewindToFirstBlock(block: Block): Block {
-        var current = block
-        val seenBlocks = mutableSetOf<Int>()
-
-        while (true) {
-            seenBlocks.add(current.id)
-
-            val previous =
-                controller.links
-                    .asSequence()
-                    .filter { it.to == current.id }
-                    .firstOrNull { it.from !in seenBlocks }
-                    ?.let { link ->
-                        controller.blocks.find {
-                            it.id == link.from
-                        }
-                    }
-
-            if (previous == null) {
-                return current
-            }
-
-            current = previous
-        }
-    }
-
     private fun startInputReader() {
         inputJob?.cancel()
 
@@ -533,6 +507,8 @@ class StateMachine(
                 )
 
                 advance(path)
+            } else {
+                path.state = State.FINISHED
             }
         }
 
@@ -552,14 +528,7 @@ class StateMachine(
                 )
             }
 
-        logDebug(
-            "MATCH block=${block.id} " +
-                "mode=${block.match} " +
-                "expected=${expected.toDebugString()} " +
-                "received=${received.toDebugString()}"
-        )
-
-        return when (block.match.lowercase()) {
+        val result = when (block.match.lowercase()) {
             "exact" -> {
                 received.contentEquals(expected)
             }
@@ -600,6 +569,13 @@ class StateMachine(
                 received.contentEquals(expected)
             }
         }
+        logDebug(
+            "MATCH ${if (result) "SUCCESS" else "FAILED"} block=${block.id} " +
+                "mode=${block.match} " +
+                "expected=${expected.toDebugString()} " +
+                "received=${received.toDebugString()}"
+        )
+        return result
     }
 
     /*
@@ -625,18 +601,7 @@ class StateMachine(
                 }
 
         if (nextBlocks.isEmpty()) {
-            val firstBlock =
-                rewindToFirstBlock(path.block)
-
-            logDebug(
-                "path=${path.id} reached end at " +
-                    "block=${path.block.id}, " +
-                    "rewind to block=${firstBlock.id}"
-            )
-
-            path.block = firstBlock
-            path.state = State.READY
-
+            onPathEnded(path)
             return
         }
 
@@ -644,6 +609,40 @@ class StateMachine(
         path.state = State.READY
 
         for (block in nextBlocks.drop(1)) {
+            createPath(block)
+        }
+    }
+
+    private fun onPathEnded(path: Path) {
+        logDebug(
+            "path=${path.id} ended at block=${path.block.id}"
+        )
+
+        val linkedBlockIds =
+            controller.links
+                .map { it.to }
+                .toSet()
+
+        val rootBlocks =
+            controller.blocks
+                .filter { it.id !in linkedBlockIds }
+
+        if (rootBlocks.isEmpty()) {
+            path.state = State.FINISHED
+            return
+        }
+
+        logDebug(
+            "path=${path.id} restarting with roots: " +
+                rootBlocks.joinToString(", ") {
+                    it.id.toString()
+                }
+        )
+
+        path.block = rootBlocks.first()
+        path.state = State.READY
+
+        for (block in rootBlocks.drop(1)) {
             createPath(block)
         }
     }
