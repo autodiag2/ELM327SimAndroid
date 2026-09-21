@@ -31,7 +31,7 @@ class CustomView(
     )
 
     interface Listener {
-        fun onBlockClicked(node: BlockView)
+        fun onBlockClicked(block: BlockView)
         fun onLinkToBlock(from: BlockView, to: BlockView)
         fun onBlockIncluded(parent: BlockView, child: BlockView)
         fun onBlockExcluded(parent: BlockView, child: BlockView)
@@ -98,15 +98,16 @@ class CustomView(
                         return true
                     }
 
-                    val node = findBlock(
+                    val block = findBlock(
                         event.x,
                         event.y
                     )
 
-                    if (node != null) {
-                        model?.toggleBlockSelection(node.model!!)
-                        if (node.model!!.id in model!!.selectedBlocks) {
-                            model?.onBlockClicked(node)
+                    if (block != null) {
+                        bringBlockToFront(block)
+                        model?.toggleBlockSelection(block.model!!)
+                        if (block.model!!.id in model!!.selectedBlocks) {
+                            model?.onBlockClicked(block)
                         }
 
                         invalidate()
@@ -169,13 +170,14 @@ class CustomView(
                         return
                     }
 
-                    val node = findBlock(
+                    val block = findBlock(
                         event.x,
                         event.y
                     )
 
-                    if (node != null) {
-                        model?.onElementSelected(node)
+                    if (block != null) {
+                        bringBlockToFront(block)
+                        model?.onElementSelected(block)
 
                         invalidate()
                         return
@@ -227,10 +229,41 @@ class CustomView(
         )
     }
 
+    private fun bringBlockToFront(block: BlockView) {
+
+        val blockModel = block.model ?: return
+        val parent = blockModel.parent
+
+        if (parent == null) {
+
+            val index = model!!.blocks.indexOf(blockModel)
+
+            if (index >= 0 && index != model!!.blocks.lastIndex) {
+                model!!.blocks.removeAt(index)
+                model!!.blocks.add(blockModel)
+            }
+
+        } else {
+
+            val index = parent.children.indexOf(blockModel.id)
+
+            if (index >= 0 && index != parent.children.lastIndex) {
+                parent.children.removeAt(index)
+                parent.children.add(blockModel.id)
+            }
+
+            parent.view?.let {
+                bringBlockToFront(it)
+            }
+        }
+
+        invalidate()
+    }
+
     private fun updateContainerMembership(
-        node: BlockView
+        block: BlockView
     ) {
-        val currentContainer = node.model!!.parent
+        val currentContainer = block.model!!.parent
 
         var target: BlockView? = null
 
@@ -245,22 +278,22 @@ class CustomView(
                 continue
             }
 
-            if ( node == container ) {
+            if ( block == container ) {
                 continue
             }
 
-            if (isDescendant(node, container.view!!)) {
+            if (isDescendant(block, container.view!!)) {
                 continue
             }
 
-            if (isAncestor(container.view!!, node)) {
+            if (isAncestor(container.view!!, block)) {
                 continue
             }
 
             container.view!!.updateContainerBounds()
 
             if (isBlockOverContainer(
-                    node,
+                    block,
                     container.view!!
                 )
             ) {
@@ -270,12 +303,12 @@ class CustomView(
         }
 
         if (target != null) {
-            val nodeWorldPos = node.getWorldCoords()
+            val blockWorldPos = block.getWorldCoords()
 
             if (currentContainer != null) {
                 model!!.onBlockExcluded(
                     currentContainer.view!!,
-                    node
+                    block
                 )
 
                 currentContainer.view!!.updateContainerBounds()
@@ -283,15 +316,15 @@ class CustomView(
 
             val targetWorldPos = target.getWorldCoords()
 
-            node.x =
-                nodeWorldPos.x - targetWorldPos.x
+            block.x =
+                blockWorldPos.x - targetWorldPos.x
 
-            node.y =
-                nodeWorldPos.y - targetWorldPos.y
+            block.y =
+                blockWorldPos.y - targetWorldPos.y
 
             model!!.onBlockIncluded(
                 target,
-                node
+                block
             )
 
             target.updateContainerBounds()
@@ -302,51 +335,51 @@ class CustomView(
         if (
             currentContainer != null &&
             !isBlockOverContainer(
-                node,
+                block,
                 currentContainer.view!!
             )
         ) {
             /*
-            * node.x / node.y are currently relative to the
+            * block.x / block.y are currently relative to the
             * current container. Preserve the absolute position
             * before removing the parent.
             */
-            val nodeWorldPos =
-                node.getWorldCoords()
+            val blockWorldPos =
+                block.getWorldCoords()
 
             model?.onBlockExcluded(
                 currentContainer.view!!,
-                node
+                block
             )
 
             /*
-            * The node is now a root node, so its local coordinates
+            * The block is now a root block, so its local coordinates
             * are its world coordinates.
             */
-            node.x =
-                nodeWorldPos.x
+            block.x =
+                blockWorldPos.x
 
-            node.y =
-                nodeWorldPos.y
+            block.y =
+                blockWorldPos.y
 
             currentContainer.view!!.updateContainerBounds()
         }
     }
 
     private fun isBlockOverContainer(
-        node: BlockView,
+        block: BlockView,
         container: BlockView
     ): Boolean {
-        if ( node == container ) {
+        if ( block == container ) {
             return false
         }
-        val nodeWorldPos = node.getWorldCoords()
+        val blockWorldPos = block.getWorldCoords()
         val containerWorldPos = container.getWorldCoords()
         val centerX =
-            nodeWorldPos.x + node.width / 2f
+            blockWorldPos.x + block.width / 2f
 
         val centerY =
-            nodeWorldPos.y + node.height / 2f
+            blockWorldPos.y + block.height / 2f
 
         containerRect.set(
             containerWorldPos.x,
@@ -360,9 +393,9 @@ class CustomView(
             centerY
         )
         if ( result ) {
-            logDebug("OVER CONTAINER node=${node.model!!.id} container=${container.model!!.id}")
+            logDebug("OVER CONTAINER block=${block.model!!.id} container=${container.model!!.id}")
         } else {
-            logDebug("NOT OVER CONTAINER node=${node.model!!.id} (${centerX},${centerY}) container=${container.model!!.id} (${containerWorldPos.x},${containerWorldPos.y})")
+            logDebug("NOT OVER CONTAINER block=${block.model!!.id} (${centerX},${centerY}) container=${container.model!!.id} (${containerWorldPos.x},${containerWorldPos.y})")
         }
         return result
     }
@@ -397,9 +430,9 @@ class CustomView(
 
     private fun isAncestor(
         ancestor: BlockView,
-        node: BlockView
+        block: BlockView
     ): Boolean {
-        var current = node.model?.parent
+        var current = block.model?.parent
 
         while (current != null) {
             if (current === ancestor.model) {
@@ -413,13 +446,13 @@ class CustomView(
     }
 
     private fun isDescendant(
-        node: BlockView,
+        block: BlockView,
         possibleDescendant: BlockView
     ): Boolean {
         var current = possibleDescendant.model?.parent
 
         while (current != null) {
-            if (current === node.model) {
+            if (current === block.model) {
                 return true
             }
 
@@ -587,8 +620,8 @@ class CustomView(
         var score = 0f
 
         for (other in model!!.blocks) {
-            val node = other.view!!
-            val otherPos = node.getWorldCoords()
+            val block = other.view!!
+            val otherPos = block.getWorldCoords()
 
             val otherLeft =
                 otherPos.x - autoPlacementMargin
@@ -598,12 +631,12 @@ class CustomView(
 
             val otherRight =
                 otherPos.x +
-                node.width +
+                block.width +
                 autoPlacementMargin
 
             val otherBottom =
                 otherPos.y +
-                node.height +
+                block.height +
                 autoPlacementMargin
 
             val overlapX =
@@ -758,17 +791,17 @@ class CustomView(
         val candidates = mutableListOf<BlockView>()
 
         for (block in model!!.blocks) {
-            val node = block.view!!
+            val blockView = block.view!!
 
-            val nodeWorldPos = node.getWorldCoords()
+            val blockWorldPos = blockView.getWorldCoords()
 
             if (
-                x >= nodeWorldPos.x &&
-                x <= nodeWorldPos.x + node.width &&
-                y >= nodeWorldPos.y &&
-                y <= nodeWorldPos.y + node.height
+                x >= blockWorldPos.x &&
+                x <= blockWorldPos.x + blockView.width &&
+                y >= blockWorldPos.y &&
+                y <= blockWorldPos.y + blockView.height
             ) {
-                candidates.add(node)
+                candidates.add(blockView)
             }
         }
 
@@ -814,11 +847,11 @@ class CustomView(
         var closestDistance = Float.MAX_VALUE
 
         for (block in model!!.blocks) {
-            val node = block.view!!
-            val nodeWorldPos = node.getWorldCoords()
+            val blockView = block.view!!
+            val blockWorldPos = blockView.getWorldCoords()
 
-            val portX = nodeWorldPos.x + node.width
-            val portY = nodeWorldPos.y + node.height / 2f
+            val portX = blockWorldPos.x + blockView.width
+            val portY = blockWorldPos.y + blockView.height / 2f
 
             val portDistance = distance(
                 x,
@@ -831,7 +864,7 @@ class CustomView(
                 portDistance <= portHitRadius &&
                 portDistance < closestDistance
             ) {
-                closest = node
+                closest = blockView
                 closestDistance = portDistance
             }
         }
@@ -852,11 +885,11 @@ class CustomView(
         var closestDistance = Float.MAX_VALUE
 
         for (block in model!!.blocks) {
-            val node = block.view!!
-            val nodeWorldPos = node.getWorldCoords()
+            val blockView = block.view!!
+            val blockWorldPos = blockView.getWorldCoords()
 
-            val portX = nodeWorldPos.x
-            val portY = nodeWorldPos.y + node.height / 2f
+            val portX = blockWorldPos.x
+            val portY = blockWorldPos.y + blockView.height / 2f
 
             val portDistance = distance(
                 x,
@@ -869,7 +902,7 @@ class CustomView(
                 portDistance <= portHitRadius &&
                 portDistance < closestDistance
             ) {
-                closest = node
+                closest = blockView
                 closestDistance = portDistance
             }
         }
@@ -1058,17 +1091,17 @@ class CustomView(
     }
 
     private fun moveBlock(
-        node: BlockView,
+        block: BlockView,
         dx: Float,
         dy: Float
     ) {
         val worldDx = dx / scale
         val worldDy = dy / scale
 
-        node.x += worldDx
-        node.y += worldDy
+        block.x += worldDx
+        block.y += worldDy
 
-        updateContainerMembership(node)
+        updateContainerMembership(block)
 
         invalidate()
     }
@@ -1168,17 +1201,21 @@ class CustomView(
                 lastY = event.y
                 movedDuringGesture = false
 
-                val node =
+                val block =
                     findBlock(
                         event.x,
                         event.y
                     )
+                
+                if ( block != null ) {
+                    bringBlockToFront(block)
+                }
 
                 logDebug(
-                    "DOWN x=${event.x} y=${event.y} block=${node?.model?.id} type=${node?.model?.type}"
+                    "DOWN x=${event.x} y=${event.y} block=${block?.model?.id} type=${block?.model?.type}"
                 )
 
-                draggingBlock = node
+                draggingBlock = block
 
                 return true
             }
@@ -1207,13 +1244,13 @@ class CustomView(
                 }
 
                 if (!scaleDetector.isInProgress) {
-                    val node =
+                    val block =
                         draggingBlock
 
 
-                    if (node != null) {
+                    if (block != null) {
                         moveBlock(
-                            node,
+                            block,
                             dx,
                             dy
                         )

@@ -68,9 +68,9 @@ class CustomController(
 
     // ------------ Listeners ------------
     override fun onBlockClicked(
-        node: BlockView
+        block: BlockView
     ) {
-        node.model!!.edit()
+        block.model!!.edit()
     }
 
     override fun onLinkToBlock(
