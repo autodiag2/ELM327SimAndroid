@@ -349,7 +349,7 @@ open class BlockController(
 
         val initial_text = EditText(view!!.context).apply {
             hint = "Pattern"
-            setText(text)
+            setText(this@BlockController.text)
             inputType =
                 InputType.TYPE_CLASS_TEXT or
                 InputType.TYPE_TEXT_FLAG_MULTI_LINE
@@ -392,7 +392,7 @@ open class BlockController(
 
         val initial_text = EditText(view!!.context).apply {
             hint = "ASCII text"
-            setText(text)
+            setText(this@BlockController.text)
             inputType =
                 InputType.TYPE_CLASS_TEXT or
                 InputType.TYPE_TEXT_FLAG_MULTI_LINE
@@ -427,7 +427,7 @@ open class BlockController(
 
     private fun editContainer() {
         val input = EditText(view!!.context).apply {
-            setText(name)
+            setText(this@BlockController.name)
         }
 
         android.app.AlertDialog.Builder(view!!.context)
