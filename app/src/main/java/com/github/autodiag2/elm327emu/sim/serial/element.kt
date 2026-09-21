@@ -1,5 +1,10 @@
 package com.github.autodiag2.elm327emu.sim.serial
 
+// view imports
+import android.util.TypedValue
+import android.content.Context
+// end view imports
+
 open class ElementController<V>(
     var view: V? = null,
     id: Int? = null
@@ -32,9 +37,23 @@ open class ElementController<V>(
 }
 
 open class ElementView<M>(
+    protected val context: Context,
     var model: M? = null
 ) {
     fun modelLink(model_arg: M) {
         model = model_arg
+    }
+    protected fun getThemeColor(
+        attr: Int
+    ): Int {
+        val typedValue = TypedValue()
+
+        context.theme.resolveAttribute(
+            attr,
+            typedValue,
+            true
+        )
+
+        return typedValue.data
     }
 }

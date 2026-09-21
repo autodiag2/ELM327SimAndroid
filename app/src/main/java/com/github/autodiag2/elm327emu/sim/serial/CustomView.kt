@@ -44,27 +44,14 @@ class CustomView(
 
     // --------- Customization settings ---------
     private var scale = 1f
-    private val containerTitleHeight = 40f
-    private val portRadius = 20f
     private val portHitRadius = 100f
-    private val linkArrowSize = 30f
-    public val blockBorderWidthSelected: Float = 10f
-    public val blockBorderWidth: Float = 3f
     public val blockStandardContentPadding: Float = 40f
     private val autoPlacementMargin: Float = 80f
     private val linkSelectionSensitivity = 60f
     // --------- End Customization settings ---------
 
-    private val nodePaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val containerPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val linkPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val selectedLinkPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val linkPreviewPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val portPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val arrowPaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
-    private val nodeRect = RectF()
     private val containerRect = RectF()
 
     private val gestureDetector: GestureDetector
@@ -74,9 +61,8 @@ class CustomView(
     private var offsetY = 0f
 
     private var draggingBlock: BlockView? = null
-
-    private var linkingFrom: BlockView? = null
-    private var hoveredDestination: BlockView? = null
+    public var linkingFrom: BlockView? = null
+    public var hoveredDestination: BlockView? = null
 
     private var linkX = 0f
     private var linkY = 0f
@@ -88,27 +74,10 @@ class CustomView(
     private var movedDuringGesture = false
 
     init {
-        nodePaint.style = Paint.Style.FILL
-        containerPaint.style = Paint.Style.FILL
-
-        textPaint.textSize =
-            16f * resources.displayMetrics.scaledDensity
-
-        linkPaint.style = Paint.Style.STROKE
-        linkPaint.strokeWidth = 4f
-        linkPaint.strokeCap = Paint.Cap.ROUND
-
-        arrowPaint.style = Paint.Style.FILL
-
-        selectedLinkPaint.style = Paint.Style.STROKE
-        selectedLinkPaint.strokeWidth = 7f
-        selectedLinkPaint.strokeCap = Paint.Cap.ROUND
 
         linkPreviewPaint.style = Paint.Style.STROKE
         linkPreviewPaint.strokeWidth = 5f
         linkPreviewPaint.strokeCap = Paint.Cap.ROUND
-
-        portPaint.style = Paint.Style.FILL
 
         gestureDetector = GestureDetector(
             context,
@@ -258,86 +227,144 @@ class CustomView(
         )
     }
 
-    private fun updateBlockContentSize(
-        block: BlockController,
+    private fun updateContainerMembership(
         node: BlockView
     ) {
-        if (
-            block.type ==
-            BlockController.Type.CONTAINER
-        ) {
+        val currentContainer = node.model!!.parent
+
+        var target: BlockView? = null
+
+        for (container in model!!.blocks) {
+            if (container.type !=
+                BlockController.Type.CONTAINER
+            ) {
+                continue
+            }
+
+            if (container == currentContainer) {
+                continue
+            }
+
+            if ( node == container ) {
+                continue
+            }
+
+            if (isDescendant(node, container.view!!)) {
+                continue
+            }
+
+            if (isAncestor(container.view!!, node)) {
+                continue
+            }
+
+            container.view!!.updateContainerBounds()
+
+            if (isBlockOverContainer(
+                    node,
+                    container.view!!
+                )
+            ) {
+                target = container.view!!
+                break
+            }
+        }
+
+        if (target != null) {
+            val nodeWorldPos = node.getWorldCoords()
+
+            if (currentContainer != null) {
+                model!!.onBlockExcluded(
+                    currentContainer.view!!,
+                    node
+                )
+
+                currentContainer.view!!.updateContainerBounds()
+            }
+
+            val targetWorldPos = target.getWorldCoords()
+
+            node.x =
+                nodeWorldPos.x - targetWorldPos.x
+
+            node.y =
+                nodeWorldPos.y - targetWorldPos.y
+
+            model!!.onBlockIncluded(
+                target,
+                node
+            )
+
+            target.updateContainerBounds()
+
             return
         }
 
-        val title = block.name
+        if (
+            currentContainer != null &&
+            !isBlockOverContainer(
+                node,
+                currentContainer.view!!
+            )
+        ) {
+            /*
+            * node.x / node.y are currently relative to the
+            * current container. Preserve the absolute position
+            * before removing the parent.
+            */
+            val nodeWorldPos =
+                node.getWorldCoords()
 
-        val summary =
-            when (block.type) {
-                BlockController.Type.DELAY ->
-                    "${block.delay}ms"
-
-                BlockController.Type.SEND ->
-                    block.text
-
-                BlockController.Type.RECV ->
-                    block.text
-
-                BlockController.Type.CONTAINER ->
-                    ""
-            }
-
-        val titlePaint =
-            TextPaint(textPaint)
-
-        val summaryPaint =
-            TextPaint(textPaint)
-
-        val titleBounds =
-            android.graphics.Rect()
-
-        val summaryBounds =
-            android.graphics.Rect()
-
-        titlePaint.getTextBounds(
-            title,
-            0,
-            title.length,
-            titleBounds
-        )
-
-        summaryPaint.getTextBounds(
-            summary,
-            0,
-            summary.length,
-            summaryBounds
-        )
-
-        val lineSpacing = 4f
-
-        val requiredWidth =
-            max(
-                titleBounds.width(),
-                summaryBounds.width()
-            ) +
-            blockStandardContentPadding * 2f
-
-        val requiredHeight =
-            titleBounds.height() +
-            lineSpacing +
-            summaryBounds.height() +
-            blockStandardContentPadding * 2f
-
-        node.width =
-            max(
-                260f,
-                requiredWidth
+            model?.onBlockExcluded(
+                currentContainer.view!!,
+                node
             )
 
-        node.height =
-            max(
-                100f,
-                requiredHeight
-            )
+            /*
+            * The node is now a root node, so its local coordinates
+            * are its world coordinates.
+            */
+            node.x =
+                nodeWorldPos.x
+
+            node.y =
+                nodeWorldPos.y
+
+            currentContainer.view!!.updateContainerBounds()
+        }
+    }
+
+    private fun isBlockOverContainer(
+        node: BlockView,
+        container: BlockView
+    ): Boolean {
+        if ( node == container ) {
+            return false
+        }
+        val nodeWorldPos = node.getWorldCoords()
+        val containerWorldPos = container.getWorldCoords()
+        val centerX =
+            nodeWorldPos.x + node.width / 2f
+
+        val centerY =
+            nodeWorldPos.y + node.height / 2f
+
+        containerRect.set(
+            containerWorldPos.x,
+            containerWorldPos.y,
+            containerWorldPos.x + container.width,
+            containerWorldPos.y + container.height
+        )
+
+        val result = containerRect.contains(
+            centerX,
+            centerY
+        )
+        if ( result ) {
+            logDebug("OVER CONTAINER node=${node.model!!.id} container=${container.model!!.id}")
+        } else {
+            logDebug("NOT OVER CONTAINER node=${node.model!!.id} (${centerX},${centerY}) container=${container.model!!.id} (${containerWorldPos.x},${containerWorldPos.y})")
+        }
+        return result
     }
 
     public fun logDebug(message: String) {
@@ -402,39 +429,6 @@ class CustomView(
         return false
     }
 
-    private fun drawArrow(
-        canvas: Canvas,
-        x: Float,
-        y: Float,
-        angle: Float,
-        paint: Paint
-    ) {
-
-        val path = Path()
-
-        path.moveTo(
-            x + kotlin.math.cos(angle) * linkArrowSize,
-            y + kotlin.math.sin(angle) * linkArrowSize
-        )
-
-        path.lineTo(
-            x + kotlin.math.cos(angle + 2.5f) * linkArrowSize,
-            y + kotlin.math.sin(angle + 2.5f) * linkArrowSize
-        )
-
-        path.lineTo(
-            x + kotlin.math.cos(angle - 2.5f) * linkArrowSize,
-            y + kotlin.math.sin(angle - 2.5f) * linkArrowSize
-        )
-
-        path.close()
-
-        canvas.drawPath(
-            path,
-            paint
-        )
-    }
-
     public fun refresh() {
         invalidate()
     }
@@ -445,7 +439,9 @@ class CustomView(
         val block = BlockView(
             0f,
             0f,
-            model = model
+            model = model,
+            context = context,
+            parentView = this
         )
 
         val worldCenterX =
@@ -652,7 +648,7 @@ class CustomView(
     }
 
     public fun addLink(model: LinkController): LinkView {
-        return LinkView(model = model)
+        return LinkView(model = model, context = context, parentView = this)
     }
 
     override fun onDraw(
@@ -681,557 +677,12 @@ class CustomView(
         canvas.restore()
     }
 
-    private fun drawLinkCurve(
-        canvas: Canvas,
-        startX: Float,
-        startY: Float,
-        endX: Float,
-        endY: Float,
-        paint: Paint
-    ) {
-        val path = Path()
-
-        val control1X: Float
-        val control1Y: Float
-        val control2X: Float
-        val control2Y: Float
-
-        if (endX < startX) {
-            /*
-            * Backward edge.
-            *
-            * Route below the blocks to produce a pronounced
-            * U / half-circle-like curve instead of a straight line.
-            */
-            val curveOffset =
-                max(
-                    100f,
-                    abs(startX - endX) * 0.5f
-                )
-
-            control1X = startX
-            control1Y = startY + curveOffset
-
-            control2X = endX
-            control2Y = endY + curveOffset
-        } else {
-            /*
-            * Normal forward edge.
-            */
-            val controlDistance =
-                max(
-                    40f,
-                    (endX - startX) * 0.5f
-                )
-
-            control1X = startX + controlDistance
-            control1Y = startY
-
-            control2X = endX - controlDistance
-            control2Y = endY
-        }
-
-        path.moveTo(
-            startX,
-            startY
-        )
-
-        path.cubicTo(
-            control1X,
-            control1Y,
-            control2X,
-            control2Y,
-            endX,
-            endY
-        )
-
-        canvas.drawPath(
-            path,
-            paint
-        )
-
-        /*
-        * Arrow at the middle of the Bézier curve.
-        */
-        val t = 0.5f
-        val inverse = 1f - t
-
-        val arrowX =
-            inverse * inverse * inverse * startX +
-            3f * inverse * inverse * t * control1X +
-            3f * inverse * t * t * control2X +
-            t * t * t * endX
-
-        val arrowY =
-            inverse * inverse * inverse * startY +
-            3f * inverse * inverse * t * control1Y +
-            3f * inverse * t * t * control2Y +
-            t * t * t * endY
-
-        val tangentX =
-            3f * inverse * inverse *
-                (control1X - startX) +
-            6f * inverse * t *
-                (control2X - control1X) +
-            3f * t * t *
-                (endX - control2X)
-
-        val tangentY =
-            3f * inverse * inverse *
-                (control1Y - startY) +
-            6f * inverse * t *
-                (control2Y - control1Y) +
-            3f * t * t *
-                (endY - control2Y)
-
-        val angle =
-            kotlin.math.atan2(
-                tangentY,
-                tangentX
-            )
-
-        arrowPaint.color = paint.color
-
-        drawArrow(
-            canvas,
-            arrowX,
-            arrowY,
-            angle,
-            arrowPaint
-        )
-    }
     private fun updateAllContainerBounds() {
         for (block in model!!.blocks) {
             if (block.type ==
                 BlockController.Type.CONTAINER
             ) {
-                updateContainerBounds(block.view!!)
-            }
-        }
-    }
-
-    private fun updateContainerBounds(
-        container: BlockView
-    ) {
-        val children =
-            container.model!!.children.mapNotNull { childId ->
-                model!!.blocks.find {
-                    it.id == childId
-                }
-            }
-
-        /*
-        * Update nested containers first.
-        */
-        for (childBlock in children) {
-            if (
-                childBlock.type ==
-                BlockController.Type.CONTAINER
-            ) {
-                updateContainerBounds(
-                    childBlock.view!!
-                )
-            }
-        }
-
-        /*
-        * ------------------------------------------------------------
-        * Minimum size required by the container title.
-        * ------------------------------------------------------------
-        */
-
-        val titleWidth =
-            getTextWidth(
-                container.model!!.name
-            )
-
-        val titleHeight =
-            textPaint.fontMetrics.bottom -
-            textPaint.fontMetrics.top
-
-        val titleRequiredWidth =
-            titleWidth +
-            blockStandardContentPadding * 2f
-
-        val titleRequiredHeight =
-            titleHeight +
-            blockStandardContentPadding * 2f
-
-        /*
-        * ------------------------------------------------------------
-        * Size required by children.
-        * ------------------------------------------------------------
-        */
-
-        var childrenRequiredWidth = 0f
-        var childrenRequiredHeight = 0f
-
-        for (childBlock in children) {
-            val child = childBlock.view!!
-
-            childrenRequiredWidth =
-                max(
-                    childrenRequiredWidth,
-                    child.x + child.width
-                )
-
-            childrenRequiredHeight =
-                max(
-                    childrenRequiredHeight,
-                    child.y + child.height
-                )
-        }
-
-        /*
-        * Children are positioned in the container's local
-        * coordinate system. Keep the existing container padding
-        * around them and reserve the title area.
-        */
-        val childrenWidth =
-            childrenRequiredWidth +
-            blockStandardContentPadding
-
-        val childrenHeight =
-            childrenRequiredHeight +
-            blockStandardContentPadding +
-            containerTitleHeight
-
-        /*
-        * ------------------------------------------------------------
-        * Final container size.
-        * ------------------------------------------------------------
-        */
-
-        container.width =
-            max(
-                260f,
-                max(
-                    titleRequiredWidth,
-                    childrenWidth
-                )
-            )
-
-        container.height =
-            max(
-                140f,
-                max(
-                    titleRequiredHeight + containerTitleHeight,
-                    childrenHeight
-                )
-            )
-    }
-
-    private fun getTextWidth(
-        text: String
-    ): Float {
-        return textPaint.measureText(text)
-    }
-
-    private fun drawBlock(
-        canvas: Canvas,
-        block: BlockController,
-        drawn: MutableSet<Int>
-    ) {
-        if (!drawn.add(block.id)) {
-            return
-        }
-
-        val node = block.view!!
-        updateBlockContentSize(
-            block,
-            node
-        )
-        val nodeWorldPos = node.getWorldCoords()
-
-        nodeRect.set(
-            nodeWorldPos.x,
-            nodeWorldPos.y,
-            nodeWorldPos.x + node.width,
-            nodeWorldPos.y + node.height
-        )
-
-        logDebug(
-            "DRAW BLOCK ${block.id} at ${nodeRect}"
-        )
-
-        val selected =
-            model!!.isBlockSelected(block)
-
-        val colorPrimaryDark =
-            getThemeColor(
-                androidx.appcompat.R.attr.colorPrimaryDark
-            )
-
-        val textColor =
-            getThemeColor(
-                android.R.attr.textColor
-            )
-
-        val accentColor =
-            getThemeColor(
-                androidx.appcompat.R.attr.colorAccent
-            )
-
-        val isContainer =
-            block.type ==
-                BlockController.Type.CONTAINER
-
-        /*
-        * ------------------------------------------------------------
-        * Block background
-        * ------------------------------------------------------------
-        */
-
-        nodePaint.style = Paint.Style.FILL
-        nodePaint.color = colorPrimaryDark
-
-        val cornerRadius =
-            if (isContainer) 18f else 14f
-
-        canvas.drawRoundRect(
-            nodeRect,
-            cornerRadius,
-            cornerRadius,
-            nodePaint
-        )
-
-        /*
-        * ------------------------------------------------------------
-        * Block border
-        * ------------------------------------------------------------
-        */
-
-        nodePaint.style = Paint.Style.STROKE
-
-        nodePaint.strokeWidth =
-            if (selected) {
-                blockBorderWidthSelected
-            } else {
-                blockBorderWidth
-            }
-
-        nodePaint.color =
-            if (selected) {
-                accentColor
-            } else {
-                textColor
-            }
-
-        canvas.drawRoundRect(
-            nodeRect,
-            cornerRadius,
-            cornerRadius,
-            nodePaint
-        )
-
-        /*
-        * ------------------------------------------------------------
-        * Block text
-        * ------------------------------------------------------------
-        */
-
-        textPaint.color = textColor
-
-        if (isContainer) {
-            /*
-            * Containers have their title near the top.
-            */
-            val fontMetrics =
-                textPaint.fontMetrics
-
-            val textX =
-                nodeWorldPos.x +
-                blockStandardContentPadding
-
-            val textY =
-                nodeWorldPos.y +
-                blockStandardContentPadding -
-                (fontMetrics.ascent + fontMetrics.descent) / 2f
-
-            canvas.drawText(
-                block.name,
-                textX,
-                textY,
-                textPaint
-            )
-        } else {
-            /*
-            * Non-container blocks have:
-            *
-            *     title
-            *     summary
-            *
-            * both centered in the block.
-            */
-            val title = block.name
-
-            val summary =
-                when (block.type) {
-                    BlockController.Type.DELAY ->
-                        "${block.delay}ms"
-
-                    BlockController.Type.SEND ->
-                        block.text
-
-                    BlockController.Type.RECV ->
-                        block.text
-
-                    BlockController.Type.CONTAINER ->
-                        ""
-                }
-
-            val contentLeft =
-                nodeWorldPos.x + blockStandardContentPadding
-
-            val contentRight =
-                nodeWorldPos.x +
-                    node.width -
-                    blockStandardContentPadding
-
-            val contentTop =
-                nodeWorldPos.y + blockStandardContentPadding
-
-            val contentBottom =
-                nodeWorldPos.y +
-                    node.height -
-                    blockStandardContentPadding
-
-            val contentWidth =
-                max(
-                    0f,
-                    contentRight - contentLeft
-                )
-
-            val contentHeight =
-                max(
-                    0f,
-                    contentBottom - contentTop
-                )
-
-            val titlePaint =
-                TextPaint(textPaint).apply {
-                    color = textColor
-                }
-
-            val summaryPaint =
-                TextPaint(textPaint).apply {
-                    color =
-                        getThemeColor(
-                            android.R.attr.textColorSecondary
-                        )
-                }
-
-            val titleText =
-                TextUtils.ellipsize(
-                    title,
-                    titlePaint,
-                    contentWidth,
-                    TextUtils.TruncateAt.END
-                ).toString()
-
-            val summaryText =
-                TextUtils.ellipsize(
-                    summary,
-                    summaryPaint,
-                    contentWidth,
-                    TextUtils.TruncateAt.END
-                ).toString()
-
-            val titleWidth =
-                titlePaint.measureText(titleText)
-
-            val summaryWidth =
-                summaryPaint.measureText(summaryText)
-
-            val titleBounds =
-                android.graphics.Rect()
-
-            val summaryBounds =
-                android.graphics.Rect()
-
-            titlePaint.getTextBounds(
-                titleText,
-                0,
-                titleText.length,
-                titleBounds
-            )
-
-            summaryPaint.getTextBounds(
-                summaryText,
-                0,
-                summaryText.length,
-                summaryBounds
-            )
-
-            val lineSpacing = 4f
-
-            val totalHeight =
-                titleBounds.height() +
-                lineSpacing +
-                summaryBounds.height()
-
-            val startTop =
-                contentTop +
-                    max(
-                        0f,
-                        (contentHeight - totalHeight) / 2f
-                    )
-
-            val titleBaseline =
-                startTop - titleBounds.top
-
-            val summaryTop =
-                startTop +
-                    titleBounds.height() +
-                    lineSpacing
-
-            val summaryBaseline =
-                summaryTop - summaryBounds.top
-
-            canvas.drawText(
-                titleText,
-                (contentLeft + contentRight - titleWidth) / 2f,
-                titleBaseline,
-                titlePaint
-            )
-
-            canvas.drawText(
-                summaryText,
-                (contentLeft + contentRight - summaryWidth) / 2f,
-                summaryBaseline,
-                summaryPaint
-            )
-        }
-
-        /*
-        * ------------------------------------------------------------
-        * Ports
-        * ------------------------------------------------------------
-        */
-
-        drawPorts(
-            canvas,
-            node
-        )
-
-        /*
-        * ------------------------------------------------------------
-        * Children
-        * ------------------------------------------------------------
-        */
-
-        for (childId in block.children) {
-            val child =
-                model!!.blocks.firstOrNull {
-                    it.id == childId
-                }
-
-            if (child != null) {
-                drawBlock(
-                    canvas,
-                    child,
-                    drawn
-                )
+                block.view!!.updateContainerBounds()
             }
         }
     }
@@ -1244,71 +695,15 @@ class CustomView(
 
         for (block in model!!.blocks) {
             if (block.parent == null) {
-                drawBlock(
-                    canvas,
-                    block,
-                    drawn
-                )
+                block.view!!.draw(canvas, drawn)
             }
         }
 
         for (block in model!!.blocks) {
             if (!drawn.contains(block.id)) {
-                drawBlock(
-                    canvas,
-                    block,
-                    drawn
-                )
+                block.view!!.draw(canvas, drawn)
             }
         }
-    }
-
-    private fun drawPorts(
-        canvas: Canvas,
-        node: BlockView
-    ) {
-        val selected =
-            model!!.isBlockSelected(node.model!!)
-
-        val colorAccent = getThemeColor(
-            androidx.appcompat.R.attr.colorAccent
-        )
-
-        val isSource =
-            linkingFrom?.model?.id == node.model!!.id
-
-        val isDestination =
-            hoveredDestination?.model?.id == node.model!!.id
-
-        val nodeWorldPos = node.getWorldCoords()
-
-        portPaint.color =
-            if ( isDestination || selected ) {
-                colorAccent
-            } else {
-                0xff555555.toInt()
-            }
-
-        canvas.drawCircle(
-            nodeWorldPos.x,
-            nodeWorldPos.y + node.height / 2f,
-            portRadius,
-            portPaint
-        )
-
-        portPaint.color =
-            if (isSource || selected) {
-                colorAccent
-            } else {
-                0xff555555.toInt()
-            }
-
-        canvas.drawCircle(
-            nodeWorldPos.x + node.width,
-            nodeWorldPos.y + node.height / 2f,
-            portRadius,
-            portPaint
-        )
     }
 
     private fun drawLinks(
@@ -1329,49 +724,8 @@ class CustomView(
                 continue
             }
 
-            val selected = model!!.isLinkSelected(link)
-
-            val paint =
-                if (selected) {
-                    selectedLinkPaint
-                } else {
-                    linkPaint
-                }
-
-            paint.color =
-                if (selected) {
-                    getThemeColor(
-                        androidx.appcompat.R.attr.colorAccent
-                    )
-                } else {
-                    getThemeColor(R.attr.colorAccentInactive)
-                }
-
-            drawLink(
-                canvas,
-                from.view!!,
-                to.view!!,
-                paint
-            )
+            link.view!!.draw(canvas, from, to)
         }
-    }
-
-    private fun drawLink(
-        canvas: Canvas,
-        from: BlockView,
-        to: BlockView,
-        paint: Paint
-    ) {
-        val fromWorldPos = from.getWorldCoords()
-        val toWorldPos = to.getWorldCoords()
-        drawLinkCurve(
-            canvas,
-            fromWorldPos.x + from.width,
-            fromWorldPos.y + from.height / 2f,
-            toWorldPos.x,
-            toWorldPos.y + to.height / 2f,
-            paint
-        )
     }
 
     private fun drawLinkPreview(
@@ -1383,7 +737,7 @@ class CustomView(
         linkPreviewPaint.color = getThemeColor(androidx.appcompat.R.attr.colorAccent)
         val fromWorldPos = from.getWorldCoords()
 
-        drawLinkCurve(
+        LinkView.drawLinkCurve(
             canvas,
             fromWorldPos.x + from.width,
             fromWorldPos.y + from.height / 2f,
@@ -1703,17 +1057,6 @@ class CustomView(
         )
     }
 
-    private fun containerGetUsableArea(
-        container: BlockView
-    ): RectF {
-        return RectF(
-            blockStandardContentPadding,
-            containerTitleHeight + blockStandardContentPadding,
-            container.width - blockStandardContentPadding,
-            container.height - blockStandardContentPadding
-        )
-    }
-
     private fun moveBlock(
         node: BlockView,
         dx: Float,
@@ -1728,152 +1071,6 @@ class CustomView(
         updateContainerMembership(node)
 
         invalidate()
-    }
-
-    private fun updateContainerMembership(
-        node: BlockView
-    ) {
-        val currentContainer = node.model!!.parent
-
-        var target: BlockView? = null
-
-        for (container in model!!.blocks) {
-            if (container.type !=
-                BlockController.Type.CONTAINER
-            ) {
-                continue
-            }
-
-            if (container == currentContainer) {
-                continue
-            }
-
-            if ( node == container ) {
-                continue
-            }
-
-            if (isDescendant(node, container.view!!)) {
-                continue
-            }
-
-            if (isAncestor(container.view!!, node)) {
-                continue
-            }
-
-            updateContainerBounds(container.view!!)
-
-            if (isBlockOverContainer(
-                    node,
-                    container.view!!
-                )
-            ) {
-                target = container.view!!
-                break
-            }
-        }
-
-        if (target != null) {
-            val nodeWorldPos = node.getWorldCoords()
-
-            if (currentContainer != null) {
-                model!!.onBlockExcluded(
-                    currentContainer.view!!,
-                    node
-                )
-
-                updateContainerBounds(
-                    currentContainer.view!!
-                )
-            }
-
-            val targetWorldPos = target.getWorldCoords()
-
-            node.x =
-                nodeWorldPos.x - targetWorldPos.x
-
-            node.y =
-                nodeWorldPos.y - targetWorldPos.y
-
-            model!!.onBlockIncluded(
-                target,
-                node
-            )
-
-            updateContainerBounds(
-                target
-            )
-
-            return
-        }
-
-        if (
-            currentContainer != null &&
-            !isBlockOverContainer(
-                node,
-                currentContainer.view!!
-            )
-        ) {
-            /*
-            * node.x / node.y are currently relative to the
-            * current container. Preserve the absolute position
-            * before removing the parent.
-            */
-            val nodeWorldPos =
-                node.getWorldCoords()
-
-            model?.onBlockExcluded(
-                currentContainer.view!!,
-                node
-            )
-
-            /*
-            * The node is now a root node, so its local coordinates
-            * are its world coordinates.
-            */
-            node.x =
-                nodeWorldPos.x
-
-            node.y =
-                nodeWorldPos.y
-
-            updateContainerBounds(
-                currentContainer.view!!
-            )
-        }
-    }
-
-    private fun isBlockOverContainer(
-        node: BlockView,
-        container: BlockView
-    ): Boolean {
-        if ( node == container ) {
-            return false
-        }
-        val nodeWorldPos = node.getWorldCoords()
-        val containerWorldPos = container.getWorldCoords()
-        val centerX =
-            nodeWorldPos.x + node.width / 2f
-
-        val centerY =
-            nodeWorldPos.y + node.height / 2f
-
-        containerRect.set(
-            containerWorldPos.x,
-            containerWorldPos.y,
-            containerWorldPos.x + container.width,
-            containerWorldPos.y + container.height
-        )
-
-        val result = containerRect.contains(
-            centerX,
-            centerY
-        )
-        if ( result ) {
-            logDebug("OVER CONTAINER node=${node.model!!.id} container=${container.model!!.id}")
-        } else {
-            logDebug("NOT OVER CONTAINER node=${node.model!!.id} (${centerX},${centerY}) container=${container.model!!.id} (${containerWorldPos.x},${containerWorldPos.y})")
-        }
-        return result
     }
 
     override fun onTouchEvent(
