@@ -14,14 +14,11 @@ import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sqrt
-import com.github.autodiag2.elm327emu.sim.serial.CustomController
 import androidx.core.content.ContextCompat
 import com.github.autodiag2.elm327emu.R
 import android.util.TypedValue
 import android.text.TextUtils
 import android.text.TextPaint
-import com.github.autodiag2.elm327emu.sim.serial.CustomController.BlockController
-import com.github.autodiag2.elm327emu.sim.serial.CustomController.LinkController
 
 class CustomView(
     context: Context,
@@ -32,42 +29,6 @@ class CustomView(
         public var x: Float = 0f,
         public var y: Float = 0f
     )
-    open class BlockView(
-        /**
-         * Relative to container
-         */
-        var x: Float,
-        /**
-         * Relative to container
-         */
-        var y: Float,
-        var width: Float = 260f,
-        var height: Float = 100f,
-        model: BlockController? = null
-    ) : ElementView<BlockController>(model = model) {
-        
-        private fun getWorldCoordsRecurse(node: BlockView): Coordinates {
-            if ( node.model!!.parent == null ) {
-                return Coordinates(node.x, node.y)
-            } else {
-                val coords = getWorldCoordsRecurse(node.model!!.parent!!.view!!)
-                coords.x += node.x
-                coords.y += node.y
-                return coords
-            }
-        }
-
-        /**
-         * Get absolute position from the node contained relative ones
-         */
-        public fun getWorldCoords(): Coordinates {
-            return getWorldCoordsRecurse(this)
-        }
-    }
-
-    open class LinkView(
-        model: LinkController? = null
-    ) : ElementView<LinkController>(model = model)
 
     interface Listener {
         fun onBlockClicked(node: BlockView)

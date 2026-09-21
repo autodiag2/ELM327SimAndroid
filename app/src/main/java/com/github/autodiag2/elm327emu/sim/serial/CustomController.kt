@@ -33,8 +33,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import com.github.autodiag2.elm327emu.sim.serial.CustomView.BlockView
-import com.github.autodiag2.elm327emu.sim.serial.CustomView.LinkView
 
 const val SCHEMA = "autodiag/sim/elm327/serialscript"
 const val VERSION = 1.0
@@ -46,40 +44,6 @@ class CustomController(
     public var view: CustomView
     private val stateMachine = StateMachine(this)
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-
-    open class BlockController(
-        var type: BlockController.Type,
-        var delay: Int = 0,
-        var text: String = "",
-        var match: String = "exact",
-        var includeEol: Boolean = false,
-        var interpretEscapes: Boolean = true,
-        var name: String = "",
-        view: BlockView? = null,
-        val children: MutableList<Int> = mutableListOf(),
-        var parent: BlockController? = null,
-        id: Int? = null
-    ) : ElementController<BlockView>(
-        view = view,
-        id = id
-    ) {
-        enum class Type {
-            DELAY,
-            RECV,
-            SEND,
-            CONTAINER
-        }
-    }
-
-    open class LinkController(
-        val from: Int,
-        val to: Int,
-        view: LinkView? = null,
-        id: Int? = null
-    ) : ElementController<LinkView>(
-        view = view,
-        id = id
-    )
 
     public val blocks = mutableListOf<BlockController>()
     public val links = mutableListOf<LinkController>()
