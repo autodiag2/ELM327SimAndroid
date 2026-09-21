@@ -47,12 +47,27 @@ class CustomController(
 
     open class ElementModel<V>(
         var view: V? = null,
-        var id: Int = gen_id_track()
+        id: Int? = null
     ) {
+        var id: Int = if (id == null) {
+            gen_id_track()
+        } else {
+            use_id(id)
+        }
+
         companion object {
             private var id_track: Int = 1
+
             public fun gen_id_track(): Int {
                 return id_track++
+            }
+
+            public fun use_id(id: Int): Int {
+                if (id_track <= id) {
+                    id_track = id + 1
+                }
+
+                return id
             }
         }
 
@@ -80,12 +95,11 @@ class CustomController(
         view: CustomView.Block? = null,
         val children: MutableList<Int> = mutableListOf(),
         var parent: Block? = null,
-        id: Int = ElementModel.gen_id_track()
+        id: Int? = null
     ) : ElementModel<CustomView.Block>(
         view = view,
         id = id
     ) {
-
         enum class Type {
             DELAY,
             RECV,
@@ -97,8 +111,12 @@ class CustomController(
     open class Link(
         val from: Int,
         val to: Int,
-        view: CustomView.Link? = null
-    ) : ElementModel<CustomView.Link>(view)
+        view: CustomView.Link? = null,
+        id: Int? = null
+    ) : ElementModel<CustomView.Link>(
+        view = view,
+        id = id
+    )
 
     public val blocks = mutableListOf<Block>()
     public val links = mutableListOf<Link>()
