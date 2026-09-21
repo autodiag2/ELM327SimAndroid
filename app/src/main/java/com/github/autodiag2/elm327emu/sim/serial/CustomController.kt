@@ -379,22 +379,6 @@ class CustomController(
         debugBlockTree()
     }
 
-    private fun blockTitle(block: BlockController): String {
-        return when (block.type) {
-            BlockController.Type.DELAY ->
-                "#${block.id}  Delay ${block.delay} ms"
-
-            BlockController.Type.RECV ->
-                "#${block.id}  Receive: ${block.text}"
-
-            BlockController.Type.SEND ->
-                "#${block.id}  Send: ${block.text}"
-
-            BlockController.Type.CONTAINER ->
-                "#${block.id}  ${block.name}"
-        }
-    }
-
     private fun editBlock(block: BlockController) {
         when (block.type) {
             BlockController.Type.DELAY -> editDelay(block)
