@@ -6,6 +6,9 @@
         <item name="colorPrimaryDark">@color/sol_base3</item>
         <item name="colorAccent">@color/sol_blue</item>
         <item name="colorAccentInactive">@color/sol_green</item>
+        <item name="colorAccentSucess">@color/sol_green</item>
+        <item name="colorAccentInProgress">@color/sol_orange</item>
+        <item name="colorAccentFailed">@color/sol_red</item>
 
         <item name="colorControlNormal">?android:attr/textColor</item>
         

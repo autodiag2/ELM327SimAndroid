@@ -1,3 +1,6 @@
 <resources>
     <attr name="colorAccentInactive" format="color" />
+    <attr name="colorAccentSuccess" format="color" />
+    <attr name="colorAccentInProgress" format="color" />
+    <attr name="colorAccentFailed" format="color" />
 </resources>

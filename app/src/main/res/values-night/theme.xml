@@ -7,7 +7,10 @@
         <item name="colorAccent">@color/sol_blue</item>
         <item name="colorControlNormal">?android:attr/textColor</item>
         <item name="colorAccentInactive">@color/sol_green</item>
-
+        <item name="colorAccentSucess">@color/sol_green</item>
+        <item name="colorAccentInProgress">@color/sol_orange</item>
+        <item name="colorAccentFailed">@color/sol_red</item>
+        
         <item name="android:statusBarColor">?attr/colorPrimary</item>
         <item name="android:windowLightStatusBar">false</item>
 
