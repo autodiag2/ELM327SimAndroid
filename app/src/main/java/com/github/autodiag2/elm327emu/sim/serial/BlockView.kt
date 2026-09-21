@@ -43,6 +43,8 @@ open class BlockView(
         private val portRadius = 20f
         private val rect = RectF()
         private val portPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+        private val executionIndicatorRadius = 7f
+        private val executionIndicatorPadding = 10f
 
         init {
             paint.style = Paint.Style.FILL
@@ -53,6 +55,34 @@ open class BlockView(
 
     init {
         textPaint.textSize = getTextSize()
+    }
+
+    private fun getExecutionColor(
+        block: BlockController
+    ): Int? {
+        val state =
+            parentView.model!!
+                .getBlockState(block)
+
+        return when (state) {
+            StateMachine.BlockState.IDLE ->
+                null
+
+            StateMachine.BlockState.IN_PROGRESS ->
+                getThemeColor(
+                    R.attr.colorAccentInProgress
+                )
+
+            StateMachine.BlockState.SUCCESS ->
+                getThemeColor(
+                    R.attr.colorAccentSuccess
+                )
+
+            StateMachine.BlockState.FAILED ->
+                getThemeColor(
+                    R.attr.colorAccentFailed
+                )
+        }
     }
 
     // ----- Temp region -----
@@ -291,6 +321,31 @@ open class BlockView(
         return parentView.model!!.isBlockSelected(model!!)
     }
 
+    private fun drawExecutionIndicator(
+        canvas: Canvas,
+        nodeWorldPos: Coordinates
+    ) {
+        val executionColor =
+            getExecutionColor(model!!)
+
+        if (executionColor == null) {
+            return
+        }
+
+        paint.style = Paint.Style.FILL
+        paint.color = executionColor
+
+        canvas.drawCircle(
+            nodeWorldPos.x +
+                executionIndicatorPadding +
+                executionIndicatorRadius,
+            nodeWorldPos.y +
+                executionIndicatorPadding +
+                executionIndicatorRadius,
+            executionIndicatorRadius,
+            paint
+        )
+    }
     public fun draw(
         canvas: Canvas,
         drawn: MutableSet<Int>
@@ -352,6 +407,11 @@ open class BlockView(
             paint
         )
 
+        drawExecutionIndicator(
+            canvas,
+            nodeWorldPos
+        )
+
         /*
         * ------------------------------------------------------------
         * Block border
@@ -367,12 +427,11 @@ open class BlockView(
                 blockBorderWidth
             }
 
-        paint.color =
-            if (selected) {
-                accentColor
-            } else {
-                textColor
-            }
+        paint.color = if (selected) {
+                    accentColor
+                } else {
+                    textColor
+                }
 
         canvas.drawRoundRect(
             rect,

@@ -39,16 +39,17 @@ const val VERSION = 1.0
 
 class CustomController(
     public val activity: MainActivity
-) : LinearLayout(activity), CustomView.Listener, JsonConfigurable {
+) : LinearLayout(activity), CustomView.Listener, JsonConfigurable, StateMachine.Listener {
 
     public var view: CustomView
-    private val stateMachine = StateMachine(this)
+    private val stateMachine = StateMachine(this, this)
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     public val blocks = mutableListOf<BlockController>()
     public val links = mutableListOf<LinkController>()
     val selectedBlocks = mutableSetOf<Int>()
     val selectedLinks = mutableSetOf<Pair<Int, Int>>()
+    private val blockStates = mutableMapOf<Int, StateMachine.BlockState>()
 
     public lateinit var emuInput: PipedOutputStream
     public lateinit var emuOutput: PipedInputStream
@@ -66,7 +67,30 @@ class CustomController(
         view.model = this
     }
 
-    // ------------ Listeners ------------
+    // ------------ listener state machine ------------
+    override fun onBlockStateChanged(
+        block: BlockController,
+        state: StateMachine.BlockState
+    ) {
+        blockStates[block.id] = state
+
+        activity.runOnUiThread {
+            view.refresh()
+        }
+    }
+    // ------------ end listener state machine ------------
+    fun getBlockState(
+        block: BlockController
+    ): StateMachine.BlockState {
+        return blockStates[block.id]
+            ?: StateMachine.BlockState.IDLE
+    }
+    fun resetBlockStates() {
+        blockStates.clear()
+        view.refresh()
+    }
+
+    // ------------ Listeners of view ------------
     override fun onBlockClicked(
         block: BlockView
     ) {
@@ -141,7 +165,7 @@ class CustomController(
         selectedLinks.clear()
     }
 
-    // ------------ End Listeners ------------
+    // ------------ End Listeners view ------------
 
     // ------------ StateMachine ------------
 

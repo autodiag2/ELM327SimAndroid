@@ -10,7 +10,8 @@ import java.io.InputStream
 import java.io.OutputStream
 
 class StateMachine(
-    private val controller: CustomController
+    private val controller: CustomController,
+    private val listener: Listener? = null
 ) {
     enum class State {
         READY,
@@ -37,6 +38,20 @@ class StateMachine(
         data object Stop : Event()
         data class Receive(val bytes: ByteArray) : Event()
         data object Tick : Event()
+    }
+
+    enum class BlockState {
+        IDLE,
+        IN_PROGRESS,
+        SUCCESS,
+        FAILED
+    }
+
+    interface Listener {
+        fun onBlockStateChanged(
+            block: BlockController,
+            state: BlockState
+        )
     }
 
     private val scope =
@@ -75,6 +90,16 @@ class StateMachine(
         stateJob = scope.launch {
             stateLoop()
         }
+    }
+
+    private fun setBlockState(
+        block: BlockController,
+        state: BlockState
+    ) {
+        listener?.onBlockStateChanged(
+            block,
+            state
+        )
     }
 
     private fun startInputReader() {
@@ -268,7 +293,7 @@ class StateMachine(
 
     private fun handleStart() {
         handleStop()
-
+        controller.resetBlockStates()
         /*
          * Execution roots are blocks with NO incoming execution link.
          *
@@ -334,6 +359,10 @@ class StateMachine(
                 State.WAIT_DELAY -> {
                     if (now >= path.wakeTime) {
                         path.state = State.READY
+                        setBlockState(
+                            path.block,
+                            BlockState.SUCCESS
+                        )
                         execute(path)
                     }
                 }
@@ -388,7 +417,10 @@ class StateMachine(
                 "path=${path.id} " +
                 "block=$blockId"
         )
-
+        setBlockState(
+            block,
+            BlockState.IN_PROGRESS
+        )
         when (blockType) {
             BlockController.Type.DELAY -> {
                 path.wakeTime =
@@ -400,6 +432,10 @@ class StateMachine(
 
             BlockController.Type.SEND -> {
                 executeSend(block)
+                setBlockState(
+                    block,
+                    BlockState.SUCCESS
+                )
                 advance(path)
             }
 
@@ -408,6 +444,10 @@ class StateMachine(
             }
 
             BlockController.Type.CONTAINER -> {
+                setBlockState(
+                    block,
+                    BlockState.SUCCESS
+                )
                 advance(path)
             }
         }
@@ -505,9 +545,16 @@ class StateMachine(
                         "path=${path.id} " +
                         "block=${path.block.id}"
                 )
-
+                setBlockState(
+                    path.block,
+                    BlockState.SUCCESS
+                )
                 advance(path)
             } else {
+                setBlockState(
+                    path.block,
+                    BlockState.FAILED
+                )
                 path.state = State.FINISHED
             }
         }
