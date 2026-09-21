@@ -37,7 +37,7 @@ open class ElementController<V>(
 }
 
 open class ElementView<M>(
-    protected val context: Context,
+    public val context: Context,
     var model: M? = null
 ) {
     fun modelLink(model_arg: M) {

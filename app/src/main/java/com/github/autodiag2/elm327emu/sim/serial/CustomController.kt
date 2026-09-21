@@ -70,9 +70,7 @@ class CustomController(
     override fun onBlockClicked(
         node: BlockView
     ) {
-        blocks.find { it.id == node.model!!.id }?.let {
-            editBlock(it)
-        }
+        node.model!!.edit()
     }
 
     override fun onLinkToBlock(
@@ -379,15 +377,6 @@ class CustomController(
         debugBlockTree()
     }
 
-    private fun editBlock(block: BlockController) {
-        when (block.type) {
-            BlockController.Type.DELAY -> editDelay(block)
-            BlockController.Type.RECV -> editReceive(block)
-            BlockController.Type.SEND -> editSend(block)
-            BlockController.Type.CONTAINER -> editContainer(block)
-        }
-    }
-
     private fun getScriptName(): String {
         return "TODO.json"
     }
@@ -552,138 +541,6 @@ class CustomController(
         view.refresh()
     }
     // ------- End Action Menu listerner -------
-    
-    private fun editDelay(block: BlockController) {
-        val input = EditText(activity).apply {
-            inputType = InputType.TYPE_CLASS_NUMBER
-            setText(block.delay.toString())
-        }
-
-        android.app.AlertDialog.Builder(activity)
-            .setTitle(R.string.sim_custom_serial_script_delay)
-            .setView(input)
-            .setPositiveButton(android.R.string.ok) { _, _ ->
-                block.delay = input.text.toString().toIntOrNull() ?: 0
-                view.refresh()
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
-    }
-
-    private fun editReceive(block: BlockController) {
-        val layout = LinearLayout(activity).apply {
-            orientation = VERTICAL
-            setPadding(dp(16))
-        }
-
-        val mode = Spinner(activity)
-
-        mode.adapter = ArrayAdapter(
-            activity,
-            android.R.layout.simple_spinner_item,
-            listOf(
-                "Exact",
-                "Regular expression"
-            )
-        )
-
-        mode.setSelection(
-            if (block.match == "regex") 1 else 0
-        )
-
-        val initial_text = EditText(activity).apply {
-            hint = "Pattern"
-            setText(block.text)
-            inputType =
-                InputType.TYPE_CLASS_TEXT or
-                InputType.TYPE_TEXT_FLAG_MULTI_LINE
-        }
-
-        val escapes = CheckBox(activity).apply {
-            text = "Interpret \\r, \\n, \\xhh..."
-            isChecked = block.interpretEscapes
-        }
-
-        layout.addView(mode)
-        layout.addView(initial_text)
-        layout.addView(escapes)
-
-        android.app.AlertDialog.Builder(activity)
-            .setTitle(R.string.sim_custom_serial_script_receive)
-            .setView(layout)
-            .setPositiveButton(android.R.string.ok) { _, _ ->
-                block.match =
-                    if (mode.selectedItemPosition == 1) {
-                        "regex"
-                    } else {
-                        "exact"
-                    }
-
-                block.text = initial_text.text.toString()
-                block.interpretEscapes = escapes.isChecked
-
-                view.refresh()
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
-    }
-
-    private fun editSend(block: BlockController) {
-        val layout = LinearLayout(activity).apply {
-            orientation = VERTICAL
-            setPadding(dp(16))
-        }
-
-        val initial_text = EditText(activity).apply {
-            hint = "ASCII text"
-            setText(block.text)
-            inputType =
-                InputType.TYPE_CLASS_TEXT or
-                InputType.TYPE_TEXT_FLAG_MULTI_LINE
-        }
-
-        val eol = CheckBox(activity).apply {
-            text = "Automatically append EOL"
-            isChecked = block.includeEol
-        }
-
-        val escapes = CheckBox(activity).apply {
-            text = "Interpret \\r, \\n, \\xhh..."
-            isChecked = block.interpretEscapes
-        }
-
-        layout.addView(initial_text)
-        layout.addView(eol)
-        layout.addView(escapes)
-
-        android.app.AlertDialog.Builder(activity)
-            .setTitle(R.string.sim_custom_serial_script_send)
-            .setView(layout)
-            .setPositiveButton(android.R.string.ok) { _, _ ->
-                block.text = initial_text.text.toString()
-                block.includeEol = eol.isChecked
-                block.interpretEscapes = escapes.isChecked
-                view.refresh()
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
-    }
-
-    private fun editContainer(block: BlockController) {
-        val input = EditText(activity).apply {
-            setText(block.name)
-        }
-
-        android.app.AlertDialog.Builder(activity)
-            .setTitle(R.string.sim_custom_serial_script_container)
-            .setView(input)
-            .setPositiveButton(android.R.string.ok) { _, _ ->
-                block.name = input.text.toString()
-                view.refresh()
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
-    }
 
     fun isSomeSelection(): Boolean {
         return !selectedBlocks.isEmpty() || !selectedLinks.isEmpty()
@@ -1208,7 +1065,7 @@ class CustomController(
         debugBlockTree()
     }
 
-    private fun dp(value: Int): Int {
+    public fun dp(value: Int): Int {
         return (value * resources.displayMetrics.density).toInt()
     }
 

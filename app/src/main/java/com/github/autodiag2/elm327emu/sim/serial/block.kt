@@ -1,15 +1,22 @@
 package com.github.autodiag2.elm327emu.sim.serial
 
-import com.github.autodiag2.elm327emu.sim.serial.CustomView.Coordinates
-
 // view imports
-import android.text.TextPaint
-import android.graphics.Paint
-import kotlin.math.max
-import android.graphics.RectF
-import android.graphics.Canvas
+import com.github.autodiag2.elm327emu.R
+import com.github.autodiag2.elm327emu.sim.serial.CustomView.Coordinates
 import android.content.Context
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.RectF
+import android.text.InputType
+import android.text.TextPaint
 import android.text.TextUtils
+import android.widget.ArrayAdapter
+import android.widget.CheckBox
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.Spinner
+import kotlin.math.max
+import androidx.core.view.setPadding
 // End view imports
 
 open class BlockController(
@@ -34,6 +41,158 @@ open class BlockController(
         SEND,
         CONTAINER
     }
+
+    fun viewRefresh() {
+        view!!.parentView.refresh()
+    }
+
+    public fun edit() {
+        when (type) {
+            Type.DELAY -> editDelay()
+            Type.RECV -> editReceive()
+            Type.SEND -> editSend()
+            Type.CONTAINER -> editContainer()
+        }
+    }
+
+    private fun editDelay() {
+        val input = EditText(view!!.context).apply {
+            inputType = InputType.TYPE_CLASS_NUMBER
+            setText(delay.toString())
+        }
+
+        android.app.AlertDialog.Builder(view!!.context)
+            .setTitle(R.string.sim_custom_serial_script_delay)
+            .setView(input)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                delay = input.text.toString().toIntOrNull() ?: 0
+                viewRefresh()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun editReceive() {
+        val layout = LinearLayout(view!!.context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16))
+        }
+
+        val mode = Spinner(view!!.context)
+
+        mode.adapter = ArrayAdapter(
+            view!!.context,
+            android.R.layout.simple_spinner_item,
+            listOf(
+                "Exact",
+                "Regular expression"
+            )
+        )
+
+        mode.setSelection(
+            if (match == "regex") 1 else 0
+        )
+
+        val initial_text = EditText(view!!.context).apply {
+            hint = "Pattern"
+            setText(text)
+            inputType =
+                InputType.TYPE_CLASS_TEXT or
+                InputType.TYPE_TEXT_FLAG_MULTI_LINE
+        }
+
+        val escapes = CheckBox(view!!.context).apply {
+            text = "Interpret \\r, \\n, \\xhh..."
+            isChecked = interpretEscapes
+        }
+
+        layout.addView(mode)
+        layout.addView(initial_text)
+        layout.addView(escapes)
+
+        android.app.AlertDialog.Builder(view!!.context)
+            .setTitle(R.string.sim_custom_serial_script_receive)
+            .setView(layout)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                match =
+                    if (mode.selectedItemPosition == 1) {
+                        "regex"
+                    } else {
+                        "exact"
+                    }
+
+                text = initial_text.text.toString()
+                interpretEscapes = escapes.isChecked
+
+                viewRefresh()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun editSend() {
+        val layout = LinearLayout(view!!.context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16))
+        }
+
+        val initial_text = EditText(view!!.context).apply {
+            hint = "ASCII text"
+            setText(text)
+            inputType =
+                InputType.TYPE_CLASS_TEXT or
+                InputType.TYPE_TEXT_FLAG_MULTI_LINE
+        }
+
+        val eol = CheckBox(view!!.context).apply {
+            text = "Automatically append EOL"
+            isChecked = includeEol
+        }
+
+        val escapes = CheckBox(view!!.context).apply {
+            text = "Interpret \\r, \\n, \\xhh..."
+            isChecked = interpretEscapes
+        }
+
+        layout.addView(initial_text)
+        layout.addView(eol)
+        layout.addView(escapes)
+
+        android.app.AlertDialog.Builder(view!!.context)
+            .setTitle(R.string.sim_custom_serial_script_send)
+            .setView(layout)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                text = initial_text.text.toString()
+                includeEol = eol.isChecked
+                interpretEscapes = escapes.isChecked
+                viewRefresh()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun editContainer() {
+        val input = EditText(view!!.context).apply {
+            setText(name)
+        }
+
+        android.app.AlertDialog.Builder(view!!.context)
+            .setTitle(R.string.sim_custom_serial_script_container)
+            .setView(input)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                name = input.text.toString()
+                viewRefresh()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    // TEMP area
+    fun dp(amount: Int): Int {
+        return view!!.parentView!!.model!!.dp(amount)
+    }
+    // End TEMP area
+
 }
 open class BlockView(
     /**
@@ -48,7 +207,7 @@ open class BlockView(
     var width: Float = 260f,
     var height: Float = 100f,
     model: BlockController? = null,
-    protected val parentView: CustomView
+    public val parentView: CustomView
 ) : ElementView<BlockController>(model = model, context = context) {
     
     companion object {
@@ -436,7 +595,7 @@ open class BlockView(
             *     title
             *     summary
             *
-            * both centered in the block.
+            * both centered in the 
             */
             val title = model!!.name
 
