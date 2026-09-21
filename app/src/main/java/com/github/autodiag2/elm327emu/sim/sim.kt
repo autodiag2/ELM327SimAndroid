@@ -25,6 +25,8 @@ import org.json.JSONObject
 import java.io.File
 import com.github.autodiag2.elm327emu.IgnitionState
 import com.github.autodiag2.elm327emu.sim.serial.CustomController
+import android.widget.AdapterView
+import android.view.View
 
 class Sim(
     private val activity: MainActivity
@@ -42,6 +44,11 @@ class Sim(
         const val SCHEMA_VERSION: Double = 1.0
 
     }
+
+    private data class CustomSerialExample(
+        val name: String,
+        val resourceId: Int
+    )
 
     init {
         LayoutInflater.from(context).inflate(R.layout.sim, this, true)
@@ -109,6 +116,116 @@ class Sim(
             }
         }
         buildAddECUToGUI(Ecu.DEFAULT_ADDRESS, getString(R.string.sim_ecu_gui_ecu_name), EcuType.gui)
+        setupCustomSerialScripts()
+    }
+
+    private fun getCustomSerialExamples(): List<CustomSerialExample> {
+        val fields = R.raw::class.java.fields
+
+        return fields
+            .filter {
+                it.name.startsWith("customserial_")
+            }
+            .mapNotNull { field ->
+                try {
+                    CustomSerialExample(
+                        name = field.name
+                            .removePrefix("customserial_")
+                            .removeSuffix("_json")
+                            .replace('_', ' '),
+                        resourceId = field.getInt(null)
+                    )
+                } catch (_: Exception) {
+                    null
+                }
+            }
+            .sortedBy { it.name }
+    }
+
+    private fun setupCustomSerialScripts() {
+        val spinner =
+            findViewById<Spinner>(
+                R.id.custom_serial_script_spinner
+            )
+
+        val examples =
+            getCustomSerialExamples()
+
+        val adapter =
+            ArrayAdapter(
+                context,
+                android.R.layout.simple_spinner_item,
+                examples.map { it.name }
+            )
+
+        adapter.setDropDownViewResource(
+            android.R.layout.simple_spinner_dropdown_item
+        )
+
+        spinner.adapter = adapter
+
+        val defaultIndex =
+            examples.indexOfFirst {
+                it.name == "elm327 basic"
+            }
+
+        if (defaultIndex >= 0) {
+            spinner.setSelection(
+                defaultIndex,
+                false
+            )
+        }
+
+        spinner.onItemSelectedListener =
+            object : AdapterView.OnItemSelectedListener {
+
+                override fun onItemSelected(
+                    parent: AdapterView<*>?,
+                    view: View?,
+                    position: Int,
+                    id: Long
+                ) {
+                    val example =
+                        examples.getOrNull(position)
+                            ?: return
+
+                    loadCustomSerialExample(
+                        example.resourceId
+                    )
+                }
+
+                override fun onNothingSelected(
+                    parent: AdapterView<*>?
+                ) {
+                }
+            }
+    }
+
+    private fun loadCustomSerialExample(
+        resourceId: Int
+    ) {
+        try {
+            val text =
+                resources
+                    .openRawResource(resourceId)
+                    .bufferedReader()
+                    .use { it.readText() }
+
+            val json =
+                JSONObject(text)
+
+            customSerialScreen.fromJson(json) { error ->
+                activity.appendLog(
+                    "Custom serial script: $error",
+                    LogLevel.ERROR
+                )
+            }
+        } catch (e: Exception) {
+            activity.appendLog(
+                "Cannot load custom serial script: ${e.message}",
+                LogLevel.ERROR
+            )
+        }
     }
 
     public fun isRunning(): Boolean {
