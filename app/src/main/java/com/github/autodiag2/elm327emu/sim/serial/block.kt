@@ -1,5 +1,8 @@
 package com.github.autodiag2.elm327emu.sim.serial
 
+import org.json.JSONArray
+import org.json.JSONObject
+
 // view imports
 import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.sim.serial.CustomView.Coordinates
@@ -46,6 +49,164 @@ open class BlockController(
         view!!.parentView.refresh()
     }
 
+    fun toJson(): JSONObject {
+        val jsonBlock = JSONObject()
+
+        jsonBlock.put(
+            "id",
+            id
+        )
+
+        when (type) {
+            BlockController.Type.DELAY -> {
+                jsonBlock.put(
+                    "type",
+                    "delay"
+                )
+
+                val value = JSONObject()
+                value.put(
+                    "name",
+                    name
+                )
+                value.put(
+                    "delay",
+                    delay
+                )
+                jsonBlock.put(
+                    "content",
+                    value
+                )
+            }
+
+            BlockController.Type.RECV -> {
+                jsonBlock.put(
+                    "type",
+                    "recv"
+                )
+
+                val value = JSONObject()
+
+                value.put(
+                    "name",
+                    name
+                )
+
+                value.put(
+                    "match",
+                    match
+                )
+
+                value.put(
+                    "text",
+                    text
+                )
+
+                value.put(
+                    "interpret_esc",
+                    interpretEscapes
+                )
+
+                jsonBlock.put(
+                    "content",
+                    value
+                )
+            }
+
+            BlockController.Type.SEND -> {
+                jsonBlock.put(
+                    "type",
+                    "send"
+                )
+
+                val value = JSONObject()
+
+                value.put(
+                    "name",
+                    name
+                )
+
+                value.put(
+                    "text",
+                    text
+                )
+
+                value.put(
+                    "include_eol",
+                    includeEol
+                )
+
+                value.put(
+                    "interpret_esc",
+                    interpretEscapes
+                )
+
+                jsonBlock.put(
+                    "content",
+                    value
+                )
+            }
+
+            BlockController.Type.CONTAINER -> {
+                jsonBlock.put(
+                    "type",
+                    "container"
+                )
+
+                val value = JSONObject()
+
+                value.put(
+                    "name",
+                    name
+                )
+
+                val childrenJson = JSONArray()
+
+                for (child in children) {
+                    childrenJson.put(child)
+                }
+
+                value.put(
+                    "blocks",
+                    childrenJson
+                )
+
+                jsonBlock.put(
+                    "content",
+                    value
+                )
+            }
+        }
+
+        /*
+        * View position.
+        *
+        * x/y remain in the block's current coordinate system:
+        * root blocks use world coordinates,
+        * child blocks use coordinates relative to their container.
+        */
+        val blockView = view
+
+        if (blockView != null) {
+            val view = JSONObject()
+
+            view.put(
+                "x",
+                blockView.x
+            )
+
+            view.put(
+                "y",
+                blockView.y
+            )
+
+            jsonBlock.put(
+                "view",
+                view
+            )
+        }
+        return jsonBlock
+    }
     public fun edit() {
         when (type) {
             Type.DELAY -> editDelay()
