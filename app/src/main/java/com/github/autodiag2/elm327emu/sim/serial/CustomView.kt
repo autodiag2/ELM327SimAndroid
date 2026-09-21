@@ -20,6 +20,7 @@ import com.github.autodiag2.elm327emu.R
 import android.util.TypedValue
 import android.text.TextUtils
 import android.text.TextPaint
+import com.github.autodiag2.elm327emu.sim.serial.*
 
 class CustomView(
     context: Context,
@@ -42,7 +43,7 @@ class CustomView(
         var width: Float = 260f,
         var height: Float = 100f,
         model: CustomController.Block? = null
-    ) : CustomController.ElementView<CustomController.Block>(model = model) {
+    ) : ElementView<CustomController.Block>(model = model) {
         
         private fun getWorldCoordsRecurse(node: Block): Coordinates {
             if ( node.model!!.parent == null ) {
@@ -65,15 +66,15 @@ class CustomView(
 
     open class Link(
         model: CustomController.Link? = null
-    ) : CustomController.ElementView<CustomController.Link>(model = model)
+    ) : ElementView<CustomController.Link>(model = model)
 
     interface Listener {
         fun onBlockClicked(node: Block)
         fun onLinkToBlock(from: Block, to: Block)
         fun onBlockIncluded(parent: Block, child: Block)
         fun onBlockExcluded(parent: Block, child: Block)
-        fun onElementSelected(element: CustomController.ElementView<*>)
-        fun onElementUnselected(element: CustomController.ElementView<*>)
+        fun onElementSelected(element: ElementView<*>)
+        fun onElementUnselected(element: ElementView<*>)
         fun onUnselectAll()
     }
 

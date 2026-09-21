@@ -33,6 +33,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import com.github.autodiag2.elm327emu.sim.serial.*
 
 const val SCHEMA = "autodiag/sim/elm327/serialscript"
 const val VERSION = 1.0
@@ -44,45 +45,6 @@ class CustomController(
     public var view: CustomView
     private val stateMachine = StateMachine(this)
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-
-    open class ElementModel<V>(
-        var view: V? = null,
-        id: Int? = null
-    ) {
-        var id: Int = if (id == null) {
-            gen_id_track()
-        } else {
-            use_id(id)
-        }
-
-        companion object {
-            private var id_track: Int = 1
-
-            public fun gen_id_track(): Int {
-                return id_track++
-            }
-
-            public fun use_id(id: Int): Int {
-                if (id_track <= id) {
-                    id_track = id + 1
-                }
-
-                return id
-            }
-        }
-
-        fun viewLink(view_arg: V) {
-            view = view_arg
-        }
-    }
-
-    open class ElementView<M>(
-        var model: M? = null
-    ) {
-        fun modelLink(model_arg: M) {
-            model = model_arg
-        }
-    }
 
     open class Block(
         var type: Block.Type,
@@ -96,7 +58,7 @@ class CustomController(
         val children: MutableList<Int> = mutableListOf(),
         var parent: Block? = null,
         id: Int? = null
-    ) : ElementModel<CustomView.Block>(
+    ) : ElementController<CustomView.Block>(
         view = view,
         id = id
     ) {
@@ -113,7 +75,7 @@ class CustomController(
         val to: Int,
         view: CustomView.Link? = null,
         id: Int? = null
-    ) : ElementModel<CustomView.Link>(
+    ) : ElementController<CustomView.Link>(
         view = view,
         id = id
     )
@@ -195,7 +157,7 @@ class CustomController(
     }
 
     override fun onElementUnselected(
-        element: CustomController.ElementView<*>
+        element: ElementView<*>
     ) {
         when (element) {
             is CustomView.Block -> {
