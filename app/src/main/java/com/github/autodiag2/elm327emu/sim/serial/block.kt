@@ -45,6 +45,107 @@ open class BlockController(
         CONTAINER
     }
 
+    companion object {
+        fun fromJson(jsonBlock: JSONObject, id: Int, parseErrorHandler: ((String) -> Unit)?): BlockController? {
+            val typeString =
+                jsonBlock.getString("type")
+
+            val type =
+                when (typeString) {
+                    "delay" -> Type.DELAY
+                    "recv" -> Type.RECV
+                    "send" -> Type.SEND
+                    "container" -> Type.CONTAINER
+                    else -> {
+                        parseErrorHandler?.invoke(
+                            "Unknown block type: $typeString"
+                        )
+                        return null
+                    }
+                }
+
+            val blockContent = jsonBlock.getJSONObject("content")
+            return when (type) {
+                    BlockController.Type.DELAY -> {
+                        BlockController(
+                            type = type,
+                            delay = blockContent.optInt("delay", 10),
+                            name = blockContent.optString("name", "Delay"),
+                            id = id,
+                        )
+                    }
+
+                    BlockController.Type.RECV -> {
+                        BlockController(
+                            type = type,
+                            name = blockContent.optString("name", "Recv"),
+                            match = blockContent.optString(
+                                "match",
+                                "exact"
+                            ),
+                            text = blockContent.optString(
+                                "text",
+                                ""
+                            ),
+                            interpretEscapes =
+                                blockContent.optBoolean(
+                                    "interpret_esc",
+                                    true
+                                ),
+                            id = id
+                        )
+                    }
+
+                    BlockController.Type.SEND -> {
+                        BlockController(
+                            type = type,
+                            name = blockContent.optString("name", "Send"),
+                            text = blockContent.optString(
+                                "text",
+                                ""
+                            ),
+                            includeEol =
+                                blockContent.optBoolean(
+                                    "include_eol",
+                                    false
+                                ),
+                            interpretEscapes =
+                                blockContent.optBoolean(
+                                    "interpret_esc",
+                                    true
+                                ),
+                            id = id
+                        )
+                    }
+
+                    BlockController.Type.CONTAINER -> {
+                        val children =
+                            mutableListOf<Int>()
+
+                        val jsonChildren =
+                            blockContent.optJSONArray("blocks")
+
+                        if (jsonChildren != null) {
+                            for (j in 0 until jsonChildren.length()) {
+                                children.add(
+                                    jsonChildren.getInt(j)
+                                )
+                            }
+                        }
+
+                        BlockController(
+                            type = type,
+                            name = blockContent.optString(
+                                "name",
+                                ""
+                            ),
+                            children = children,
+                            id = id
+                        )
+                    }
+                }
+        }
+    }
     fun viewRefresh() {
         view!!.parentView.refresh()
     }
