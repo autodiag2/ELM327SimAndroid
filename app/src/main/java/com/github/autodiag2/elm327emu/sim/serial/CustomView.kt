@@ -20,7 +20,8 @@ import com.github.autodiag2.elm327emu.R
 import android.util.TypedValue
 import android.text.TextUtils
 import android.text.TextPaint
-import com.github.autodiag2.elm327emu.sim.serial.*
+import com.github.autodiag2.elm327emu.sim.serial.CustomController.BlockController
+import com.github.autodiag2.elm327emu.sim.serial.CustomController.LinkController
 
 class CustomView(
     context: Context,
@@ -31,7 +32,7 @@ class CustomView(
         public var x: Float = 0f,
         public var y: Float = 0f
     )
-    open class Block(
+    open class BlockView(
         /**
          * Relative to container
          */
@@ -42,10 +43,10 @@ class CustomView(
         var y: Float,
         var width: Float = 260f,
         var height: Float = 100f,
-        model: CustomController.Block? = null
-    ) : ElementView<CustomController.Block>(model = model) {
+        model: BlockController? = null
+    ) : ElementView<BlockController>(model = model) {
         
-        private fun getWorldCoordsRecurse(node: Block): Coordinates {
+        private fun getWorldCoordsRecurse(node: BlockView): Coordinates {
             if ( node.model!!.parent == null ) {
                 return Coordinates(node.x, node.y)
             } else {
@@ -64,15 +65,15 @@ class CustomView(
         }
     }
 
-    open class Link(
-        model: CustomController.Link? = null
-    ) : ElementView<CustomController.Link>(model = model)
+    open class LinkView(
+        model: LinkController? = null
+    ) : ElementView<LinkController>(model = model)
 
     interface Listener {
-        fun onBlockClicked(node: Block)
-        fun onLinkToBlock(from: Block, to: Block)
-        fun onBlockIncluded(parent: Block, child: Block)
-        fun onBlockExcluded(parent: Block, child: Block)
+        fun onBlockClicked(node: BlockView)
+        fun onLinkToBlock(from: BlockView, to: BlockView)
+        fun onBlockIncluded(parent: BlockView, child: BlockView)
+        fun onBlockExcluded(parent: BlockView, child: BlockView)
         fun onElementSelected(element: ElementView<*>)
         fun onElementUnselected(element: ElementView<*>)
         fun onUnselectAll()
@@ -111,10 +112,10 @@ class CustomView(
     private var offsetX = 0f
     private var offsetY = 0f
 
-    private var draggingBlock: Block? = null
+    private var draggingBlock: BlockView? = null
 
-    private var linkingFrom: Block? = null
-    private var hoveredDestination: Block? = null
+    private var linkingFrom: BlockView? = null
+    private var hoveredDestination: BlockView? = null
 
     private var linkX = 0f
     private var linkY = 0f
@@ -297,12 +298,12 @@ class CustomView(
     }
 
     private fun updateBlockContentSize(
-        block: CustomController.Block,
-        node: Block
+        block: BlockController,
+        node: BlockView
     ) {
         if (
             block.type ==
-            CustomController.Block.Type.CONTAINER
+            BlockController.Type.CONTAINER
         ) {
             return
         }
@@ -311,16 +312,16 @@ class CustomView(
 
         val summary =
             when (block.type) {
-                CustomController.Block.Type.DELAY ->
+                BlockController.Type.DELAY ->
                     "${block.delay}ms"
 
-                CustomController.Block.Type.SEND ->
+                BlockController.Type.SEND ->
                     block.text
 
-                CustomController.Block.Type.RECV ->
+                BlockController.Type.RECV ->
                     block.text
 
-                CustomController.Block.Type.CONTAINER ->
+                BlockController.Type.CONTAINER ->
                     ""
             }
 
@@ -407,8 +408,8 @@ class CustomView(
     }
 
     private fun isAncestor(
-        ancestor: Block,
-        node: Block
+        ancestor: BlockView,
+        node: BlockView
     ): Boolean {
         var current = node.model?.parent
 
@@ -424,8 +425,8 @@ class CustomView(
     }
 
     private fun isDescendant(
-        node: Block,
-        possibleDescendant: Block
+        node: BlockView,
+        possibleDescendant: BlockView
     ): Boolean {
         var current = possibleDescendant.model?.parent
 
@@ -478,9 +479,9 @@ class CustomView(
     }
 
     public fun addBlock(
-        model: CustomController.Block
-    ): Block {
-        val block = Block(
+        model: BlockController
+    ): BlockView {
+        val block = BlockView(
             0f,
             0f,
             model = model
@@ -520,7 +521,7 @@ class CustomView(
     }
 
     private fun findFreeBlockPosition(
-        block: Block,
+        block: BlockView,
         centerX: Float,
         centerY: Float,
         strength: Float
@@ -689,8 +690,8 @@ class CustomView(
         return score
     }
 
-    public fun addLink(model: CustomController.Link): Link {
-        return Link(model = model)
+    public fun addLink(model: LinkController): LinkView {
+        return LinkView(model = model)
     }
 
     override fun onDraw(
@@ -841,7 +842,7 @@ class CustomView(
     private fun updateAllContainerBounds() {
         for (block in model!!.blocks) {
             if (block.type ==
-                CustomController.Block.Type.CONTAINER
+                BlockController.Type.CONTAINER
             ) {
                 updateContainerBounds(block.view!!)
             }
@@ -849,7 +850,7 @@ class CustomView(
     }
 
     private fun updateContainerBounds(
-        container: Block
+        container: BlockView
     ) {
         val children =
             container.model!!.children.mapNotNull { childId ->
@@ -864,7 +865,7 @@ class CustomView(
         for (childBlock in children) {
             if (
                 childBlock.type ==
-                CustomController.Block.Type.CONTAINER
+                BlockController.Type.CONTAINER
             ) {
                 updateContainerBounds(
                     childBlock.view!!
@@ -967,7 +968,7 @@ class CustomView(
 
     private fun drawBlock(
         canvas: Canvas,
-        block: CustomController.Block,
+        block: BlockController,
         drawn: MutableSet<Int>
     ) {
         if (!drawn.add(block.id)) {
@@ -1012,7 +1013,7 @@ class CustomView(
 
         val isContainer =
             block.type ==
-                CustomController.Block.Type.CONTAINER
+                BlockController.Type.CONTAINER
 
         /*
         * ------------------------------------------------------------
@@ -1105,16 +1106,16 @@ class CustomView(
 
             val summary =
                 when (block.type) {
-                    CustomController.Block.Type.DELAY ->
+                    BlockController.Type.DELAY ->
                         "${block.delay}ms"
 
-                    CustomController.Block.Type.SEND ->
+                    BlockController.Type.SEND ->
                         block.text
 
-                    CustomController.Block.Type.RECV ->
+                    BlockController.Type.RECV ->
                         block.text
 
-                    CustomController.Block.Type.CONTAINER ->
+                    BlockController.Type.CONTAINER ->
                         ""
                 }
 
@@ -1303,7 +1304,7 @@ class CustomView(
 
     private fun drawPorts(
         canvas: Canvas,
-        node: Block
+        node: BlockView
     ) {
         val selected =
             model!!.isBlockSelected(node.model!!)
@@ -1396,8 +1397,8 @@ class CustomView(
 
     private fun drawLink(
         canvas: Canvas,
-        from: Block,
-        to: Block,
+        from: BlockView,
+        to: BlockView,
         paint: Paint
     ) {
         val fromWorldPos = from.getWorldCoords()
@@ -1434,12 +1435,12 @@ class CustomView(
     private fun findBlock(
         screenX: Float,
         screenY: Float
-    ): Block? {
+    ): BlockView? {
         val point = screenToWorld(screenX, screenY)
         val x = point.first
         val y = point.second
 
-        val candidates = mutableListOf<Block>()
+        val candidates = mutableListOf<BlockView>()
 
         for (block in model!!.blocks) {
             val node = block.view!!
@@ -1466,7 +1467,7 @@ class CustomView(
             } ?: candidates.first()
 
         var higherPriority = candidates.firstOrNull {
-                it.model!!.parent == null && it.model!!.type != CustomController.Block.Type.CONTAINER
+                it.model!!.parent == null && it.model!!.type != BlockController.Type.CONTAINER
             }
 
         while (true) {
@@ -1488,13 +1489,13 @@ class CustomView(
     private fun findSourcePort(
         screenX: Float,
         screenY: Float
-    ): Block? {
+    ): BlockView? {
         val point = screenToWorld(screenX, screenY)
 
         val x = point.first
         val y = point.second
 
-        var closest: Block? = null
+        var closest: BlockView? = null
         var closestDistance = Float.MAX_VALUE
 
         for (block in model!!.blocks) {
@@ -1526,13 +1527,13 @@ class CustomView(
     private fun findDestinationPort(
         screenX: Float,
         screenY: Float
-    ): Block? {
+    ): BlockView? {
         val point = screenToWorld(screenX, screenY)
 
         val x = point.first
         val y = point.second
 
-        var closest: Block? = null
+        var closest: BlockView? = null
         var closestDistance = Float.MAX_VALUE
 
         for (block in model!!.blocks) {
@@ -1564,7 +1565,7 @@ class CustomView(
     private fun findLink(
         screenX: Float,
         screenY: Float
-    ): Link? {
+    ): LinkView? {
         val point =
             screenToWorld(
                 screenX,
@@ -1606,8 +1607,8 @@ class CustomView(
     private fun isPointNearLink(
         x: Float,
         y: Float,
-        from: Block,
-        to: Block
+        from: BlockView,
+        to: BlockView
     ): Boolean {
         val fromWorldPos = from.getWorldCoords()
         val toWorldPos = to.getWorldCoords()
@@ -1742,7 +1743,7 @@ class CustomView(
     }
 
     private fun containerGetUsableArea(
-        container: Block
+        container: BlockView
     ): RectF {
         return RectF(
             blockStandardContentPadding,
@@ -1753,7 +1754,7 @@ class CustomView(
     }
 
     private fun moveBlock(
-        node: Block,
+        node: BlockView,
         dx: Float,
         dy: Float
     ) {
@@ -1769,15 +1770,15 @@ class CustomView(
     }
 
     private fun updateContainerMembership(
-        node: Block
+        node: BlockView
     ) {
         val currentContainer = node.model!!.parent
 
-        var target: Block? = null
+        var target: BlockView? = null
 
         for (container in model!!.blocks) {
             if (container.type !=
-                CustomController.Block.Type.CONTAINER
+                BlockController.Type.CONTAINER
             ) {
                 continue
             }
@@ -1881,8 +1882,8 @@ class CustomView(
     }
 
     private fun isBlockOverContainer(
-        node: Block,
-        container: Block
+        node: BlockView,
+        container: BlockView
     ): Boolean {
         if ( node == container ) {
             return false

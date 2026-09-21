@@ -33,7 +33,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import com.github.autodiag2.elm327emu.sim.serial.*
+import com.github.autodiag2.elm327emu.sim.serial.CustomView.BlockView
+import com.github.autodiag2.elm327emu.sim.serial.CustomView.LinkView
 
 const val SCHEMA = "autodiag/sim/elm327/serialscript"
 const val VERSION = 1.0
@@ -46,19 +47,19 @@ class CustomController(
     private val stateMachine = StateMachine(this)
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
-    open class Block(
-        var type: Block.Type,
+    open class BlockController(
+        var type: BlockController.Type,
         var delay: Int = 0,
         var text: String = "",
         var match: String = "exact",
         var includeEol: Boolean = false,
         var interpretEscapes: Boolean = true,
         var name: String = "",
-        view: CustomView.Block? = null,
+        view: BlockView? = null,
         val children: MutableList<Int> = mutableListOf(),
-        var parent: Block? = null,
+        var parent: BlockController? = null,
         id: Int? = null
-    ) : ElementController<CustomView.Block>(
+    ) : ElementController<BlockView>(
         view = view,
         id = id
     ) {
@@ -70,18 +71,18 @@ class CustomController(
         }
     }
 
-    open class Link(
+    open class LinkController(
         val from: Int,
         val to: Int,
-        view: CustomView.Link? = null,
+        view: LinkView? = null,
         id: Int? = null
-    ) : ElementController<CustomView.Link>(
+    ) : ElementController<LinkView>(
         view = view,
         id = id
     )
 
-    public val blocks = mutableListOf<Block>()
-    public val links = mutableListOf<Link>()
+    public val blocks = mutableListOf<BlockController>()
+    public val links = mutableListOf<LinkController>()
     val selectedBlocks = mutableSetOf<Int>()
     val selectedLinks = mutableSetOf<Pair<Int, Int>>()
 
@@ -103,7 +104,7 @@ class CustomController(
 
     // ------------ Listeners ------------
     override fun onBlockClicked(
-        node: CustomView.Block
+        node: BlockView
     ) {
         blocks.find { it.id == node.model!!.id }?.let {
             editBlock(it)
@@ -111,18 +112,18 @@ class CustomController(
     }
 
     override fun onLinkToBlock(
-        from: CustomView.Block,
-        to: CustomView.Block
+        from: BlockView,
+        to: BlockView
     ) {
-        val linkModel = Link(from.model!!.id, to.model!!.id)
+        val linkModel = LinkController(from.model!!.id, to.model!!.id)
         val linkView = view.addLink(model = linkModel)
         linkModel.view = linkView
         links.add(linkModel)
     }
 
     override fun onBlockIncluded(
-        parent: CustomView.Block,
-        child: CustomView.Block
+        parent: BlockView,
+        child: BlockView
     ) {
         assert(parent != child)
         if (! parent.model!!.children.contains(child.model!!.id)) {
@@ -133,8 +134,8 @@ class CustomController(
     }
 
     override fun onBlockExcluded(
-        parent: CustomView.Block,
-        child: CustomView.Block
+        parent: BlockView,
+        child: BlockView
     ) {
         assert(parent != child)
         parent.model!!.children.remove(child.model!!.id)
@@ -143,11 +144,11 @@ class CustomController(
 
     override fun onElementSelected(element: ElementView<*>) {
         when (element) {
-            is CustomView.Block -> {
+            is BlockView -> {
                 selectedBlocks.add(element.model!!.id)
             }
 
-            is CustomView.Link -> {
+            is LinkView -> {
                 val link = element.model!!
                 selectedLinks.add(
                     Pair(link.from, link.to)
@@ -160,11 +161,11 @@ class CustomController(
         element: ElementView<*>
     ) {
         when (element) {
-            is CustomView.Block -> {
+            is BlockView -> {
                 selectedBlocks.remove(element.model!!.id)
             }
 
-            is CustomView.Link -> {
+            is LinkView -> {
                 val link = element.model!!
                 selectedLinks.remove(
                     Pair(link.from, link.to)
@@ -220,7 +221,7 @@ class CustomController(
         val blockId = when (block) {
             is Int -> block
 
-            is Block ->
+            is BlockController ->
                 block.id
 
             null ->
@@ -253,7 +254,7 @@ class CustomController(
                 )
             }
 
-            is Link ->
+            is LinkController ->
                 Pair(
                     link.from,
                     link.to
@@ -269,7 +270,7 @@ class CustomController(
         return selectedLinks.contains(linkKey)
     }
 
-    fun toggleBlockSelection(block: Block) {
+    fun toggleBlockSelection(block: BlockController) {
         if (!selectedBlocks.add(block.id)) {
             selectedBlocks.remove(block.id)
         }
@@ -277,7 +278,7 @@ class CustomController(
         view.refresh()
     }
 
-    fun toggleLinkSelection(link: Link) {
+    fun toggleLinkSelection(link: LinkController) {
         val key = Pair(link.from, link.to)
 
         if (!selectedLinks.add(key)) {
@@ -329,11 +330,11 @@ class CustomController(
         var linko = link
         if ( link is Int ) {
             if ( 0 < link ) {
-                linko = links.find { it.id == link } as Link
+                linko = links.find { it.id == link } as LinkController
             }
         }
-        assert(linko is Link)
-        val linkm = linko as Link
+        assert(linko is LinkController)
+        val linkm = linko as LinkController
         selectedLinks.remove(
             Pair(
                 linkm.from,
@@ -349,13 +350,13 @@ class CustomController(
 
         if (block is Int) {
             if (0 < block) {
-                blocko = blocks.find { it.id == block } as Block
+                blocko = blocks.find { it.id == block } as BlockController
             }
         }
 
-        assert(blocko is Block)
+        assert(blocko is BlockController)
 
-        val blockm = blocko as Block
+        val blockm = blocko as BlockController
 
         for (childblock in blockm.children.toList()) {
             rmBlock(childblock)
@@ -386,27 +387,27 @@ class CustomController(
     }
 
     private fun addBlock(
-        type: Block.Type,
-        to: Block? = null,
+        type: BlockController.Type,
+        to: BlockController? = null,
         name: String = ""
     ) {
         var blockName = name
         if ( name.isEmpty() ) {
             blockName = when (type) {
-                Block.Type.DELAY -> getString(R.string.sim_custom_serial_script_block_name_delay)
-                Block.Type.RECV -> getString(R.string.sim_custom_serial_script_block_name_recv)
-                Block.Type.SEND -> getString(R.string.sim_custom_serial_script_block_name_send)
-                Block.Type.CONTAINER -> getString(R.string.sim_custom_serial_script_block_name_container)
+                BlockController.Type.DELAY -> getString(R.string.sim_custom_serial_script_block_name_delay)
+                BlockController.Type.RECV -> getString(R.string.sim_custom_serial_script_block_name_recv)
+                BlockController.Type.SEND -> getString(R.string.sim_custom_serial_script_block_name_send)
+                BlockController.Type.CONTAINER -> getString(R.string.sim_custom_serial_script_block_name_container)
             }
         }
-        val block = Block(
+        val block = BlockController(
             type = type,
             name = blockName
         )
         val blockView = view.addBlock(model = block)
         block.viewLink(blockView)
         blocks.add(block)
-        if (to?.type == Block.Type.CONTAINER) {
+        if (to?.type == BlockController.Type.CONTAINER) {
             to.children.add(block.id)
             block.parent = to
         }
@@ -414,28 +415,28 @@ class CustomController(
         debugBlockTree()
     }
 
-    private fun blockTitle(block: Block): String {
+    private fun blockTitle(block: BlockController): String {
         return when (block.type) {
-            Block.Type.DELAY ->
+            BlockController.Type.DELAY ->
                 "#${block.id}  Delay ${block.delay} ms"
 
-            Block.Type.RECV ->
+            BlockController.Type.RECV ->
                 "#${block.id}  Receive: ${block.text}"
 
-            Block.Type.SEND ->
+            BlockController.Type.SEND ->
                 "#${block.id}  Send: ${block.text}"
 
-            Block.Type.CONTAINER ->
+            BlockController.Type.CONTAINER ->
                 "#${block.id}  ${block.name}"
         }
     }
 
-    private fun editBlock(block: Block) {
+    private fun editBlock(block: BlockController) {
         when (block.type) {
-            Block.Type.DELAY -> editDelay(block)
-            Block.Type.RECV -> editReceive(block)
-            Block.Type.SEND -> editSend(block)
-            Block.Type.CONTAINER -> editContainer(block)
+            BlockController.Type.DELAY -> editDelay(block)
+            BlockController.Type.RECV -> editReceive(block)
+            BlockController.Type.SEND -> editSend(block)
+            BlockController.Type.CONTAINER -> editContainer(block)
         }
     }
 
@@ -563,16 +564,16 @@ class CustomController(
         )
     }
     public fun onAddDelay() {
-        addBlock(Block.Type.DELAY)
+        addBlock(BlockController.Type.DELAY)
     }
     public fun onAddRecv() {
-        addBlock(Block.Type.RECV)
+        addBlock(BlockController.Type.RECV)
     }
     public fun onAddSend() {
-        addBlock(Block.Type.SEND)
+        addBlock(BlockController.Type.SEND)
     }
     public fun onAddContainer() {
-        addBlock(Block.Type.CONTAINER)
+        addBlock(BlockController.Type.CONTAINER)
     }
     public fun onDelete() {
         val blocksToDelete =
@@ -604,7 +605,7 @@ class CustomController(
     }
     // ------- End Action Menu listerner -------
     
-    private fun editDelay(block: Block) {
+    private fun editDelay(block: BlockController) {
         val input = EditText(activity).apply {
             inputType = InputType.TYPE_CLASS_NUMBER
             setText(block.delay.toString())
@@ -621,7 +622,7 @@ class CustomController(
             .show()
     }
 
-    private fun editReceive(block: Block) {
+    private fun editReceive(block: BlockController) {
         val layout = LinearLayout(activity).apply {
             orientation = VERTICAL
             setPadding(dp(16))
@@ -679,7 +680,7 @@ class CustomController(
             .show()
     }
 
-    private fun editSend(block: Block) {
+    private fun editSend(block: BlockController) {
         val layout = LinearLayout(activity).apply {
             orientation = VERTICAL
             setPadding(dp(16))
@@ -720,7 +721,7 @@ class CustomController(
             .show()
     }
 
-    private fun editContainer(block: Block) {
+    private fun editContainer(block: BlockController) {
         val input = EditText(activity).apply {
             setText(block.name)
         }
@@ -771,7 +772,7 @@ class CustomController(
             )
 
             when (block.type) {
-                Block.Type.DELAY -> {
+                BlockController.Type.DELAY -> {
                     jsonBlock.put(
                         "type",
                         "delay"
@@ -792,7 +793,7 @@ class CustomController(
                     )
                 }
 
-                Block.Type.RECV -> {
+                BlockController.Type.RECV -> {
                     jsonBlock.put(
                         "type",
                         "recv"
@@ -826,7 +827,7 @@ class CustomController(
                     )
                 }
 
-                Block.Type.SEND -> {
+                BlockController.Type.SEND -> {
                     jsonBlock.put(
                         "type",
                         "send"
@@ -860,7 +861,7 @@ class CustomController(
                     )
                 }
 
-                Block.Type.CONTAINER -> {
+                BlockController.Type.CONTAINER -> {
                     jsonBlock.put(
                         "type",
                         "container"
@@ -995,7 +996,7 @@ class CustomController(
         * Build the models first. This allows container references
         * to refer to blocks appearing later in the JSON array.
         */
-        val importedBlocks = mutableListOf<Block>()
+        val importedBlocks = mutableListOf<BlockController>()
         val blockIds = mutableSetOf<Int>()
 
         for (i in 0 until jsonBlocks.length()) {
@@ -1016,16 +1017,16 @@ class CustomController(
             val type =
                 when (typeString) {
                     "delay" ->
-                        Block.Type.DELAY
+                        BlockController.Type.DELAY
 
                     "recv" ->
-                        Block.Type.RECV
+                        BlockController.Type.RECV
 
                     "send" ->
-                        Block.Type.SEND
+                        BlockController.Type.SEND
 
                     "container" ->
-                        Block.Type.CONTAINER
+                        BlockController.Type.CONTAINER
 
                     else -> {
                         parseErrorHandler?.invoke(
@@ -1038,8 +1039,8 @@ class CustomController(
             val blockContent = jsonBlock.getJSONObject("content")
             val block =
                 when (type) {
-                    Block.Type.DELAY -> {
-                        Block(
+                    BlockController.Type.DELAY -> {
+                        BlockController(
                             type = type,
                             delay = blockContent.optInt("delay", 10),
                             name = blockContent.optString("name", "Delay"),
@@ -1047,8 +1048,8 @@ class CustomController(
                         )
                     }
 
-                    Block.Type.RECV -> {
-                        Block(
+                    BlockController.Type.RECV -> {
+                        BlockController(
                             type = type,
                             name = blockContent.optString("name", "Recv"),
                             match = blockContent.optString(
@@ -1068,8 +1069,8 @@ class CustomController(
                         )
                     }
 
-                    Block.Type.SEND -> {
-                        Block(
+                    BlockController.Type.SEND -> {
+                        BlockController(
                             type = type,
                             name = blockContent.optString("name", "Send"),
                             text = blockContent.optString(
@@ -1090,7 +1091,7 @@ class CustomController(
                         )
                     }
 
-                    Block.Type.CONTAINER -> {
+                    BlockController.Type.CONTAINER -> {
                         val children =
                             mutableListOf<Int>()
 
@@ -1105,7 +1106,7 @@ class CustomController(
                             }
                         }
 
-                        Block(
+                        BlockController(
                             type = type,
                             name = blockContent.optString(
                                 "name",
@@ -1241,7 +1242,7 @@ class CustomController(
             }
 
             val link =
-                Link(
+                LinkController(
                     from = from,
                     to = to
                 )
@@ -1268,7 +1269,7 @@ class CustomController(
             return
         }
         fun printBlock(
-            block: Block,
+            block: BlockController,
             depth: Int
         ) {
             val indent = "  ".repeat(depth)
@@ -1330,7 +1331,7 @@ class CustomController(
 
         val reached = mutableSetOf<Int>()
 
-        fun collect(block: Block) {
+        fun collect(block: BlockController) {
             if (!reached.add(block.id)) {
                 return
             }

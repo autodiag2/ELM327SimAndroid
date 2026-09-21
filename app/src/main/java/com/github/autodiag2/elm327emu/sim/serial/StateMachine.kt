@@ -21,7 +21,7 @@ class StateMachine(
 
     data class Path(
         val id: Int,
-        var block: Block,
+        var block: BlockController,
         var state: State = State.READY,
         var wakeTime: Long = 0L
     )
@@ -390,7 +390,7 @@ class StateMachine(
         )
 
         when (blockType) {
-            Block.Type.DELAY -> {
+            BlockController.Type.DELAY -> {
                 path.wakeTime =
                     System.currentTimeMillis() +
                         block.delay
@@ -398,16 +398,16 @@ class StateMachine(
                 path.state = State.WAIT_DELAY
             }
 
-            Block.Type.SEND -> {
+            BlockController.Type.SEND -> {
                 executeSend(block)
                 advance(path)
             }
 
-            Block.Type.RECV -> {
+            BlockController.Type.RECV -> {
                 path.state = State.WAIT_RECV
             }
 
-            Block.Type.CONTAINER -> {
+            BlockController.Type.CONTAINER -> {
                 advance(path)
             }
         }
@@ -419,7 +419,7 @@ class StateMachine(
         )
     }
 
-    private fun executeSend(block: Block) {
+    private fun executeSend(block: BlockController) {
         var text = block.text
 
         if (
@@ -516,7 +516,7 @@ class StateMachine(
     }
 
     private fun matches(
-        block: Block,
+        block: BlockController,
         received: ByteArray
     ): Boolean {
         val expected =
@@ -647,7 +647,7 @@ class StateMachine(
         }
     }
 
-    private fun createPath(block: Block) {
+    private fun createPath(block: BlockController) {
         val path =
             Path(
                 id = nextPathId++,
