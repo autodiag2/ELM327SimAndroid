@@ -60,17 +60,26 @@
 
     <group android:id="@+id/action_menu_group_sim_custom_serial_script">
         <item
-            android:id="@+id/sim_custom_serial_script_add_delay"
-            android:title="@string/sim_custom_serial_script_add_delay" />
-        <item
-            android:id="@+id/sim_custom_serial_script_add_recv"
-            android:title="@string/sim_custom_serial_script_add_recv" />
-        <item
-            android:id="@+id/sim_custom_serial_script_add_send"
-            android:title="@string/sim_custom_serial_script_add_send" />
-        <item
-            android:id="@+id/sim_custom_serial_script_add_container"
-            android:title="@string/sim_custom_serial_script_add_container" />
+            android:id="@+id/sim_custom_serial_script_add_block"
+            android:title="@string/sim_custom_serial_script_add_block">
+            <menu>
+                <item
+                    android:id="@+id/sim_custom_serial_script_add_delay"
+                    android:title="@string/sim_custom_serial_script_add_delay" />
+
+                <item
+                    android:id="@+id/sim_custom_serial_script_add_recv"
+                    android:title="@string/sim_custom_serial_script_add_recv" />
+
+                <item
+                    android:id="@+id/sim_custom_serial_script_add_send"
+                    android:title="@string/sim_custom_serial_script_add_send" />
+
+                <item
+                    android:id="@+id/sim_custom_serial_script_add_container"
+                    android:title="@string/sim_custom_serial_script_add_container" />
+            </menu>
+        </item>
         <item
             android:id="@+id/sim_custom_serial_script_clear"
             android:title="@string/sim_custom_serial_script_clear" />

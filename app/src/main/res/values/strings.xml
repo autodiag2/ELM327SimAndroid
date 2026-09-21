@@ -54,10 +54,11 @@
     <string name="sim_custom_serial_script_open">Configure</string>
     <string name="sim_custom_serial_script_edit">Edit</string>
     <string name="sim_custom_serial_script_link">Link</string>
-    <string name="sim_custom_serial_script_add_delay">Add Delay</string>
-    <string name="sim_custom_serial_script_add_recv">Add Recv</string>
-    <string name="sim_custom_serial_script_add_send">Add Send</string>
-    <string name="sim_custom_serial_script_add_container">Add Container</string>
+    <string name="sim_custom_serial_script_add_block">Add block</string>
+    <string name="sim_custom_serial_script_add_delay">Delay</string>
+    <string name="sim_custom_serial_script_add_recv">Recv</string>
+    <string name="sim_custom_serial_script_add_send">Send</string>
+    <string name="sim_custom_serial_script_add_container">Container</string>
     <string name="sim_custom_serial_script_clear">Clear</string>
     <string name="sim_custom_serial_script_delay">Delay</string>
     <string name="sim_custom_serial_script_receive">Receive</string>
