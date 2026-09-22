@@ -69,10 +69,10 @@ class StateMachine(
     private var running = false
 
     private val input: InputStream?
-        get() = controller.emuOutput
+        get() = controller.emuStreams?.input
 
     private val output: OutputStream?
-        get() = controller.emuInput
+        get() = controller.emuStreams?.output
 
     init {
         stateJob = scope.launch {
