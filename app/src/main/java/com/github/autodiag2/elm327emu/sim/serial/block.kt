@@ -126,7 +126,12 @@ open class BlockController(
 
             return output.toByteArray()
         }
-        fun fromJson(jsonBlock: JSONObject, id: Int, parseErrorHandler: ((String) -> Unit)?): BlockController? {
+
+        fun fromJson(
+            jsonBlock: JSONObject,
+            id: Int,
+            parseErrorHandler: ((String) -> Unit)?
+        ): BlockController? {
             val typeString =
                 jsonBlock.getString("type")
 
@@ -144,88 +149,125 @@ open class BlockController(
                     }
                 }
 
-            val blockContent = jsonBlock.getJSONObject("content")
-            return when (type) {
-                    BlockController.Type.DELAY -> {
-                        BlockController(
-                            type = type,
-                            timeoutMs = blockContent.optInt("timeoutMs", 10),
-                            name = blockContent.optString("name", "Delay"),
-                            id = id,
-                        )
-                    }
+            val blockContent =
+                jsonBlock.getJSONObject("content")
 
-                    BlockController.Type.RECV -> {
-                        BlockController(
-                            type = type,
-                            name = blockContent.optString("name", "Recv"),
-                            match = blockContent.optString(
+            return when (type) {
+                BlockController.Type.DELAY -> {
+                    BlockController(
+                        type = type,
+                        timeoutMs =
+                            blockContent.optInt(
+                                "timeoutMs",
+                                10
+                            ),
+                        name =
+                            blockContent.optString(
+                                "name",
+                                "Delay"
+                            ),
+                        id = id
+                    )
+                }
+
+                BlockController.Type.RECV -> {
+                    BlockController(
+                        type = type,
+                        timeoutMs =
+                            blockContent.optInt(
+                                "timeoutMs",
+                                0
+                            ),
+                        name =
+                            blockContent.optString(
+                                "name",
+                                "Recv"
+                            ),
+                        match =
+                            blockContent.optString(
                                 "match",
                                 "exact"
                             ),
-                            text = blockContent.optString(
+                        text =
+                            blockContent.optString(
                                 "text",
                                 ""
                             ),
-                            interpretEscapes =
-                                blockContent.optBoolean(
-                                    "interpret_esc",
-                                    true
-                                ),
-                            id = id
-                        )
-                    }
+                        interpretEscapes =
+                            blockContent.optBoolean(
+                                "interpret_esc",
+                                true
+                            ),
+                        id = id
+                    )
+                }
 
-                    BlockController.Type.SEND -> {
-                        BlockController(
-                            type = type,
-                            name = blockContent.optString("name", "Send"),
-                            text = blockContent.optString(
+                BlockController.Type.SEND -> {
+                    BlockController(
+                        type = type,
+                        timeoutMs =
+                            blockContent.optInt(
+                                "timeoutMs",
+                                0
+                            ),
+                        name =
+                            blockContent.optString(
+                                "name",
+                                "Send"
+                            ),
+                        text =
+                            blockContent.optString(
                                 "text",
                                 ""
                             ),
-                            includeEol =
-                                blockContent.optBoolean(
-                                    "include_eol",
-                                    false
-                                ),
-                            interpretEscapes =
-                                blockContent.optBoolean(
-                                    "interpret_esc",
-                                    true
-                                ),
-                            id = id
+                        includeEol =
+                            blockContent.optBoolean(
+                                "include_eol",
+                                false
+                            ),
+                        interpretEscapes =
+                            blockContent.optBoolean(
+                                "interpret_esc",
+                                true
+                            ),
+                        id = id
+                    )
+                }
+
+                BlockController.Type.CONTAINER -> {
+                    val children =
+                        mutableListOf<Int>()
+
+                    val jsonChildren =
+                        blockContent.optJSONArray(
+                            "blocks"
                         )
-                    }
 
-                    BlockController.Type.CONTAINER -> {
-                        val children =
-                            mutableListOf<Int>()
-
-                        val jsonChildren =
-                            blockContent.optJSONArray("blocks")
-
-                        if (jsonChildren != null) {
-                            for (j in 0 until jsonChildren.length()) {
-                                children.add(
-                                    jsonChildren.getInt(j)
-                                )
-                            }
+                    if (jsonChildren != null) {
+                        for (
+                            j in 0 until jsonChildren.length()
+                        ) {
+                            children.add(
+                                jsonChildren.getInt(j)
+                            )
                         }
+                    }
 
-                        BlockController(
-                            type = type,
-                            name = blockContent.optString(
+                    BlockController(
+                        type = type,
+                        name =
+                            blockContent.optString(
                                 "name",
                                 ""
                             ),
-                            children = children,
-                            id = id
-                        )
-                    }
+                        children = children,
+                        id = id
+                    )
                 }
+            }
         }
     }
+
     fun viewRefresh() {
         view!!.parentView.refresh()
     }
@@ -242,60 +284,66 @@ open class BlockController(
                 )
             }
 
-        val result = when (match.lowercase()) {
-            "exact" -> {
-                received.contentEquals(expected)
-            }
-
-            "regex" -> {
-                val pattern =
-                    if (interpretEscapes) {
-                        /*
-                        * Decode escaped sequences before creating
-                        * the regex. For example:
-                        *
-                        * ATZ\\r
-                        *
-                        * becomes:
-                        *
-                        * ATZ + byte 0x0D
-                        */
-                        parseEscapedBytes(text)
-                            .toString(Charsets.ISO_8859_1)
-                    } else {
-                        text
-                    }
-
-                Regex(pattern)
-                    .containsMatchIn(
-                        received.toString(
-                            Charsets.ISO_8859_1
-                        )
+        val result =
+            when (match.lowercase()) {
+                "exact" -> {
+                    received.contentEquals(
+                        expected
                     )
+                }
+
+                "regex" -> {
+                    val pattern =
+                        if (interpretEscapes) {
+                            /*
+                            * Decode escaped sequences before
+                            * creating the regex.
+                            */
+                            parseEscapedBytes(text)
+                                .toString(
+                                    Charsets.ISO_8859_1
+                                )
+                        } else {
+                            text
+                        }
+
+                    Regex(pattern)
+                        .containsMatchIn(
+                            received.toString(
+                                Charsets.ISO_8859_1
+                            )
+                        )
+                }
+
+                else -> {
+                    logDebug(
+                        "Unknown match mode '${match}', " +
+                            "using exact"
+                    )
+
+                    received.contentEquals(
+                        expected
+                    )
+                }
             }
 
-            else -> {
-                logDebug(
-                    "Unknown match mode '${match}', " +
-                        "using exact"
-                )
-
-                received.contentEquals(expected)
-            }
-        }
         logDebug(
-            "MATCH ${if (result) "SUCCESS" else "FAILED"} block=${id} " +
+            "MATCH " +
+                "${if (result) "SUCCESS" else "FAILED"} " +
+                "block=${id} " +
                 "mode=${match} " +
                 "expected=${expected.toDebugString()} " +
                 "received=${received.toDebugString()}"
         )
+
         return result
     }
 
     private fun ByteArray.toDebugString(): String {
         return buildString {
             for (byte in this@toDebugString) {
-                val value = byte.toInt() and 0xFF
+                val value =
+                    byte.toInt() and 0xFF
 
                 when (value) {
                     0x0D -> append("\\r")
@@ -317,14 +365,20 @@ open class BlockController(
         }
     }
 
-    public fun logDebug(message: String) {
+    public fun logDebug(
+        message: String
+    ) {
         if (BuildConfig.DEBUG) {
-            Log.d("sim.serial.BlockController", message)
+            Log.d(
+                "sim.serial.BlockController",
+                message
+            )
         }
     }
 
     fun toJson(): JSONObject {
-        val jsonBlock = JSONObject()
+        val jsonBlock =
+            JSONObject()
 
         jsonBlock.put(
             "id",
@@ -338,15 +392,19 @@ open class BlockController(
                     "delay"
                 )
 
-                val value = JSONObject()
+                val value =
+                    JSONObject()
+
                 value.put(
                     "name",
                     name
                 )
+
                 value.put(
                     "timeoutMs",
                     timeoutMs
                 )
+
                 jsonBlock.put(
                     "content",
                     value
@@ -359,11 +417,17 @@ open class BlockController(
                     "recv"
                 )
 
-                val value = JSONObject()
+                val value =
+                    JSONObject()
 
                 value.put(
                     "name",
                     name
+                )
+
+                value.put(
+                    "timeoutMs",
+                    timeoutMs
                 )
 
                 value.put(
@@ -393,11 +457,17 @@ open class BlockController(
                     "send"
                 )
 
-                val value = JSONObject()
+                val value =
+                    JSONObject()
 
                 value.put(
                     "name",
                     name
+                )
+
+                value.put(
+                    "timeoutMs",
+                    timeoutMs
                 )
 
                 value.put(
@@ -427,14 +497,16 @@ open class BlockController(
                     "container"
                 )
 
-                val value = JSONObject()
+                val value =
+                    JSONObject()
 
                 value.put(
                     "name",
                     name
                 )
 
-                val childrenJson = JSONArray()
+                val childrenJson =
+                    JSONArray()
 
                 for (child in children) {
                     childrenJson.put(child)
@@ -459,10 +531,12 @@ open class BlockController(
         * root blocks use world coordinates,
         * child blocks use coordinates relative to their container.
         */
-        val blockView = view
+        val blockView =
+            view
 
         if (blockView != null) {
-            val view = JSONObject()
+            val view =
+                JSONObject()
 
             view.put(
                 "x",
@@ -479,153 +553,304 @@ open class BlockController(
                 view
             )
         }
+
         return jsonBlock
     }
+
     public fun edit() {
         when (type) {
-            Type.DELAY -> editDelay()
-            Type.RECV -> editReceive()
-            Type.SEND -> editSend()
-            Type.CONTAINER -> editContainer()
+            Type.DELAY ->
+                editDelay()
+
+            Type.RECV ->
+                editReceive()
+
+            Type.SEND ->
+                editSend()
+
+            Type.CONTAINER ->
+                editContainer()
         }
     }
 
     private fun editDelay() {
-        val input = EditText(view!!.context).apply {
-            inputType = InputType.TYPE_CLASS_NUMBER
-            setText(timeoutMs.toString())
-        }
+        val input =
+            EditText(view!!.context).apply {
+                inputType =
+                    InputType.TYPE_CLASS_NUMBER
 
-        android.app.AlertDialog.Builder(view!!.context)
-            .setTitle(R.string.sim_custom_serial_script_delay)
+                setText(
+                    timeoutMs.toString()
+                )
+            }
+
+        android.app.AlertDialog.Builder(
+            view!!.context
+        )
+            .setTitle(
+                R.string.sim_custom_serial_script_delay
+            )
             .setView(input)
-            .setPositiveButton(android.R.string.ok) { _, _ ->
-                timeoutMs = input.text.toString().toIntOrNull() ?: 0
+            .setPositiveButton(
+                android.R.string.ok
+            ) { _, _ ->
+                timeoutMs =
+                    input.text
+                        .toString()
+                        .toIntOrNull()
+                        ?.coerceAtLeast(0)
+                        ?: 0
+
                 viewRefresh()
             }
-            .setNegativeButton(android.R.string.cancel, null)
+            .setNegativeButton(
+                android.R.string.cancel,
+                null
+            )
             .show()
     }
 
     private fun editReceive() {
-        val layout = LinearLayout(view!!.context).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(16))
-        }
+        val layout =
+            LinearLayout(
+                view!!.context
+            ).apply {
+                orientation =
+                    LinearLayout.VERTICAL
 
-        val mode = Spinner(view!!.context)
+                setPadding(
+                    dp(16)
+                )
+            }
 
-        mode.adapter = ArrayAdapter(
-            view!!.context,
-            android.R.layout.simple_spinner_item,
-            listOf(
-                "Exact",
-                "Regular expression"
+        val timeout =
+            EditText(view!!.context).apply {
+                hint = "Timeout (ms)"
+                inputType =
+                    InputType.TYPE_CLASS_NUMBER
+
+                setText(
+                    this@BlockController.timeoutMs
+                        .toString()
+                )
+            }
+
+        val mode =
+            Spinner(view!!.context)
+
+        mode.adapter =
+            ArrayAdapter(
+                view!!.context,
+                android.R.layout.simple_spinner_item,
+                listOf(
+                    "Exact",
+                    "Regular expression"
+                )
             )
-        )
 
         mode.setSelection(
-            if (match == "regex") 1 else 0
+            if (match == "regex") {
+                1
+            } else {
+                0
+            }
         )
 
-        val initial_text = EditText(view!!.context).apply {
-            hint = "Pattern"
-            setText(this@BlockController.text)
-            inputType =
-                InputType.TYPE_CLASS_TEXT or
-                InputType.TYPE_TEXT_FLAG_MULTI_LINE
-        }
+        val initial_text =
+            EditText(view!!.context).apply {
+                hint = "Pattern"
+                setText(
+                    this@BlockController.text
+                )
+                inputType =
+                    InputType.TYPE_CLASS_TEXT or
+                    InputType.TYPE_TEXT_FLAG_MULTI_LINE
+            }
 
-        val escapes = CheckBox(view!!.context).apply {
-            text = "Interpret \\r, \\n, \\xhh..."
-            isChecked = interpretEscapes
-        }
+        val escapes =
+            CheckBox(view!!.context).apply {
+                text =
+                    "Interpret \\r, \\n, \\xhh..."
+                isChecked =
+                    interpretEscapes
+            }
 
+        layout.addView(timeout)
         layout.addView(mode)
         layout.addView(initial_text)
         layout.addView(escapes)
 
-        android.app.AlertDialog.Builder(view!!.context)
-            .setTitle(R.string.sim_custom_serial_script_receive)
+        android.app.AlertDialog.Builder(
+            view!!.context
+        )
+            .setTitle(
+                R.string.sim_custom_serial_script_receive
+            )
             .setView(layout)
-            .setPositiveButton(android.R.string.ok) { _, _ ->
+            .setPositiveButton(
+                android.R.string.ok
+            ) { _, _ ->
+                timeoutMs =
+                    timeout.text
+                        .toString()
+                        .toIntOrNull()
+                        ?.coerceAtLeast(0)
+                        ?: 0
+
                 match =
-                    if (mode.selectedItemPosition == 1) {
+                    if (
+                        mode.selectedItemPosition == 1
+                    ) {
                         "regex"
                     } else {
                         "exact"
                     }
 
-                text = initial_text.text.toString()
-                interpretEscapes = escapes.isChecked
+                text =
+                    initial_text.text.toString()
+
+                interpretEscapes =
+                    escapes.isChecked
 
                 viewRefresh()
             }
-            .setNegativeButton(android.R.string.cancel, null)
+            .setNegativeButton(
+                android.R.string.cancel,
+                null
+            )
             .show()
     }
 
     private fun editSend() {
-        val layout = LinearLayout(view!!.context).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(16))
-        }
+        val layout =
+            LinearLayout(
+                view!!.context
+            ).apply {
+                orientation =
+                    LinearLayout.VERTICAL
 
-        val initial_text = EditText(view!!.context).apply {
-            hint = "ASCII text"
-            setText(this@BlockController.text)
-            inputType =
-                InputType.TYPE_CLASS_TEXT or
-                InputType.TYPE_TEXT_FLAG_MULTI_LINE
-        }
+                setPadding(
+                    dp(16)
+                )
+            }
 
-        val eol = CheckBox(view!!.context).apply {
-            text = "Automatically append EOL"
-            isChecked = includeEol
-        }
+        val timeout =
+            EditText(view!!.context).apply {
+                hint = "Timeout (ms)"
+                inputType =
+                    InputType.TYPE_CLASS_NUMBER
 
-        val escapes = CheckBox(view!!.context).apply {
-            text = "Interpret \\r, \\n, \\xhh..."
-            isChecked = interpretEscapes
-        }
+                setText(
+                    this@BlockController.timeoutMs
+                        .toString()
+                )
+            }
 
+        val initial_text =
+            EditText(view!!.context).apply {
+                hint = "ASCII text"
+                setText(
+                    this@BlockController.text
+                )
+                inputType =
+                    InputType.TYPE_CLASS_TEXT or
+                    InputType.TYPE_TEXT_FLAG_MULTI_LINE
+            }
+
+        val eol =
+            CheckBox(view!!.context).apply {
+                text =
+                    "Automatically append EOL"
+                isChecked =
+                    includeEol
+            }
+
+        val escapes =
+            CheckBox(view!!.context).apply {
+                text =
+                    "Interpret \\r, \\n, \\xhh..."
+                isChecked =
+                    interpretEscapes
+            }
+
+        layout.addView(timeout)
         layout.addView(initial_text)
         layout.addView(eol)
         layout.addView(escapes)
 
-        android.app.AlertDialog.Builder(view!!.context)
-            .setTitle(R.string.sim_custom_serial_script_send)
+        android.app.AlertDialog.Builder(
+            view!!.context
+        )
+            .setTitle(
+                R.string.sim_custom_serial_script_send
+            )
             .setView(layout)
-            .setPositiveButton(android.R.string.ok) { _, _ ->
-                text = initial_text.text.toString()
-                includeEol = eol.isChecked
-                interpretEscapes = escapes.isChecked
+            .setPositiveButton(
+                android.R.string.ok
+            ) { _, _ ->
+                timeoutMs =
+                    timeout.text
+                        .toString()
+                        .toIntOrNull()
+                        ?.coerceAtLeast(0)
+                        ?: 0
+
+                text =
+                    initial_text.text.toString()
+
+                includeEol =
+                    eol.isChecked
+
+                interpretEscapes =
+                    escapes.isChecked
+
                 viewRefresh()
             }
-            .setNegativeButton(android.R.string.cancel, null)
+            .setNegativeButton(
+                android.R.string.cancel,
+                null
+            )
             .show()
     }
 
     private fun editContainer() {
-        val input = EditText(view!!.context).apply {
-            setText(this@BlockController.name)
-        }
+        val input =
+            EditText(view!!.context).apply {
+                setText(
+                    this@BlockController.name
+                )
+            }
 
-        android.app.AlertDialog.Builder(view!!.context)
-            .setTitle(R.string.sim_custom_serial_script_container)
+        android.app.AlertDialog.Builder(
+            view!!.context
+        )
+            .setTitle(
+                R.string.sim_custom_serial_script_container
+            )
             .setView(input)
-            .setPositiveButton(android.R.string.ok) { _, _ ->
-                name = input.text.toString()
+            .setPositiveButton(
+                android.R.string.ok
+            ) { _, _ ->
+                name =
+                    input.text.toString()
+
                 viewRefresh()
             }
-            .setNegativeButton(android.R.string.cancel, null)
+            .setNegativeButton(
+                android.R.string.cancel,
+                null
+            )
             .show()
     }
 
     // TEMP area
-    fun dp(amount: Int): Int {
-        return view!!.parentView!!.model!!.dp(amount)
+    fun dp(
+        amount: Int
+    ): Int {
+        return view!!
+            .parentView!!
+            .model!!
+            .dp(amount)
     }
     // End TEMP area
-
 }
