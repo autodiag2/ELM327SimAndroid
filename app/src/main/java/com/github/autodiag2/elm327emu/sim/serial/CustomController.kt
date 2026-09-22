@@ -123,11 +123,24 @@ class CustomController(
 
     // ------------ Listeners of view ------------
 
-    override fun onBlockClicked(
-        block: BlockView
+    override fun onElementClicked(
+        element: ElementView<*>
     ) {
-        block.model!!.edit()
-        onDataChanged()
+        if ( element is BlockView ) {
+            element.model!!.edit()
+        } else if ( element is LinkView ) {
+            toggleLinkSelection(element.model!!)
+        }
+    }
+
+    override fun onElementLongPress(
+        element: ElementView<*>
+    ) {
+        if ( element is BlockView ) {
+            toggleBlockSelection(element.model!!)
+        } else if ( element is LinkView ) {
+            toggleLinkSelection(element.model!!)
+        }
     }
 
     override fun onLinkToBlock(
@@ -188,54 +201,6 @@ class CustomController(
         child.model!!.parent = null
 
         onDataChanged()
-    }
-
-    override fun onElementSelected(
-        element: ElementView<*>
-    ) {
-        when (element) {
-            is BlockView -> {
-                selectedBlocks.add(
-                    element.model!!.id
-                )
-            }
-
-            is LinkView -> {
-                val link =
-                    element.model!!
-
-                selectedLinks.add(
-                    Pair(
-                        link.from,
-                        link.to
-                    )
-                )
-            }
-        }
-    }
-
-    override fun onElementUnselected(
-        element: ElementView<*>
-    ) {
-        when (element) {
-            is BlockView -> {
-                selectedBlocks.remove(
-                    element.model!!.id
-                )
-            }
-
-            is LinkView -> {
-                val link =
-                    element.model!!
-
-                selectedLinks.remove(
-                    Pair(
-                        link.from,
-                        link.to
-                    )
-                )
-            }
-        }
     }
 
     override fun onUnselectAll() {

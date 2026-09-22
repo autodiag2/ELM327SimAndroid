@@ -31,12 +31,11 @@ class CustomView(
     )
 
     interface Listener {
-        fun onBlockClicked(block: BlockView)
+        fun onElementClicked(element: ElementView<*>)
+        fun onElementLongPress(element: ElementView<*>)
         fun onLinkToBlock(from: BlockView, to: BlockView)
         fun onBlockIncluded(parent: BlockView, child: BlockView)
         fun onBlockExcluded(parent: BlockView, child: BlockView)
-        fun onElementSelected(element: ElementView<*>)
-        fun onElementUnselected(element: ElementView<*>)
         fun onUnselectAll()
     }
 
@@ -105,10 +104,7 @@ class CustomView(
 
                     if (block != null) {
                         bringBlockToFront(block)
-                        model?.toggleBlockSelection(block.model!!)
-                        if (block.model!!.id in model!!.selectedBlocks) {
-                            model?.onBlockClicked(block)
-                        }
+                        model?.onElementClicked(block)
 
                         invalidate()
                         return true
@@ -120,7 +116,7 @@ class CustomView(
                     )
 
                     if (link != null) {
-                        model?.toggleLinkSelection(link.model!!)
+                        model?.onElementClicked(link)
 
                         invalidate()
                         return true
@@ -164,7 +160,7 @@ class CustomView(
                     )
 
                     if (link != null) {
-                        model?.onElementSelected(link)
+                        model?.onElementLongPress(link)
 
                         invalidate()
                         return
@@ -177,7 +173,7 @@ class CustomView(
 
                     if (block != null) {
                         bringBlockToFront(block)
-                        model?.onElementSelected(block)
+                        model?.onElementLongPress(block)
 
                         invalidate()
                         return
