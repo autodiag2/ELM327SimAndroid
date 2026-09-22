@@ -412,12 +412,23 @@ class StateMachine(
                 }
 
                 BlockController.Type.RECV -> {
-                    path.wakeTime =
-                        System.currentTimeMillis() +
-                            block.timeoutMs
+                    val linkedBlockIds =
+                        controller.links
+                            .map { it.to }
+                            .toSet()
 
-                    path.state =
-                        State.WAIT_RECV
+                    val isRoot =
+                        block.id !in linkedBlockIds
+
+                    if (isRoot) {
+                        path.wakeTime = Long.MAX_VALUE
+                    } else {
+                        path.wakeTime =
+                            System.currentTimeMillis() +
+                                block.timeoutMs
+                    }
+
+                    path.state = State.WAIT_RECV
                 }
 
                 BlockController.Type.CONTAINER -> {
