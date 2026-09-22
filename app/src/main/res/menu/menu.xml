@@ -84,14 +84,20 @@
             android:id="@+id/sim_custom_serial_script_clear"
             android:title="@string/sim_custom_serial_script_clear" />
         <item
-            android:id="@+id/sim_custom_serial_script_export_clipboard"
-            android:title="@string/sim_custom_serial_script_export_clipboard" />
-        <item
             android:id="@+id/sim_custom_serial_script_import_clipboard"
             android:title="@string/sim_custom_serial_script_import_clipboard" />
         <item
-            android:id="@+id/sim_custom_serial_script_export_file"
-            android:title="@string/sim_custom_serial_script_export_file" />
+            android:id="@+id/sim_custom_serial_script_export_menu"
+            android:title="@string/sim_custom_serial_script_export_menu" >
+            <menu>
+                <item
+                    android:id="@+id/sim_custom_serial_script_export_clipboard"
+                    android:title="@string/sim_custom_serial_script_export_clipboard" />
+                <item
+                    android:id="@+id/sim_custom_serial_script_export_file"
+                    android:title="@string/sim_custom_serial_script_export_file" />
+            </menu>
+        </item>
         <item
             android:id="@+id/sim_custom_serial_script_export_share"
             android:title="@string/sim_custom_serial_script_export_share" />
