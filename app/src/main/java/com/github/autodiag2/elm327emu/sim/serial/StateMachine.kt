@@ -260,12 +260,6 @@ class StateMachine(
         events.trySend(Event.Stop)
     }
 
-    fun onReceive(bytes: ByteArray) {
-        events.trySend(
-            Event.Receive(bytes.copyOf())
-        )
-    }
-
     /*
      * The ONLY owner of paths and execution state.
      */
