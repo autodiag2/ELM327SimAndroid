@@ -2,6 +2,8 @@ package com.github.autodiag2.elm327emu.sim.serial
 
 import org.json.JSONArray
 import org.json.JSONObject
+import com.github.autodiag2.elm327emu.BuildConfig
+import android.util.Log
 
 // view imports
 import android.widget.ArrayAdapter
@@ -38,6 +40,92 @@ open class BlockController(
     }
 
     companion object {
+        fun parseEscapedBytes(
+            text: String
+        ): ByteArray {
+            val output =
+                java.io.ByteArrayOutputStream()
+
+            var i = 0
+
+            while (i < text.length) {
+                val c = text[i]
+
+                if (c != '\\') {
+                    output.write(c.code)
+                    i++
+                    continue
+                }
+
+                if (i + 1 >= text.length) {
+                    output.write('\\'.code)
+                    i++
+                    continue
+                }
+
+                when (text[i + 1]) {
+                    'r' -> {
+                        output.write('\r'.code)
+                        i += 2
+                    }
+
+                    'n' -> {
+                        output.write('\n'.code)
+                        i += 2
+                    }
+
+                    't' -> {
+                        output.write('\t'.code)
+                        i += 2
+                    }
+
+                    '\\' -> {
+                        output.write('\\'.code)
+                        i += 2
+                    }
+
+                    '0' -> {
+                        output.write(0)
+                        i += 2
+                    }
+
+                    'x' -> {
+                        if (i + 3 < text.length) {
+                            val hex =
+                                text.substring(
+                                    i + 2,
+                                    i + 4
+                                )
+
+                            val value =
+                                hex.toIntOrNull(16)
+
+                            if (value != null) {
+                                output.write(value)
+                                i += 4
+                            } else {
+                                output.write('\\'.code)
+                                i++
+                            }
+                        } else {
+                            output.write('\\'.code)
+                            i++
+                        }
+                    }
+
+                    else -> {
+                        /*
+                        * Preserve unknown escapes.
+                        * Example: "\q" remains "\q".
+                        */
+                        output.write('\\'.code)
+                        i++
+                    }
+                }
+            }
+
+            return output.toByteArray()
+        }
         fun fromJson(jsonBlock: JSONObject, id: Int, parseErrorHandler: ((String) -> Unit)?): BlockController? {
             val typeString =
                 jsonBlock.getString("type")
@@ -140,6 +228,99 @@ open class BlockController(
     }
     fun viewRefresh() {
         view!!.parentView.refresh()
+    }
+
+    fun recvMatches(
+        received: ByteArray
+    ): Boolean {
+        val expected =
+            if (interpretEscapes) {
+                parseEscapedBytes(text)
+            } else {
+                text.toByteArray(
+                    Charsets.ISO_8859_1
+                )
+            }
+
+        val result = when (match.lowercase()) {
+            "exact" -> {
+                received.contentEquals(expected)
+            }
+
+            "regex" -> {
+                val pattern =
+                    if (interpretEscapes) {
+                        /*
+                        * Decode escaped sequences before creating
+                        * the regex. For example:
+                        *
+                        * ATZ\\r
+                        *
+                        * becomes:
+                        *
+                        * ATZ + byte 0x0D
+                        */
+                        parseEscapedBytes(text)
+                            .toString(Charsets.ISO_8859_1)
+                    } else {
+                        text
+                    }
+
+                Regex(pattern)
+                    .containsMatchIn(
+                        received.toString(
+                            Charsets.ISO_8859_1
+                        )
+                    )
+            }
+
+            else -> {
+                logDebug(
+                    "Unknown match mode '${match}', " +
+                        "using exact"
+                )
+
+                received.contentEquals(expected)
+            }
+        }
+        logDebug(
+            "MATCH ${if (result) "SUCCESS" else "FAILED"} block=${id} " +
+                "mode=${match} " +
+                "expected=${expected.toDebugString()} " +
+                "received=${received.toDebugString()}"
+        )
+        return result
+    }
+
+    private fun ByteArray.toDebugString(): String {
+        return buildString {
+            for (byte in this@toDebugString) {
+                val value = byte.toInt() and 0xFF
+
+                when (value) {
+                    0x0D -> append("\\r")
+                    0x0A -> append("\\n")
+                    0x09 -> append("\\t")
+                    0x00 -> append("\\0")
+                    0x5C -> append("\\\\")
+                    else -> {
+                        if (value in 0x20..0x7E) {
+                            append(value.toChar())
+                        } else {
+                            append(
+                                "\\x%02X".format(value)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    public fun logDebug(message: String) {
+        if (BuildConfig.DEBUG) {
+            Log.d("sim.serial.BlockController", message)
+        }
     }
 
     fun toJson(): JSONObject {

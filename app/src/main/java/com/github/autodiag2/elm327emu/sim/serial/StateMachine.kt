@@ -471,7 +471,7 @@ class StateMachine(
 
         val bytes =
             if (block.interpretEscapes) {
-                parseEscapedBytes(text)
+                BlockController.parseEscapedBytes(text)
             } else {
                 text.toByteArray(
                     Charsets.ISO_8859_1
@@ -539,7 +539,7 @@ class StateMachine(
                 .toList()
 
         for (path in waitingPaths) {
-            if (matches(path.block, bytes)) {
+            if (path.block.recvMatches(bytes)) {
                 logDebug(
                     "RECV matched " +
                         "path=${path.id} " +
@@ -560,69 +560,6 @@ class StateMachine(
         }
 
         handleTick()
-    }
-
-    private fun matches(
-        block: BlockController,
-        received: ByteArray
-    ): Boolean {
-        val expected =
-            if (block.interpretEscapes) {
-                parseEscapedBytes(block.text)
-            } else {
-                block.text.toByteArray(
-                    Charsets.ISO_8859_1
-                )
-            }
-
-        val result = when (block.match.lowercase()) {
-            "exact" -> {
-                received.contentEquals(expected)
-            }
-
-            "regex" -> {
-                val pattern =
-                    if (block.interpretEscapes) {
-                        /*
-                        * Decode escaped sequences before creating
-                        * the regex. For example:
-                        *
-                        * ATZ\\r
-                        *
-                        * becomes:
-                        *
-                        * ATZ + byte 0x0D
-                        */
-                        parseEscapedBytes(block.text)
-                            .toString(Charsets.ISO_8859_1)
-                    } else {
-                        block.text
-                    }
-
-                Regex(pattern)
-                    .containsMatchIn(
-                        received.toString(
-                            Charsets.ISO_8859_1
-                        )
-                    )
-            }
-
-            else -> {
-                logDebug(
-                    "Unknown match mode '${block.match}', " +
-                        "using exact"
-                )
-
-                received.contentEquals(expected)
-            }
-        }
-        logDebug(
-            "MATCH ${if (result) "SUCCESS" else "FAILED"} block=${block.id} " +
-                "mode=${block.match} " +
-                "expected=${expected.toDebugString()} " +
-                "received=${received.toDebugString()}"
-        )
-        return result
     }
 
     /*
@@ -712,93 +649,6 @@ class StateMachine(
 
     fun isRunning(): Boolean {
         return running
-    }
-
-    private fun parseEscapedBytes(
-        text: String
-    ): ByteArray {
-        val output =
-            java.io.ByteArrayOutputStream()
-
-        var i = 0
-
-        while (i < text.length) {
-            val c = text[i]
-
-            if (c != '\\') {
-                output.write(c.code)
-                i++
-                continue
-            }
-
-            if (i + 1 >= text.length) {
-                output.write('\\'.code)
-                i++
-                continue
-            }
-
-            when (text[i + 1]) {
-                'r' -> {
-                    output.write('\r'.code)
-                    i += 2
-                }
-
-                'n' -> {
-                    output.write('\n'.code)
-                    i += 2
-                }
-
-                't' -> {
-                    output.write('\t'.code)
-                    i += 2
-                }
-
-                '\\' -> {
-                    output.write('\\'.code)
-                    i += 2
-                }
-
-                '0' -> {
-                    output.write(0)
-                    i += 2
-                }
-
-                'x' -> {
-                    if (i + 3 < text.length) {
-                        val hex =
-                            text.substring(
-                                i + 2,
-                                i + 4
-                            )
-
-                        val value =
-                            hex.toIntOrNull(16)
-
-                        if (value != null) {
-                            output.write(value)
-                            i += 4
-                        } else {
-                            output.write('\\'.code)
-                            i++
-                        }
-                    } else {
-                        output.write('\\'.code)
-                        i++
-                    }
-                }
-
-                else -> {
-                    /*
-                     * Preserve unknown escapes.
-                     * Example: "\q" remains "\q".
-                     */
-                    output.write('\\'.code)
-                    i++
-                }
-            }
-        }
-
-        return output.toByteArray()
     }
 
     private fun String.escape(): String {
