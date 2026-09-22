@@ -45,6 +45,8 @@ open class BlockView(
         private val portPaint = Paint(Paint.ANTI_ALIAS_FLAG)
         private val executionIndicatorRadius = 7f
         private val executionIndicatorPadding = 10f
+        private val executionIndicatorFlashPeriod = 500L
+        private val executionIndicatorFlashOnTime = 250L
 
         init {
             paint.style = Paint.Style.FILL
@@ -325,15 +327,41 @@ open class BlockView(
         canvas: Canvas,
         nodeWorldPos: Coordinates
     ) {
-        val executionColor =
-            getExecutionColor(model!!)
+        val state =
+            parentView.model!!
+                .getBlockState(model!!)
 
-        if (executionColor == null) {
-            return
-        }
+        val color =
+            when (state) {
+                StateMachine.BlockState.IDLE ->
+                    return
+
+                StateMachine.BlockState.IN_PROGRESS -> {
+                    val phase =
+                        System.currentTimeMillis() % 500L
+
+                    if (phase >= 250L) {
+                        return
+                    }
+
+                    getThemeColor(
+                        R.attr.colorAccentInProgress
+                    )
+                }
+
+                StateMachine.BlockState.SUCCESS ->
+                    getThemeColor(
+                        R.attr.colorAccentSuccess
+                    )
+
+                StateMachine.BlockState.FAILED ->
+                    getThemeColor(
+                        R.attr.colorAccentFailed
+                    )
+            }
 
         paint.style = Paint.Style.FILL
-        paint.color = executionColor
+        paint.color = color
 
         canvas.drawCircle(
             nodeWorldPos.x +

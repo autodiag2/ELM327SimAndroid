@@ -708,6 +708,16 @@ class CustomView(
         drawLinkPreview(canvas)
 
         canvas.restore()
+        if (hasInProgressBlock()) {
+            postInvalidateDelayed(250L)
+        }
+    }
+
+    private fun hasInProgressBlock(): Boolean {
+        return model!!.blocks.any {
+            model!!.getBlockState(it) ==
+                StateMachine.BlockState.IN_PROGRESS
+        }
     }
 
     private fun updateAllContainerBounds() {
