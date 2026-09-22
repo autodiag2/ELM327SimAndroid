@@ -31,6 +31,7 @@ class StateMachine(
     private sealed class Event {
         data object Start : Event()
         data object Stop : Event()
+        data object ModelChanged : Event()
         data class Receive(val bytes: ByteArray) : Event()
         data class Timeout(val pathId: Int) : Event()
         data object Tick : Event()
@@ -51,7 +52,10 @@ class StateMachine(
     }
 
     private val scope =
-        CoroutineScope(Dispatchers.IO + SupervisorJob())
+        CoroutineScope(
+            Dispatchers.IO +
+                SupervisorJob()
+        )
 
     private val events =
         Channel<Event>(Channel.UNLIMITED)
@@ -61,7 +65,11 @@ class StateMachine(
 
     private var stateJob: Job? = null
     private var inputJob: Job? = null
-    private val inputChunks = Channel<ByteArray>(Channel.UNLIMITED)
+
+    private val inputChunks =
+        Channel<ByteArray>(
+            Channel.UNLIMITED
+        )
 
     private var nextPathId = 1
 
@@ -75,9 +83,10 @@ class StateMachine(
         get() = controller.emuStreams?.output
 
     init {
-        stateJob = scope.launch {
-            stateLoop()
-        }
+        stateJob =
+            scope.launch {
+                stateLoop()
+            }
     }
 
     private fun setBlockState(
@@ -93,46 +102,60 @@ class StateMachine(
     private fun startInputReader() {
         inputJob?.cancel()
 
-        inputJob = scope.launch {
-            val inputStream = input ?: run {
-                appendLog(
-                    "no hook installed cannot process",
-                    LogLevel.ERROR
-                )
+        inputJob =
+            scope.launch {
+                val inputStream =
+                    input ?: run {
+                        appendLog(
+                            "no hook installed cannot process",
+                            LogLevel.ERROR
+                        )
 
-                events.trySend(Event.Stop)
-                return@launch
-            }
+                        events.trySend(
+                            Event.Stop
+                        )
 
-            val buffer = ByteArray(512)
-
-            try {
-                while (isActive && running) {
-                    val count = inputStream.read(buffer)
-
-                    logDebug(
-                        "received ${count} bytes"
-                    )
-
-                    if (count <= 0) {
-                        continue
+                        return@launch
                     }
 
-                    inputChunks.send(
-                        buffer.copyOf(count)
+                val buffer =
+                    ByteArray(512)
+
+                try {
+                    while (
+                        isActive &&
+                        running
+                    ) {
+                        val count =
+                            inputStream.read(
+                                buffer
+                            )
+
+                        logDebug(
+                            "received ${count} bytes"
+                        )
+
+                        if (count <= 0) {
+                            continue
+                        }
+
+                        inputChunks.send(
+                            buffer.copyOf(count)
+                        )
+                    }
+                } catch (_: CancellationException) {
+                    // Normal shutdown.
+                } catch (e: Exception) {
+                    appendLog(
+                        "input reader error: ${e.message}",
+                        LogLevel.ERROR
+                    )
+
+                    events.trySend(
+                        Event.Stop
                     )
                 }
-            } catch (_: CancellationException) {
-                // Normal shutdown.
-            } catch (e: Exception) {
-                appendLog(
-                    "input reader error: ${e.message}",
-                    LogLevel.ERROR
-                )
-
-                events.trySend(Event.Stop)
             }
-        }
 
         scope.launch {
             accumulateInput()
@@ -143,13 +166,17 @@ class StateMachine(
         data: ByteArray
     ): Int {
         for (i in data.indices) {
-            if (data[i] != '\r'.code.toByte()) {
+            if (
+                data[i] !=
+                '\r'.code.toByte()
+            ) {
                 continue
             }
 
             if (
                 i + 1 < data.size &&
-                data[i + 1] == '\n'.code.toByte()
+                data[i + 1] ==
+                '\n'.code.toByte()
             ) {
                 return i + 2
             }
@@ -168,17 +195,23 @@ class StateMachine(
             pending.write(chunk)
 
             while (true) {
-                val data = pending.toByteArray()
+                val data =
+                    pending.toByteArray()
 
                 val end =
-                    findReceiveDelimiter(data)
+                    findReceiveDelimiter(
+                        data
+                    )
 
                 if (end < 0) {
                     break
                 }
 
                 val message =
-                    data.copyOfRange(0, end)
+                    data.copyOfRange(
+                        0,
+                        end
+                    )
 
                 logDebug(
                     "Input message: " +
@@ -186,7 +219,9 @@ class StateMachine(
                 )
 
                 events.send(
-                    Event.Receive(message)
+                    Event.Receive(
+                        message
+                    )
                 )
 
                 pending.reset()
@@ -208,7 +243,9 @@ class StateMachine(
     ): String {
         return controller.getString(
             resId,
-            *formatArgs.map { it ?: "" }.toTypedArray()
+            *formatArgs.map {
+                it ?: ""
+            }.toTypedArray()
         )
     }
 
@@ -222,7 +259,9 @@ class StateMachine(
         )
     }
 
-    fun logDebug(message: String) {
+    fun logDebug(
+        message: String
+    ) {
         if (BuildConfig.DEBUG) {
             Log.d(
                 "sim.serial.StateMachine",
@@ -232,11 +271,21 @@ class StateMachine(
     }
 
     fun start() {
-        events.trySend(Event.Start)
+        events.trySend(
+            Event.Start
+        )
     }
 
     fun stop() {
-        events.trySend(Event.Stop)
+        events.trySend(
+            Event.Stop
+        )
+    }
+
+    fun customModelChanged() {
+        events.trySend(
+            Event.ModelChanged
+        )
     }
 
     private suspend fun stateLoop() {
@@ -250,12 +299,20 @@ class StateMachine(
                     handleStop()
                 }
 
+                Event.ModelChanged -> {
+                    handleModelChanged()
+                }
+
                 is Event.Receive -> {
-                    handleReceive(event.bytes)
+                    handleReceive(
+                        event.bytes
+                    )
                 }
 
                 is Event.Timeout -> {
-                    handleTimeout(event.pathId)
+                    handleTimeout(
+                        event.pathId
+                    )
                 }
 
                 Event.Tick -> {
@@ -267,11 +324,14 @@ class StateMachine(
 
     private suspend fun handleStart() {
         handleStop()
+
         controller.resetBlockStates()
 
         val linkedBlockIds =
             controller.links
-                .map { it.to }
+                .map {
+                    it.to
+                }
                 .toSet()
 
         val initialBlocks =
@@ -310,6 +370,277 @@ class StateMachine(
         nextPathId = 1
     }
 
+    /**
+     * Synchronize the running state machine with the current
+     * CustomController model.
+     *
+     * This method is called only from stateLoop(), therefore
+     * paths cannot be modified concurrently with execution.
+     */
+    private suspend fun handleModelChanged() {
+        if (!running) {
+            return
+        }
+
+        logDebug(
+            "Custom model changed"
+        )
+
+        val currentBlocks =
+            controller.blocks
+                .associateBy {
+                    it.id
+                }
+
+        /*
+         * Remove paths whose current block no longer exists.
+         */
+        val removedPaths =
+            paths.filter {
+                !currentBlocks.containsKey(
+                    it.block.id
+                )
+            }
+
+        for (path in removedPaths) {
+            logDebug(
+                "Removing path=${path.id}: " +
+                    "block=${path.block.id} was deleted"
+            )
+
+            setBlockState(
+                path.block,
+                BlockState.IDLE
+            )
+
+            path.state =
+                State.FINISHED
+        }
+
+        paths.removeAll {
+            it.state == State.FINISHED
+        }
+
+        /*
+         * Keep only one active path per current block.
+         *
+         * This prevents repeated model changes from creating
+         * duplicate paths for the same execution root.
+         */
+        val duplicatePaths =
+            mutableSetOf<Int>()
+
+        val duplicatePathObjects =
+            paths.filter { path ->
+                !duplicatePaths.add(
+                    path.block.id
+                )
+            }
+
+        for (path in duplicatePathObjects) {
+            logDebug(
+                "Removing duplicate path=${path.id}: " +
+                    "block=${path.block.id}"
+            )
+
+            path.state =
+                State.FINISHED
+        }
+
+        paths.removeAll {
+            it.state == State.FINISHED
+        }
+
+        /*
+         * Recalculate execution roots.
+         *
+         * A root is a block with no incoming execution link.
+         */
+        val linkedBlockIds =
+            controller.links
+                .map {
+                    it.to
+                }
+                .toSet()
+
+        val rootBlocks =
+            controller.blocks
+                .filter {
+                    it.id !in linkedBlockIds
+                }
+
+        /*
+         * Add roots which do not currently have a path.
+         *
+         * This is important when a new block is added, or when
+         * removing an incoming link turns an existing block into
+         * a root.
+         */
+        val pathBlockIds =
+            paths
+                .map {
+                    it.block.id
+                }
+                .toMutableSet()
+
+        for (root in rootBlocks) {
+            if (
+                pathBlockIds.add(
+                    root.id
+                )
+            ) {
+                logDebug(
+                    "Model change added execution root: " +
+                        "block=${root.id}"
+                )
+
+                createPath(root)
+            }
+        }
+
+        /*
+         * Update paths whose current block changed while the
+         * model was being edited.
+         *
+         * DELAY:
+         * restart the delay using the new timeout.
+         *
+         * RECV:
+         * root receives remain infinite;
+         * non-root receives get a new timeout.
+         *
+         * SEND and CONTAINER:
+         * their changed parameters are used the next time
+         * the block executes, so no state change is necessary.
+         */
+        val now =
+            System.currentTimeMillis()
+
+        val linkedIds =
+            controller.links
+                .map {
+                    it.to
+                }
+                .toSet()
+
+        for (path in paths.toList()) {
+            if (
+                !currentBlocks.containsKey(
+                    path.block.id
+                )
+            ) {
+                continue
+            }
+
+            when (path.state) {
+                State.WAIT_DELAY -> {
+                    val block =
+                        currentBlocks[
+                            path.block.id
+                        ] ?: continue
+
+                    if (
+                        block.type !=
+                        BlockController.Type.DELAY
+                    ) {
+                        path.state =
+                            State.READY
+
+                        path.wakeTime = 0L
+
+                        setBlockState(
+                            block,
+                            BlockState.IDLE
+                        )
+
+                        continue
+                    }
+
+                    path.wakeTime =
+                        now +
+                            block.timeoutMs
+
+                    logDebug(
+                        "Updated DELAY path=" +
+                            "${path.id} " +
+                            "block=${block.id} " +
+                            "wakeTime=${path.wakeTime}"
+                    )
+                }
+
+                State.WAIT_RECV -> {
+                    val block =
+                        currentBlocks[
+                            path.block.id
+                        ] ?: continue
+
+                    if (
+                        block.type !=
+                        BlockController.Type.RECV
+                    ) {
+                        path.state =
+                            State.READY
+
+                        path.wakeTime = 0L
+
+                        setBlockState(
+                            block,
+                            BlockState.IDLE
+                        )
+
+                        continue
+                    }
+
+                    val isRoot =
+                        block.id !in linkedIds
+
+                    path.wakeTime =
+                        if (isRoot) {
+                            Long.MAX_VALUE
+                        } else {
+                            now +
+                                block.timeoutMs
+                        }
+
+                    logDebug(
+                        "Updated RECV path=" +
+                            "${path.id} " +
+                            "block=${block.id} " +
+                            "root=$isRoot " +
+                            "wakeTime=${path.wakeTime}"
+                    )
+                }
+
+                State.READY,
+                State.FINISHED -> {
+                    // Nothing to update.
+                }
+            }
+        }
+
+        /*
+         * If there are no paths left, stop execution.
+         */
+        if (paths.isEmpty()) {
+            logDebug(
+                "No execution paths remain after model change"
+            )
+
+            running = false
+
+            inputJob?.cancel()
+            inputJob = null
+
+            return
+        }
+
+        /*
+         * Make sure the execution loop continues after a model
+         * change, including when a new root was added.
+         */
+        handleTick()
+    }
+
     private suspend fun handleTick() {
         if (!running) {
             return
@@ -325,8 +656,12 @@ class StateMachine(
                 }
 
                 State.WAIT_DELAY -> {
-                    if (now >= path.wakeTime) {
-                        path.state = State.READY
+                    if (
+                        now >=
+                        path.wakeTime
+                    ) {
+                        path.state =
+                            State.READY
 
                         setBlockState(
                             path.block,
@@ -338,9 +673,14 @@ class StateMachine(
                 }
 
                 State.WAIT_RECV -> {
-                    if (now >= path.wakeTime) {
+                    if (
+                        now >=
+                        path.wakeTime
+                    ) {
                         events.trySend(
-                            Event.Timeout(path.id)
+                            Event.Timeout(
+                                path.id
+                            )
                         )
                     }
                 }
@@ -352,21 +692,29 @@ class StateMachine(
         }
 
         paths.removeAll {
-            it.state == State.FINISHED
+            it.state ==
+                State.FINISHED
         }
 
         if (paths.isEmpty()) {
             running = false
+
             inputJob?.cancel()
             inputJob = null
+
             return
         }
 
         scope.launch {
             delay(10L)
 
-            if (isActive && running) {
-                events.trySend(Event.Tick)
+            if (
+                isActive &&
+                running
+            ) {
+                events.trySend(
+                    Event.Tick
+                )
             }
         }
     }
@@ -374,9 +722,14 @@ class StateMachine(
     private suspend fun execute(
         path: Path
     ) {
-        val block = path.block
-        val blockId = block.id
-        val blockType = block.type
+        val block =
+            path.block
+
+        val blockId =
+            block.id
+
+        val blockType =
+            block.type
 
         logDebug(
             "Executing $blockType " +
@@ -414,21 +767,25 @@ class StateMachine(
                 BlockController.Type.RECV -> {
                     val linkedBlockIds =
                         controller.links
-                            .map { it.to }
+                            .map {
+                                it.to
+                            }
                             .toSet()
 
                     val isRoot =
                         block.id !in linkedBlockIds
 
                     if (isRoot) {
-                        path.wakeTime = Long.MAX_VALUE
+                        path.wakeTime =
+                            Long.MAX_VALUE
                     } else {
                         path.wakeTime =
                             System.currentTimeMillis() +
                                 block.timeoutMs
                     }
 
-                    path.state = State.WAIT_RECV
+                    path.state =
+                        State.WAIT_RECV
                 }
 
                 BlockController.Type.CONTAINER -> {
@@ -440,7 +797,9 @@ class StateMachine(
                     advance(path)
                 }
             }
-        } catch (e: TimeoutCancellationException) {
+        } catch (
+            e: TimeoutCancellationException
+        ) {
             appendLog(
                 "$blockType timeout: " +
                     "block=$blockId " +
@@ -493,7 +852,8 @@ class StateMachine(
     private suspend fun executeSend(
         block: BlockController
     ) {
-        var text = block.text
+        var text =
+            block.text
 
         if (
             block.includeEol &&
@@ -504,7 +864,9 @@ class StateMachine(
 
         val bytes =
             if (block.interpretEscapes) {
-                BlockController.parseEscapedBytes(text)
+                BlockController.parseEscapedBytes(
+                    text
+                )
             } else {
                 text.toByteArray(
                     Charsets.ISO_8859_1
@@ -544,22 +906,41 @@ class StateMachine(
 
     private fun ByteArray.toDebugString(): String {
         return buildString {
-            for (byte in this@toDebugString) {
+            for (
+                byte in this@toDebugString
+            ) {
                 val value =
                     byte.toInt() and 0xFF
 
                 when (value) {
-                    0x0D -> append("\\r")
-                    0x0A -> append("\\n")
-                    0x09 -> append("\\t")
-                    0x00 -> append("\\0")
-                    0x5C -> append("\\\\")
+                    0x0D ->
+                        append("\\r")
+
+                    0x0A ->
+                        append("\\n")
+
+                    0x09 ->
+                        append("\\t")
+
+                    0x00 ->
+                        append("\\0")
+
+                    0x5C ->
+                        append("\\\\")
+
                     else -> {
-                        if (value in 0x20..0x7E) {
-                            append(value.toChar())
+                        if (
+                            value in
+                            0x20..0x7E
+                        ) {
+                            append(
+                                value.toChar()
+                            )
                         } else {
                             append(
-                                "\\x%02X".format(value)
+                                "\\x%02X".format(
+                                    value
+                                )
                             )
                         }
                     }
@@ -583,12 +964,17 @@ class StateMachine(
         val waitingPaths =
             paths
                 .filter {
-                    it.state == State.WAIT_RECV
+                    it.state ==
+                        State.WAIT_RECV
                 }
                 .toList()
 
         for (path in waitingPaths) {
-            if (path.block.recvMatches(bytes)) {
+            if (
+                path.block.recvMatches(
+                    bytes
+                )
+            ) {
                 logDebug(
                     "RECV matched " +
                         "path=${path.id} " +
@@ -604,11 +990,14 @@ class StateMachine(
             } else {
                 val linkedBlockIds =
                     controller.links
-                        .map { it.to }
+                        .map {
+                            it.to
+                        }
                         .toSet()
 
                 val isRoot =
-                    path.block.id !in linkedBlockIds
+                    path.block.id !in
+                        linkedBlockIds
 
                 if (isRoot) {
                     setBlockState(
@@ -635,13 +1024,16 @@ class StateMachine(
         }
 
         paths.removeAll {
-            it.state == State.FINISHED
+            it.state ==
+                State.FINISHED
         }
 
         if (paths.isEmpty()) {
             running = false
+
             inputJob?.cancel()
             inputJob = null
+
             return
         }
 
@@ -660,7 +1052,10 @@ class StateMachine(
                 it.id == pathId
             } ?: return
 
-        if (path.state != State.WAIT_RECV) {
+        if (
+            path.state !=
+            State.WAIT_RECV
+        ) {
             return
         }
 
@@ -671,7 +1066,8 @@ class StateMachine(
             )
 
         appendLog(
-            exception.message ?: "RECV timeout",
+            exception.message
+                ?: "RECV timeout",
             LogLevel.ERROR
         )
 
@@ -690,11 +1086,13 @@ class StateMachine(
             State.FINISHED
 
         paths.removeAll {
-            it.state == State.FINISHED
+            it.state ==
+                State.FINISHED
         }
 
         if (paths.isEmpty()) {
             running = false
+
             inputJob?.cancel()
             inputJob = null
         }
@@ -733,7 +1131,10 @@ class StateMachine(
         path.state =
             State.READY
 
-        for (block in nextBlocks.drop(1)) {
+        for (
+            block in
+            nextBlocks.drop(1)
+        ) {
             createPath(block)
         }
     }
@@ -748,7 +1149,9 @@ class StateMachine(
 
         val linkedBlockIds =
             controller.links
-                .map { it.to }
+                .map {
+                    it.to
+                }
                 .toSet()
 
         val rootBlocks =
@@ -777,7 +1180,10 @@ class StateMachine(
         path.state =
             State.READY
 
-        for (block in rootBlocks.drop(1)) {
+        for (
+            block in
+            rootBlocks.drop(1)
+        ) {
             createPath(block)
         }
     }
@@ -806,10 +1212,22 @@ class StateMachine(
 
     private fun String.escape(): String {
         return this
-            .replace("\\", "\\\\")
-            .replace("\r", "\\r")
-            .replace("\n", "\\n")
-            .replace("\t", "\\t")
+            .replace(
+                "\\",
+                "\\\\"
+            )
+            .replace(
+                "\r",
+                "\\r"
+            )
+            .replace(
+                "\n",
+                "\\n"
+            )
+            .replace(
+                "\t",
+                "\\t"
+            )
     }
 
     fun destroy() {

@@ -341,6 +341,7 @@ class CustomController(
      * state changes.
      */
     public fun onDataChanged() {
+        stateMachine.customModelChanged()
         view.refresh()
     }
 
