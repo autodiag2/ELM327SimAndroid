@@ -18,7 +18,7 @@ import androidx.core.view.setPadding
 
 open class BlockController(
     var type: BlockController.Type,
-    var delay: Int = 0,
+    var timeoutMs: Int = 0,
     var text: String = "",
     var match: String = "exact",
     var includeEol: Boolean = false,
@@ -149,7 +149,7 @@ open class BlockController(
                     BlockController.Type.DELAY -> {
                         BlockController(
                             type = type,
-                            delay = blockContent.optInt("delay", 10),
+                            timeoutMs = blockContent.optInt("timeoutMs", 10),
                             name = blockContent.optString("name", "Delay"),
                             id = id,
                         )
@@ -344,8 +344,8 @@ open class BlockController(
                     name
                 )
                 value.put(
-                    "delay",
-                    delay
+                    "timeoutMs",
+                    timeoutMs
                 )
                 jsonBlock.put(
                     "content",
@@ -493,14 +493,14 @@ open class BlockController(
     private fun editDelay() {
         val input = EditText(view!!.context).apply {
             inputType = InputType.TYPE_CLASS_NUMBER
-            setText(delay.toString())
+            setText(timeoutMs.toString())
         }
 
         android.app.AlertDialog.Builder(view!!.context)
             .setTitle(R.string.sim_custom_serial_script_delay)
             .setView(input)
             .setPositiveButton(android.R.string.ok) { _, _ ->
-                delay = input.text.toString().toIntOrNull() ?: 0
+                timeoutMs = input.text.toString().toIntOrNull() ?: 0
                 viewRefresh()
             }
             .setNegativeButton(android.R.string.cancel, null)

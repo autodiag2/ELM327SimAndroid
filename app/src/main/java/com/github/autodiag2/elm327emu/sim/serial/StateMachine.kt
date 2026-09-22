@@ -419,7 +419,7 @@ class StateMachine(
             BlockController.Type.DELAY -> {
                 path.wakeTime =
                     System.currentTimeMillis() +
-                        block.delay
+                        block.timeoutMs
 
                 path.state = State.WAIT_DELAY
             }

@@ -253,7 +253,7 @@ open class BlockView(
         val summary =
             when (model!!.type) {
                 BlockController.Type.DELAY ->
-                    "${model!!.delay}ms"
+                    "${model!!.timeoutMs}ms"
 
                 BlockController.Type.SEND ->
                     model!!.text
@@ -512,7 +512,7 @@ open class BlockView(
             val summary =
                 when (model!!.type) {
                     BlockController.Type.DELAY ->
-                        "${model!!.delay}ms"
+                        "${model!!.timeoutMs}ms"
 
                     BlockController.Type.SEND ->
                         model!!.text
