@@ -622,15 +622,22 @@ open class BlockController(
     }
 
     private fun editDelay() {
-        val input =
-            EditText(view!!.context).apply {
-                inputType =
-                    InputType.TYPE_CLASS_NUMBER
-
-                setText(
-                    timeoutMs.toString()
+        val layout =
+            android.view.LayoutInflater
+                .from(view!!.context)
+                .inflate(
+                    R.layout.sim_customserial_edit_delay,
+                    null
                 )
-            }
+
+        val input =
+            layout.findViewById<EditText>(
+                R.id.sim_customserial_edit_delay_timeout
+            )
+
+        input.setText(
+            timeoutMs.toString()
+        )
 
         android.app.AlertDialog.Builder(
             view!!.context
@@ -638,7 +645,7 @@ open class BlockController(
             .setTitle(
                 R.string.sim_custom_serial_script_delay
             )
-            .setView(input)
+            .setView(layout)
             .setPositiveButton(
                 android.R.string.ok
             ) { _, _ ->
@@ -660,39 +667,39 @@ open class BlockController(
 
     private fun editReceive() {
         val layout =
-            LinearLayout(
-                view!!.context
-            ).apply {
-                orientation =
-                    LinearLayout.VERTICAL
-
-                setPadding(
-                    dp(16)
+            android.view.LayoutInflater
+                .from(view!!.context)
+                .inflate(
+                    R.layout.sim_customserial_edit_recv,
+                    null
                 )
-            }
 
         val timeout =
-            EditText(view!!.context).apply {
-                hint = "Timeout (ms)"
-                inputType =
-                    InputType.TYPE_CLASS_NUMBER
+            layout.findViewById<EditText>(
+                R.id.sim_customserial_edit_recv_timeout
+            )
 
-                setText(
-                    this@BlockController.timeoutMs
-                        .toString()
-                )
-            }
+        timeout.setText(
+            this@BlockController.timeoutMs
+                .toString()
+        )
 
         val mode =
-            Spinner(view!!.context)
+            layout.findViewById<Spinner>(
+                R.id.sim_customserial_edit_recv_match
+            )
 
         mode.adapter =
             ArrayAdapter(
                 view!!.context,
                 android.R.layout.simple_spinner_item,
                 listOf(
-                    "Exact",
-                    "Regular expression"
+                    view!!.context.getString(
+                        R.string.sim_customserial_edit_recv_match_exact
+                    ),
+                    view!!.context.getString(
+                        R.string.sim_customserial_edit_recv_match_regex
+                    )
                 )
             )
 
@@ -705,37 +712,29 @@ open class BlockController(
         )
 
         val initial_text =
-            EditText(view!!.context).apply {
-                hint = "Pattern"
-                setText(
-                    this@BlockController.text
-                )
-                inputType =
-                    InputType.TYPE_CLASS_TEXT or
-                    InputType.TYPE_TEXT_FLAG_MULTI_LINE
-            }
+            layout.findViewById<EditText>(
+                R.id.sim_customserial_edit_recv_pattern
+            )
+
+        initial_text.setText(
+            this@BlockController.text
+        )
 
         val ignore_case =
-            CheckBox(view!!.context).apply {
-                text =
-                    "Ignore case"
-                isChecked =
-                    this@BlockController.ignoreCase
-            }
+            layout.findViewById<CheckBox>(
+                R.id.sim_customserial_edit_recv_ignore_case
+            )
+
+        ignore_case.isChecked =
+            this@BlockController.ignoreCase
 
         val escapes =
-            CheckBox(view!!.context).apply {
-                text =
-                    "Interpret \\r, \\n, \\xhh..."
-                isChecked =
-                    interpretEscapes
-            }
+            layout.findViewById<CheckBox>(
+                R.id.sim_customserial_edit_recv_interpret_escapes
+            )
 
-        layout.addView(timeout)
-        layout.addView(mode)
-        layout.addView(initial_text)
-        layout.addView(ignore_case)
-        layout.addView(escapes)
+        escapes.isChecked =
+            interpretEscapes
 
         android.app.AlertDialog.Builder(
             view!!.context
@@ -783,60 +782,47 @@ open class BlockController(
 
     private fun editSend() {
         val layout =
-            LinearLayout(
-                view!!.context
-            ).apply {
-                orientation =
-                    LinearLayout.VERTICAL
-
-                setPadding(
-                    dp(16)
+            android.view.LayoutInflater
+                .from(view!!.context)
+                .inflate(
+                    R.layout.sim_customserial_edit_send,
+                    null
                 )
-            }
 
         val timeout =
-            EditText(view!!.context).apply {
-                hint = "Timeout (ms)"
-                inputType =
-                    InputType.TYPE_CLASS_NUMBER
+            layout.findViewById<EditText>(
+                R.id.sim_customserial_edit_send_timeout
+            )
 
-                setText(
-                    this@BlockController.timeoutMs
-                        .toString()
-                )
-            }
+        timeout.setText(
+            this@BlockController.timeoutMs
+                .toString()
+        )
 
         val initial_text =
-            EditText(view!!.context).apply {
-                hint = "ASCII text"
-                setText(
-                    this@BlockController.text
-                )
-                inputType =
-                    InputType.TYPE_CLASS_TEXT or
-                    InputType.TYPE_TEXT_FLAG_MULTI_LINE
-            }
+            layout.findViewById<EditText>(
+                R.id.sim_customserial_edit_send_text
+            )
+
+        initial_text.setText(
+            this@BlockController.text
+        )
 
         val eol =
-            CheckBox(view!!.context).apply {
-                text =
-                    "Automatically append EOL"
-                isChecked =
-                    includeEol
-            }
+            layout.findViewById<CheckBox>(
+                R.id.sim_customserial_edit_send_eol
+            )
+
+        eol.isChecked =
+            includeEol
 
         val escapes =
-            CheckBox(view!!.context).apply {
-                text =
-                    "Interpret \\r, \\n, \\xhh..."
-                isChecked =
-                    interpretEscapes
-            }
+            layout.findViewById<CheckBox>(
+                R.id.sim_customserial_edit_send_interpret_escapes
+            )
 
-        layout.addView(timeout)
-        layout.addView(initial_text)
-        layout.addView(eol)
-        layout.addView(escapes)
+        escapes.isChecked =
+            interpretEscapes
 
         android.app.AlertDialog.Builder(
             view!!.context
@@ -874,12 +860,22 @@ open class BlockController(
     }
 
     private fun editContainer() {
-        val input =
-            EditText(view!!.context).apply {
-                setText(
-                    this@BlockController.name
+        val layout =
+            android.view.LayoutInflater
+                .from(view!!.context)
+                .inflate(
+                    R.layout.sim_customserial_edit_container,
+                    null
                 )
-            }
+
+        val input =
+            layout.findViewById<EditText>(
+                R.id.sim_customserial_edit_container_name
+            )
+
+        input.setText(
+            this@BlockController.name
+        )
 
         android.app.AlertDialog.Builder(
             view!!.context
@@ -887,7 +883,7 @@ open class BlockController(
             .setTitle(
                 R.string.sim_custom_serial_script_container
             )
-            .setView(input)
+            .setView(layout)
             .setPositiveButton(
                 android.R.string.ok
             ) { _, _ ->

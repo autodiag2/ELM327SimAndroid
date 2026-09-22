@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/sim_customserial_edit_send_timeout_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/sim_customserial_edit_send_timeout_label" />
+
+    <EditText
+        android:id="@+id/sim_customserial_edit_send_timeout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="number" />
+
+    <TextView
+        android:id="@+id/sim_customserial_edit_send_text_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/sim_customserial_edit_send_text_label" />
+
+    <EditText
+        android:id="@+id/sim_customserial_edit_send_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="text|textMultiLine" />
+
+    <CheckBox
+        android:id="@+id/sim_customserial_edit_send_eol"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/sim_customserial_edit_send_eol" />
+
+    <CheckBox
+        android:id="@+id/sim_customserial_edit_send_interpret_escapes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/sim_customserial_edit_send_interpret_escapes" />
+
+</LinearLayout>

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/sim_customserial_edit_recv_timeout_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/sim_customserial_edit_recv_timeout_label" />
+
+    <EditText
+        android:id="@+id/sim_customserial_edit_recv_timeout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="number" />
+
+    <TextView
+        android:id="@+id/sim_customserial_edit_recv_match_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/sim_customserial_edit_recv_match_label" />
+
+    <Spinner
+        android:id="@+id/sim_customserial_edit_recv_match"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/sim_customserial_edit_recv_pattern_label"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/sim_customserial_edit_recv_pattern_label" />
+
+    <EditText
+        android:id="@+id/sim_customserial_edit_recv_pattern"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="text|textMultiLine" />
+
+    <CheckBox
+        android:id="@+id/sim_customserial_edit_recv_ignore_case"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/sim_customserial_edit_recv_ignore_case" />
+
+    <CheckBox
+        android:id="@+id/sim_customserial_edit_recv_interpret_escapes"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/sim_customserial_edit_recv_interpret_escapes" />
+
+</LinearLayout>
