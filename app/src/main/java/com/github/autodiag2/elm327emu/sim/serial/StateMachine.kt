@@ -8,6 +8,7 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
 import java.io.InputStream
 import java.io.OutputStream
+import java.util.concurrent.TimeoutException
 
 class StateMachine(
     private val controller: CustomController,
@@ -27,16 +28,11 @@ class StateMachine(
         var wakeTime: Long = 0L
     )
 
-    /*
-     * All interaction with the state machine goes through this channel.
-     *
-     * The coroutine consuming this channel is the only code allowed to
-     * modify paths or execute state transitions.
-     */
     private sealed class Event {
         data object Start : Event()
         data object Stop : Event()
         data class Receive(val bytes: ByteArray) : Event()
+        data class Timeout(val pathId: Int) : Event()
         data object Tick : Event()
     }
 
@@ -60,9 +56,6 @@ class StateMachine(
     private val events =
         Channel<Event>(Channel.UNLIMITED)
 
-    /*
-     * ONLY stateLoop() accesses this list.
-     */
     private val paths =
         mutableListOf<Path>()
 
@@ -72,11 +65,6 @@ class StateMachine(
 
     private var nextPathId = 1
 
-    /*
-     * True only while the execution graph is running.
-     *
-     * Accessed outside the state-machine coroutine, therefore volatile.
-     */
     @Volatile
     private var running = false
 
@@ -121,7 +109,11 @@ class StateMachine(
             try {
                 while (isActive && running) {
                     val count = inputStream.read(buffer)
-                    logDebug("received ${count} bytes")
+
+                    logDebug(
+                        "received ${count} bytes"
+                    )
+
                     if (count <= 0) {
                         continue
                     }
@@ -155,9 +147,6 @@ class StateMachine(
                 continue
             }
 
-            /*
-            * CRLF
-            */
             if (
                 i + 1 < data.size &&
                 data[i + 1] == '\n'.code.toByte()
@@ -165,9 +154,6 @@ class StateMachine(
                 return i + 2
             }
 
-            /*
-            * CR alone
-            */
             return i + 1
         }
 
@@ -203,9 +189,6 @@ class StateMachine(
                     Event.Receive(message)
                 )
 
-                /*
-                * Pop the consumed message.
-                */
                 pending.reset()
 
                 if (end < data.size) {
@@ -233,7 +216,10 @@ class StateMachine(
         text: String,
         level: LogLevel = LogLevel.DEBUG
     ) {
-        controller.activity.appendLog(text, level)
+        controller.activity.appendLog(
+            text,
+            level
+        )
     }
 
     fun logDebug(message: String) {
@@ -245,13 +231,6 @@ class StateMachine(
         }
     }
 
-    /*
-     * Public API.
-     *
-     * These methods NEVER execute state-machine logic directly.
-     * They only enqueue events.
-     */
-
     fun start() {
         events.trySend(Event.Start)
     }
@@ -260,9 +239,6 @@ class StateMachine(
         events.trySend(Event.Stop)
     }
 
-    /*
-     * The ONLY owner of paths and execution state.
-     */
     private suspend fun stateLoop() {
         for (event in events) {
             when (event) {
@@ -278,6 +254,10 @@ class StateMachine(
                     handleReceive(event.bytes)
                 }
 
+                is Event.Timeout -> {
+                    handleTimeout(event.pathId)
+                }
+
                 Event.Tick -> {
                     handleTick()
                 }
@@ -285,15 +265,10 @@ class StateMachine(
         }
     }
 
-    private fun handleStart() {
+    private suspend fun handleStart() {
         handleStop()
         controller.resetBlockStates()
-        /*
-         * Execution roots are blocks with NO incoming execution link.
-         *
-         * Block.parent is the visual/container hierarchy and must not
-         * be used to determine execution roots.
-         */
+
         val linkedBlockIds =
             controller.links
                 .map { it.to }
@@ -301,7 +276,9 @@ class StateMachine(
 
         val initialBlocks =
             controller.blocks
-                .filter { it.id !in linkedBlockIds }
+                .filter {
+                    it.id !in linkedBlockIds
+                }
 
         logDebug(
             "Execution roots: " +
@@ -310,7 +287,8 @@ class StateMachine(
                 }
         )
 
-        running = initialBlocks.isNotEmpty()
+        running =
+            initialBlocks.isNotEmpty()
 
         for (block in initialBlocks) {
             createPath(block)
@@ -332,17 +310,13 @@ class StateMachine(
         nextPathId = 1
     }
 
-    /*
-     * Execute one pass through every active path.
-     *
-     * This is ONLY called by stateLoop().
-     */
-    private fun handleTick() {
+    private suspend fun handleTick() {
         if (!running) {
             return
         }
 
-        val now = System.currentTimeMillis()
+        val now =
+            System.currentTimeMillis()
 
         for (path in paths.toList()) {
             when (path.state) {
@@ -353,16 +327,22 @@ class StateMachine(
                 State.WAIT_DELAY -> {
                     if (now >= path.wakeTime) {
                         path.state = State.READY
+
                         setBlockState(
                             path.block,
                             BlockState.SUCCESS
                         )
-                        execute(path)
+
+                        advance(path)
                     }
                 }
 
                 State.WAIT_RECV -> {
-                    // Waiting for a Receive event.
+                    if (now >= path.wakeTime) {
+                        events.trySend(
+                            Event.Timeout(path.id)
+                        )
+                    }
                 }
 
                 State.FINISHED -> {
@@ -371,10 +351,6 @@ class StateMachine(
             }
         }
 
-        /*
-         * Remove finished paths before deciding whether the graph
-         * is still running.
-         */
         paths.removeAll {
             it.state == State.FINISHED
         }
@@ -386,12 +362,6 @@ class StateMachine(
             return
         }
 
-        /*
-         * Schedule another state-machine tick.
-         *
-         * This does NOT execute the state machine directly.
-         * It only posts another event.
-         */
         scope.launch {
             delay(10L)
 
@@ -401,7 +371,9 @@ class StateMachine(
         }
     }
 
-    private fun execute(path: Path) {
+    private suspend fun execute(
+        path: Path
+    ) {
         val block = path.block
         val blockId = block.id
         val blockType = block.type
@@ -411,39 +383,93 @@ class StateMachine(
                 "path=${path.id} " +
                 "block=$blockId"
         )
+
         setBlockState(
             block,
             BlockState.IN_PROGRESS
         )
-        when (blockType) {
-            BlockController.Type.DELAY -> {
-                path.wakeTime =
-                    System.currentTimeMillis() +
-                        block.timeoutMs
 
-                path.state = State.WAIT_DELAY
-            }
+        try {
+            when (blockType) {
+                BlockController.Type.DELAY -> {
+                    path.wakeTime =
+                        System.currentTimeMillis() +
+                            block.timeoutMs
 
-            BlockController.Type.SEND -> {
-                executeSend(block)
-                setBlockState(
-                    block,
-                    BlockState.SUCCESS
-                )
-                advance(path)
-            }
+                    path.state =
+                        State.WAIT_DELAY
+                }
 
-            BlockController.Type.RECV -> {
-                path.state = State.WAIT_RECV
-            }
+                BlockController.Type.SEND -> {
+                    executeSend(block)
 
-            BlockController.Type.CONTAINER -> {
-                setBlockState(
-                    block,
-                    BlockState.SUCCESS
-                )
-                advance(path)
+                    setBlockState(
+                        block,
+                        BlockState.SUCCESS
+                    )
+
+                    advance(path)
+                }
+
+                BlockController.Type.RECV -> {
+                    path.wakeTime =
+                        System.currentTimeMillis() +
+                            block.timeoutMs
+
+                    path.state =
+                        State.WAIT_RECV
+                }
+
+                BlockController.Type.CONTAINER -> {
+                    setBlockState(
+                        block,
+                        BlockState.SUCCESS
+                    )
+
+                    advance(path)
+                }
             }
+        } catch (e: TimeoutCancellationException) {
+            appendLog(
+                "$blockType timeout: " +
+                    "block=$blockId " +
+                    "timeout=${block.timeoutMs}ms",
+                LogLevel.ERROR
+            )
+
+            logDebug(
+                "$blockType TIMEOUT " +
+                    "path=${path.id} " +
+                    "block=$blockId"
+            )
+
+            setBlockState(
+                block,
+                BlockState.FAILED
+            )
+
+            path.state =
+                State.FINISHED
+        } catch (e: Exception) {
+            appendLog(
+                "$blockType error: " +
+                    "block=$blockId: ${e.message}",
+                LogLevel.ERROR
+            )
+
+            logDebug(
+                "$blockType ERROR " +
+                    "path=${path.id} " +
+                    "block=$blockId: ${e.message}"
+            )
+
+            setBlockState(
+                block,
+                BlockState.FAILED
+            )
+
+            path.state =
+                State.FINISHED
         }
 
         logDebug(
@@ -453,7 +479,9 @@ class StateMachine(
         )
     }
 
-    private fun executeSend(block: BlockController) {
+    private suspend fun executeSend(
+        block: BlockController
+    ) {
         var text = block.text
 
         if (
@@ -477,8 +505,25 @@ class StateMachine(
                 bytes.toDebugString()
         )
 
-        output!!.write(bytes)
-        output!!.flush()
+        val stream =
+            output
+                ?: throw IllegalStateException(
+                    "No output stream"
+                )
+
+        if (block.timeoutMs <= 0) {
+            stream.write(bytes)
+            stream.flush()
+        } else {
+            withTimeout(
+                block.timeoutMs.toLong()
+            ) {
+                runInterruptible {
+                    stream.write(bytes)
+                    stream.flush()
+                }
+            }
+        }
 
         logDebug(
             "SEND WRITE DONE -> " +
@@ -489,7 +534,8 @@ class StateMachine(
     private fun ByteArray.toDebugString(): String {
         return buildString {
             for (byte in this@toDebugString) {
-                val value = byte.toInt() and 0xFF
+                val value =
+                    byte.toInt() and 0xFF
 
                 when (value) {
                     0x0D -> append("\\r")
@@ -511,7 +557,9 @@ class StateMachine(
         }
     }
 
-    private fun handleReceive(bytes: ByteArray) {
+    private suspend fun handleReceive(
+        bytes: ByteArray
+    ) {
         if (!running) {
             return
         }
@@ -521,10 +569,6 @@ class StateMachine(
                 bytes.toDebugString()
         )
 
-        /*
-        * Only paths which were already waiting before this receive
-        * event can consume it.
-        */
         val waitingPaths =
             paths
                 .filter {
@@ -539,10 +583,12 @@ class StateMachine(
                         "path=${path.id} " +
                         "block=${path.block.id}"
                 )
+
                 setBlockState(
                     path.block,
                     BlockState.SUCCESS
                 )
+
                 advance(path)
             } else {
                 val linkedBlockIds =
@@ -554,10 +600,6 @@ class StateMachine(
                     path.block.id !in linkedBlockIds
 
                 if (isRoot) {
-                    /*
-                    * Initial Receive blocks remain waiting until their
-                    * expected request is received.
-                    */
                     setBlockState(
                         path.block,
                         BlockState.IN_PROGRESS
@@ -575,30 +617,94 @@ class StateMachine(
                         BlockState.FAILED
                     )
 
-                    path.state = State.FINISHED
+                    path.state =
+                        State.FINISHED
                 }
             }
+        }
+
+        paths.removeAll {
+            it.state == State.FINISHED
+        }
+
+        if (paths.isEmpty()) {
+            running = false
+            inputJob?.cancel()
+            inputJob = null
+            return
         }
 
         handleTick()
     }
 
-    /*
-     * Follow ONLY execution links.
-     *
-     * Block.parent is deliberately not considered here.
-     */
-    private fun advance(path: Path) {
+    private fun handleTimeout(
+        pathId: Int
+    ) {
+        if (!running) {
+            return
+        }
+
+        val path =
+            paths.find {
+                it.id == pathId
+            } ?: return
+
+        if (path.state != State.WAIT_RECV) {
+            return
+        }
+
+        val exception =
+            TimeoutException(
+                "RECV timeout for " +
+                    "block=${path.block.id}"
+            )
+
+        appendLog(
+            exception.message ?: "RECV timeout",
+            LogLevel.ERROR
+        )
+
+        logDebug(
+            "RECV TIMEOUT " +
+                "path=${path.id} " +
+                "block=${path.block.id}"
+        )
+
+        setBlockState(
+            path.block,
+            BlockState.FAILED
+        )
+
+        path.state =
+            State.FINISHED
+
+        paths.removeAll {
+            it.state == State.FINISHED
+        }
+
+        if (paths.isEmpty()) {
+            running = false
+            inputJob?.cancel()
+            inputJob = null
+        }
+    }
+
+    private fun advance(
+        path: Path
+    ) {
         logDebug(
             "advance path=${path.id} " +
                 "block=${path.block.id}"
         )
 
-        val fromId = path.block.id
+        val fromId =
+            path.block.id
 
         val nextBlocks =
             controller.links
-                .filter { it.from == fromId }
+                .filter {
+                    it.from == fromId
+                }
                 .mapNotNull { link ->
                     controller.blocks.find {
                         it.id == link.to
@@ -610,17 +716,23 @@ class StateMachine(
             return
         }
 
-        path.block = nextBlocks.first()
-        path.state = State.READY
+        path.block =
+            nextBlocks.first()
+
+        path.state =
+            State.READY
 
         for (block in nextBlocks.drop(1)) {
             createPath(block)
         }
     }
 
-    private fun onPathEnded(path: Path) {
+    private fun onPathEnded(
+        path: Path
+    ) {
         logDebug(
-            "path=${path.id} ended at block=${path.block.id}"
+            "path=${path.id} ended at " +
+                "block=${path.block.id}"
         )
 
         val linkedBlockIds =
@@ -630,10 +742,14 @@ class StateMachine(
 
         val rootBlocks =
             controller.blocks
-                .filter { it.id !in linkedBlockIds }
+                .filter {
+                    it.id !in linkedBlockIds
+                }
 
         if (rootBlocks.isEmpty()) {
-            path.state = State.FINISHED
+            path.state =
+                State.FINISHED
+
             return
         }
 
@@ -644,15 +760,20 @@ class StateMachine(
                 }
         )
 
-        path.block = rootBlocks.first()
-        path.state = State.READY
+        path.block =
+            rootBlocks.first()
+
+        path.state =
+            State.READY
 
         for (block in rootBlocks.drop(1)) {
             createPath(block)
         }
     }
 
-    private fun createPath(block: BlockController) {
+    private fun createPath(
+        block: BlockController
+    ) {
         val path =
             Path(
                 id = nextPathId++,
