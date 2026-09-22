@@ -21,6 +21,7 @@ open class BlockController(
     var timeoutMs: Int = 0,
     var text: String = "",
     var match: String = "exact",
+    var ignoreCase: Boolean = true,
     var includeEol: Boolean = false,
     var interpretEscapes: Boolean = true,
     var name: String = "",
@@ -196,6 +197,7 @@ open class BlockController(
                                 "match",
                                 "exact"
                             ),
+                        ignoreCase = blockContent.optBoolean("ignoreCase", false),
                         text =
                             blockContent.optString(
                                 "text",
@@ -303,18 +305,25 @@ open class BlockController(
         val result =
             when (match.lowercase()) {
                 "exact" -> {
-                    received.contentEquals(
-                        expected
-                    )
+                    if (ignoreCase) {
+                        received
+                            .toString(Charsets.ISO_8859_1)
+                            .equals(
+                                expected.toString(
+                                    Charsets.ISO_8859_1
+                                ),
+                                ignoreCase = true
+                            )
+                    } else {
+                        received.contentEquals(
+                            expected
+                        )
+                    }
                 }
 
                 "regex" -> {
                     val pattern =
                         if (interpretEscapes) {
-                            /*
-                             * Decode escaped sequences before
-                             * creating the regex.
-                             */
                             parseEscapedBytes(text)
                                 .toString(
                                     Charsets.ISO_8859_1
@@ -323,12 +332,18 @@ open class BlockController(
                             text
                         }
 
-                    Regex(pattern)
-                        .containsMatchIn(
-                            received.toString(
-                                Charsets.ISO_8859_1
-                            )
+                    Regex(
+                        pattern,
+                        if (ignoreCase) {
+                            setOf(RegexOption.IGNORE_CASE)
+                        } else {
+                            emptySet()
+                        }
+                    ).containsMatchIn(
+                        received.toString(
+                            Charsets.ISO_8859_1
                         )
+                    )
                 }
 
                 else -> {
@@ -337,9 +352,20 @@ open class BlockController(
                             "using exact"
                     )
 
-                    received.contentEquals(
-                        expected
-                    )
+                    if (ignoreCase) {
+                        received
+                            .toString(Charsets.ISO_8859_1)
+                            .equals(
+                                expected.toString(
+                                    Charsets.ISO_8859_1
+                                ),
+                                ignoreCase = true
+                            )
+                    } else {
+                        received.contentEquals(
+                            expected
+                        )
+                    }
                 }
             }
 
@@ -348,6 +374,7 @@ open class BlockController(
                 "${if (result) "SUCCESS" else "FAILED"} " +
                 "block=${id} " +
                 "mode=${match} " +
+                "ignoreCase=${ignoreCase} " +
                 "expected=${expected.toDebugString()} " +
                 "received=${received.toDebugString()}"
         )
@@ -449,6 +476,11 @@ open class BlockController(
                 value.put(
                     "match",
                     match
+                )
+
+                value.put(
+                    "ignoreCase",
+                    ignoreCase
                 )
 
                 value.put(
@@ -683,6 +715,14 @@ open class BlockController(
                     InputType.TYPE_TEXT_FLAG_MULTI_LINE
             }
 
+        val ignore_case =
+            CheckBox(view!!.context).apply {
+                text =
+                    "Ignore case"
+                isChecked =
+                    this@BlockController.ignoreCase
+            }
+
         val escapes =
             CheckBox(view!!.context).apply {
                 text =
@@ -694,6 +734,7 @@ open class BlockController(
         layout.addView(timeout)
         layout.addView(mode)
         layout.addView(initial_text)
+        layout.addView(ignore_case)
         layout.addView(escapes)
 
         android.app.AlertDialog.Builder(
@@ -724,6 +765,9 @@ open class BlockController(
 
                 text =
                     initial_text.text.toString()
+
+                ignoreCase =
+                    ignore_case.isChecked
 
                 interpretEscapes =
                     escapes.isChecked
