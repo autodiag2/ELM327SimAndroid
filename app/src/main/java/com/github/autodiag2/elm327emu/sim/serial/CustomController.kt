@@ -17,7 +17,6 @@ import androidx.core.view.setPadding
 import org.json.JSONArray
 import org.json.JSONObject
 import com.github.autodiag2.elm327emu.R
-import com.github.autodiag2.elm327emu.sim.serial.CustomView
 import android.util.Log
 import com.github.autodiag2.elm327emu.BuildConfig
 import com.github.autodiag2.elm327emu.ui.JsonConfigurable
@@ -88,7 +87,8 @@ private class QueueInputStream : InputStream() {
         offset: Int,
         length: Int
     ): Int {
-        if (offset < 0 ||
+        if (
+            offset < 0 ||
             length < 0 ||
             offset > buffer.size - length
         ) {
@@ -147,6 +147,7 @@ private class QueueInputStream : InputStream() {
                     queue.take()
                 } catch (e: InterruptedException) {
                     Thread.currentThread().interrupt()
+
                     throw IOException(
                         "Input interrupted",
                         e
@@ -202,7 +203,8 @@ private class QueueOutputStream(
             )
         }
 
-        if (offset < 0 ||
+        if (
+            offset < 0 ||
             length < 0 ||
             offset > buffer.size - length
         ) {
@@ -238,31 +240,39 @@ private class QueueOutputStream(
         target.close()
     }
 }
+
 class QueueDuplexStreams {
     // StateMachine -> Bluetooth
-    private val toBluetooth = QueueInputStream()
+    private val toBluetooth =
+        QueueInputStream()
 
     // Bluetooth -> StateMachine
-    private val fromBluetooth = QueueInputStream()
+    private val fromBluetooth =
+        QueueInputStream()
 
     val input: InputStream =
         fromBluetooth
 
     val output: OutputStream =
-        QueueOutputStream(toBluetooth)
+        QueueOutputStream(
+            toBluetooth
+        )
 
     // Endpoints used by EmuInterface
     val bridgeInput: InputStream =
         toBluetooth
 
     val bridgeOutput: OutputStream =
-        QueueOutputStream(fromBluetooth)
+        QueueOutputStream(
+            fromBluetooth
+        )
 
     fun close() {
         output.close()
         bridgeOutput.close()
     }
 }
+
 class CustomController(
     public val activity: MainActivity
 ) : LinearLayout(activity),
@@ -302,7 +312,8 @@ class CustomController(
             StateMachine.BlockState
         >()
 
-    var emuStreams: QueueDuplexStreams? = null
+    var emuStreams:
+        QueueDuplexStreams? = null
 
     init {
         orientation = VERTICAL
@@ -319,6 +330,18 @@ class CustomController(
             )
 
         view.model = this
+    }
+
+    // ------------ Data change ------------
+
+    /**
+     * Called whenever the script model has changed.
+     *
+     * This is deliberately separate from selection and runtime
+     * state changes.
+     */
+    public fun onDataChanged() {
+        view.refresh()
     }
 
     // ------------ listener state machine ------------
@@ -352,6 +375,7 @@ class CustomController(
         block: BlockView
     ) {
         block.model!!.edit()
+        onDataChanged()
     }
 
     override fun onLinkToBlock(
@@ -372,6 +396,8 @@ class CustomController(
         linkModel.view = linkView
 
         links.add(linkModel)
+
+        onDataChanged()
     }
 
     override fun onBlockIncluded(
@@ -394,6 +420,7 @@ class CustomController(
             parent.model!!
 
         debugBlockTree()
+        onDataChanged()
     }
 
     override fun onBlockExcluded(
@@ -407,6 +434,8 @@ class CustomController(
         )
 
         child.model!!.parent = null
+
+        onDataChanged()
     }
 
     override fun onElementSelected(
@@ -550,7 +579,10 @@ class CustomController(
                         link.second as? Int
                             ?: return false
 
-                    Pair(from, to)
+                    Pair(
+                        from,
+                        to
+                    )
                 }
 
                 is Int -> {
@@ -647,11 +679,12 @@ class CustomController(
         blocks.clear()
         links.clear()
         onUnselectAll()
-        view.refresh()
+
+        onDataChanged()
     }
 
     public fun clearWithDialog() {
-        android.app.AlertDialog.Builder(
+        AlertDialog.Builder(
             activity
         )
             .setTitle(
@@ -699,7 +732,7 @@ class CustomController(
 
         links.remove(linkm)
 
-        view.refresh()
+        onDataChanged()
     }
 
     private fun rmBlock(
@@ -753,7 +786,7 @@ class CustomController(
             }
         }
 
-        view.refresh()
+        onDataChanged()
     }
 
     private fun addBlock(
@@ -816,15 +849,15 @@ class CustomController(
             block.parent = to
         }
 
-        view.refresh()
         debugBlockTree()
+        onDataChanged()
     }
 
     private fun getScriptName(): String {
         return "TODO.json"
     }
 
-    // ------- Action Menu listerner -------
+    // ------- Action Menu listener -------
 
     public fun onImportClipboard() {
         val clipboard =
@@ -1028,7 +1061,7 @@ class CustomController(
                 .mapNotNull { (from, to) ->
                     links.find {
                         it.from == from &&
-                        it.to == to
+                            it.to == to
                     }
                 }
                 .toList()
@@ -1041,10 +1074,10 @@ class CustomController(
             rmLink(link)
         }
 
-        view.refresh()
+        onDataChanged()
     }
 
-    // ------- End Action Menu listerner -------
+    // ------- End Action Menu listener -------
 
     fun isSomeSelection(): Boolean {
         return !selectedBlocks.isEmpty() ||
@@ -1170,9 +1203,9 @@ class CustomController(
             ) ?: JSONArray()
 
         /*
-        * Build the models first. This allows container references
-        * to refer to blocks appearing later in the JSON array.
-        */
+         * Build the models first. This allows container references
+         * to refer to blocks appearing later in the JSON array.
+         */
         val importedBlocks =
             mutableListOf<BlockController>()
 
@@ -1208,8 +1241,8 @@ class CustomController(
         }
 
         /*
-        * Validate and rebuild parent relationships.
-        */
+         * Validate and rebuild parent relationships.
+         */
         for (parent in importedBlocks) {
             for (childId in parent.children) {
                 val child =
@@ -1247,13 +1280,13 @@ class CustomController(
         }
 
         /*
-        * Replace the current script.
-        */
+         * Replace the current script.
+         */
         clear()
 
         /*
-        * Add blocks to the view.
-        */
+         * Add blocks to the view.
+         */
         for (block in importedBlocks) {
             val blockView =
                 view.addBlock(
@@ -1270,12 +1303,12 @@ class CustomController(
         }
 
         /*
-        * Restore exact saved coordinates.
-        *
-        * x/y are:
-        *   - world coordinates for root blocks
-        *   - parent-relative coordinates for children
-        */
+         * Restore exact saved coordinates.
+         *
+         * x/y are:
+         *   - world coordinates for root blocks
+         *   - parent-relative coordinates for children
+         */
         for (
             i in 0 until jsonBlocks.length()
         ) {
@@ -1311,8 +1344,8 @@ class CustomController(
         }
 
         /*
-        * Restore links.
-        */
+         * Restore links.
+         */
         for (
             i in 0 until jsonFlow.length()
         ) {
@@ -1357,9 +1390,9 @@ class CustomController(
             links.add(link)
         }
 
-        view.refresh()
-
         debugBlockTree()
+
+        onDataChanged()
     }
 
     public fun dp(

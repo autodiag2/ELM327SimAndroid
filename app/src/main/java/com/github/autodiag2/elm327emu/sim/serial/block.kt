@@ -115,9 +115,9 @@ open class BlockController(
 
                     else -> {
                         /*
-                        * Preserve unknown escapes.
-                        * Example: "\q" remains "\q".
-                        */
+                         * Preserve unknown escapes.
+                         * Example: "\q" remains "\q".
+                         */
                         output.write('\\'.code)
                         i++
                     }
@@ -268,6 +268,10 @@ open class BlockController(
         }
     }
 
+    fun onDataChanged() {
+        view!!.parentView.model!!.onDataChanged()
+    }
+
     fun viewRefresh() {
         view!!.parentView.refresh()
     }
@@ -296,9 +300,9 @@ open class BlockController(
                     val pattern =
                         if (interpretEscapes) {
                             /*
-                            * Decode escaped sequences before
-                            * creating the regex.
-                            */
+                             * Decode escaped sequences before
+                             * creating the regex.
+                             */
                             parseEscapedBytes(text)
                                 .toString(
                                     Charsets.ISO_8859_1
@@ -525,12 +529,12 @@ open class BlockController(
         }
 
         /*
-        * View position.
-        *
-        * x/y remain in the block's current coordinate system:
-        * root blocks use world coordinates,
-        * child blocks use coordinates relative to their container.
-        */
+         * View position.
+         *
+         * x/y remain in the block's current coordinate system:
+         * root blocks use world coordinates,
+         * child blocks use coordinates relative to their container.
+         */
         val blockView =
             view
 
@@ -601,7 +605,7 @@ open class BlockController(
                         ?.coerceAtLeast(0)
                         ?: 0
 
-                viewRefresh()
+                onDataChanged()
             }
             .setNegativeButton(
                 android.R.string.cancel,
@@ -712,7 +716,7 @@ open class BlockController(
                 interpretEscapes =
                     escapes.isChecked
 
-                viewRefresh()
+                onDataChanged()
             }
             .setNegativeButton(
                 android.R.string.cancel,
@@ -804,7 +808,7 @@ open class BlockController(
                 interpretEscapes =
                     escapes.isChecked
 
-                viewRefresh()
+                onDataChanged()
             }
             .setNegativeButton(
                 android.R.string.cancel,
@@ -834,7 +838,7 @@ open class BlockController(
                 name =
                     input.text.toString()
 
-                viewRefresh()
+                onDataChanged()
             }
             .setNegativeButton(
                 android.R.string.cancel,
