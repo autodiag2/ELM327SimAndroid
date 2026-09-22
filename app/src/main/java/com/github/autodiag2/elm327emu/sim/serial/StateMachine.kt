@@ -551,11 +551,38 @@ class StateMachine(
                 )
                 advance(path)
             } else {
-                setBlockState(
-                    path.block,
-                    BlockState.FAILED
-                )
-                path.state = State.FINISHED
+                val linkedBlockIds =
+                    controller.links
+                        .map { it.to }
+                        .toSet()
+
+                val isRoot =
+                    path.block.id !in linkedBlockIds
+
+                if (isRoot) {
+                    /*
+                    * Initial Receive blocks remain waiting until their
+                    * expected request is received.
+                    */
+                    setBlockState(
+                        path.block,
+                        BlockState.IN_PROGRESS
+                    )
+
+                    logDebug(
+                        "RECV failed for root " +
+                            "path=${path.id} " +
+                            "block=${path.block.id}, " +
+                            "keeping WAIT_RECV"
+                    )
+                } else {
+                    setBlockState(
+                        path.block,
+                        BlockState.FAILED
+                    )
+
+                    path.state = State.FINISHED
+                }
             }
         }
 
