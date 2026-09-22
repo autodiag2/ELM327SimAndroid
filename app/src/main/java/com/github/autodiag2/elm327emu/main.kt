@@ -629,6 +629,7 @@ class MainActivity : AppCompatActivity() {
     fun startServer() {
         scope.launch {
             bridgeOrchestrator.start()
+            simView.onRunStateChange()
         }
     }
 

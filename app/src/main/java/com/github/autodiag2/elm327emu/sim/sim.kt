@@ -36,6 +36,7 @@ class Sim(
     private val ecuListView: ViewGroup
     val ecus = mutableListOf<Ecu>()
     private val ecuAddSelect: Spinner
+    private var customSerialSwitch: androidx.appcompat.widget.SwitchCompat
     var running: Boolean = false
 
     companion object {
@@ -86,13 +87,13 @@ class Sim(
         findViewById<Button>(R.id.sim_custom_serial_script_open).setOnClickListener {
             activity.showNestedScreen(customSerialScreen)
         }
-        val customSerialSwitch =
+        customSerialSwitch =
             findViewById<androidx.appcompat.widget.SwitchCompat>(
                 R.id.sim_custom_serial_script_enabled
             )
 
         customSerialSwitch.setOnClickListener {
-            customSerialScreen.onRunStateChange(customSerialSwitch.isChecked)
+            onRunStateChange()
         }
         
         findViewById<Button>(R.id.sim_state).apply {
@@ -117,6 +118,14 @@ class Sim(
         }
         buildAddECUToGUI(Ecu.DEFAULT_ADDRESS, getString(R.string.sim_ecu_gui_ecu_name), EcuType.gui)
         setupCustomSerialScripts()
+    }
+
+    fun onRunStateChange() {
+        if ( running ) {
+            customSerialScreen.onRunStateChange(customSerialSwitch.isChecked)
+        } else {
+            customSerialScreen.onRunStateChange(false)
+        }
     }
 
     private fun getCustomSerialExamples(): List<CustomSerialExample> {
