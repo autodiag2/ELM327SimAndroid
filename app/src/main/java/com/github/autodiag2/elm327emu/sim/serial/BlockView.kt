@@ -62,25 +62,21 @@ open class BlockView(
     private fun getExecutionColor(
         block: BlockController
     ): Int? {
-        val state =
-            parentView.model!!
-                .getBlockState(block)
-
-        return when (state) {
-            StateMachine.BlockState.IDLE ->
+        return when (block.state) {
+            BlockController.State.IDLE ->
                 null
 
-            StateMachine.BlockState.IN_PROGRESS ->
+            BlockController.State.IN_PROGRESS ->
                 getThemeColor(
                     R.attr.colorAccentInProgress
                 )
 
-            StateMachine.BlockState.SUCCESS ->
+            BlockController.State.SUCCESS ->
                 getThemeColor(
                     R.attr.colorAccentSuccess
                 )
 
-            StateMachine.BlockState.FAILED ->
+            BlockController.State.FAILED ->
                 getThemeColor(
                     R.attr.colorAccentFailed
                 )
@@ -327,16 +323,12 @@ open class BlockView(
         canvas: Canvas,
         nodeWorldPos: Coordinates
     ) {
-        val state =
-            parentView.model!!
-                .getBlockState(model!!)
-
         val color =
-            when (state) {
-                StateMachine.BlockState.IDLE ->
+            when (model!!.state) {
+                BlockController.State.IDLE ->
                     return
 
-                StateMachine.BlockState.IN_PROGRESS -> {
+                BlockController.State.IN_PROGRESS -> {
                     val phase =
                         System.currentTimeMillis() % 500L
 
@@ -349,12 +341,12 @@ open class BlockView(
                     )
                 }
 
-                StateMachine.BlockState.SUCCESS ->
+                BlockController.State.SUCCESS ->
                     getThemeColor(
                         R.attr.colorAccentSuccess
                     )
 
-                StateMachine.BlockState.FAILED ->
+                BlockController.State.FAILED ->
                     getThemeColor(
                         R.attr.colorAccentFailed
                     )
@@ -374,6 +366,7 @@ open class BlockView(
             paint
         )
     }
+
     public fun draw(
         canvas: Canvas,
         drawn: MutableSet<Int>

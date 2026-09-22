@@ -715,8 +715,8 @@ class CustomView(
 
     private fun hasInProgressBlock(): Boolean {
         return model!!.blocks.any {
-            model!!.getBlockState(it) ==
-                StateMachine.BlockState.IN_PROGRESS
+            it.state ==
+                BlockController.State.IN_PROGRESS
         }
     }
 

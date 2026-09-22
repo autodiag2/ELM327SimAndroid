@@ -27,11 +27,19 @@ open class BlockController(
     view: BlockView? = null,
     val children: MutableList<Int> = mutableListOf(),
     var parent: BlockController? = null,
-    id: Int? = null
+    id: Int? = null,
+    var state: State = State.IDLE
 ) : ElementController<BlockView>(
     view = view,
     id = id
 ) {
+    enum class State {
+        IDLE,
+        IN_PROGRESS,
+        SUCCESS,
+        FAILED
+    }
+
     enum class Type {
         DELAY,
         RECV,
@@ -266,6 +274,10 @@ open class BlockController(
                 }
             }
         }
+    }
+
+    fun resetState() {
+        state = State.IDLE
     }
 
     fun onDataChanged() {

@@ -37,17 +37,10 @@ class StateMachine(
         data object Tick : Event()
     }
 
-    enum class BlockState {
-        IDLE,
-        IN_PROGRESS,
-        SUCCESS,
-        FAILED
-    }
-
     interface Listener {
         fun onBlockStateChanged(
             block: BlockController,
-            state: BlockState
+            state: BlockController.State
         )
     }
 
@@ -91,7 +84,7 @@ class StateMachine(
 
     private fun setBlockState(
         block: BlockController,
-        state: BlockState
+        state: BlockController.State
     ) {
         listener?.onBlockStateChanged(
             block,
@@ -410,7 +403,7 @@ class StateMachine(
 
             setBlockState(
                 path.block,
-                BlockState.IDLE
+                BlockController.State.IDLE
             )
 
             path.state =
@@ -550,7 +543,7 @@ class StateMachine(
 
                         setBlockState(
                             block,
-                            BlockState.IDLE
+                            BlockController.State.IDLE
                         )
 
                         continue
@@ -585,7 +578,7 @@ class StateMachine(
 
                         setBlockState(
                             block,
-                            BlockState.IDLE
+                            BlockController.State.IDLE
                         )
 
                         continue
@@ -665,7 +658,7 @@ class StateMachine(
 
                         setBlockState(
                             path.block,
-                            BlockState.SUCCESS
+                            BlockController.State.SUCCESS
                         )
 
                         advance(path)
@@ -739,7 +732,7 @@ class StateMachine(
 
         setBlockState(
             block,
-            BlockState.IN_PROGRESS
+            BlockController.State.IN_PROGRESS
         )
 
         try {
@@ -758,7 +751,7 @@ class StateMachine(
 
                     setBlockState(
                         block,
-                        BlockState.SUCCESS
+                        BlockController.State.SUCCESS
                     )
 
                     advance(path)
@@ -791,7 +784,7 @@ class StateMachine(
                 BlockController.Type.CONTAINER -> {
                     setBlockState(
                         block,
-                        BlockState.SUCCESS
+                        BlockController.State.SUCCESS
                     )
 
                     advance(path)
@@ -815,7 +808,7 @@ class StateMachine(
 
             setBlockState(
                 block,
-                BlockState.FAILED
+                BlockController.State.FAILED
             )
 
             path.state =
@@ -835,7 +828,7 @@ class StateMachine(
 
             setBlockState(
                 block,
-                BlockState.FAILED
+                BlockController.State.FAILED
             )
 
             path.state =
@@ -983,7 +976,7 @@ class StateMachine(
 
                 setBlockState(
                     path.block,
-                    BlockState.SUCCESS
+                    BlockController.State.SUCCESS
                 )
 
                 advance(path)
@@ -1002,7 +995,7 @@ class StateMachine(
                 if (isRoot) {
                     setBlockState(
                         path.block,
-                        BlockState.IN_PROGRESS
+                        BlockController.State.IN_PROGRESS
                     )
 
                     logDebug(
@@ -1014,7 +1007,7 @@ class StateMachine(
                 } else {
                     setBlockState(
                         path.block,
-                        BlockState.FAILED
+                        BlockController.State.FAILED
                     )
 
                     path.state =
@@ -1079,7 +1072,7 @@ class StateMachine(
 
         setBlockState(
             path.block,
-            BlockState.FAILED
+            BlockController.State.FAILED
         )
 
         path.state =

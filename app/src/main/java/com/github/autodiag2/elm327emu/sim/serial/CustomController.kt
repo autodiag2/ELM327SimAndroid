@@ -68,12 +68,6 @@ class CustomController(
     val selectedLinks =
         mutableSetOf<Pair<Int, Int>>()
 
-    private val blockStates =
-        mutableMapOf<
-            Int,
-            StateMachine.BlockState
-        >()
-
     var emuStreams:
         QueueDuplexStreams? = null
 
@@ -111,24 +105,19 @@ class CustomController(
 
     override fun onBlockStateChanged(
         block: BlockController,
-        state: StateMachine.BlockState
+        state: BlockController.State
     ) {
-        blockStates[block.id] = state
+        block.state = state
 
         activity.runOnUiThread {
             view.refresh()
         }
     }
 
-    fun getBlockState(
-        block: BlockController
-    ): StateMachine.BlockState {
-        return blockStates[block.id]
-            ?: StateMachine.BlockState.IDLE
-    }
-
     fun resetBlockStates() {
-        blockStates.clear()
+        for(block in blocks) {
+            block.resetState()
+        }
         view.refresh()
     }
 
