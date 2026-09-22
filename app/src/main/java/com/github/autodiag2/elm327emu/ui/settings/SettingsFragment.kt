@@ -31,6 +31,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.appcompat.widget.SwitchCompat
 import androidx.core.widget.doAfterTextChanged
+import android.bluetooth.BluetoothAdapter
 
 private const val PREFS = "app_prefs"
 
@@ -110,7 +111,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         name.isEnabled = enabled
 
         if (enabled) {
-            name.text = activityMain.btAdapter.name ?: ""
+            name.text = activityMain.btAdapter.getName() ?: ""
         }
     }
 
@@ -308,7 +309,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         val adapterName =
             if (activityMain.isPermissionsGranted()) {
-                activityMain.btAdapter.name ?: ""
+                activityMain.btAdapter.getName() ?: ""
             } else {
                 getString(R.string.settings_missing_permission)
             }
@@ -325,7 +326,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 prefs.edit()
                     .putString(PREF_BT_NAME, newName)
                     .apply()
-                activityMain.btAdapter.name = newName
+                activityMain.btAdapter.setName(newName)
                 activityMain.bridgeOrchestrator.setupBleBridge()
                 activityMain.bridgeOrchestrator.setupBluetoothBridge()
 
