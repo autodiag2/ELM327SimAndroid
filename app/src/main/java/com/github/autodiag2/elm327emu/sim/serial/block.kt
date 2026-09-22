@@ -690,18 +690,15 @@ open class BlockController(
             )
 
         mode.adapter =
-            ArrayAdapter(
+            ArrayAdapter.createFromResource(
                 view!!.context,
-                android.R.layout.simple_spinner_item,
-                listOf(
-                    view!!.context.getString(
-                        R.string.sim_customserial_edit_recv_match_exact
-                    ),
-                    view!!.context.getString(
-                        R.string.sim_customserial_edit_recv_match_regex
-                    )
+                R.array.sim_customserial_edit_recv_match_choices,
+                R.layout.sim_customserial_edit_recv_match_item
+            ).apply {
+                setDropDownViewResource(
+                    R.layout.sim_customserial_edit_recv_match_item
                 )
-            )
+            }
 
         mode.setSelection(
             if (match == "regex") {

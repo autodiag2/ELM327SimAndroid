@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <string-array name="sim_customserial_edit_recv_match_choices">
+        <item>@string/sim_customserial_edit_recv_match_exact</item>
+        <item>@string/sim_customserial_edit_recv_match_regex</item>
+    </string-array>
+
     <string-array name="log_levels">
         <item>NONE</item>
         <item>ERROR</item>
