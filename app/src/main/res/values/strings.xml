@@ -183,8 +183,10 @@
     <string name="sim_ecu_row_delete">Delete ECU</string>
     <string name="log_ble_notification_queue_failed">BLE TX notification queue failed</string>
     <string name="log_ble_uuid_validation">Invalid BLE UUID configuration: %1$s</string>
-    <string name="log_ble_connected">%1$s connected</string>
-    <string name="log_ble_disconnected">%1$s disconnected</string>
+    <string name="log_ble_connected">%1$s connected(status=%2$d:%3$s)</string>
+    <string name="log_ble_connecting">%1$s connecting(status=%2$d:%3$s)</string>
+    <string name="log_ble_disconnecting">%1$s disconnecting(status=%2$d:%3$s)</string>
+    <string name="log_ble_disconnected">%1$s disconnected(status=%2$d:%3$s)</string>
     <string name="log_ble_unknown_device_address">Unknown device address</string>
     <string name="log_ble_gatt_service_added">GATT service added</string>
     <string name="log_ble_gatt_service_add_failed">GATT service add failed: %1$d</string>

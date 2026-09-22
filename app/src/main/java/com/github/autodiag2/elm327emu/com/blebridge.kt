@@ -3,13 +3,14 @@ package com.github.autodiag2.elm327emu.com
 import kotlinx.coroutines.*
 import java.io.*
 import java.util.UUID
-import android.bluetooth.BluetoothAdapter
 import android.content.Context
 import com.github.autodiag2.elm327emu.R
 import android.bluetooth.*
 import android.bluetooth.le.*
 import android.os.ParcelUuid
+import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
+import android.bluetooth.BluetoothGatt
 import com.github.autodiag2.elm327emu.LogLevel
 import com.github.autodiag2.elm327emu.MainActivity
 import java.nio.ByteBuffer
@@ -256,11 +257,38 @@ class BLEBridge(
             status: Int,
             newState: Int
         ) {
+            val statusString =
+                when (status) {
+                    BluetoothGatt.GATT_SUCCESS ->
+                        "GATT_SUCCESS"
+
+                    8 ->
+                        "GATT_CONN_TIMEOUT"
+
+                    19 ->
+                        "GATT_CONN_TERMINATE_PEER_USER"
+
+                    22 ->
+                        "GATT_CONN_TERMINATE_LOCAL_HOST"
+
+                    34 ->
+                        "GATT_LMP_TIMEOUT"
+
+                    62 ->
+                        "GATT_CONN_FAIL_ESTABLISH"
+
+                    133 ->
+                        "GATT_ERROR"
+
+                    else ->
+                        "UNKNOWN"
+                }
             val addr = device.address ?: getString(R.string.log_ble_unknown_device_address)
-            if (newState == BluetoothProfile.STATE_CONNECTED) {
-                appendLog(getString(R.string.log_ble_connected, addr), LogLevel.DEBUG)
-            } else {
-                appendLog(getString(R.string.log_ble_disconnected, addr), LogLevel.DEBUG)
+            when(newState) {
+                BluetoothProfile.STATE_CONNECTED     -> appendLog(getString(R.string.log_ble_connected, addr, status, statusString), LogLevel.DEBUG)
+                BluetoothProfile.STATE_DISCONNECTED  -> appendLog(getString(R.string.log_ble_disconnected, addr, status, statusString), LogLevel.DEBUG)
+                BluetoothProfile.STATE_CONNECTING    -> appendLog(getString(R.string.log_ble_connecting, addr, status, statusString), LogLevel.DEBUG)
+                BluetoothProfile.STATE_DISCONNECTING -> appendLog(getString(R.string.log_ble_disconnecting, addr, status, statusString), LogLevel.DEBUG)
             }
         }
         
