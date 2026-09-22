@@ -50,20 +50,20 @@ class BridgeOrchestrator(
 
     fun setupNetworkBridge() {
         scope.launch {
-            setupBridge("com_nt_enabled", ntBridge, true)
+            setupBridge("com_nt_enabled", ntBridge)
         }
     }
     fun setupBleBridge() {
         scope.launch {
-            setupBridge("com_ble_enabled", bleBridge, true)
+            setupBridge("com_ble_enabled", bleBridge)
         }
     }
     fun setupBluetoothBridge() {
         scope.launch {
-            setupBridge("com_bt_enabled", btBridge, true)
+            setupBridge("com_bt_enabled", btBridge)
         }
     }
-    suspend fun setupBridge(pref: String, bridge: Bridge, force: Boolean=false) {
+    suspend fun setupBridge(pref: String, bridge: Bridge) {
         val enabled = prefs.getBoolean(pref, true)
         val job = when (bridge) {
             bleBridge -> bleBridgeJob
