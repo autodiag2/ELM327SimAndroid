@@ -784,12 +784,57 @@ class StateMachine(
                 }
 
                 BlockController.Type.CONTAINER -> {
-                    setBlockState(
-                        block,
-                        BlockController.State.SUCCESS
-                    )
+                    if (block.children.isEmpty()) {
+                        setBlockState(
+                            block,
+                            BlockController.State.SUCCESS
+                        )
 
-                    advance(path)
+                        advance(path)
+                    } else {
+                        setBlockState(
+                            block,
+                            BlockController.State.IN_PROGRESS
+                        )
+
+                        path.state =
+                            State.FINISHED
+
+                        val childRoots =
+                            block.children.filter { childId ->
+                                controller.links.none { link ->
+                                    link.to == childId &&
+                                        isDescendant(
+                                            controller.blocks.find {
+                                                it.id == link.from
+                                            } ?: return@none false,
+                                            block
+                                        )
+                                }
+                            }
+
+                        for (child in childRoots) {
+                            createPath(child)
+                        }
+
+                        paths.removeAll {
+                            it.state == State.FINISHED
+                        }
+
+                        if (childRoots.isEmpty()) {
+                            setBlockState(
+                                block,
+                                BlockController.State.SUCCESS
+                            )
+
+                            advance(
+                                Path(
+                                    id = path.id,
+                                    block = block
+                                )
+                            )
+                        }
+                    }
                 }
             }
         } catch (
@@ -842,6 +887,23 @@ class StateMachine(
                 "path=${path.id} " +
                 "block=$blockId"
         )
+    }
+
+    private fun isDescendant(
+        block: BlockController,
+        container: BlockController
+    ): Boolean {
+        var current = block.parent
+
+        while (current != null) {
+            if (current === container) {
+                return true
+            }
+
+            current = current.parent
+        }
+
+        return false
     }
 
     private suspend fun executeSend(
@@ -1183,9 +1245,29 @@ class StateMachine(
         }
     }
 
+    private fun resolveBlockId(id: Int): BlockController? {
+        return controller.blocks.find { it.id == id }
+    }
+
     private fun createPath(
-        block: BlockController
+        blockAny: Any
     ) {
+        val block =
+            when (blockAny) {
+                is Int ->
+                    resolveBlockId(blockAny)
+                        ?: throw IllegalArgumentException(
+                            "Block not found: id=$blockAny"
+                        )
+
+                is BlockController ->
+                    blockAny
+
+                else ->
+                    throw IllegalArgumentException(
+                        "Invalid block type: ${blockAny::class.java.name}"
+                    )
+            }
         val path =
             Path(
                 id = nextPathId++,
