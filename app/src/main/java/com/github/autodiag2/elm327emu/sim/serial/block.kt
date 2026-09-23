@@ -20,7 +20,7 @@ open class BlockController(
     var type: BlockController.Type,
     var timeoutMs: Int = 0,
     var text: String = "",
-    var match: String = "exact",
+    var match: String = "regex",
     var ignoreCase: Boolean = true,
     var includeEol: Boolean = false,
     var interpretEscapes: Boolean = true,
@@ -195,7 +195,7 @@ open class BlockController(
                         match =
                             blockContent.optString(
                                 "match",
-                                "exact"
+                                "regex"
                             ),
                         ignoreCase = blockContent.optBoolean("ignoreCase", false),
                         text =
