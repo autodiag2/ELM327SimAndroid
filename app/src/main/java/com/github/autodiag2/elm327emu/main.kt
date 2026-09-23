@@ -40,6 +40,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.whenResumed
 import com.github.autodiag2.elm327emu.ui.settings.SettingsFragment
 import com.github.autodiag2.elm327emu.sim.serial.CustomController
+import android.util.Log
 
 private const val REQUEST_CODE = 1
 
@@ -598,6 +599,7 @@ class MainActivity : AppCompatActivity() {
 
     fun stopServer() {
         bridgeOrchestrator.stop()
+        simView.onRunStateChange()
         scope.coroutineContext.cancelChildren()
         appendLog(getString(R.string.log_main_bluetooth_server_stopped), LogLevel.INFO)
     }

@@ -15,6 +15,7 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.Spinner
 import kotlin.math.max
+import android.util.Log
 import androidx.core.view.setPadding
 
 open class BlockView(
@@ -319,23 +320,35 @@ open class BlockView(
         return parentView.model!!.isBlockSelected(model!!)
     }
 
+    fun isRunning(): Boolean {
+        return parentView.model!!.isRunning()
+    }
+
     private fun drawExecutionIndicator(
         canvas: Canvas,
         nodeWorldPos: Coordinates
     ) {
+        if (model!!.state == BlockController.State.IDLE) {
+            return
+        }
+
+        if (
+            model!!.state == BlockController.State.IN_PROGRESS &&
+            isRunning()
+        ) {
+            val phase =
+                System.currentTimeMillis() % 500L
+
+            if (phase >= 250L) {
+                return
+            }
+        }
         val color =
             when (model!!.state) {
                 BlockController.State.IDLE ->
                     return
 
                 BlockController.State.IN_PROGRESS -> {
-                    val phase =
-                        System.currentTimeMillis() % 500L
-
-                    if (phase >= 250L) {
-                        return
-                    }
-
                     getThemeColor(
                         R.attr.colorAccentInProgress
                     )

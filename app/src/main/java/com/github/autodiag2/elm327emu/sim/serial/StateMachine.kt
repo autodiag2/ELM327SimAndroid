@@ -270,6 +270,7 @@ class StateMachine(
     }
 
     fun stop() {
+        logDebug("STOPPING")
         events.trySend(
             Event.Stop
         )
@@ -361,6 +362,7 @@ class StateMachine(
 
         paths.clear()
         nextPathId = 1
+        logDebug("STOPPED")
     }
 
     /**

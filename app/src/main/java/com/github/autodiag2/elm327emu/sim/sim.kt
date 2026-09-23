@@ -27,6 +27,8 @@ import com.github.autodiag2.elm327emu.IgnitionState
 import com.github.autodiag2.elm327emu.sim.serial.CustomController
 import android.widget.AdapterView
 import android.view.View
+import android.util.Log
+import com.github.autodiag2.elm327emu.BuildConfig
 
 class Sim(
     private val activity: MainActivity
@@ -120,7 +122,19 @@ class Sim(
         setupCustomSerialScripts()
     }
 
+    public fun logDebug(
+        message: String
+    ) {
+        if (BuildConfig.DEBUG) {
+            Log.d(
+                "sim.Sim",
+                message
+            )
+        }
+    }
+
     fun onRunStateChange() {
+        logDebug("Running state of the sim : ${running}")
         if ( running ) {
             customSerialScreen.onRunStateChange(customSerialSwitch.isChecked)
         } else {

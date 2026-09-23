@@ -88,6 +88,10 @@ class CustomController(
         view.model = this
     }
 
+    fun isRunning(): Boolean {
+        return stateMachine.isRunning()
+    }
+
     // ------------ Data change ------------
 
     /**
