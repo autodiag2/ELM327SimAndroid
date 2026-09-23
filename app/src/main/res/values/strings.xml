@@ -39,6 +39,7 @@
     <string name="sim_connected_clients">0 connected</string>
     <string name="sim_connected_clients_format">%1$d connected</string>
     <string name="sim_connected_clients_dialog_title">Connected clients</string>
+    <string name="sim_connected_clients_warning">Warning: multiple clients simultaneously is not recommended</string>
     <string name="sim_managed_responses">Managed responses</string>
     <string name="sim_custom_serial_script_import_clipboard_empty">Clipboard is empty</string>
     <string name="sim_custom_serial_script_import_clipboard_success">Script imported from clipboard</string>

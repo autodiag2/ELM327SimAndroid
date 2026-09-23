@@ -177,14 +177,33 @@ class Sim(
 
     private fun showConnectedClients() {
         val clients = activity.clients.orEmpty()
-        val labels =
-            clients.map { client ->
+        val view =
+            activity.layoutInflater.inflate(
+                R.layout.sim_connected_clients,
+                null
+            )
+        val list =
+            view.findViewById<ViewGroup>(
+                R.id.sim_connected_clients_list
+            )
+
+        for (client in clients) {
+            val textView =
+                TextView(activity)
+            textView.text =
                 "${bridgeType(client.bridge)}: ${client.clientIdentifier}"
-            }
+            textView.setPadding(8,8,8,8)
+            list.addView(textView)
+        }
         AlertDialog.Builder(activity)
-            .setTitle(getString(R.string.sim_connected_clients_dialog_title))
-            .setItems(
-                labels.toTypedArray(),
+            .setTitle(
+                getString(
+                    R.string.sim_connected_clients_dialog_title
+                )
+            )
+            .setView(view)
+            .setNegativeButton(
+                android.R.string.cancel,
                 null
             )
             .show()
