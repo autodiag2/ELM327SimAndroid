@@ -168,6 +168,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:layout_marginEnd="4dp"
+                android:backgroundTint="?attr/colorAccentInProgress"
                 android:text="@string/sim_start_sim" />
 
             <ToggleButton
@@ -178,6 +179,8 @@
                 android:layout_marginStart="4dp"
                 android:textOff="@string/sim_ignition_off"
                 android:textOn="@string/sim_ignition_on"
+                android:backgroundTint="@color/ignition_state_tint"
+                android:textColor="?android:attr/textColorPrimary"
                 android:text="@string/sim_ignition_on" />
 
             <Button

@@ -116,8 +116,37 @@ class Sim(
             setOnClickListener {
                 if (activity.isPermissionsGranted()) {
                     running = !running
-                    text = if (running) getString(R.string.sim_stop_sim) else getString(R.string.sim_start_sim)
-                    if (running) activity.startServer() else activity.stopServer()
+
+                    text = if (running) {
+                        getString(R.string.sim_stop_sim)
+                    } else {
+                        getString(R.string.sim_start_sim)
+                    }
+
+                    val colorAttr =
+                        if (running) {
+                            R.attr.colorAccentSuccess
+                        } else {
+                            R.attr.colorAccentInProgress
+                        }
+
+                    val typedValue = android.util.TypedValue()
+                    activity.theme.resolveAttribute(
+                        colorAttr,
+                        typedValue,
+                        true
+                    )
+
+                    backgroundTintList =
+                        android.content.res.ColorStateList.valueOf(
+                            typedValue.data
+                        )
+
+                    if (running) {
+                        activity.startServer()
+                    } else {
+                        activity.stopServer()
+                    }
                 } else {
                     activity.requestPermissions()
                 }
