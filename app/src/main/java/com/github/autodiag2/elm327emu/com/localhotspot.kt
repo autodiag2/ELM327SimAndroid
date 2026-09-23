@@ -60,6 +60,206 @@ public class LocalHotspotManager(
         ) : HotspotIpResult()
     }
 
+    companion object {
+        fun getRootStatus(): RootStatus {
+            val process = try {
+                ProcessBuilder(
+                    "su",
+                    "-c",
+                    "id"
+                ).redirectErrorStream(true).start()
+            } catch (_: IOException) {
+                return RootStatus.NoRootInstalled
+            }
+
+            return try {
+                val output = process.inputStream.bufferedReader().use { it.readText() }
+
+                process.waitFor()
+
+                if (process.exitValue() == 0 && output.contains("uid=0"))
+                    RootStatus.Granted
+                else
+                    RootStatus.PermissionDenied
+            } catch (_: Throwable) {
+                RootStatus.PermissionDenied
+            }
+        }
+
+        private fun runRoot(cmd: String): Boolean =
+            try {
+                val process = ProcessBuilder(
+                    "su",
+                    "-c",
+                    cmd
+                ).redirectErrorStream(true).start()
+
+                process.waitFor()
+
+                process.exitValue() == 0
+            } catch (_: Throwable) {
+                false
+            }
+
+        fun addIpAlias(
+            iface: String,
+            cidr: String
+        ): Boolean =
+            runRoot(
+                "ip addr show dev $iface | grep -qw '${cidr.substringBefore("/")}' || " +
+                        "ip addr add $cidr dev $iface"
+            )
+
+        fun removeIpAlias(
+            iface: String,
+            cidr: String
+        ): Boolean =
+            runRoot(
+                "ip addr del $cidr dev $iface >/dev/null 2>&1 || true"
+            )
+
+        fun addCommonElmAliases(): List<Pair<String, Boolean>> {
+            if (getRootStatus() != RootStatus.Granted) {
+                return emptyList()
+            }
+
+            val hotspot = findHotspotIp()
+
+            if (hotspot !is HotspotIpResult.Success) {
+                return emptyList()
+            }
+
+            val aliases = listOf(
+                "192.168.0.10/24",
+                "192.168.0.123/24",
+                "192.168.1.10/24",
+                "192.168.1.123/24"
+            )
+
+            return aliases.map {
+                it.substringBefore("/") to addIpAlias(
+                    hotspot.interfaceName,
+                    it
+                )
+            }
+        }
+
+        fun removeCommonElmAliases(): Boolean {
+            if (getRootStatus() != RootStatus.Granted) {
+                return false
+            }
+
+            val hotspot = findHotspotIp()
+
+            if (hotspot !is HotspotIpResult.Success) {
+                return false
+            }
+
+            listOf(
+                "192.168.0.10/24",
+                "192.168.0.123/24",
+                "192.168.1.10/24",
+                "192.168.1.123/24"
+            ).forEach {
+                removeIpAlias(
+                    hotspot.interfaceName,
+                    it
+                )
+            }
+            return true
+        }
+        fun findHotspotIp(preferCommonIp: Boolean = false): HotspotIpResult {
+            try {
+                when (getRootStatus()) {
+                    RootStatus.NoRootInstalled ->
+                        return HotspotIpResult.NoRootInstalled
+
+                    RootStatus.PermissionDenied ->
+                        return HotspotIpResult.RootPermissionDenied
+
+                    RootStatus.Granted -> {}
+                }
+
+                val ifaceProcess = ProcessBuilder(
+                    "su",
+                    "-c",
+                    "iw dev | awk '/Interface/{i=$2}/type AP/{print i}'"
+                ).redirectErrorStream(true).start()
+
+                val interfaces = ifaceProcess.inputStream.bufferedReader().useLines { lines ->
+                    lines.map(String::trim)
+                        .filter(String::isNotEmpty)
+                        .distinct()
+                        .toList()
+                }
+
+                ifaceProcess.waitFor()
+
+                when {
+                    interfaces.isEmpty() ->
+                        return HotspotIpResult.NoApInterface
+
+                    interfaces.size > 1 ->
+                        return HotspotIpResult.MultipleApInterfaces(interfaces)
+                }
+
+                val iface = interfaces.first()
+
+                if (preferCommonIp) {
+                    val commonIps = listOf(
+                        "192.168.0.10",
+                        "192.168.0.123",
+                        "192.168.1.10",
+                        "192.168.1.123"
+                    )
+
+                    val addrProcess = ProcessBuilder(
+                        "su",
+                        "-c",
+                        "ip -4 -o addr show dev $iface"
+                    ).redirectErrorStream(true).start()
+
+                    val addresses = Regex("""inet\s+(\d+\.\d+\.\d+\.\d+)""")
+                        .findAll(addrProcess.inputStream.bufferedReader().use { it.readText() })
+                        .map { it.groupValues[1] }
+                        .toSet()
+
+                    addrProcess.waitFor()
+
+                    commonIps.firstOrNull { it in addresses }?.let {
+                        return HotspotIpResult.Success(
+                            interfaceName = iface,
+                            ip = it
+                        )
+                    }
+                }
+
+                val ipProcess = ProcessBuilder(
+                    "su",
+                    "-c",
+                    "ip -4 -o addr show dev $iface"
+                ).redirectErrorStream(true).start()
+
+                val output = ipProcess.inputStream.bufferedReader().use { it.readText() }
+
+                ipProcess.waitFor()
+
+                val ip = Regex("""inet\s+(\d+\.\d+\.\d+\.\d+)""")
+                    .find(output)
+                    ?.groupValues
+                    ?.get(1)
+                    ?: return HotspotIpResult.NoApInterface
+
+                return HotspotIpResult.Success(
+                    interfaceName = iface,
+                    ip = ip
+                )
+
+            } catch (e: Throwable) {
+                return HotspotIpResult.Exception(e)
+            }
+        }
+    }
     private var _hotspotInfo: HotspotInfo? = null
 
     fun getString(resId: Int, vararg formatArgs: Any?): String {
@@ -241,206 +441,6 @@ public class LocalHotspotManager(
             .replace(",", "\\,")
             .replace(":", "\\:")
             .replace("\"", "\\\"")
-    }
-
-    fun getRootStatus(): RootStatus {
-        val process = try {
-            ProcessBuilder(
-                "su",
-                "-c",
-                "id"
-            ).redirectErrorStream(true).start()
-        } catch (_: IOException) {
-            return RootStatus.NoRootInstalled
-        }
-
-        return try {
-            val output = process.inputStream.bufferedReader().use { it.readText() }
-
-            process.waitFor()
-
-            if (process.exitValue() == 0 && output.contains("uid=0"))
-                RootStatus.Granted
-            else
-                RootStatus.PermissionDenied
-        } catch (_: Throwable) {
-            RootStatus.PermissionDenied
-        }
-    }
-
-    private fun runRoot(cmd: String): Boolean =
-        try {
-            val process = ProcessBuilder(
-                "su",
-                "-c",
-                cmd
-            ).redirectErrorStream(true).start()
-
-            process.waitFor()
-
-            process.exitValue() == 0
-        } catch (_: Throwable) {
-            false
-        }
-
-    fun addIpAlias(
-        iface: String,
-        cidr: String
-    ): Boolean =
-        runRoot(
-            "ip addr show dev $iface | grep -qw '${cidr.substringBefore("/")}' || " +
-                    "ip addr add $cidr dev $iface"
-        )
-
-    fun removeIpAlias(
-        iface: String,
-        cidr: String
-    ): Boolean =
-        runRoot(
-            "ip addr del $cidr dev $iface >/dev/null 2>&1 || true"
-        )
-
-    fun addCommonElmAliases(): List<Pair<String, Boolean>> {
-        if (getRootStatus() != RootStatus.Granted) {
-            return emptyList()
-        }
-
-        val hotspot = findHotspotIp()
-
-        if (hotspot !is HotspotIpResult.Success) {
-            return emptyList()
-        }
-
-        val aliases = listOf(
-            "192.168.0.10/24",
-            "192.168.0.123/24",
-            "192.168.1.10/24",
-            "192.168.1.123/24"
-        )
-
-        return aliases.map {
-            it.substringBefore("/") to addIpAlias(
-                hotspot.interfaceName,
-                it
-            )
-        }
-    }
-
-    fun removeCommonElmAliases(): Boolean {
-        if (getRootStatus() != RootStatus.Granted) {
-            return false
-        }
-
-        val hotspot = findHotspotIp()
-
-        if (hotspot !is HotspotIpResult.Success) {
-            return false
-        }
-
-        listOf(
-            "192.168.0.10/24",
-            "192.168.0.123/24",
-            "192.168.1.10/24",
-            "192.168.1.123/24"
-        ).forEach {
-            removeIpAlias(
-                hotspot.interfaceName,
-                it
-            )
-        }
-        return true
-    }
-
-    fun findHotspotIp(preferCommonIp: Boolean = false): HotspotIpResult {
-        try {
-            when (getRootStatus()) {
-                RootStatus.NoRootInstalled ->
-                    return HotspotIpResult.NoRootInstalled
-
-                RootStatus.PermissionDenied ->
-                    return HotspotIpResult.RootPermissionDenied
-
-                RootStatus.Granted -> {}
-            }
-
-            val ifaceProcess = ProcessBuilder(
-                "su",
-                "-c",
-                "iw dev | awk '/Interface/{i=$2}/type AP/{print i}'"
-            ).redirectErrorStream(true).start()
-
-            val interfaces = ifaceProcess.inputStream.bufferedReader().useLines { lines ->
-                lines.map(String::trim)
-                    .filter(String::isNotEmpty)
-                    .distinct()
-                    .toList()
-            }
-
-            ifaceProcess.waitFor()
-
-            when {
-                interfaces.isEmpty() ->
-                    return HotspotIpResult.NoApInterface
-
-                interfaces.size > 1 ->
-                    return HotspotIpResult.MultipleApInterfaces(interfaces)
-            }
-
-            val iface = interfaces.first()
-
-            if (preferCommonIp) {
-                val commonIps = listOf(
-                    "192.168.0.10",
-                    "192.168.0.123",
-                    "192.168.1.10",
-                    "192.168.1.123"
-                )
-
-                val addrProcess = ProcessBuilder(
-                    "su",
-                    "-c",
-                    "ip -4 -o addr show dev $iface"
-                ).redirectErrorStream(true).start()
-
-                val addresses = Regex("""inet\s+(\d+\.\d+\.\d+\.\d+)""")
-                    .findAll(addrProcess.inputStream.bufferedReader().use { it.readText() })
-                    .map { it.groupValues[1] }
-                    .toSet()
-
-                addrProcess.waitFor()
-
-                commonIps.firstOrNull { it in addresses }?.let {
-                    return HotspotIpResult.Success(
-                        interfaceName = iface,
-                        ip = it
-                    )
-                }
-            }
-
-            val ipProcess = ProcessBuilder(
-                "su",
-                "-c",
-                "ip -4 -o addr show dev $iface"
-            ).redirectErrorStream(true).start()
-
-            val output = ipProcess.inputStream.bufferedReader().use { it.readText() }
-
-            ipProcess.waitFor()
-
-            val ip = Regex("""inet\s+(\d+\.\d+\.\d+\.\d+)""")
-                .find(output)
-                ?.groupValues
-                ?.get(1)
-                ?: return HotspotIpResult.NoApInterface
-
-            return HotspotIpResult.Success(
-                interfaceName = iface,
-                ip = ip
-            )
-
-        } catch (e: Throwable) {
-            return HotspotIpResult.Exception(e)
-        }
     }
 
 }

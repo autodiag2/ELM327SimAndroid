@@ -199,11 +199,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         list.removeAllViews()
 
-        val adapter = BluetoothAdapter.getDefaultAdapter()
-
-        if (adapter == null) {
-            return
-        }
+        val adapter = activityMain.btAdapter
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
             ActivityCompat.checkSelfPermission(
@@ -756,7 +752,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         ip_addr.setOnPreferenceClickListener {
             activityMain.lifecycleScope.launch(Dispatchers.IO) {
-                val result = hotspotManager?.findHotspotIp(true)
+                val result = LocalHotspotManager.findHotspotIp(true)
 
                 withContext(Dispatchers.Main) {
                     ip_addr.summary = when (result) {
@@ -797,12 +793,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
                         is LocalHotspotManager.HotspotIpResult.RootPermissionDenied ->
                             getString(
                                 R.string.settings_wifi_hotspot_gatewayIp_error_root_denied
-                            )
-
-                        else ->
-                            getString(
-                                R.string.settings_wifi_hotspot_gatewayIp_error,
-                                "Hotspot manager not initialized"
                             )
                     }
                 }
