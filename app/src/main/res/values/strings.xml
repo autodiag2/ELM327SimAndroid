@@ -3,6 +3,9 @@
     <string name="open">Open</string>
     <string name="close">Close</string>
     <string name="app_title">ELM327 Emulator</string>
+    <string name="com_bridge_bt_classic">Bluetooth Classic</string>
+    <string name="com_bridge_ble">Bluetooth LE</string>
+    <string name="com_bridge_nt">Network</string>
     <string name="log_btnDownload">Download log</string>
     <string name="log_btnSave">Save as...</string>
     <string name="log_btnClear">Clear log</string>
@@ -33,6 +36,9 @@
     <string name="settings_ble_profile_service_uuid">Service UUID</string>
     <string name="settings_ble_profile_tx_uuid">TX Characteristic UUID</string>
     <string name="settings_ble_profile_rx_uuid">RX Characteristic UUID</string>
+    <string name="sim_connected_clients">0 connected</string>
+    <string name="sim_connected_clients_format">%1$d connected</string>
+    <string name="sim_connected_clients_dialog_title">Connected clients</string>
     <string name="sim_managed_responses">Managed responses</string>
     <string name="sim_custom_serial_script_import_clipboard_empty">Clipboard is empty</string>
     <string name="sim_custom_serial_script_import_clipboard_success">Script imported from clipboard</string>

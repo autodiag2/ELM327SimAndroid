@@ -15,8 +15,9 @@ import com.github.autodiag2.elm327emu.sim.EmuInterface
 class BluetoothBridge(
     emu: EmuInterface,
     scope: CoroutineScope,
-    activity: MainActivity
-) : Bridge(emu,scope,activity, "BT SPP") {
+    activity: MainActivity,
+    listener: Bridge.Listener? = null
+) : Bridge(emu = emu, scope = scope, activity = activity, LOG_TAG = "BT SPP", listener = listener) {
 
     private val classicalBtUUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
     private val requestQueue = Channel<ByteArray>(Channel.UNLIMITED)
@@ -27,6 +28,7 @@ class BluetoothBridge(
     private var bt_output: OutputStream? = null
 
     override suspend fun accept() {
+        var clientIdentifier = ""
         try {
 
             appendLog(getString(R.string.log_bt_waiting_for_connection), LogLevel.INFO)
@@ -35,6 +37,8 @@ class BluetoothBridge(
             appendLog(getString(R.string.log_bt_client_connected, socket?.remoteDevice?.address),
                 LogLevel.INFO
             )
+            clientIdentifier = socket!!.remoteDevice!!.address
+            listener?.onClientConnect(clientIdentifier, this)
 
             bt_input = socket?.inputStream
             bt_output = socket?.outputStream
@@ -95,6 +99,7 @@ class BluetoothBridge(
         } catch (e: Exception) {
             appendLog(getString(R.string.log_bt_error, e.message), LogLevel.DEBUG)
         } finally {
+            listener?.onClientDisconnect(clientIdentifier, this)
             bt_input?.close()
             bt_output?.close()
             socket?.close()

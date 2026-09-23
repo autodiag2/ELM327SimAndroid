@@ -44,7 +44,7 @@ import android.util.Log
 
 private const val REQUEST_CODE = 1
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionListener {
 
     lateinit var btAdapter: BluetoothAdapter
 
@@ -140,6 +140,13 @@ class MainActivity : AppCompatActivity() {
     fun launchJsonPicker(callback: (String) -> Unit) {
         pendingFileCallback = callback
         filePickerLauncher.launch("application/json")
+    }
+
+    public var clients: List<BridgeOrchestrator.ConnectedClient>? = null
+
+    override fun onClientConnectUpdate(clients: List<BridgeOrchestrator.ConnectedClient>) {
+        this.clients = clients
+        simView.updateConnectedClientsButton()
     }
 
     // -------------------------------
@@ -310,7 +317,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        bridgeOrchestrator = BridgeOrchestrator(this)
+        bridgeOrchestrator = BridgeOrchestrator(activity = this, clientConnectionListener = this)
         setContentView(R.layout.activity_main)
         settingsContainer = findViewById(R.id.settingsContainer)
 

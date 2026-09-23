@@ -29,6 +29,12 @@ import android.widget.AdapterView
 import android.view.View
 import android.util.Log
 import com.github.autodiag2.elm327emu.BuildConfig
+import com.github.autodiag2.elm327emu.com.Bridge
+import com.github.autodiag2.elm327emu.com.BLEBridge
+import com.github.autodiag2.elm327emu.com.BluetoothBridge
+import com.github.autodiag2.elm327emu.com.NetworkBridge
+import com.github.autodiag2.elm327emu.com.BridgeOrchestrator
+import android.app.AlertDialog
 
 class Sim(
     private val activity: MainActivity
@@ -40,6 +46,7 @@ class Sim(
     private val ecuAddSelect: Spinner
     private var customSerialSwitch: androidx.appcompat.widget.SwitchCompat
     var running: Boolean = false
+    private lateinit var connectedClientsButton: Button
 
     companion object {
 
@@ -85,6 +92,13 @@ class Sim(
             buildAddECUToGUI(address.toByte(), getString(R.string.sim_ecu_config_ecu_name, getString(type.label_id)), type)
         }
 
+        connectedClientsButton =
+            findViewById(R.id.sim_connected_clients)
+
+        connectedClientsButton.setOnClickListener {
+            showConnectedClients()
+        }
+        updateConnectedClientsButton()
         customSerialScreen = CustomController(activity)
         findViewById<Button>(R.id.sim_custom_serial_script_open).setOnClickListener {
             activity.showNestedScreen(customSerialScreen)
@@ -120,6 +134,60 @@ class Sim(
         }
         buildAddECUToGUI(Ecu.DEFAULT_ADDRESS, getString(R.string.sim_ecu_gui_ecu_name), EcuType.gui)
         setupCustomSerialScripts()
+    }
+
+    private fun bridgeType(bridge: Bridge): String {
+        return when (bridge) {
+            is com.github.autodiag2.elm327emu.com.NetworkBridge ->
+                getString(R.string.com_bridge_nt)
+
+            is com.github.autodiag2.elm327emu.com.BluetoothBridge ->
+                getString(R.string.com_bridge_bt_classic)
+
+            is com.github.autodiag2.elm327emu.com.BLEBridge ->
+                getString(R.string.com_bridge_ble)
+
+            else ->
+                bridge.javaClass.simpleName
+        }
+    }
+
+    public fun updateConnectedClientsButton() {
+        post {
+            val nclient = activity.clients?.size ?: 0
+            connectedClientsButton.text = getString(R.string.sim_connected_clients_format, nclient)
+            val colorAttr =
+                if (nclient == 0) {
+                    R.attr.colorAccentInProgress
+                } else {
+                    R.attr.colorAccentSuccess
+                }
+            val typedValue = android.util.TypedValue()
+            activity.theme.resolveAttribute(
+                colorAttr,
+                typedValue,
+                true
+            )
+            connectedClientsButton.backgroundTintList =
+                android.content.res.ColorStateList.valueOf(
+                    typedValue.data
+                )
+        }
+    }
+
+    private fun showConnectedClients() {
+        val clients = activity.clients.orEmpty()
+        val labels =
+            clients.map { client ->
+                "${bridgeType(client.bridge)}: ${client.clientIdentifier}"
+            }
+        AlertDialog.Builder(activity)
+            .setTitle(getString(R.string.sim_connected_clients_dialog_title))
+            .setItems(
+                labels.toTypedArray(),
+                null
+            )
+            .show()
     }
 
     public fun logDebug(

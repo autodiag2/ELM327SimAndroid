@@ -20,8 +20,15 @@ open class Bridge(
     protected val emu: EmuInterface,
     protected val scope: CoroutineScope,
     protected val activity: MainActivity,
-    private val LOG_TAG: String
+    private val LOG_TAG: String,
+    protected val listener: Listener? = null
 ) {
+
+    interface Listener {
+        fun onClientConnect(clientIdentifier: String, bridge: Bridge)
+        fun onClientDisconnect(clientIdentifier: String, bridge: Bridge)
+    }
+
     protected fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {
         activity.appendLog(LOG_TAG + ": " + text, level)
     }

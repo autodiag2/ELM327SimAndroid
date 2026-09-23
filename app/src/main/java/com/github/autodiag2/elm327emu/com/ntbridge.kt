@@ -16,8 +16,9 @@ class NetworkBridge(
     emu: EmuInterface,
     scope: CoroutineScope,
     activity: MainActivity,
-    private val basePort: Int = 35000
-): Bridge(emu, scope, activity, "NT") {
+    private val basePort: Int = 35000,
+    listener: Bridge.Listener? = null
+): Bridge(emu = emu, scope = scope, activity = activity, LOG_TAG = "NT", listener = listener) {
 
     private var serverSocket: ServerSocket? = null
     private var clientSocket: Socket? = null
@@ -27,12 +28,15 @@ class NetworkBridge(
     private var netOutput: OutputStream? = null
 
     override suspend fun accept() {
+        var clientIdentifier = ""
         try {
             clientSocket = serverSocket!!.accept()
             appendLog(
                 getString(R.string.log_network_client_connected, clientSocket!!.inetAddress.hostAddress, clientSocket!!.port),
                 LogLevel.INFO
             )
+            clientIdentifier = "${clientSocket!!.inetAddress.hostAddress}:${clientSocket!!.port}"
+            listener?.onClientConnect(clientIdentifier, this)
 
             netInput = clientSocket!!.getInputStream()
             netOutput = clientSocket!!.getOutputStream()
@@ -91,6 +95,7 @@ class NetworkBridge(
         } catch (e: Exception) {
             appendLog(getString(R.string.log_network_error, e.message), LogLevel.DEBUG)
         } finally {
+            listener?.onClientDisconnect(clientIdentifier, this)
             netInput?.close()
             netOutput?.close()
             clientSocket?.close()

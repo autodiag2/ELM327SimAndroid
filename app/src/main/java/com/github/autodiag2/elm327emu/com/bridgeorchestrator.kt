@@ -25,19 +25,31 @@ import com.github.autodiag2.elm327emu.sim.EmuInterface
  */
 class BridgeOrchestrator(
     private val activity: MainActivity,
-    private val basePort: Int = 35000
-): EmuInterface() {
+    private val basePort: Int = 35000,
+    private val clientConnectionListener: ClientConnectionListener? = null
+): EmuInterface(), Bridge.Listener {
 
     protected val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    public val bleBridge = BLEBridge(this, scope, activity)
+    public val bleBridge = BLEBridge(emu = this, scope = scope, activity = activity, listener = this)
     private var bleBridgeJob: Job? = null
-    public val ntBridge = NetworkBridge(this, scope, activity, basePort)
+    public val ntBridge = NetworkBridge(emu = this, scope = scope, activity = activity, basePort = basePort, listener = this)
     private var ntBridgeJob: Job? = null
-    public val btBridge = BluetoothBridge(this, scope, activity)
+    public val btBridge = BluetoothBridge(emu = this, scope = scope, activity = activity, listener = this)
     private var btBridgeJob: Job? = null
     private val prefs =
         activity.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
 
+    data class ConnectedClient(
+        val clientIdentifier: String,
+        val bridge: Bridge
+    )
+
+    interface ClientConnectionListener {
+        fun onClientConnectUpdate(
+            clients: List<ConnectedClient>
+        )
+    }
+    private val connectedClients = mutableListOf<ConnectedClient>()
     private var started = false
 
     suspend fun start() {
@@ -46,6 +58,40 @@ class BridgeOrchestrator(
 
         started = true
         setupBridges()
+    }
+
+    override fun onClientConnect(
+        clientIdentifier: String,
+        bridge: Bridge
+    ) {
+        connectedClients.removeAll {
+            it.clientIdentifier == clientIdentifier
+        }
+
+        connectedClients.add(
+            ConnectedClient(
+                clientIdentifier,
+                bridge
+            )
+        )
+
+        clientConnectionListener?.onClientConnectUpdate(
+            connectedClients.toList()
+        )
+    }
+
+    override fun onClientDisconnect(
+        clientIdentifier: String,
+        bridge: Bridge
+    ) {
+        connectedClients.removeAll {
+            it.clientIdentifier == clientIdentifier &&
+                it.bridge === bridge
+        }
+
+        clientConnectionListener?.onClientConnectUpdate(
+            connectedClients.toList()
+        )
     }
 
     fun setupNetworkBridge() {
@@ -116,6 +162,10 @@ class BridgeOrchestrator(
         scope.coroutineContext.cancelChildren()
         emuStop()
         started = false
+        connectedClients.clear()
+        clientConnectionListener?.onClientConnectUpdate(
+            connectedClients.toList()
+        )
     }
 
     fun isStarted(): Boolean {

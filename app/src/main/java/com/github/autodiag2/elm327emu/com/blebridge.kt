@@ -31,8 +31,10 @@ private data class PendingRequest(
 class BLEBridge(
     emu: EmuInterface,
     scope: CoroutineScope,
-    activity: MainActivity
-) : Bridge(emu, scope, activity, "BLE") {
+    activity: MainActivity,
+    listener: Bridge.Listener? = null
+) : Bridge(emu = emu, scope = scope, activity = activity, LOG_TAG = "BLE", listener = listener) {
+
     private val prefs =
         activity.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
 
@@ -285,8 +287,14 @@ class BLEBridge(
                 }
             val addr = device.address ?: getString(R.string.log_ble_unknown_device_address)
             when(newState) {
-                BluetoothProfile.STATE_CONNECTED     -> appendLog(getString(R.string.log_ble_connected, addr, status, statusString), LogLevel.DEBUG)
-                BluetoothProfile.STATE_DISCONNECTED  -> appendLog(getString(R.string.log_ble_disconnected, addr, status, statusString), LogLevel.DEBUG)
+                BluetoothProfile.STATE_CONNECTED     -> {
+                    listener?.onClientConnect("${addr}", this@BLEBridge)
+                    appendLog(getString(R.string.log_ble_connected, addr, status, statusString), LogLevel.DEBUG)
+                }
+                BluetoothProfile.STATE_DISCONNECTED  -> {
+                    appendLog(getString(R.string.log_ble_disconnected, addr, status, statusString), LogLevel.DEBUG)
+                    listener?.onClientDisconnect("${addr}", this@BLEBridge)
+                }
                 BluetoothProfile.STATE_CONNECTING    -> appendLog(getString(R.string.log_ble_connecting, addr, status, statusString), LogLevel.DEBUG)
                 BluetoothProfile.STATE_DISCONNECTING -> appendLog(getString(R.string.log_ble_disconnecting, addr, status, statusString), LogLevel.DEBUG)
             }
