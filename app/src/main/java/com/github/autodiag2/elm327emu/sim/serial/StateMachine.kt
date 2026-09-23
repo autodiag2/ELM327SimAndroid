@@ -323,15 +323,14 @@ class StateMachine(
 
         val linkedBlockIds =
             controller.links
-                .map {
-                    it.to
-                }
+                .map { it.to }
                 .toSet()
 
         val initialBlocks =
             controller.blocks
-                .filter {
-                    it.id !in linkedBlockIds
+                .filter { block ->
+                    block.id !in linkedBlockIds &&
+                        block.parent == null
                 }
 
         logDebug(
@@ -784,7 +783,15 @@ class StateMachine(
                 }
 
                 BlockController.Type.CONTAINER -> {
-                    if (block.children.isEmpty()) {
+                    setBlockState(
+                        block,
+                        BlockController.State.IN_PROGRESS
+                    )
+
+                    val children =
+                        block.children
+
+                    if (children.isEmpty()) {
                         setBlockState(
                             block,
                             BlockController.State.SUCCESS
@@ -792,24 +799,13 @@ class StateMachine(
 
                         advance(path)
                     } else {
-                        setBlockState(
-                            block,
-                            BlockController.State.IN_PROGRESS
-                        )
-
-                        path.state =
-                            State.FINISHED
+                        path.state = State.FINISHED
 
                         val childRoots =
-                            block.children.filter { childId ->
+                            children.filter { childId ->
                                 controller.links.none { link ->
                                     link.to == childId &&
-                                        isDescendant(
-                                            controller.blocks.find {
-                                                it.id == link.from
-                                            } ?: return@none false,
-                                            block
-                                        )
+                                        resolveBlockId(link.from)?.parent === block
                                 }
                             }
 
@@ -819,20 +815,6 @@ class StateMachine(
 
                         paths.removeAll {
                             it.state == State.FINISHED
-                        }
-
-                        if (childRoots.isEmpty()) {
-                            setBlockState(
-                                block,
-                                BlockController.State.SUCCESS
-                            )
-
-                            advance(
-                                Path(
-                                    id = path.id,
-                                    block = block
-                                )
-                            )
                         }
                     }
                 }
