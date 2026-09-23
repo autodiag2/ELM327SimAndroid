@@ -16,9 +16,11 @@ import com.github.autodiag2.elm327emu.R
 import androidx.core.view.setPadding
 // end view imports
 
+private val DEFAULT_TIMEOUT_MS: Int = 2000
+
 open class BlockController(
     var type: BlockController.Type,
-    var timeoutMs: Int = 0,
+    var timeoutMs: Int = DEFAULT_TIMEOUT_MS,
     var text: String = "",
     var match: String = "regex",
     var ignoreCase: Boolean = true,
