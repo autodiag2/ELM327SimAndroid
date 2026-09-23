@@ -71,9 +71,11 @@ class BluetoothBridge(
 
                         activity.onDataReceived(request, request.size)
 
-                        emu.send(request, request.size)
-
-                        val n = emu.recv(bufferLoop)
+                        val n = emu.transact(
+                            request,
+                            request.size,
+                            bufferLoop
+                        )
                         if (n <= 0) break
 
                         bt_output?.write(bufferLoop, 0, n)

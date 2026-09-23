@@ -66,9 +66,11 @@ class NetworkBridge(
 
                         activity.onDataReceived(request, request.size)
 
-                        emu.send(request, request.size)
-
-                        val n = emu.recv(bufferLoop)
+                        val n = emu.transact(
+                            request,
+                            request.size,
+                            bufferLoop
+                        )
                         if (n <= 0) break
 
                         netOutput?.write(bufferLoop, 0, n)

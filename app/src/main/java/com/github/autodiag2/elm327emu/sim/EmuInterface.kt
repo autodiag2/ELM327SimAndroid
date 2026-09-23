@@ -9,12 +9,28 @@ import java.net.SocketTimeoutException
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import kotlin.concurrent.thread
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 abstract class EmuInterface {
 
     protected var input: InputStream? = null
     protected var output: OutputStream? = null
     protected var socket: LocalSocket? = null
+
+    protected val emuMutex = Mutex()
+
+    suspend fun transact(
+        request: ByteArray,
+        size: Int,
+        response: ByteArray,
+        timeoutMs: Long = 5000L
+    ): Int {
+        return emuMutex.withLock {
+            send(request, size, timeoutMs = timeoutMs)
+            recv(response, timeoutMs = timeoutMs)
+        }
+    }
 
     public fun send(
         buffer: ByteArray,

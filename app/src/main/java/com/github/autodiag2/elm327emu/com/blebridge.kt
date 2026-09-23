@@ -505,12 +505,11 @@ class BLEBridge(
                 getString(R.string.log_ble_request_processing, request.value.size),
                 LogLevel.DEBUG
             )
-            emu.send(
+            val n = emu.transact(
                 request.value,
-                request.value.size
+                request.value.size,
+                buffer
             )
-
-            val n = emu.recv(buffer)
 
             if (request.responseNeeded) {
                 gattServer.sendResponse(
