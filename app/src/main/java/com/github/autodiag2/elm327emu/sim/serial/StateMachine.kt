@@ -316,22 +316,24 @@ class StateMachine(
         }
     }
 
-    private suspend fun handleStart() {
-        handleStop()
-
-        controller.resetBlockStates()
-
+    fun containerGetRootBlocks(container: BlockController? = null): List<BlockController> {
         val linkedBlockIds =
             controller.links
                 .map { it.to }
                 .toSet()
-
-        val initialBlocks =
-            controller.blocks
+        
+        return controller.blocks
                 .filter { block ->
                     block.id !in linkedBlockIds &&
-                        block.parent == null
+                        block.parent == container
                 }
+    }
+
+    private suspend fun handleStart() {
+        handleStop()
+
+        controller.resetBlockStates()
+        val initialBlocks = containerGetRootBlocks()
 
         logDebug(
             "Execution roots: " +
@@ -801,14 +803,7 @@ class StateMachine(
                     } else {
                         path.state = State.FINISHED
 
-                        val childRoots =
-                            children.filter { childId ->
-                                controller.links.none { link ->
-                                    link.to == childId &&
-                                        resolveBlockId(link.from)?.parent === block
-                                }
-                            }
-
+                        val childRoots = containerGetRootBlocks(block)
                         for (child in childRoots) {
                             createPath(child)
                         }
