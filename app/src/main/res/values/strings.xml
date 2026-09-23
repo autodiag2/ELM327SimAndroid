@@ -71,6 +71,7 @@
     <string name="sim_custom_serial_script_block_name_send">Send</string>
     <string name="sim_custom_serial_script_block_name_recv">Receive</string>
     <string name="sim_custom_serial_script_del">Delete</string>
+    <string name="sim_custom_serial_script_dup">Clone</string>
     <string name="sim_custom_serial_script">Custom serial script</string>
     <string name="sim_custom_serial_script_open">Configure</string>
     <string name="sim_custom_serial_script_edit">Edit</string>

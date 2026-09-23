@@ -767,6 +767,213 @@ class CustomController(
         )
     }
 
+    public fun onDuplicate() {
+        val selected =
+            selectedBlocks
+                .mapNotNull { id ->
+                    blocks.find {
+                        it.id == id
+                    }
+                }
+
+        if (selected.isEmpty()) {
+            return
+        }
+
+        /*
+        * If both a container and one of its children are selected,
+        * duplicate the child through the container only once.
+        */
+        val roots =
+            selected.filter { block ->
+                var parent = block.parent
+
+                while (parent != null) {
+                    if (selected.contains(parent)) {
+                        return@filter false
+                    }
+
+                    parent = parent.parent
+                }
+
+                true
+            }
+
+        val originalToDuplicate =
+            mutableMapOf<Int, BlockController>()
+
+        fun duplicateBlock(
+            original: BlockController,
+            parent: BlockController?
+        ): BlockController {
+            val newId =
+                ElementController.gen_id_track()
+
+            val json =
+                original.toJson()
+
+            val duplicate =
+                BlockController.fromJson(
+                    json,
+                    newId,
+                    null
+                ) ?: throw IllegalStateException(
+                    "Unable to duplicate block #${original.id}"
+                )
+
+            /*
+            * Children are rebuilt below, so don't keep the original IDs.
+            */
+            duplicate.children.clear()
+            duplicate.parent = parent
+
+            val blockView =
+                view.addBlock(
+                    model = duplicate
+                )
+
+            duplicate.viewLink(
+                blockView
+            )
+
+            blocks.add(duplicate)
+
+            originalToDuplicate[
+                original.id
+            ] = duplicate
+
+            /*
+            * Preserve the original block position with an offset.
+            */
+            original.view?.let { sourceView ->
+                duplicate.view?.let { targetView ->
+                    targetView.x =
+                        sourceView.x +
+                            dp(20)
+
+                    targetView.y =
+                        sourceView.y +
+                            dp(20)
+                }
+            }
+
+            /*
+            * Rebuild the container hierarchy using the new IDs.
+            */
+            for (childId in original.children) {
+                val child =
+                    blocks.find {
+                        it.id == childId
+                    } ?: continue
+
+                val duplicateChild =
+                    duplicateBlock(
+                        child,
+                        duplicate
+                    )
+
+                duplicate.children.add(
+                    duplicateChild.id
+                )
+            }
+
+            return duplicate
+        }
+
+        /*
+        * Duplicate the selected root subtrees.
+        */
+        for (root in roots) {
+            duplicateBlock(
+                root,
+                null
+            )
+        }
+
+        /*
+        * Duplicate links whose source and destination were
+        * both duplicated.
+        *
+        * This includes links inside containers and links between
+        * selected root blocks.
+        */
+        val duplicatedLinks =
+            links.filter { link ->
+                originalToDuplicate.containsKey(
+                    link.from
+                ) &&
+                    originalToDuplicate.containsKey(
+                        link.to
+                    )
+            }
+
+        for (link in duplicatedLinks) {
+            val newFrom =
+                originalToDuplicate[
+                    link.from
+                ] ?: continue
+
+            val newTo =
+                originalToDuplicate[
+                    link.to
+                ] ?: continue
+
+            val duplicateLink =
+                LinkController(
+                    from = newFrom.id,
+                    to = newTo.id
+                )
+
+            val linkView =
+                view.addLink(
+                    model = duplicateLink
+                )
+
+            duplicateLink.viewLink(
+                linkView
+            )
+
+            links.add(
+                duplicateLink
+            )
+        }
+
+        /*
+        * Select the duplicated blocks instead of the originals.
+        */
+        selectedBlocks.clear()
+
+        for (duplicate in originalToDuplicate.values) {
+            selectedBlocks.add(
+                duplicate.id
+            )
+        }
+
+        selectedLinks.clear()
+
+        for (link in duplicatedLinks) {
+            val from =
+                originalToDuplicate[
+                    link.from
+                ] ?: continue
+
+            val to =
+                originalToDuplicate[
+                    link.to
+                ] ?: continue
+
+            selectedLinks.add(
+                Pair(
+                    from.id,
+                    to.id
+                )
+            )
+        }
+
+        debugBlockTree()
+        onDataChanged()
+    }
+
     public fun onDelete() {
         val blocksToDelete =
             selectedBlocks

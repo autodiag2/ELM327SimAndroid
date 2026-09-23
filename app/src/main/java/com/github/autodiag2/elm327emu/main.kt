@@ -572,6 +572,10 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
                 simView.customSerialScreen.onDelete()
                 true
             }
+            R.id.sim_custom_serial_script_dup -> {
+                simView.customSerialScreen.onDuplicate()
+                true
+            }
 
             else -> super.onOptionsItemSelected(item)
         }

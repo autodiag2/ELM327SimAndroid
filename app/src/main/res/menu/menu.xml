@@ -107,6 +107,9 @@
         <item
             android:id="@+id/sim_custom_serial_script_del"
             android:title="@string/sim_custom_serial_script_del" />
+        <item 
+            android:id="@+id/sim_custom_serial_script_dup"
+            android:title="@string/sim_custom_serial_script_dup" />
     </group>
 
 </menu>
