@@ -31,7 +31,16 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.appcompat.widget.SwitchCompat
 import androidx.core.widget.doAfterTextChanged
+import android.Manifest
+import android.app.AlertDialog
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import android.provider.Settings
+import android.view.Gravity
+import androidx.core.app.ActivityCompat
 
 private const val PREFS = "app_prefs"
 
@@ -100,6 +109,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     private var hotspotManager: LocalHotspotManager? = null
 
+    private companion object {
+        const val REQUEST_BLUETOOTH_CONNECT = 1001
+    }
+
     override fun onResume() {
         super.onResume()
 
@@ -130,6 +143,231 @@ class SettingsFragment : PreferenceFragmentCompat() {
         setupBluetooth()
         setupBle()
         setupWifi()
+        setupBtClassic()
+    }
+
+    private fun showPairedBluetoothDevices() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            ActivityCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.BLUETOOTH_CONNECT
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestPermissions(
+                arrayOf(Manifest.permission.BLUETOOTH_CONNECT),
+                REQUEST_BLUETOOTH_CONNECT
+            )
+            return
+        }
+
+        val view = layoutInflater.inflate(
+            R.layout.settings_bt_classic_paired_devices,
+            null
+        )
+
+        val list = view.findViewById<LinearLayout>(
+            R.id.settings_bt_classic_paired_devices_list
+        )
+
+        val pairNew = view.findViewById<Button>(
+            R.id.settings_bt_classic_pair_new
+        )
+
+        val dialog = AlertDialog.Builder(requireContext())
+            .setTitle(R.string.settings_bt_classic_paired_devices)
+            .setView(view)
+            .setNegativeButton(R.string.settings_bt_classic_close, null)
+            .create()
+
+        pairNew.setOnClickListener {
+            try {
+                startActivity(
+                    Intent(Settings.ACTION_BLUETOOTH_SETTINGS)
+                )
+            } catch (_: Exception) {
+            }
+        }
+
+        refreshPairedBluetoothDevices(list)
+
+        dialog.show()
+    }
+
+    private fun refreshPairedBluetoothDevices(
+        list: LinearLayout
+    ) {
+
+        list.removeAllViews()
+
+        val adapter = BluetoothAdapter.getDefaultAdapter()
+
+        if (adapter == null) {
+            return
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            ActivityCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.BLUETOOTH_CONNECT
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+
+        val devices = adapter.bondedDevices
+            .sortedBy { it.name ?: it.address }
+
+        if (devices.isEmpty()) {
+
+            val text = TextView(requireContext())
+
+            text.text = getString(
+                R.string.settings_bt_classic_no_paired_devices
+            )
+
+            list.addView(text)
+
+            return
+        }
+
+        for (device in devices) {
+            addBluetoothDeviceRow(list, device)
+        }
+    }
+
+    private fun addBluetoothDeviceRow(
+        list: LinearLayout,
+        device: BluetoothDevice
+    ) {
+
+        val row = LinearLayout(requireContext())
+
+        row.orientation = LinearLayout.HORIZONTAL
+        row.gravity = Gravity.CENTER_VERTICAL
+        row.setPadding(0, 8, 0, 8)
+
+        val textContainer = LinearLayout(requireContext())
+
+        textContainer.orientation = LinearLayout.VERTICAL
+
+        val name = TextView(requireContext())
+
+        name.text = device.name ?: device.address
+        name.textSize = 16f
+
+        val status = TextView(requireContext())
+
+        status.text = bluetoothDeviceStatus(device)
+        status.textSize = 12f
+
+        textContainer.addView(name)
+        textContainer.addView(status)
+
+        val textParams = LinearLayout.LayoutParams(
+            0,
+            LinearLayout.LayoutParams.WRAP_CONTENT,
+            1f
+        )
+
+        row.addView(
+            textContainer,
+            textParams
+        )
+
+        val pairButton = Button(requireContext())
+
+        pairButton.text = getString(
+            R.string.settings_bt_classic_pair
+        )
+
+        pairButton.setOnClickListener {
+            pairBluetoothDevice(device, status, pairButton)
+        }
+
+        /*
+        * A bonded device normally doesn't need Pair.
+        * Keep the button available so that a failed/removed bond
+        * can be retried after the state changes.
+        */
+        pairButton.visibility =
+            if (device.bondState == BluetoothDevice.BOND_BONDED)
+                View.GONE
+            else
+                View.VISIBLE
+
+        row.addView(pairButton)
+
+        list.addView(row)
+    }
+
+    private fun bluetoothDeviceStatus(
+        device: BluetoothDevice
+    ): String {
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            ActivityCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.BLUETOOTH_CONNECT
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return getString(R.string.settings_bt_classic_unknown)
+        }
+
+        return when (device.bondState) {
+
+            BluetoothDevice.BOND_BONDED ->
+                getString(R.string.settings_bt_classic_paired)
+
+            BluetoothDevice.BOND_BONDING ->
+                getString(R.string.settings_bt_classic_pairing)
+
+            BluetoothDevice.BOND_NONE ->
+                getString(R.string.settings_bt_classic_offline)
+
+            else ->
+                getString(R.string.settings_bt_classic_unknown)
+        }
+    }
+
+    private fun pairBluetoothDevice(
+        device: BluetoothDevice,
+        status: TextView,
+        button: Button
+    ) {
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+            ActivityCompat.checkSelfPermission(
+                requireContext(),
+                Manifest.permission.BLUETOOTH_CONNECT
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+
+        button.isEnabled = false
+
+        status.text = getString(
+            R.string.settings_bt_classic_pairing
+        )
+
+        try {
+
+            if (!device.createBond()) {
+                button.isEnabled = true
+
+                status.text = getString(
+                    R.string.settings_bt_classic_unknown
+                )
+            }
+
+        } catch (e: Exception) {
+
+            button.isEnabled = true
+
+            status.text = e.message ?: getString(
+                R.string.settings_bt_classic_unknown
+            )
+        }
     }
 
     private fun setupLog() {
@@ -454,6 +692,13 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 activityMain.bridgeOrchestrator.setupBleBridge()
             }
             .show()
+    }
+
+    private fun setupBtClassic() {
+        findPreference<Preference>("bt_classic_ensure_device_paired")?.setOnPreferenceClickListener {
+            showPairedBluetoothDevices()
+            true
+        }
     }
 
     private fun setupWifi() {

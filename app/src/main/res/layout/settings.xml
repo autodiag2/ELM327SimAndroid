@@ -100,6 +100,16 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:title="@string/settings_section_bt_classic">
+
+        <Preference
+            android:key="bt_classic_ensure_device_paired"
+            android:title="@string/settings_bt_classic_ensure_device_paired"
+            android:summary="@string/settings_bt_classic_ensure_device_paired_summary" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:title="@string/settings_section_wifi">
 
         <Preference
