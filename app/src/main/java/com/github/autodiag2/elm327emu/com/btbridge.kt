@@ -11,6 +11,8 @@ import com.github.autodiag2.elm327emu.LogLevel
 import com.github.autodiag2.elm327emu.MainActivity
 import kotlinx.coroutines.channels.Channel
 import com.github.autodiag2.elm327emu.sim.EmuInterface
+import android.util.Log
+import com.github.autodiag2.elm327emu.BuildConfig
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.selects.select
@@ -31,6 +33,15 @@ class BluetoothBridge(
     private var bt_input: InputStream? = null
     private var bt_output: OutputStream? = null
 
+    fun logDebug(message: String) {
+        if (BuildConfig.DEBUG) {
+            Log.d(
+                "com.BluetoothBridge",
+                message
+            )
+        }
+    }
+
     override suspend fun accept() {
         appendLog(
             getString(R.string.log_bt_waiting_for_connection),
@@ -38,13 +49,21 @@ class BluetoothBridge(
         )
 
         try {
-            coroutineScope {
+            supervisorScope {
                 val secureAccept = async(Dispatchers.IO) {
-                    secureServer?.accept()
+                    try {
+                        secureServer?.accept()
+                    } catch (e: CancellationException) {
+                        null
+                    }
                 }
 
                 val insecureAccept = async(Dispatchers.IO) {
-                    insecureServer?.accept()
+                    try {
+                        insecureServer?.accept()
+                    } catch (e: CancellationException) {
+                        null
+                    }
                 }
 
                 val acceptedSocket = select<BluetoothSocket?> {
@@ -60,13 +79,13 @@ class BluetoothBridge(
                 }
 
                 if (acceptedSocket == null) {
-                    return@coroutineScope
+                    return@supervisorScope
                 }
 
                 socket = acceptedSocket
 
                 if (socket == null) {
-                    return@coroutineScope
+                    return@supervisorScope
                 }
 
                 var clientIdentifier = ""
@@ -90,7 +109,7 @@ class BluetoothBridge(
                     bt_input = input
                     bt_output = output
 
-                    val reader = launch(Dispatchers.IO) {
+                    val reader = launch {
                         try {
                             while (isActive) {
                                 val bufferBT = ByteArray(1024)
@@ -111,7 +130,7 @@ class BluetoothBridge(
                         }
                     }
 
-                    val worker = launch(Dispatchers.IO) {
+                    val worker = launch {
                         val bufferLoop = ByteArray(1024)
 
                         try {

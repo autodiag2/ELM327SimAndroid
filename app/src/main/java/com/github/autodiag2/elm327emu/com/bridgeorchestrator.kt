@@ -19,6 +19,9 @@ import android.bluetooth.BluetoothAdapter
 import android.content.Context
 import android.content.SharedPreferences
 import com.github.autodiag2.elm327emu.sim.EmuInterface
+import android.util.Log
+import com.github.autodiag2.elm327emu.BuildConfig
+import kotlinx.coroutines.*
 
 /**
  * Driven by the need of hotpluging and unplugging interfaces, this class orchestrates the bridges and the emulator.
@@ -51,6 +54,15 @@ class BridgeOrchestrator(
     }
     private val connectedClients = mutableListOf<ConnectedClient>()
     private var started = false
+
+    fun logDebug(message: String) {
+        if (BuildConfig.DEBUG) {
+            Log.d(
+                "com.BridgeOrchestrator",
+                message
+            )
+        }
+    }
 
     suspend fun start() {
         activity.clearSocketFiles()
@@ -133,12 +145,38 @@ class BridgeOrchestrator(
             bridge.start()
 
             setJob(scope.launch {
+
+                logDebug("Accept job STARTED bridge=${bridge.javaClass.simpleName}")
+
                 while (isActive) {
-                    if ( ( bridge is BLEBridge || bridge is BluetoothBridge ) && !activity.btAdapter.isEnabled ) {
-                        return@launch
+
+                    logDebug(
+                        "Before accept bridge=${bridge.javaClass.simpleName} " +
+                        "active=$isActive"
+                    )
+
+                    if (
+                        (bridge is BLEBridge || bridge is BluetoothBridge) &&
+                        !activity.btAdapter.isEnabled
+                    ) {
+                        logDebug("bluetooth not enabled, abort launch")
+                        break
                     }
+
                     bridge.accept()
+
+                    logDebug(
+                        "After accept bridge=${bridge.javaClass.simpleName} " +
+                        "active=$isActive " +
+                        "cancelled=${coroutineContext.job.isCancelled}"
+                    )
                 }
+
+                logDebug(
+                    "Accept job exited bridge=${bridge.javaClass.simpleName} " +
+                    "active=$isActive " +
+                    "cancelled=${coroutineContext.job.isCancelled}"
+                )
             })
         } else if (!enabled && job != null) {
             bridge.stop()
