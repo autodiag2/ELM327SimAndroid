@@ -181,6 +181,8 @@
     <string name="main_drawer_stats">Stats</string>
     <string name="main_drawer_settings">Settings</string>
     <string name="sim_ecu_row_delete">Delete ECU</string>
+    <string name="log_ble_failed_to_send_2">"failed to send (2)"</string>
+    <string name="log_ble_nothing_received">Nothing received from emu</string>
     <string name="log_ble_notification_queue_failed">BLE TX notification queue failed</string>
     <string name="log_ble_uuid_validation">Invalid BLE UUID configuration: %1$s</string>
     <string name="log_ble_connected">%1$s connected(status=%2$d:%3$s)</string>

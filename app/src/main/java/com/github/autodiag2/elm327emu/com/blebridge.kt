@@ -516,11 +516,11 @@ class BLEBridge(
 
             if (n > 0) {
                 if ( ! sendTx(request.device, buffer.copyOf(n)) ) {
-                    activity.appendLog("failed to send (2)")
+                    activity.appendLog(getString(R.string.log_ble_failed_to_send_2))
                 }
                 activity.onDataSent(buffer, n)
             } else {
-                activity.appendLog("Nothing received from emu", LogLevel.ERROR)
+                activity.appendLog(getString(R.string.log_ble_nothing_received), LogLevel.ERROR)
             }
 
         } catch (e: Exception) {
