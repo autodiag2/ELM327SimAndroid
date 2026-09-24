@@ -235,63 +235,45 @@ class SettingsFragment : PreferenceFragmentCompat() {
         list: LinearLayout,
         device: BluetoothDevice
     ) {
+        val row = layoutInflater.inflate(
+            R.layout.settings_bt_devices_item,
+            list,
+            false
+        )
 
-        val row = LinearLayout(requireContext())
+        val name = row.findViewById<TextView>(
+            R.id.settings_bt_device_name
+        )
 
-        row.orientation = LinearLayout.HORIZONTAL
-        row.gravity = Gravity.CENTER_VERTICAL
-        row.setPadding(0, 8, 0, 8)
+        val address = row.findViewById<TextView>(
+            R.id.settings_bt_device_address
+        )
 
-        val textContainer = LinearLayout(requireContext())
+        val status = row.findViewById<TextView>(
+            R.id.settings_bt_device_status
+        )
 
-        textContainer.orientation = LinearLayout.VERTICAL
-
-        val name = TextView(requireContext())
+        val pairButton = row.findViewById<Button>(
+            R.id.settings_bt_device_pair
+        )
 
         name.text = device.name ?: device.address
-        name.textSize = 16f
-
-        val status = TextView(requireContext())
-
+        address.text = device.address
         status.text = bluetoothDeviceStatus(device)
-        status.textSize = 12f
-
-        textContainer.addView(name)
-        textContainer.addView(status)
-
-        val textParams = LinearLayout.LayoutParams(
-            0,
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-            1f
-        )
-
-        row.addView(
-            textContainer,
-            textParams
-        )
-
-        val pairButton = Button(requireContext())
-
-        pairButton.text = getString(
-            R.string.settings_bt_classic_pair
-        )
 
         pairButton.setOnClickListener {
-            pairBluetoothDevice(device, status, pairButton)
+            pairBluetoothDevice(
+                device,
+                status,
+                pairButton
+            )
         }
 
-        /*
-        * A bonded device normally doesn't need Pair.
-        * Keep the button available so that a failed/removed bond
-        * can be retried after the state changes.
-        */
         pairButton.visibility =
             if (device.bondState == BluetoothDevice.BOND_BONDED)
                 View.GONE
             else
                 View.VISIBLE
-
-        row.addView(pairButton)
 
         list.addView(row)
     }
