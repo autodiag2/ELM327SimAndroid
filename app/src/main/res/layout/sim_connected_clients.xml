@@ -12,6 +12,11 @@
         android:layout_height="wrap_content"
         android:orientation="vertical" />
 
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
     <TextView
         android:id="@+id/sim_connected_clients_warning"
         android:layout_width="match_parent"
@@ -19,6 +24,6 @@
         android:text="@string/sim_connected_clients_warning"
         android:textStyle="bold|italic"
         android:textSize="12sp"
-        android:layout_marginBottom="12dp" />
+        android:layout_marginTop="12dp" />
 
 </LinearLayout>
