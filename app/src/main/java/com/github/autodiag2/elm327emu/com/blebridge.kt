@@ -454,6 +454,7 @@ class BLEBridge(
             
             val advData = AdvertiseData.Builder()
                 .setIncludeDeviceName(true)
+                .addServiceUuid(ParcelUuid(ELM_SERVICE_UUID))
                 .build()
             
             if (!activity.btAdapter.isMultipleAdvertisementSupported) {
@@ -466,6 +467,7 @@ class BLEBridge(
                 return@launch
             }
             val scanResp = AdvertiseData.Builder()
+                .setIncludeDeviceName(true)
                 .addServiceUuid(ParcelUuid(ELM_SERVICE_UUID))
                 .build()
 
