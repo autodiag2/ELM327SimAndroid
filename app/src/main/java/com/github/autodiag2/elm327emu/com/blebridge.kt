@@ -20,6 +20,8 @@ import kotlinx.coroutines.channels.Channel
 import kotlin.reflect.typeOf
 import androidx.annotation.RequiresApi
 import com.github.autodiag2.elm327emu.sim.EmuInterface
+import android.util.Log
+import com.github.autodiag2.elm327emu.BuildConfig
 
 private data class PendingRequest(
     val device: BluetoothDevice,
@@ -47,8 +49,6 @@ class BLEBridge(
             )!!
         )
 
-    private var negotiatedMtu = 23
-
     private val ELM_RX_UUID: UUID
         get() = UUID.fromString(
             prefs.getString(
@@ -70,7 +70,8 @@ class BLEBridge(
 
     private lateinit var gattServer: BluetoothGattServer
     private lateinit var advertiser: BluetoothLeAdvertiser
-    private var txNotificationsEnabled = false
+    private val negotiatedMtu = mutableMapOf<String, Int>()
+    private var txNotificationsEnabled = mutableMapOf<String, Boolean>()
     private var gattReady = false
 
     private lateinit var rxChar: BluetoothGattCharacteristic
@@ -98,6 +99,17 @@ class BLEBridge(
             )
         }
     }
+
+    companion object {
+        fun logDebug(message: String) {
+            if (BuildConfig.DEBUG) {
+                Log.d(
+                    "com.blebridge",
+                    message
+                )
+            }
+        }
+    }
     
     data class NotificationPacket(
         val device: BluetoothDevice,
@@ -107,9 +119,10 @@ class BLEBridge(
     private var notificationJob: Job? = null
 
     private fun sendTx(device: BluetoothDevice?, input: Any): Boolean {
-        if (!txNotificationsEnabled) return false
         if (device == null) return false
-
+        if (txNotificationsEnabled[device.address] != true) {
+            return false
+        }
         var bytes: Any
         if ( input is String ) {
             bytes = input.toByteArray(Charsets.US_ASCII)
@@ -118,7 +131,8 @@ class BLEBridge(
         } else {
             return false
         }
-        val payloadSize = negotiatedMtu - 3
+        val mtu = negotiatedMtu[device.address] ?: 23
+        val payloadSize = mtu - 3
         var i = 0
 
         while (i < bytes.size) {
@@ -210,7 +224,8 @@ class BLEBridge(
             device: BluetoothDevice,
             mtu: Int
         ) {
-            negotiatedMtu = mtu
+            logDebug("onMtuChanged")
+            negotiatedMtu[device.address] = mtu
             appendLog(
                 getString(
                     R.string.log_ble_mtu_changed,
@@ -230,6 +245,7 @@ class BLEBridge(
             offset: Int,
             value: ByteArray
         ) {
+            logDebug("onDescriptorWriteRequest")
             if (responseNeeded) {
                 gattServer.sendResponse(
                     device,
@@ -248,7 +264,7 @@ class BLEBridge(
                 LogLevel.DEBUG
             )
             if (descriptor.uuid == cccdUuid) {
-                txNotificationsEnabled = value.contentEquals(
+                txNotificationsEnabled[device.address] = value.contentEquals(
                     BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE
                 )
             }
@@ -292,6 +308,8 @@ class BLEBridge(
                     appendLog(getString(R.string.log_ble_connected, addr, status, statusString), LogLevel.INFO)
                 }
                 BluetoothProfile.STATE_DISCONNECTED  -> {
+                    negotiatedMtu.remove(addr)
+                    txNotificationsEnabled.remove(addr)
                     appendLog(getString(R.string.log_ble_disconnected, addr, status, statusString), LogLevel.INFO)
                     listener?.onClientDisconnect("${addr}", this@BLEBridge)
                 }
@@ -301,6 +319,7 @@ class BLEBridge(
         }
         
         override fun onServiceAdded(status: Int, service: BluetoothGattService) {
+            logDebug("onServiceAdded : ${status}")
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 gattReady = true
                 appendLog(getString(R.string.log_ble_gatt_service_added), LogLevel.DEBUG)
@@ -320,6 +339,7 @@ class BLEBridge(
             offset: Int,
             value: ByteArray
         ) {
+            logDebug("onCharacteristicWriteRequest")
             if (characteristic.uuid != ELM_RX_UUID) {
                 if (responseNeeded) {
                     gattServer.sendResponse(
@@ -561,7 +581,8 @@ class BLEBridge(
             )
         }
         gattReady = false
-        txNotificationsEnabled = false
+        txNotificationsEnabled.clear()
+        negotiatedMtu.clear()
         notificationJob?.cancel()
         notificationJob = null
         clearNotificationQueue()
