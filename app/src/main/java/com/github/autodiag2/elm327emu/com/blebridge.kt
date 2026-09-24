@@ -467,8 +467,6 @@ class BLEBridge(
                 return@launch
             }
             val scanResp = AdvertiseData.Builder()
-                .setIncludeDeviceName(true)
-                .addServiceUuid(ParcelUuid(ELM_SERVICE_UUID))
                 .build()
 
             val btManager = activity.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
@@ -576,18 +574,19 @@ class BLEBridge(
         }
 
         try {
+            gattServer.clearServices()
             gattServer.close()
         } catch (e: Exception) {
             appendLog(getString(R.string.log_ble_gatt_server_close_failed, e.message),
                 LogLevel.DEBUG
             )
         }
+        clearNotificationQueue()
+        notificationJob?.cancel()
+        notificationJob = null
         gattReady = false
         txNotificationsEnabled.clear()
         negotiatedMtu.clear()
-        notificationJob?.cancel()
-        notificationJob = null
-        clearNotificationQueue()
     }
 
     private fun clearNotificationQueue() {
