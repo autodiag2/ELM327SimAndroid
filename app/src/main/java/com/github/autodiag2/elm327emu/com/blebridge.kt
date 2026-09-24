@@ -289,10 +289,10 @@ class BLEBridge(
             when(newState) {
                 BluetoothProfile.STATE_CONNECTED     -> {
                     listener?.onClientConnect("${addr}", this@BLEBridge)
-                    appendLog(getString(R.string.log_ble_connected, addr, status, statusString), LogLevel.DEBUG)
+                    appendLog(getString(R.string.log_ble_connected, addr, status, statusString), LogLevel.INFO)
                 }
                 BluetoothProfile.STATE_DISCONNECTED  -> {
-                    appendLog(getString(R.string.log_ble_disconnected, addr, status, statusString), LogLevel.DEBUG)
+                    appendLog(getString(R.string.log_ble_disconnected, addr, status, statusString), LogLevel.INFO)
                     listener?.onClientDisconnect("${addr}", this@BLEBridge)
                 }
                 BluetoothProfile.STATE_CONNECTING    -> appendLog(getString(R.string.log_ble_connecting, addr, status, statusString), LogLevel.DEBUG)
@@ -354,6 +354,7 @@ class BLEBridge(
     private val advertiseCallback = object : AdvertiseCallback() {
         override fun onStartSuccess(settingsInEffect: AdvertiseSettings) {
             appendLog(getString(R.string.log_ble_advertising_started), LogLevel.DEBUG)
+            appendLog(getString(R.string.log_ble_server_started), LogLevel.INFO)
         }
 
         override fun onStartFailure(errorCode: Int) {
