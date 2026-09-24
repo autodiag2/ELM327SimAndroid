@@ -186,10 +186,10 @@ class Sim(
             val nclient = activity.clients?.size ?: 0
             connectedClientsButton.text = getString(R.string.sim_connected_clients_format, nclient)
             val colorAttr =
-                if (nclient == 0) {
-                    R.attr.colorAccentInProgress
-                } else {
+                if ( nclient == 1 ) {
                     R.attr.colorAccentSuccess
+                } else {
+                    R.attr.colorAccentInProgress
                 }
             val typedValue = android.util.TypedValue()
             activity.theme.resolveAttribute(
