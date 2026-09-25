@@ -414,16 +414,15 @@ class CustomController(
 
     fun startScript() {
         scope.launch {
-            val emu =
-                activity.bridgeOrchestrator
-                    as EmuInterface
+            val emu = activity.bridgeOrchestrator as EmuInterface
+            val scriptEmu = stateMachine as EmuInterface
 
-            val streams =
-                QueueDuplexStreams()
+            val streams = QueueDuplexStreams()
 
-            emuStreams = streams
+            scriptEmu.input = streams.input
+            scriptEmu.output = streams.output
 
-            emu.emuHookStreams(
+            emu.hookIO(
                 streams.bridgeInput,
                 streams.bridgeOutput
             )
@@ -446,13 +445,12 @@ class CustomController(
             val emu =
                 activity.bridgeOrchestrator
                     as EmuInterface
+            val scriptEmu = stateMachine as EmuInterface
 
             stateMachine.stop()
 
-            emu.emuUnHookStreams()
-
-            emuStreams?.close()
-            emuStreams = null
+            emu.unhookIO()
+            scriptEmu.close()
         }
     }
 

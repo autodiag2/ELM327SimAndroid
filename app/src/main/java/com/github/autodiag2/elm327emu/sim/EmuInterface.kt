@@ -110,7 +110,15 @@ abstract class EmuInterface(
     private var inputBackup: InputStream? = null
     private var outputBackup: OutputStream? = null
 
-    fun emuHookStreams(
+    fun close() {
+        inputBackup = null
+        outputBackup?.close() ?: output?.close()
+        outputBackup = null
+        input = null
+        output = null
+    }
+
+    fun hookIO(
         hookInput: InputStream,
         hookOutput: OutputStream
     ) {
@@ -126,7 +134,7 @@ abstract class EmuInterface(
         output = hookOutput
     }
 
-    fun emuUnHookStreams() {
+    fun unhookIO() {
         if (inputBackup != null) {
             input = inputBackup
         }
