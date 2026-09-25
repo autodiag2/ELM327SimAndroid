@@ -74,14 +74,16 @@ class LogReplay(
             entries == null ||
             entries.isEmpty()
         ) {
-            Toast.makeText(
-                activity,
-                getString(
-                    R.string.custom_serial_replay_no_log
-                ),
-                Toast.LENGTH_SHORT
-            ).show()
-
+            activity.runOnUiThread {
+                Toast.makeText(
+                    activity,
+                    getString(
+                        R.string.custom_serial_replay_no_log
+                    ),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            onFinished?.invoke()
             return
         }
 
