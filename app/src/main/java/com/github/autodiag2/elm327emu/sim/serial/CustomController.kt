@@ -423,8 +423,6 @@ class CustomController(
         val scriptEmuOutput = QueueOutputStream(logReplayBridgeInput)
         val scriptEmuInput = QueueInputStream()
         val logReplayBridgeOutput = QueueOutputStream(scriptEmuInput)
-        logReplayBridgeInput.output = scriptEmuOutput
-        scriptEmuInput.output = logReplayBridgeOutput
 
         logReplay.input = logReplayBridgeInput
         logReplay.output = logReplayBridgeOutput
@@ -434,20 +432,12 @@ class CustomController(
     fun startScript() {
         scope.launch {
             val emu = activity.bridgeOrchestrator as EmuInterface
-            val scriptEmu = stateMachine as EmuInterface
+            val scriptEmu = stateMachine
 
-            val emuInput = QueueInputStream()
-            val scriptEmuInput = QueueInputStream()
-            val emuOutput = QueueOutputStream(scriptEmuInput)
-            val scriptEmuOutput = QueueOutputStream(emuInput)
-            emuInput.output = emu.output
-            scriptEmuInput.output = emuOutput
-
-            scriptEmu.set(scriptEmuInput, scriptEmuOutput)
-
+            scriptEmu.setupStart()
             emu.hookIO(
-                emuInput,
-                emuOutput
+                scriptEmu.input!!,
+                scriptEmu.output!!
             )
 
             stateMachine.start()

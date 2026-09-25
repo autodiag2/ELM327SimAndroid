@@ -14,9 +14,9 @@ import android.util.Log
 import com.github.autodiag2.elm327emu.BuildConfig
 
 abstract class IO(
-    var input: InputStream? = null, 
-    var output: OutputStream? = null,
-    val LOG_TAG: String = "com.io"
+    public var input: InputStream? = null, 
+    public var output: OutputStream? = null,
+    private val LOG_TAG: String = "com.io"
 ) {
     protected val ioMutex = Mutex()
 
@@ -36,7 +36,7 @@ abstract class IO(
         this.output = output
     }
 
-    suspend fun transact(
+    open suspend fun transact(
         request: ByteArray,
         size: Int,
         response: ByteArray,
@@ -48,7 +48,10 @@ abstract class IO(
         }
     }
 
-    public fun send(
+    /**
+     * Send to an emu interface (from the outside)
+     */
+    open fun send(
         buffer: ByteArray,
         size: Int,
         timeoutMs: Long = 5000L
@@ -71,7 +74,10 @@ abstract class IO(
         }
     }
 
-    public fun recv(
+    /**
+     * Receive to an emu interface (from the outside)
+     */
+    open fun recv(
         buffer: ByteArray,
         timeoutMs: Long = 5000L
     ): Int {

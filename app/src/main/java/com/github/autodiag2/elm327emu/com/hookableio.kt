@@ -27,6 +27,10 @@ abstract class HookableIO(
         output = null
     }
 
+    /**
+     * Replace interface's IO by given stream
+     * it will pause existing internal IO operation (eg. localsocket operations)
+     */
     fun hookIO(
         hookInput: InputStream,
         hookOutput: OutputStream

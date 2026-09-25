@@ -10,12 +10,18 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.util.concurrent.TimeoutException
 import com.github.autodiag2.elm327emu.sim.EmuInterface
+import java.io.PipedInputStream
+import java.io.PipedOutputStream
 
 class StateMachine(
     private val controller: CustomController,
     private val listener: Listener? = null,
     LOG_TAG: String = "sim.serial.StateMachine"
 ): EmuInterface() {
+
+    private var internal_input: InputStream? = null
+    private var internal_output: OutputStream? = null
+
     enum class State {
         READY,
         WAIT_DELAY,
@@ -88,6 +94,23 @@ class StateMachine(
         )
     }
 
+    override fun send(
+        buffer: ByteArray,
+        size: Int,
+        timeoutMs: Long
+    ) {
+        logDebug("sending")
+        return super.send(buffer, size, timeoutMs)
+    }
+
+    override fun recv(
+        buffer: ByteArray,
+        timeoutMs: Long
+    ): Int {
+        logDebug("recv")
+        return super.recv(buffer, timeoutMs)
+    }
+
     private fun startInputReader() {
         inputJob?.cancel()
 
@@ -101,7 +124,7 @@ class StateMachine(
                         isActive &&
                         running
                     ) {
-                        val count = recv(buffer)
+                        val count = internal_input?.read(buffer) ?: -1
 
                         logDebug(
                             "received ${count} bytes"
@@ -231,7 +254,17 @@ class StateMachine(
         )
     }
 
+    fun setupStart() {
+        val input = PipedInputStream()
+        val internal_input = PipedInputStream()
+        output = PipedOutputStream(internal_input)
+        internal_output = PipedOutputStream(input)
+        this.input = input
+        this.internal_input = internal_input
+    }
+
     fun start() {
+        assert( ! ( input == null || output == null || internal_input == null || internal_output == null ))
         events.trySend(
             Event.Start
         )
@@ -881,7 +914,8 @@ class StateMachine(
                 bytes.toDebugString()
         )
 
-        send(bytes, bytes.size, block.timeoutMs + 0L)
+        internal_output?.write(bytes)
+        internal_output?.flush()
 
         logDebug(
             "SEND WRITE DONE -> " +

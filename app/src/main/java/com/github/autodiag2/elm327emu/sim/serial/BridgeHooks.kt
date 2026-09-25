@@ -4,8 +4,22 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.io.InputStream
 import java.io.OutputStream
 import java.io.IOException
+import android.util.Log
+import com.github.autodiag2.elm327emu.BuildConfig
+import com.github.autodiag2.elm327emu.LogView
 
-class QueueInputStream(var output: OutputStream? = null) : InputStream() {
+class QueueInputStream : InputStream() {
+
+    public fun logDebug(
+        message: String
+    ) {
+        if (BuildConfig.DEBUG) {
+            Log.d(
+                "sim.serial.QueueInputStream",
+                message
+            )
+        }
+    }
 
     private val queue =
         LinkedBlockingQueue<ByteArray>()
@@ -22,6 +36,9 @@ class QueueInputStream(var output: OutputStream? = null) : InputStream() {
     fun offer(
         data: ByteArray
     ) {
+
+        logDebug("offer ${data}")
+
         if (closed) {
             return
         }
@@ -46,6 +63,8 @@ class QueueInputStream(var output: OutputStream? = null) : InputStream() {
                 1
             )
 
+        logDebug("read ${count} bytes")
+
         if (count < 0) {
             return -1
         }
@@ -67,6 +86,7 @@ class QueueInputStream(var output: OutputStream? = null) : InputStream() {
             throw IndexOutOfBoundsException()
         }
 
+        logDebug("reading ${length}")
         if (length == 0) {
             return 0
         }
@@ -105,7 +125,7 @@ class QueueInputStream(var output: OutputStream? = null) : InputStream() {
                     current = null
                     currentOffset = 0
                 }
-
+                logDebug("readed ${count}")
                 return count
             }
 
@@ -146,12 +166,23 @@ class QueueInputStream(var output: OutputStream? = null) : InputStream() {
         closed = true
 
         queue.offer(eof)
-
-        output?.close()
     }
 }
 
-class QueueOutputStream(var input: InputStream? = null) : OutputStream() {
+class QueueOutputStream(
+    private val target: QueueInputStream
+) : OutputStream() {
+
+    public fun logDebug(
+        message: String
+    ) {
+        if (BuildConfig.DEBUG) {
+            Log.d(
+                "sim.serial.QueueOutputStream",
+                message
+            )
+        }
+    }
 
     @Volatile
     private var closed = false
@@ -175,6 +206,15 @@ class QueueOutputStream(var input: InputStream? = null) : OutputStream() {
         length: Int
     ) {
 
+        val hex =
+            buffer.joinToString("") {
+                "%02X".format(it)
+            }
+
+        logDebug(
+            "write buffer=${hex} ${this}"
+        )
+
         if (closed) {
             throw IOException(
                 "Stream closed"
@@ -193,12 +233,6 @@ class QueueOutputStream(var input: InputStream? = null) : OutputStream() {
             return
         }
 
-        val target =
-            input as? QueueInputStream
-                ?: throw IOException(
-                    "Input stream not initialized"
-                )
-
         target.offer(
             buffer.copyOfRange(
                 offset,
@@ -208,6 +242,8 @@ class QueueOutputStream(var input: InputStream? = null) : OutputStream() {
     }
 
     override fun flush() {
+
+        logDebug("flush")
 
         if (closed) {
             throw IOException(
@@ -224,6 +260,6 @@ class QueueOutputStream(var input: InputStream? = null) : OutputStream() {
 
         closed = true
 
-        input?.close()
+        target.close()
     }
 }
