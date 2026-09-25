@@ -4,7 +4,6 @@ import com.github.autodiag2.elm327emu.LogEntry
 import com.github.autodiag2.elm327emu.LogEntryType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import java.io.ByteArrayOutputStream
 import java.io.IOException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -13,28 +12,32 @@ import com.github.autodiag2.elm327emu.R
 import android.util.Log
 import com.github.autodiag2.elm327emu.BuildConfig
 import android.widget.Toast
-import android.content.Context
-import com.github.autodiag2.elm327emu.com.Bridge
 import com.github.autodiag2.elm327emu.MainActivity
+import com.github.autodiag2.elm327emu.com.Bridge
 import com.github.autodiag2.elm327emu.sim.EmuInterface
 import com.github.autodiag2.elm327emu.com.EmuProvider
-import java.io.InputStream
-import java.io.OutputStream
 
 class LogReplay(
     emuProvider: EmuProvider,
     scope: CoroutineScope,
     activity: MainActivity,
     listener: Listener? = null
-): Bridge(emuProvider = emuProvider, scope = scope, activity = activity, LOG_TAG = "LR", listener = listener) {
+) : Bridge(
+    emuProvider = emuProvider,
+    scope = scope,
+    activity = activity,
+    LOG_TAG = "LR",
+    listener = listener
+) {
 
     var logEntriesProvider: (() -> List<LogEntry>)? = null
-    var input: InputStream? = null
-    var output: OutputStream? = null
 
     @Volatile
     private var job: Job? = null
 
+    fun getEmu(): EmuInterface {
+        return emuProvider.getEmu()
+    }
     fun isRunning(): Boolean {
         return job?.isActive == true
     }
@@ -51,7 +54,11 @@ class LogReplay(
     }
 
     override suspend fun start() {
-        start(playSpeed = 1.0, onFinished = null, onError = null)
+        start(
+            playSpeed = 1.0,
+            onFinished = null,
+            onError = null
+        )
     }
 
     fun start(
@@ -59,8 +66,14 @@ class LogReplay(
         onFinished: (() -> Unit)? = null,
         onError: ((Throwable) -> Unit)? = null
     ) {
-        val entries: List<LogEntry>? = logEntriesProvider?.invoke()
-        if (entries == null || entries.isEmpty()) {
+
+        val entries: List<LogEntry>? =
+            logEntriesProvider?.invoke()
+
+        if (
+            entries == null ||
+            entries.isEmpty()
+        ) {
             Toast.makeText(
                 activity,
                 getString(
@@ -71,6 +84,7 @@ class LogReplay(
 
             return
         }
+
         job?.cancel()
 
         val speed =
@@ -85,10 +99,13 @@ class LogReplay(
 
         job =
             scope.launch {
+
                 try {
+
                     var previousTimestamp: Long? = null
 
                     for (entry in entries) {
+
                         if (!isActive) {
                             return@launch
                         }
@@ -97,6 +114,7 @@ class LogReplay(
                             previousTimestamp
 
                         if (previous != null) {
+
                             val elapsed =
                                 (entry.ts - previous)
                                     .coerceAtLeast(0L)
@@ -115,23 +133,53 @@ class LogReplay(
                         }
 
                         when (entry.type) {
+
                             LogEntryType.RECV -> {
-                                logDebug("Sending ${entry.data}")
-                                output?.write(
-                                    entry.data
+
+                                /*
+                                 * Log RECV means data received by
+                                 * the original emulator from the
+                                 * external client.
+                                 *
+                                 * During replay, send this data
+                                 * directly to the emulated
+                                 * StateMachine.
+                                 */
+                                logDebug(
+                                    "Sending ${entry.data}"
                                 )
 
-                                output?.flush()
-                                logDebug("Sent")
+                                getEmu().send(
+                                    entry.data,
+                                    entry.data.size,
+                                    0L
+                                )
+
+                                logDebug(
+                                    "Sent"
+                                )
                             }
 
                             LogEntryType.SENT -> {
+
+                                /*
+                                 * Log SENT means data returned by
+                                 * the original emulator.
+                                 *
+                                 * During replay, receive the same
+                                 * number of bytes directly from
+                                 * the emulated StateMachine.
+                                 */
                                 val actual =
                                     readReplayOutput(
                                         entry.data.size
                                     )
 
-                                if (!actual.contentEquals(entry.data)) {
+                                if (
+                                    !actual.contentEquals(
+                                        entry.data
+                                    )
+                                ) {
                                     logDebug(
                                         "Replay SENT mismatch: " +
                                             "expected=${entry.data.size} bytes " +
@@ -147,15 +195,21 @@ class LogReplay(
                         previousTimestamp =
                             entry.ts
                     }
+
                 } catch (e: IOException) {
+
                     if (isActive) {
                         onError?.invoke(e)
                     }
+
                 } catch (e: Exception) {
+
                     if (isActive) {
                         onError?.invoke(e)
                     }
+
                 } finally {
+
                     onFinished?.invoke()
                 }
             }
@@ -164,55 +218,47 @@ class LogReplay(
     private fun readReplayOutput(
         expectedLength: Int
     ): ByteArray {
+
         if (expectedLength <= 0) {
             return ByteArray(0)
         }
 
         val result =
-            ByteArrayOutputStream(
+            ByteArray(
                 expectedLength
             )
 
-        val buffer =
-            ByteArray(512)
+        var offset = 0
 
-        while (result.size() < expectedLength) {
+        while (
+            offset < expectedLength
+        ) {
+
             val count =
-                input?.read(
-                    buffer
+                getEmu().recv(
+                    result,
+                    0L
                 )
 
-            if ( count == null ) {
-                throw IOException("input not linked")
-            }
             if (count < 0) {
                 throw IOException(
-                    "Replay output stream closed"
+                    "Replay output closed"
                 )
             }
 
-            if (count > 0) {
-                val remaining =
-                    expectedLength -
-                        result.size()
-
-                result.write(
-                    buffer,
-                    0,
-                    minOf(
-                        count,
-                        remaining
-                    )
-                )
+            if (count == 0) {
+                continue
             }
+
+            offset += count
         }
 
-        return result.toByteArray()
+        return result
     }
 
     override fun stop() {
+
         job?.cancel()
         job = null
     }
-
 }

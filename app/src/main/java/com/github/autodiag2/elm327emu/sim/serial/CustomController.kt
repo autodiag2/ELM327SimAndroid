@@ -215,7 +215,8 @@ class CustomController(
             } else {
                 val speed = replaySpeedToValue(replaySpeed.progress)
                 scope.launch {   
-                    prepareLogReplay()
+                    val emuProvider = activity.bridgeOrchestrator as EmuProvider
+                    emuProvider.resetEmu()
                     stateMachine.start()
                     logReplay.start(
                         playSpeed = speed,
@@ -414,10 +415,6 @@ class CustomController(
     // ------------ End Listeners view ------------
 
     // ------------ StateMachine ------------
-    
-    fun prepareLogReplay() {
-
-    }
 
     fun startScript() {
         scope.launch {

@@ -18,7 +18,7 @@ class StateMachine(
     private val controller: CustomController,
     private val listener: Listener? = null,
     LOG_TAG: String = "sim.serial.StateMachine"
-) : EmuInterface(), EmuProvider {
+) : EmuInterface(LOG_TAG = LOG_TAG), EmuProvider {
 
     enum class State {
         READY,
