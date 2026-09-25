@@ -31,7 +31,7 @@ private data class PendingRequest(
 )
 
 class BLEBridge(
-    emuProvider: EmuProvider,
+    emuProvider: EmuInterface.Provider,
     scope: CoroutineScope,
     activity: MainActivity,
     listener: Bridge.Listener? = null

@@ -13,7 +13,7 @@ import kotlinx.coroutines.channels.Channel
 import com.github.autodiag2.elm327emu.sim.EmuInterface
 
 class NetworkBridge(
-    emuProvider: EmuProvider,
+    emuProvider: EmuInterface.Provider,
     scope: CoroutineScope,
     activity: MainActivity,
     private val basePort: Int = 35000,

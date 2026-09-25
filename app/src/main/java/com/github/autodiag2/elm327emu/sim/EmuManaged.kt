@@ -1,60 +1,22 @@
-package com.github.autodiag2.elm327emu.com
+package com.github.autodiag2.elm327emu.sim
 
+import android.net.LocalSocket
 import java.io.InputStream
 import java.io.OutputStream
 import java.io.PipedInputStream
 import java.io.PipedOutputStream
 import java.net.SocketTimeoutException
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.TimeoutException
 import kotlin.concurrent.thread
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import android.util.Log
-import com.github.autodiag2.elm327emu.BuildConfig
 
-abstract class IO(
-    public var input: InputStream? = null, 
-    public var output: OutputStream? = null,
-    private val LOG_TAG: String = "com.io"
-) {
-    protected val ioMutex = Mutex()
+class EmuManaged: EmuInterface(LOG_TAG = "EmuManaged") {
+    var socket: LocalSocket? = null
+    var input: InputStream? = null
+    var output: OutputStream? = null
 
-    public fun logDebug(
-        message: String
-    ) {
-        if (BuildConfig.DEBUG) {
-            Log.d(
-                LOG_TAG,
-                message
-            )
-        }
-    }
-
-    fun set(input: InputStream, output: OutputStream) {
-        this.input = input
-        this.output = output
-    }
-
-    open suspend fun transact(
-        request: ByteArray,
-        size: Int,
-        response: ByteArray,
-        timeoutMs: Long = 5000L
-    ): Int {
-        return ioMutex.withLock {
-            send(request, size, timeoutMs = timeoutMs)
-            recv(response, timeoutMs = timeoutMs)
-        }
-    }
-
-    /**
-     * Send to an emu interface (from the outside)
-     */
-    open fun send(
+    override fun send(
         buffer: ByteArray,
         size: Int,
-        timeoutMs: Long = 5000L
+        timeoutMs: Long
     ) {
         val stream = output ?: return
 
@@ -74,12 +36,9 @@ abstract class IO(
         }
     }
 
-    /**
-     * Receive to an emu interface (from the outside)
-     */
-    open fun recv(
+    override fun recv(
         buffer: ByteArray,
-        timeoutMs: Long = 5000L
+        timeoutMs: Long
     ): Int {
         val stream = input ?: return -1
 

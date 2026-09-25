@@ -22,16 +22,7 @@ import com.github.autodiag2.elm327emu.sim.EmuInterface
 import android.util.Log
 import com.github.autodiag2.elm327emu.BuildConfig
 import kotlinx.coroutines.*
-
-interface EmuProvider {
-    fun getEmu(): EmuInterface
-    fun setEmu(emu: EmuInterface)
-    fun resetEmu()
-}
-
-class ManagedEmu: EmuInterface(LOG_TAG = "com.ManagedEmu") {
-    var socket: LocalSocket? = null
-}
+import com.github.autodiag2.elm327emu.sim.EmuManaged
 
 /**
  * Driven by the need of hotpluging and unplugging interfaces, this class orchestrates the bridges and the emulator.
@@ -40,9 +31,9 @@ class BridgeOrchestrator(
     private val activity: MainActivity,
     private val basePort: Int = 35000,
     private val clientConnectionListener: ClientConnectionListener? = null
-): EmuProvider, Bridge.Listener {
+): EmuInterface.Provider, Bridge.Listener {
 
-    private val emuManaged = ManagedEmu()
+    private val emuManaged = EmuManaged()
     private var emu: EmuInterface = emuManaged
     protected val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     public val bleBridge = BLEBridge(emuProvider = this, scope = scope, activity = activity, listener = this)

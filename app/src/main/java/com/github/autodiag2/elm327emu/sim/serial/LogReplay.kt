@@ -15,10 +15,9 @@ import android.widget.Toast
 import com.github.autodiag2.elm327emu.MainActivity
 import com.github.autodiag2.elm327emu.com.Bridge
 import com.github.autodiag2.elm327emu.sim.EmuInterface
-import com.github.autodiag2.elm327emu.com.EmuProvider
 
 class LogReplay(
-    emuProvider: EmuProvider,
+    emuProvider: EmuInterface.Provider,
     scope: CoroutineScope,
     activity: MainActivity,
     listener: Listener? = null

@@ -12,13 +12,12 @@ import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import com.github.autodiag2.elm327emu.sim.EmuInterface
-import com.github.autodiag2.elm327emu.com.EmuProvider
 
 class StateMachine(
     private val controller: CustomController,
     private val listener: Listener? = null,
     LOG_TAG: String = "sim.serial.StateMachine"
-) : EmuInterface(LOG_TAG = LOG_TAG), EmuProvider {
+) : EmuInterface(LOG_TAG = LOG_TAG), EmuInterface.Provider {
 
     enum class State {
         READY,

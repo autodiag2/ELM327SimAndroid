@@ -21,7 +21,7 @@ import android.util.Log
 import com.github.autodiag2.elm327emu.BuildConfig
 
 class BluetoothBridge(
-    emuProvider: EmuProvider,
+    emuProvider: EmuInterface.Provider,
     scope: CoroutineScope,
     activity: MainActivity,
     listener: Bridge.Listener? = null

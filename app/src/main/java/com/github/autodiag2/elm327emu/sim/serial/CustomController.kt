@@ -35,7 +35,6 @@ import java.io.IOException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import com.github.autodiag2.elm327emu.com.EmuProvider
 
 const val SCHEMA = "autodiag/sim/elm327/serialscript"
 const val VERSION = 1.0
@@ -215,7 +214,7 @@ class CustomController(
             } else {
                 val speed = replaySpeedToValue(replaySpeed.progress)
                 scope.launch {   
-                    val emuProvider = activity.bridgeOrchestrator as EmuProvider
+                    val emuProvider = activity.bridgeOrchestrator as EmuInterface.Provider
                     emuProvider.resetEmu()
                     stateMachine.start()
                     logReplay.start(
@@ -418,7 +417,7 @@ class CustomController(
 
     fun startScript() {
         scope.launch {
-            val emuProvider = activity.bridgeOrchestrator as EmuProvider
+            val emuProvider = activity.bridgeOrchestrator as EmuInterface.Provider
             val scriptEmu = stateMachine as EmuInterface
             emuProvider.setEmu(scriptEmu)
             stateMachine.start()
@@ -437,7 +436,7 @@ class CustomController(
             }
 
             stateMachine.stop()
-            val emuProvider = activity.bridgeOrchestrator as EmuProvider
+            val emuProvider = activity.bridgeOrchestrator as EmuInterface.Provider
             emuProvider.resetEmu()
         }
     }
