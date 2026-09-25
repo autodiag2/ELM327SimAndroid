@@ -146,14 +146,14 @@ class LogReplay(
                                  * StateMachine.
                                  */
                                 val hex =
-                                    entry.data.joinToString("") {
+                                    entry.serial.joinToString("") {
                                         "%02X".format(it)
                                     }
-                                logDebug("Sending: data=${hex} data.size=${entry.data.size} text=${entry.text}")
+                                logDebug("Sending: data=${hex} data.size=${entry.serial.size} text=${entry.text}")
 
                                 getEmu().send(
-                                    entry.data,
-                                    entry.data.size,
+                                    entry.serial,
+                                    entry.serial.size,
                                     2000L
                                 )
 
@@ -165,7 +165,7 @@ class LogReplay(
                             LogEntryType.SENT -> {
                                 val actual =
                                     ByteArray(
-                                        entry.data.size + 100
+                                        entry.serial.size + 100
                                     )
 
                                 val count =
@@ -175,14 +175,14 @@ class LogReplay(
                                     )
                                 logDebug("Received ${count} bytes")
                                 if (
-                                    count != entry.data.size ||
+                                    count != entry.serial.size ||
                                     !actual.contentEquals(
-                                        entry.data
+                                        entry.serial
                                     )
                                 ) {
                                     logDebug(
                                         "Replay SENT mismatch: " +
-                                            "expected=${entry.data.size} bytes " +
+                                            "expected=${entry.serial.size} bytes " +
                                             "actual=$count bytes"
                                     )
                                 }

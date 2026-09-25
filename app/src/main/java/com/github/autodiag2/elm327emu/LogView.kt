@@ -59,6 +59,7 @@ data class LogEntry(
     val text: String,
     val level: LogLevel,
     val data: ByteArray,
+    var serial: ByteArray,
     var match: Boolean = false,
     var count: Int = 0,
     val type: LogEntryType = LogEntryType.NONE,
@@ -137,7 +138,8 @@ class LogRepository(private val context: MainActivity) {
                         id = -1,
                         text = "======================================",
                         level = LogLevel.INFO,
-                        data = ByteArray(0)
+                        data = ByteArray(0),
+                        serial = ByteArray(0)
                     )
                 }
 
@@ -156,7 +158,8 @@ class LogRepository(private val context: MainActivity) {
                         id = -2,
                         text = "======================================",
                         level = LogLevel.INFO,
-                        data = ByteArray(0)
+                        data = ByteArray(0),
+                        serial = ByteArray(0)
                     )
                 }
             }
@@ -177,6 +180,8 @@ class LogRepository(private val context: MainActivity) {
         level: LogLevel = LogLevel.DEBUG,
         data: ByteArray? = null,
         size_used: Int = data?.size ?: 0,
+        serial: ByteArray? = null,
+        serial_size: Int = serial?.size ?: 0,
         type: LogEntryType = LogEntryType.NONE
     ): AppendResult {
         return mutex.withLock {
@@ -248,6 +253,7 @@ class LogRepository(private val context: MainActivity) {
                     text = text,
                     level = level,
                     data = data?.copyOf(size_used) ?: ByteArray(0),
+                    serial = serial?.copyOf(serial_size) ?: ByteArray(0),
                     type = type
                 )
                 buffer.add(entry)
@@ -510,6 +516,8 @@ class LogView(
             LogLevel.INFO,
             binary,
             binary.size,
+            data,
+            length,
             type
         )
     }
@@ -666,14 +674,14 @@ class LogView(
     }
 
     // ---- PUBLIC APPEND API ----
-    fun append(text: String, level: LogLevel = LogLevel.DEBUG, data: ByteArray? = null, size_used: Int = data?.size ?: 0, type: LogEntryType = LogEntryType.NONE) {
+    fun append(text: String, level: LogLevel = LogLevel.DEBUG, data: ByteArray? = null, size_used: Int = data?.size ?: 0, serial: ByteArray? = null, serial_size: Int = serial?.size ?: 0, type: LogEntryType = LogEntryType.NONE) {
 
         val currentLevel = activity.prefs.getInt("log_level", LogLevel_DEFAULT.ordinal)
         if (currentLevel < level.ordinal) return
 
         scope.launch {
 
-            val result = logRepo.append(text, level, data, size_used, type)
+            val result = logRepo.append(text, level, data, size_used, serial, serial_size, type)
 
             mainScope.launch {
 
