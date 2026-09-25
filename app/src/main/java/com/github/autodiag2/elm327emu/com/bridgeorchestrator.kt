@@ -32,6 +32,8 @@ class BridgeOrchestrator(
     private val clientConnectionListener: ClientConnectionListener? = null
 ): EmuInterface(), Bridge.Listener {
 
+    protected var socket: LocalSocket? = null
+
     protected val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     public val bleBridge = BLEBridge(emu = this, scope = scope, activity = activity, listener = this)
     private var bleBridgeJob: Job? = null
