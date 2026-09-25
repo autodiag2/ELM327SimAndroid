@@ -54,6 +54,15 @@
     <string name="sim_connected_clients_dialog_title">Connected clients</string>
     <string name="sim_connected_clients_warning">Warning: multiple clients simultaneously is not recommended</string>
     <string name="sim_managed_responses">Managed responses</string>
+    <string name="custom_serial_toolbar_title">Replay log</string>
+    <string name="custom_serial_toolbar_arrow_down">▼</string>
+    <string name="custom_serial_toolbar_arrow_up">▲</string>
+    <string name="custom_serial_replay_speed">Playback speed:</string>
+    <string name="custom_serial_replay_start">Start replay</string>
+    <string name="custom_serial_replay_stop">Stop replay</string>
+    <string name="custom_serial_replay_script_not_running">Start the custom serial script first</string>
+    <string name="custom_serial_replay_no_log">No log entries to replay</string>
+    <string name="custom_serial_replay_error">Replay error: %1$s</string>
     <string name="sim_custom_serial_script_import_clipboard_empty">Clipboard is empty</string>
     <string name="sim_custom_serial_script_import_clipboard_success">Script imported from clipboard</string>
     <string name="sim_custom_serial_script_import_clipboard_error">Failed to import script: %1$s</string>

@@ -2,6 +2,7 @@ package com.github.autodiag2.elm327emu.sim.serial
 
 import android.app.AlertDialog
 import android.content.Context
+import android.content.Intent
 import android.text.InputType
 import android.view.LayoutInflater
 import android.view.View
@@ -10,6 +11,7 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.SeekBar
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
@@ -21,11 +23,8 @@ import android.util.Log
 import com.github.autodiag2.elm327emu.BuildConfig
 import com.github.autodiag2.elm327emu.ui.JsonConfigurable
 import com.github.autodiag2.elm327emu.MainActivity
-import android.content.Intent
 import com.github.autodiag2.elm327emu.LogLevel
-import java.io.InputStream
-import java.io.OutputStream
-import java.io.IOException
+import com.github.autodiag2.elm327emu.LogEntry
 import com.github.autodiag2.elm327emu.sim.EmuInterface
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -55,6 +54,19 @@ class CustomController(
             Dispatchers.IO +
                 SupervisorJob()
         )
+
+    private val logReplay =
+        LogReplay(scope)
+
+    private var replayEntriesProvider:
+        (() -> List<LogEntry>)? = null
+
+    private lateinit var replayToolbarContent: View
+    private lateinit var replayToolbarArrow: TextView
+    private lateinit var replaySpeed: SeekBar
+    private lateinit var replaySpeedValue: TextView
+    private lateinit var replayStart: Button
+    private lateinit var replayToolbar: View
 
     public val blocks =
         mutableListOf<BlockController>()
@@ -86,10 +98,233 @@ class CustomController(
             )
 
         view.model = this
+
+        setupReplayToolbar()
     }
 
     fun isRunning(): Boolean {
         return stateMachine.isRunning()
+    }
+
+    // ------------ Replay ------------
+
+    fun setReplayEntriesProvider(
+        provider: () -> List<LogEntry>
+    ) {
+        replayEntriesProvider = provider
+    }
+
+
+    private fun updateReplayToolbarArrow() {
+        if (replayToolbarContent.visibility == View.VISIBLE) {
+            replayToolbarContent.post {
+                replayToolbarArrow.translationY =
+                    replayToolbar.height.toFloat()
+            }
+        } else {
+            replayToolbarArrow.translationY = 0f
+        }
+    }
+
+    private fun setupReplayToolbar() {
+        replayToolbar = findViewById(R.id.custom_serial_replay_toolbar)
+        replayToolbarContent =
+            findViewById(
+                R.id.custom_serial_replay_toolbar_content
+            )
+
+        replayToolbarArrow =
+            findViewById(
+                R.id.custom_serial_replay_toolbar_arrow
+            )
+
+        replaySpeed =
+            findViewById(
+                R.id.custom_serial_replay_speed
+            )
+
+        replaySpeedValue =
+            findViewById(
+                R.id.custom_serial_replay_speed_value
+            )
+
+        replayStart =
+            findViewById(
+                R.id.custom_serial_replay_start
+            )
+
+        replayToolbarArrow.setOnClickListener {
+            val expanded = replayToolbarContent.visibility != View.VISIBLE
+
+            replayToolbarContent.visibility =
+                if (expanded) View.VISIBLE else View.GONE
+
+            replayToolbarArrow.setText(
+                if (expanded) {
+                    R.string.custom_serial_toolbar_arrow_up
+                } else {
+                    R.string.custom_serial_toolbar_arrow_down
+                }
+            )
+
+            updateReplayToolbarArrow()
+        }
+
+        replaySpeed.setOnSeekBarChangeListener(
+            object : SeekBar.OnSeekBarChangeListener {
+
+                override fun onProgressChanged(
+                    seekBar: SeekBar?,
+                    progress: Int,
+                    fromUser: Boolean
+                ) {
+                    replaySpeedValue.text =
+                        formatReplaySpeed(
+                            replaySpeedToValue(
+                                progress
+                            )
+                        )
+                }
+
+                override fun onStartTrackingTouch(
+                    seekBar: SeekBar?
+                ) {
+                }
+
+                override fun onStopTrackingTouch(
+                    seekBar: SeekBar?
+                ) {
+                }
+            }
+        )
+
+        replaySpeedValue.text =
+            formatReplaySpeed(
+                replaySpeedToValue(
+                    replaySpeed.progress
+                )
+            )
+
+        replayStart.setOnClickListener {
+            if (logReplay.isRunning()) {
+                logReplay.stop()
+
+                replayStart.text =
+                    getString(
+                        R.string.custom_serial_replay_start
+                    )
+            } else {
+                startLogReplay()
+            }
+        }
+        updateReplayToolbarArrow()
+    }
+
+    private fun replaySpeedToValue(
+        progress: Int
+    ): Double {
+        /*
+         * 0   -> 0.25x
+         * 50  -> 1.00x
+         * 100 -> 4.00x
+         */
+        return 0.25 *
+            Math.pow(
+                16.0,
+                progress.coerceIn(0, 100) / 100.0
+            )
+    }
+
+    private fun formatReplaySpeed(
+        speed: Double
+    ): String {
+        return when {
+            speed < 1.0 ->
+                "x%.2f".format(speed)
+
+            speed < 2.0 ->
+                "x%.1f".format(speed)
+
+            else ->
+                "x%.1f".format(speed)
+        }
+    }
+
+    private fun startLogReplay() {
+        val streams =
+            emuStreams
+
+        if (streams == null) {
+            Toast.makeText(
+                activity,
+                getString(
+                    R.string.custom_serial_replay_script_not_running
+                ),
+                Toast.LENGTH_SHORT
+            ).show()
+
+            return
+        }
+
+        val entries =
+            replayEntriesProvider?.invoke()
+
+        if (entries == null || entries.isEmpty()) {
+            Toast.makeText(
+                activity,
+                getString(
+                    R.string.custom_serial_replay_no_log
+                ),
+                Toast.LENGTH_SHORT
+            ).show()
+
+            return
+        }
+
+        val speed =
+            replaySpeedToValue(
+                replaySpeed.progress
+            )
+
+        logReplay.replay(
+            entries = entries,
+            streams = streams,
+            playSpeed = speed,
+            onFinished = {
+                activity.runOnUiThread {
+                    replayStart.text =
+                        getString(
+                            R.string.custom_serial_replay_start
+                        )
+                }
+            },
+            onError = { error ->
+                logDebug(
+                    "Replay error: ${error.message}"
+                )
+
+                activity.runOnUiThread {
+                    replayStart.text =
+                        getString(
+                            R.string.custom_serial_replay_start
+                        )
+
+                    Toast.makeText(
+                        activity,
+                        getString(
+                            R.string.custom_serial_replay_error,
+                            error.message ?: ""
+                        ),
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        )
+
+        replayStart.text =
+            getString(
+                R.string.custom_serial_replay_stop
+            )
     }
 
     // ------------ Data change ------------
@@ -238,6 +473,15 @@ class CustomController(
 
     fun stopScript() {
         scope.launch {
+            logReplay.stop()
+
+            activity.runOnUiThread {
+                replayStart.text =
+                    getString(
+                        R.string.custom_serial_replay_start
+                    )
+            }
+
             val emu =
                 activity.bridgeOrchestrator
                     as EmuInterface
