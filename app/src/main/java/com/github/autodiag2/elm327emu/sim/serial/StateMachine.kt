@@ -69,11 +69,12 @@ class StateMachine(
     @Volatile
     private var running = false
 
+    private var hookStreams: QueueDuplexStreams? = null
     private val input: InputStream?
-        get() = controller.emuStreams?.input
+        get() = hookStreams?.input ?: controller.emuStreams?.input
 
     private val output: OutputStream?
-        get() = controller.emuStreams?.output
+        get() = hookStreams?.output ?: controller.emuStreams?.output
 
     init {
         stateJob =
@@ -263,7 +264,8 @@ class StateMachine(
         }
     }
 
-    fun start() {
+    fun start(streams: QueueDuplexStreams? = null) {
+        hookStreams = streams
         events.trySend(
             Event.Start
         )
@@ -274,6 +276,7 @@ class StateMachine(
         events.trySend(
             Event.Stop
         )
+        hookStreams = null
     }
 
     fun customModelChanged() {

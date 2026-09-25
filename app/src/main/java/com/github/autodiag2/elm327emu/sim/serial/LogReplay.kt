@@ -3,33 +3,73 @@ package com.github.autodiag2.elm327emu.sim.serial
 import com.github.autodiag2.elm327emu.LogEntry
 import com.github.autodiag2.elm327emu.LogEntryType
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+import java.io.ByteArrayOutputStream
+import java.io.IOException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
-import java.io.IOException
+import com.github.autodiag2.elm327emu.R
+import android.util.Log
+import com.github.autodiag2.elm327emu.BuildConfig
+import android.widget.Toast
+import android.content.Context
 
 class LogReplay(
+    private var context: Context,
     private val scope: CoroutineScope
 ) {
 
+    public var logEntriesProvider: (() -> List<LogEntry>)? = null
+    public var streams: QueueDuplexStreams = QueueDuplexStreams()
     @Volatile
-    private var replayJob: Job? = null
+    private var job: Job? = null
 
     fun isRunning(): Boolean {
-        return replayJob?.isActive == true
+        return job?.isActive == true
     }
 
-    fun replay(
-        entries: List<LogEntry>,
-        streams: QueueDuplexStreams,
+    fun getString(
+        resId: Int,
+        vararg formatArgs: Any?
+    ): String {
+        return context.getString(
+            resId,
+            *formatArgs.map {
+                it ?: ""
+            }.toTypedArray()
+        )
+    }
+
+    public fun logDebug(
+        message: String
+    ) {
+        if (BuildConfig.DEBUG) {
+            Log.d(
+                "sim.serial.LogReplay",
+                message
+            )
+        }
+    }
+
+    fun start(
         playSpeed: Double = 1.0,
-        onAction: ((LogEntry) -> Unit)? = null,
-        onMismatch: ((LogEntry, ByteArray) -> Unit)? = null,
         onFinished: (() -> Unit)? = null,
         onError: ((Throwable) -> Unit)? = null
     ) {
-        stop()
+        val entries: List<LogEntry>? = logEntriesProvider?.invoke()
+        if (entries == null || entries.isEmpty()) {
+            Toast.makeText(
+                context,
+                getString(
+                    R.string.custom_serial_replay_no_log
+                ),
+                Toast.LENGTH_SHORT
+            ).show()
+
+            return
+        }
+        job?.cancel()
 
         val speed =
             if (
@@ -41,18 +81,12 @@ class LogReplay(
                 1.0
             }
 
-        val actions =
-            entries.filter {
-                it.type == LogEntryType.RECV ||
-                    it.type == LogEntryType.SENT
-            }
-
-        replayJob =
+        job =
             scope.launch {
                 try {
                     var previousTimestamp: Long? = null
 
-                    for (entry in actions) {
+                    for (entry in entries) {
                         if (!isActive) {
                             return@launch
                         }
@@ -62,16 +96,12 @@ class LogReplay(
 
                         if (previous != null) {
                             val elapsed =
-                                (
-                                    entry.ts -
-                                        previous
-                                ).coerceAtLeast(0L)
+                                (entry.ts - previous)
+                                    .coerceAtLeast(0L)
 
                             val wait =
-                                (
-                                    elapsed /
-                                        speed
-                                ).toLong()
+                                (elapsed / speed)
+                                    .toLong()
 
                             if (wait > 0L) {
                                 delay(wait)
@@ -83,57 +113,25 @@ class LogReplay(
                         }
 
                         when (entry.type) {
-
                             LogEntryType.RECV -> {
-                                /*
-                                 * Tester -> StateMachine
-                                 */
                                 streams.bridgeOutput.write(
                                     entry.data
                                 )
 
                                 streams.bridgeOutput.flush()
-
-                                onAction?.invoke(entry)
                             }
 
                             LogEntryType.SENT -> {
-                                /*
-                                 * StateMachine -> tester.
-                                 *
-                                 * Read the actual bytes generated
-                                 * by the StateMachine.
-                                 */
-                                val actual =
-                                    readOutput(
-                                        streams
-                                    )
-
-                                if (
-                                    !actual.contentEquals(
-                                        entry.data
-                                    )
-                                ) {
-                                    onMismatch?.invoke(
-                                        entry,
-                                        actual
-                                    )
-                                }
-
-                                onAction?.invoke(entry)
+                                // nothing to do
                             }
 
                             LogEntryType.NONE -> {
-                                // Ignored.
                             }
                         }
 
                         previousTimestamp =
                             entry.ts
                     }
-
-                    onFinished?.invoke()
-
                 } catch (e: IOException) {
                     if (isActive) {
                         onError?.invoke(e)
@@ -142,40 +140,61 @@ class LogReplay(
                     if (isActive) {
                         onError?.invoke(e)
                     }
+                } finally {
+                    onFinished?.invoke()
                 }
             }
     }
 
-    private suspend fun readOutput(
-        streams: QueueDuplexStreams
+    private fun readReplayOutput(
+        expectedLength: Int
     ): ByteArray {
-
-        /*
-         * bridgeInput contains data written by the
-         * StateMachine through streams.output.
-         *
-         * QueueInputStream.read() blocks until data arrives.
-         */
-        val buffer =
-            ByteArray(4096)
-
-        val count =
-            streams.bridgeInput.read(
-                buffer
-            )
-
-        if (count < 0) {
-            throw IOException(
-                "Replay output stream closed"
-            )
+        if (expectedLength <= 0) {
+            return ByteArray(0)
         }
 
-        return buffer.copyOf(count)
+        val result =
+            ByteArrayOutputStream(
+                expectedLength
+            )
+
+        val buffer =
+            ByteArray(512)
+
+        while (result.size() < expectedLength) {
+            val count =
+                streams.bridgeInput.read(
+                    buffer
+                )
+
+            if (count < 0) {
+                throw IOException(
+                    "Replay output stream closed"
+                )
+            }
+
+            if (count > 0) {
+                val remaining =
+                    expectedLength -
+                        result.size()
+
+                result.write(
+                    buffer,
+                    0,
+                    minOf(
+                        count,
+                        remaining
+                    )
+                )
+            }
+        }
+
+        return result.toByteArray()
     }
 
     fun stop() {
-        replayJob?.cancel()
-        replayJob = null
+        job?.cancel()
+        job = null
     }
 
 }

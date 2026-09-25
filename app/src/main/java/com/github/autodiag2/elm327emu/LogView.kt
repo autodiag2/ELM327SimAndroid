@@ -105,7 +105,7 @@ fun search_match(entry: LogEntry, search: String): Boolean {
 }
 class LogRepository(private val context: MainActivity) {
 
-    private val buffer = ArrayList<LogEntry>()
+    public val buffer = ArrayList<LogEntry>()
     private val mutex = Mutex()
     private var counter = 0L
 

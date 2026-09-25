@@ -30,6 +30,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import java.io.ByteArrayOutputStream
+import java.io.IOException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 const val SCHEMA = "autodiag/sim/elm327/serialscript"
 const val VERSION = 1.0
@@ -55,11 +60,7 @@ class CustomController(
                 SupervisorJob()
         )
 
-    private val logReplay =
-        LogReplay(scope)
-
-    private var replayEntriesProvider:
-        (() -> List<LogEntry>)? = null
+    private val logReplay = LogReplay(context = activity, scope = scope)
 
     private lateinit var replayToolbarContent: View
     private lateinit var replayToolbarArrow: TextView
@@ -111,9 +112,8 @@ class CustomController(
     fun setReplayEntriesProvider(
         provider: () -> List<LogEntry>
     ) {
-        replayEntriesProvider = provider
+        logReplay.logEntriesProvider = provider
     }
-
 
     private fun updateReplayToolbarArrow() {
         if (replayToolbarContent.visibility == View.VISIBLE) {
@@ -206,6 +206,7 @@ class CustomController(
             )
 
         replayStart.setOnClickListener {
+            stateMachine.stop()
             if (logReplay.isRunning()) {
                 logReplay.stop()
 
@@ -214,7 +215,44 @@ class CustomController(
                         R.string.custom_serial_replay_start
                     )
             } else {
-                startLogReplay()
+                val speed = replaySpeedToValue(replaySpeed.progress)
+                logReplay.start(
+                    playSpeed = speed,
+                    onFinished = {
+                        activity.runOnUiThread {
+                            replayStart.text =
+                                getString(
+                                    R.string.custom_serial_replay_start
+                                )
+                        }
+                    },
+                    onError = { error ->
+                        logDebug(
+                            "Replay error: ${error.message}"
+                        )
+
+                        activity.runOnUiThread {
+                            replayStart.text =
+                                getString(
+                                    R.string.custom_serial_replay_start
+                                )
+
+                            Toast.makeText(
+                                activity,
+                                getString(
+                                    R.string.custom_serial_replay_error,
+                                    error.message ?: ""
+                                ),
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    }
+                )
+                replayStart.text =
+                    getString(
+                        R.string.custom_serial_replay_stop
+                    )
+                stateMachine.start(logReplay.streams)
             }
         }
         updateReplayToolbarArrow()
@@ -248,83 +286,6 @@ class CustomController(
             else ->
                 "x%.1f".format(speed)
         }
-    }
-
-    private fun startLogReplay() {
-        val streams =
-            emuStreams
-
-        if (streams == null) {
-            Toast.makeText(
-                activity,
-                getString(
-                    R.string.custom_serial_replay_script_not_running
-                ),
-                Toast.LENGTH_SHORT
-            ).show()
-
-            return
-        }
-
-        val entries =
-            replayEntriesProvider?.invoke()
-
-        if (entries == null || entries.isEmpty()) {
-            Toast.makeText(
-                activity,
-                getString(
-                    R.string.custom_serial_replay_no_log
-                ),
-                Toast.LENGTH_SHORT
-            ).show()
-
-            return
-        }
-
-        val speed =
-            replaySpeedToValue(
-                replaySpeed.progress
-            )
-
-        logReplay.replay(
-            entries = entries,
-            streams = streams,
-            playSpeed = speed,
-            onFinished = {
-                activity.runOnUiThread {
-                    replayStart.text =
-                        getString(
-                            R.string.custom_serial_replay_start
-                        )
-                }
-            },
-            onError = { error ->
-                logDebug(
-                    "Replay error: ${error.message}"
-                )
-
-                activity.runOnUiThread {
-                    replayStart.text =
-                        getString(
-                            R.string.custom_serial_replay_start
-                        )
-
-                    Toast.makeText(
-                        activity,
-                        getString(
-                            R.string.custom_serial_replay_error,
-                            error.message ?: ""
-                        ),
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            }
-        )
-
-        replayStart.text =
-            getString(
-                R.string.custom_serial_replay_stop
-            )
     }
 
     // ------------ Data change ------------

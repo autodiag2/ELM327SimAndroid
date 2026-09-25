@@ -100,6 +100,9 @@ class Sim(
         }
         updateConnectedClientsButton()
         customSerialScreen = CustomController(activity)
+        customSerialScreen.setReplayEntriesProvider {
+            activity.logView.logRepo.buffer
+        }
         findViewById<Button>(R.id.sim_custom_serial_script_open).setOnClickListener {
             activity.showNestedScreen(customSerialScreen)
         }
