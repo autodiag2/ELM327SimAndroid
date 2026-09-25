@@ -9,11 +9,12 @@ import kotlinx.coroutines.channels.Channel
 import java.io.InputStream
 import java.io.OutputStream
 import java.util.concurrent.TimeoutException
+import com.github.autodiag2.elm327emu.sim.EmuInterface
 
 class StateMachine(
     private val controller: CustomController,
     private val listener: Listener? = null
-) {
+): EmuInterface() {
     enum class State {
         READY,
         WAIT_DELAY,
@@ -69,13 +70,6 @@ class StateMachine(
     @Volatile
     private var running = false
 
-    private var hookStreams: QueueDuplexStreams? = null
-    private val input: InputStream?
-        get() = hookStreams?.input ?: controller.emuStreams?.input
-
-    private val output: OutputStream?
-        get() = hookStreams?.output ?: controller.emuStreams?.output
-
     init {
         stateJob =
             scope.launch {
@@ -98,20 +92,6 @@ class StateMachine(
 
         inputJob =
             scope.launch {
-                val inputStream =
-                    input ?: run {
-                        appendLog(
-                            "no hook installed cannot process",
-                            LogLevel.ERROR
-                        )
-
-                        events.trySend(
-                            Event.Stop
-                        )
-
-                        return@launch
-                    }
-
                 val buffer =
                     ByteArray(512)
 
@@ -120,10 +100,7 @@ class StateMachine(
                         isActive &&
                         running
                     ) {
-                        val count =
-                            inputStream.read(
-                                buffer
-                            )
+                        val count = recv(buffer)
 
                         logDebug(
                             "received ${count} bytes"
@@ -265,7 +242,6 @@ class StateMachine(
     }
 
     fun start(hookBridgeStreams: QueueDuplexStreams? = null) {
-        hookStreams = hookBridgeStreams
         events.trySend(
             Event.Start
         )
@@ -276,7 +252,6 @@ class StateMachine(
         events.trySend(
             Event.Stop
         )
-        hookStreams = null
     }
 
     fun customModelChanged() {
@@ -915,25 +890,7 @@ class StateMachine(
                 bytes.toDebugString()
         )
 
-        val stream =
-            output
-                ?: throw IllegalStateException(
-                    "No output stream"
-                )
-
-        if (block.timeoutMs <= 0) {
-            stream.write(bytes)
-            stream.flush()
-        } else {
-            withTimeout(
-                block.timeoutMs.toLong()
-            ) {
-                runInterruptible {
-                    stream.write(bytes)
-                    stream.flush()
-                }
-            }
-        }
+        send(bytes, bytes.size, block.timeoutMs + 0L)
 
         logDebug(
             "SEND WRITE DONE -> " +
