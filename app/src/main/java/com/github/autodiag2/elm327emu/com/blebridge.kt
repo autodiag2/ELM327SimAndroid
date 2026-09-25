@@ -31,11 +31,11 @@ private data class PendingRequest(
 )
 
 class BLEBridge(
-    emu: EmuInterface,
+    emuProvider: EmuProvider,
     scope: CoroutineScope,
     activity: MainActivity,
     listener: Bridge.Listener? = null
-) : Bridge(emu = emu, scope = scope, activity = activity, LOG_TAG = "BLE", listener = listener) {
+) : Bridge(emuProvider = emuProvider, scope = scope, activity = activity, LOG_TAG = "BLE", listener = listener) {
 
     private val prefs =
         activity.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
@@ -526,7 +526,7 @@ class BLEBridge(
                 getString(R.string.log_ble_request_processing, request.value.size),
                 LogLevel.DEBUG
             )
-            val n = emu.transact(
+            val n = emuProvider.getEmu().transact(
                 request.value,
                 request.value.size,
                 buffer

@@ -35,6 +35,7 @@ import java.io.IOException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import com.github.autodiag2.elm327emu.com.EmuProvider
 
 const val SCHEMA = "autodiag/sim/elm327/serialscript"
 const val VERSION = 1.0
@@ -60,7 +61,7 @@ class CustomController(
                 SupervisorJob()
         )
 
-    private val logReplay = LogReplay(emu = stateMachine, activity = activity, scope = scope)
+    private val logReplay = LogReplay(emuProvider = stateMachine, activity = activity, scope = scope)
 
     private lateinit var replayToolbarContent: View
     private lateinit var replayToolbarArrow: TextView
@@ -415,31 +416,14 @@ class CustomController(
     // ------------ StateMachine ------------
     
     fun prepareLogReplay() {
-        val emu = activity.bridgeOrchestrator as EmuInterface
-        val scriptEmu = stateMachine as EmuInterface
 
-        emu.unhookIO()
-        val logReplayBridgeInput = QueueInputStream()
-        val scriptEmuOutput = QueueOutputStream(logReplayBridgeInput)
-        val scriptEmuInput = QueueInputStream()
-        val logReplayBridgeOutput = QueueOutputStream(scriptEmuInput)
-
-        logReplay.input = logReplayBridgeInput
-        logReplay.output = logReplayBridgeOutput
-        scriptEmu.hookIO(scriptEmuInput, scriptEmuOutput)
     }
 
     fun startScript() {
         scope.launch {
-            val emu = activity.bridgeOrchestrator as EmuInterface
-            val scriptEmu = stateMachine
-
-            scriptEmu.setupStart()
-            emu.hookIO(
-                scriptEmu.input!!,
-                scriptEmu.output!!
-            )
-
+            val emuProvider = activity.bridgeOrchestrator as EmuProvider
+            val scriptEmu = stateMachine as EmuInterface
+            emuProvider.setEmu(scriptEmu)
             stateMachine.start()
         }
     }
@@ -455,12 +439,9 @@ class CustomController(
                     )
             }
 
-            val emu =
-                activity.bridgeOrchestrator
-                    as EmuInterface
-
             stateMachine.stop()
-            emu.unhookIO()
+            val emuProvider = activity.bridgeOrchestrator as EmuProvider
+            emuProvider.resetEmu()
         }
     }
 

@@ -21,12 +21,12 @@ import android.util.Log
 import com.github.autodiag2.elm327emu.BuildConfig
 
 class BluetoothBridge(
-    emu: EmuInterface,
+    emuProvider: EmuProvider,
     scope: CoroutineScope,
     activity: MainActivity,
     listener: Bridge.Listener? = null
 ) : Bridge(
-    emu = emu,
+    emuProvider = emuProvider,
     scope = scope,
     activity = activity,
     LOG_TAG = "BT SPP",
@@ -181,7 +181,7 @@ class BluetoothBridge(
                                 )
 
                                 val n =
-                                    emu.transact(
+                                    emuProvider.getEmu().transact(
                                         request,
                                         request.size,
                                         bufferLoop

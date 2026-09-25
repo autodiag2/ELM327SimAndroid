@@ -17,7 +17,7 @@ import kotlinx.coroutines.isActive
 import com.github.autodiag2.elm327emu.sim.EmuInterface
 
 open class Bridge(
-    protected val emu: EmuInterface,
+    protected val emuProvider: EmuProvider,
     protected val scope: CoroutineScope,
     protected val activity: MainActivity,
     private val LOG_TAG: String,

@@ -13,12 +13,12 @@ import kotlinx.coroutines.channels.Channel
 import com.github.autodiag2.elm327emu.sim.EmuInterface
 
 class NetworkBridge(
-    emu: EmuInterface,
+    emuProvider: EmuProvider,
     scope: CoroutineScope,
     activity: MainActivity,
     private val basePort: Int = 35000,
     listener: Bridge.Listener? = null
-): Bridge(emu = emu, scope = scope, activity = activity, LOG_TAG = "NT", listener = listener) {
+): Bridge(emuProvider = emuProvider, scope = scope, activity = activity, LOG_TAG = "NT", listener = listener) {
 
     private var serverSocket: ServerSocket? = null
     private var clientSocket: Socket? = null
@@ -66,7 +66,7 @@ class NetworkBridge(
 
                         activity.onDataReceived(request, request.size)
 
-                        val n = emu.transact(
+                        val n = emuProvider.getEmu().transact(
                             request,
                             request.size,
                             bufferLoop

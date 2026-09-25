@@ -17,15 +17,16 @@ import android.content.Context
 import com.github.autodiag2.elm327emu.com.Bridge
 import com.github.autodiag2.elm327emu.MainActivity
 import com.github.autodiag2.elm327emu.sim.EmuInterface
+import com.github.autodiag2.elm327emu.com.EmuProvider
 import java.io.InputStream
 import java.io.OutputStream
 
 class LogReplay(
-    emu: EmuInterface,
+    emuProvider: EmuProvider,
     scope: CoroutineScope,
     activity: MainActivity,
     listener: Listener? = null
-): Bridge(emu = emu, scope = scope, activity = activity, LOG_TAG = "LR", listener = listener) {
+): Bridge(emuProvider = emuProvider, scope = scope, activity = activity, LOG_TAG = "LR", listener = listener) {
 
     var logEntriesProvider: (() -> List<LogEntry>)? = null
     var input: InputStream? = null

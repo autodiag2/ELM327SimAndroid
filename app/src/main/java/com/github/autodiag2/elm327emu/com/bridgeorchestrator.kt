@@ -23,24 +23,33 @@ import android.util.Log
 import com.github.autodiag2.elm327emu.BuildConfig
 import kotlinx.coroutines.*
 
+interface EmuProvider {
+    fun getEmu(): EmuInterface
+    fun setEmu(emu: EmuInterface)
+    fun resetEmu()
+}
+
+class ManagedEmu: EmuInterface(LOG_TAG = "com.ManagedEmu") {
+    var socket: LocalSocket? = null
+}
+
 /**
  * Driven by the need of hotpluging and unplugging interfaces, this class orchestrates the bridges and the emulator.
  */
 class BridgeOrchestrator(
     private val activity: MainActivity,
     private val basePort: Int = 35000,
-    private val clientConnectionListener: ClientConnectionListener? = null,
-    LOG_TAG: String = "com.BridgeOrchestrator"
-): EmuInterface(LOG_TAG = LOG_TAG), Bridge.Listener {
+    private val clientConnectionListener: ClientConnectionListener? = null
+): EmuProvider, Bridge.Listener {
 
-    protected var socket: LocalSocket? = null
-
+    private val emuManaged = ManagedEmu()
+    private var emu: EmuInterface = emuManaged
     protected val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    public val bleBridge = BLEBridge(emu = this, scope = scope, activity = activity, listener = this)
+    public val bleBridge = BLEBridge(emuProvider = this, scope = scope, activity = activity, listener = this)
     private var bleBridgeJob: Job? = null
-    public val ntBridge = NetworkBridge(emu = this, scope = scope, activity = activity, basePort = basePort, listener = this)
+    public val ntBridge = NetworkBridge(emuProvider = this, scope = scope, activity = activity, basePort = basePort, listener = this)
     private var ntBridgeJob: Job? = null
-    public val btBridge = BluetoothBridge(emu = this, scope = scope, activity = activity, listener = this)
+    public val btBridge = BluetoothBridge(emuProvider = this, scope = scope, activity = activity, listener = this)
     private var btBridgeJob: Job? = null
     private val prefs =
         activity.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
@@ -66,6 +75,15 @@ class BridgeOrchestrator(
         setupBridges()
     }
 
+    override fun setEmu(emu: EmuInterface) {
+        this.emu = emu
+    }
+    override fun resetEmu() {
+        this.emu = emuManaged
+    }
+    override fun getEmu(): EmuInterface {
+        return emu
+    }
     override fun onClientConnect(
         clientIdentifier: String,
         bridge: Bridge
@@ -100,6 +118,14 @@ class BridgeOrchestrator(
         )
     }
 
+    fun logDebug(message: String) {
+        if (BuildConfig.DEBUG) {
+            Log.d(
+                "com.BridgeOrchestrator",
+                message
+            )
+        }
+    }
     fun setupNetworkBridge() {
         scope.launch {
             setupBridge("com_nt_enabled", ntBridge)
@@ -218,20 +244,20 @@ class BridgeOrchestrator(
         appendLog(getString(R.string.log_network_native_sim_location, location),
             LogLevel.DEBUG
         )
-        socket = LocalSocket()
-        socket?.connect(
+        emuManaged.socket = LocalSocket()
+        emuManaged.socket?.connect(
             LocalSocketAddress(location, LocalSocketAddress.Namespace.FILESYSTEM)
         )
         appendLog(getString(R.string.log_network_loopback_connected), LogLevel.DEBUG)
 
-        input = socket?.inputStream
-        output = socket?.outputStream
+        emuManaged.input = emuManaged.socket?.inputStream
+        emuManaged.output = emuManaged.socket?.outputStream
     }
 
     protected fun emuStop() {
-        input?.close()
-        output?.close()
-        socket?.close()
+        emuManaged.input?.close()
+        emuManaged.output?.close()
+        emuManaged.socket?.close()
     }
 
 }
