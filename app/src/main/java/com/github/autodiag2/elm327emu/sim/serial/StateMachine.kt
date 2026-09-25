@@ -264,8 +264,8 @@ class StateMachine(
         }
     }
 
-    fun start(streams: QueueDuplexStreams? = null) {
-        hookStreams = streams
+    fun start(hookBridgeStreams: QueueDuplexStreams? = null) {
+        hookStreams = hookBridgeStreams
         events.trySend(
             Event.Start
         )

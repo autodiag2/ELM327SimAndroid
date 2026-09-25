@@ -210,30 +210,38 @@ class QueueOutputStream(
     }
 }
 
+/**
+ * Takes the Bridge or LogReplay streams and feeds into a StateMachine.
+ */
 class QueueDuplexStreams {
-    // StateMachine -> Bluetooth
-    private val toBluetooth =
+
+    // StateMachine -> Bridge
+    private val ISToBridge =
         QueueInputStream()
 
-    // Bluetooth -> StateMachine
-    private val fromBluetooth =
+    // Bridge -> StateMachine
+    private val ISFromBridge =
         QueueInputStream()
 
-    val input: InputStream =
-        fromBluetooth
-
+    // StateMachine -> Bridge
     val output: OutputStream =
         QueueOutputStream(
-            toBluetooth
+            ISToBridge
         )
 
-    // Endpoints used by EmuInterface
-    val bridgeInput: InputStream =
-        toBluetooth
+    // Bridge -> StateMachine
+    val input: InputStream =
+        ISFromBridge
 
+
+    // Bridge/Emu side input
+    val bridgeInput: InputStream =
+        ISToBridge
+
+    // Bridge/Emu side output
     val bridgeOutput: OutputStream =
         QueueOutputStream(
-            fromBluetooth
+            ISFromBridge
         )
 
     fun close() {

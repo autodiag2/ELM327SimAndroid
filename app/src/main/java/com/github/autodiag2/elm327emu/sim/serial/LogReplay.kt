@@ -114,15 +114,28 @@ class LogReplay(
 
                         when (entry.type) {
                             LogEntryType.RECV -> {
+                                logDebug("Sending ${entry.data}")
                                 streams.bridgeOutput.write(
                                     entry.data
                                 )
 
                                 streams.bridgeOutput.flush()
+                                logDebug("Sent")
                             }
 
                             LogEntryType.SENT -> {
-                                // nothing to do
+                                val actual =
+                                    readReplayOutput(
+                                        entry.data.size
+                                    )
+
+                                if (!actual.contentEquals(entry.data)) {
+                                    logDebug(
+                                        "Replay SENT mismatch: " +
+                                            "expected=${entry.data.size} bytes " +
+                                            "actual=${actual.size} bytes"
+                                    )
+                                }
                             }
 
                             LogEntryType.NONE -> {
