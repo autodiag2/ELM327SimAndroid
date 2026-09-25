@@ -341,6 +341,7 @@ class StateMachine(
 
         paths.clear()
         nextPathId = 1
+        close()
         logDebug("STOPPED")
     }
 

@@ -14,31 +14,28 @@ import android.util.Log
 import com.github.autodiag2.elm327emu.BuildConfig
 import android.widget.Toast
 import android.content.Context
+import com.github.autodiag2.elm327emu.com.Bridge
+import com.github.autodiag2.elm327emu.MainActivity
+import com.github.autodiag2.elm327emu.sim.EmuInterface
+import java.io.InputStream
+import java.io.OutputStream
 
 class LogReplay(
-    private var context: Context,
-    private val scope: CoroutineScope
-) {
+    emu: EmuInterface,
+    scope: CoroutineScope,
+    activity: MainActivity,
+    listener: Listener? = null
+): Bridge(emu = emu, scope = scope, activity = activity, LOG_TAG = "LR", listener = listener) {
 
-    public var logEntriesProvider: (() -> List<LogEntry>)? = null
-    public var streams: QueueDuplexStreams = QueueDuplexStreams()
+    var logEntriesProvider: (() -> List<LogEntry>)? = null
+    var input: InputStream? = null
+    var output: OutputStream? = null
+
     @Volatile
     private var job: Job? = null
 
     fun isRunning(): Boolean {
         return job?.isActive == true
-    }
-
-    fun getString(
-        resId: Int,
-        vararg formatArgs: Any?
-    ): String {
-        return context.getString(
-            resId,
-            *formatArgs.map {
-                it ?: ""
-            }.toTypedArray()
-        )
     }
 
     public fun logDebug(
@@ -52,6 +49,10 @@ class LogReplay(
         }
     }
 
+    override suspend fun start() {
+        start(playSpeed = 1.0, onFinished = null, onError = null)
+    }
+
     fun start(
         playSpeed: Double = 1.0,
         onFinished: (() -> Unit)? = null,
@@ -60,7 +61,7 @@ class LogReplay(
         val entries: List<LogEntry>? = logEntriesProvider?.invoke()
         if (entries == null || entries.isEmpty()) {
             Toast.makeText(
-                context,
+                activity,
                 getString(
                     R.string.custom_serial_replay_no_log
                 ),
@@ -115,11 +116,11 @@ class LogReplay(
                         when (entry.type) {
                             LogEntryType.RECV -> {
                                 logDebug("Sending ${entry.data}")
-                                streams.bridgeOutput.write(
+                                output?.write(
                                     entry.data
                                 )
 
-                                streams.bridgeOutput.flush()
+                                output?.flush()
                                 logDebug("Sent")
                             }
 
@@ -176,10 +177,13 @@ class LogReplay(
 
         while (result.size() < expectedLength) {
             val count =
-                streams.bridgeInput.read(
+                input?.read(
                     buffer
                 )
 
+            if ( count == null ) {
+                throw IOException("input not linked")
+            }
             if (count < 0) {
                 throw IOException(
                     "Replay output stream closed"
@@ -205,7 +209,7 @@ class LogReplay(
         return result.toByteArray()
     }
 
-    fun stop() {
+    override fun stop() {
         job?.cancel()
         job = null
     }

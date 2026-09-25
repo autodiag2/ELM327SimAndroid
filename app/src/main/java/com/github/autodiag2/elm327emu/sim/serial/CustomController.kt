@@ -60,7 +60,7 @@ class CustomController(
                 SupervisorJob()
         )
 
-    private val logReplay = LogReplay(context = activity, scope = scope)
+    private val logReplay = LogReplay(emu = stateMachine, activity = activity, scope = scope)
 
     private lateinit var replayToolbarContent: View
     private lateinit var replayToolbarArrow: TextView
@@ -216,43 +216,48 @@ class CustomController(
                     )
             } else {
                 val speed = replaySpeedToValue(replaySpeed.progress)
-                logReplay.start(
-                    playSpeed = speed,
-                    onFinished = {
-                        activity.runOnUiThread {
-                            replayStart.text =
-                                getString(
-                                    R.string.custom_serial_replay_start
-                                )
-                        }
-                    },
-                    onError = { error ->
-                        logDebug(
-                            "Replay error: ${error.message}"
-                        )
+                scope.launch {   
+                    prepareLogReplay()
+                    stateMachine.start()
+                    logReplay.start(
+                        playSpeed = speed,
+                        onFinished = {
+                            activity.runOnUiThread {
+                                replayStart.text =
+                                    getString(
+                                        R.string.custom_serial_replay_start
+                                    )
+                            }
+                        },
+                        onError = { error ->
+                            logDebug(
+                                "Replay error: ${error.message}"
+                            )
 
-                        activity.runOnUiThread {
-                            replayStart.text =
-                                getString(
-                                    R.string.custom_serial_replay_start
-                                )
+                            activity.runOnUiThread {
+                                replayStart.text =
+                                    getString(
+                                        R.string.custom_serial_replay_start
+                                    )
 
-                            Toast.makeText(
-                                activity,
-                                getString(
-                                    R.string.custom_serial_replay_error,
-                                    error.message ?: ""
-                                ),
-                                Toast.LENGTH_LONG
-                            ).show()
+                                Toast.makeText(
+                                    activity,
+                                    getString(
+                                        R.string.custom_serial_replay_error,
+                                        error.message ?: ""
+                                    ),
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
                         }
-                    }
-                )
-                replayStart.text =
-                    getString(
-                        R.string.custom_serial_replay_stop
                     )
-                stateMachine.start(logReplay.streams)
+                    activity.runOnUiThread {
+                        replayStart.text =
+                            getString(
+                                R.string.custom_serial_replay_stop
+                            )
+                    }
+                }
             }
         }
         updateReplayToolbarArrow()
@@ -411,6 +416,22 @@ class CustomController(
     // ------------ End Listeners view ------------
 
     // ------------ StateMachine ------------
+    
+    fun prepareLogReplay() {
+        val emu = activity.bridgeOrchestrator as EmuInterface
+        val scriptEmu = stateMachine as EmuInterface
+
+        emu.unhookIO()
+        val logReplayBridgeInput = QueueInputStream()
+        val scriptEmuOutput = QueueOutputStream(logReplayBridgeInput)
+        val scriptEmuInput = QueueInputStream()
+        val logReplayBridgeOutput = QueueOutputStream(scriptEmuInput)
+
+        scriptEmu.output = scriptEmuOutput
+        logReplay.output = logReplayBridgeOutput
+        scriptEmu.input = scriptEmuInput
+        logReplay.input = logReplayBridgeInput
+    }
 
     fun startScript() {
         scope.launch {
@@ -445,12 +466,9 @@ class CustomController(
             val emu =
                 activity.bridgeOrchestrator
                     as EmuInterface
-            val scriptEmu = stateMachine as EmuInterface
 
             stateMachine.stop()
-
             emu.unhookIO()
-            scriptEmu.close()
         }
     }
 
