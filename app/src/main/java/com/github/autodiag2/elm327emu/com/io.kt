@@ -10,12 +10,26 @@ import java.util.concurrent.TimeoutException
 import kotlin.concurrent.thread
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import android.util.Log
+import com.github.autodiag2.elm327emu.BuildConfig
 
 abstract class IO(
     var input: InputStream? = null, 
-    var output: OutputStream? = null
+    var output: OutputStream? = null,
+    val LOG_TAG: String = "com.io"
 ) {
     protected val ioMutex = Mutex()
+
+    public fun logDebug(
+        message: String
+    ) {
+        if (BuildConfig.DEBUG) {
+            Log.d(
+                LOG_TAG,
+                message
+            )
+        }
+    }
 
     fun set(input: InputStream, output: OutputStream) {
         this.input = input
@@ -41,6 +55,7 @@ abstract class IO(
     ) {
         val stream = output ?: return
 
+        logDebug("Writting ${buffer}")
         if (stream is PipedOutputStream) {
             runWithTimeout(timeoutMs) {
                 stream.write(buffer, 0, size)
@@ -62,6 +77,7 @@ abstract class IO(
     ): Int {
         val stream = input ?: return -1
 
+        logDebug("Recv ${buffer}")
         if (stream is PipedInputStream) {
             return runWithTimeout(timeoutMs) {
                 stream.read(buffer)

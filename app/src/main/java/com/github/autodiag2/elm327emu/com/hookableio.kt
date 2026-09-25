@@ -13,8 +13,9 @@ import kotlinx.coroutines.sync.withLock
 
 abstract class HookableIO(
     input: InputStream? = null,
-    output: OutputStream? = null
-): IO(input = input, output = output) {
+    output: OutputStream? = null,
+    LOG_TAG: String = "com.HookableIO"
+): IO(input = input, output = output, LOG_TAG = LOG_TAG) {
     private var inputBackup: InputStream? = null
     private var outputBackup: OutputStream? = null
 

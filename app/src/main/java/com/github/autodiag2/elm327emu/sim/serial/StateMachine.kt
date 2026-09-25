@@ -13,7 +13,8 @@ import com.github.autodiag2.elm327emu.sim.EmuInterface
 
 class StateMachine(
     private val controller: CustomController,
-    private val listener: Listener? = null
+    private val listener: Listener? = null,
+    LOG_TAG: String = "sim.serial.StateMachine"
 ): EmuInterface() {
     enum class State {
         READY,
@@ -230,18 +231,7 @@ class StateMachine(
         )
     }
 
-    fun logDebug(
-        message: String
-    ) {
-        if (BuildConfig.DEBUG) {
-            Log.d(
-                "sim.serial.StateMachine",
-                message
-            )
-        }
-    }
-
-    fun start(hookBridgeStreams: QueueDuplexStreams? = null) {
+    fun start() {
         events.trySend(
             Event.Start
         )

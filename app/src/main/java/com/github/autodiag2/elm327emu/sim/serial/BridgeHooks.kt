@@ -5,7 +5,8 @@ import java.io.InputStream
 import java.io.OutputStream
 import java.io.IOException
 
-class QueueInputStream : InputStream() {
+class QueueInputStream(var output: OutputStream? = null) : InputStream() {
+
     private val queue =
         LinkedBlockingQueue<ByteArray>()
 
@@ -35,6 +36,7 @@ class QueueInputStream : InputStream() {
     }
 
     override fun read(): Int {
+
         val buffer = ByteArray(1)
 
         val count =
@@ -56,6 +58,7 @@ class QueueInputStream : InputStream() {
         offset: Int,
         length: Int
     ): Int {
+
         if (
             offset < 0 ||
             length < 0 ||
@@ -69,6 +72,7 @@ class QueueInputStream : InputStream() {
         }
 
         while (true) {
+
             if (current == eof) {
                 return -1
             }
@@ -80,6 +84,7 @@ class QueueInputStream : InputStream() {
                 data != null &&
                 currentOffset < data.size
             ) {
+
                 val count =
                     minOf(
                         length,
@@ -133,18 +138,20 @@ class QueueInputStream : InputStream() {
     }
 
     override fun close() {
+
         if (closed) {
             return
         }
 
         closed = true
+
         queue.offer(eof)
+
+        output?.close()
     }
 }
 
-class QueueOutputStream(
-    private val target: QueueInputStream
-) : OutputStream() {
+class QueueOutputStream(var input: InputStream? = null) : OutputStream() {
 
     @Volatile
     private var closed = false
@@ -152,6 +159,7 @@ class QueueOutputStream(
     override fun write(
         value: Int
     ) {
+
         write(
             byteArrayOf(
                 value.toByte()
@@ -166,6 +174,7 @@ class QueueOutputStream(
         offset: Int,
         length: Int
     ) {
+
         if (closed) {
             throw IOException(
                 "Stream closed"
@@ -184,6 +193,12 @@ class QueueOutputStream(
             return
         }
 
+        val target =
+            input as? QueueInputStream
+                ?: throw IOException(
+                    "Input stream not initialized"
+                )
+
         target.offer(
             buffer.copyOfRange(
                 offset,
@@ -193,6 +208,7 @@ class QueueOutputStream(
     }
 
     override fun flush() {
+
         if (closed) {
             throw IOException(
                 "Stream closed"
@@ -201,34 +217,13 @@ class QueueOutputStream(
     }
 
     override fun close() {
+
         if (closed) {
             return
         }
 
         closed = true
-        target.close()
-    }
-}
 
-/**
- * Takes the Bridge or LogReplay streams and feeds into a StateMachine.
- */
-class QueueDuplexStreams {
-
-    // Emu side input : Bridge -> Emu
-    val input: InputStream = QueueInputStream()
-
-    // Bridge side input : Emu -> Bridge
-    val bridgeInput: InputStream = QueueInputStream()
-
-    // Emu side output : Emu -> Bridge
-    val output: OutputStream = QueueOutputStream(bridgeInput as QueueInputStream)
-
-    // Bridge side ouput : Bridge -> Emu
-    val bridgeOutput: OutputStream = QueueOutputStream(input as QueueInputStream)
-
-    fun close() {
-        output.close()
-        bridgeOutput.close()
+        input?.close()
     }
 }

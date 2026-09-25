@@ -29,8 +29,9 @@ import kotlinx.coroutines.*
 class BridgeOrchestrator(
     private val activity: MainActivity,
     private val basePort: Int = 35000,
-    private val clientConnectionListener: ClientConnectionListener? = null
-): EmuInterface(), Bridge.Listener {
+    private val clientConnectionListener: ClientConnectionListener? = null,
+    LOG_TAG: String = "com.BridgeOrchestrator"
+): EmuInterface(LOG_TAG = LOG_TAG), Bridge.Listener {
 
     protected var socket: LocalSocket? = null
 
@@ -56,15 +57,6 @@ class BridgeOrchestrator(
     }
     private val connectedClients = mutableListOf<ConnectedClient>()
     private var started = false
-
-    fun logDebug(message: String) {
-        if (BuildConfig.DEBUG) {
-            Log.d(
-                "com.BridgeOrchestrator",
-                message
-            )
-        }
-    }
 
     suspend fun start() {
         activity.clearSocketFiles()

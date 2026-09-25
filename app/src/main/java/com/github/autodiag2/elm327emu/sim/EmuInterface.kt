@@ -6,7 +6,8 @@ import java.io.OutputStream
 
 abstract class EmuInterface(
     input: InputStream? = null,
-    output: OutputStream? = null
-): HookableIO(input = input, output = output) {
+    output: OutputStream? = null,
+    LOG_TAG: String = "sim.EmuInterface"
+): HookableIO(input = input, output = output, LOG_TAG = LOG_TAG) {
 
 }

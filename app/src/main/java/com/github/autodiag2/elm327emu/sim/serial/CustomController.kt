@@ -81,9 +81,6 @@ class CustomController(
     val selectedLinks =
         mutableSetOf<Pair<Int, Int>>()
 
-    var emuStreams:
-        QueueDuplexStreams? = null
-
     init {
         orientation = VERTICAL
 
@@ -426,9 +423,11 @@ class CustomController(
         val scriptEmuOutput = QueueOutputStream(logReplayBridgeInput)
         val scriptEmuInput = QueueInputStream()
         val logReplayBridgeOutput = QueueOutputStream(scriptEmuInput)
+        logReplayBridgeInput.output = scriptEmuOutput
+        scriptEmuInput.output = logReplayBridgeOutput
 
-        logReplay.output = logReplayBridgeOutput
         logReplay.input = logReplayBridgeInput
+        logReplay.output = logReplayBridgeOutput
         scriptEmu.hookIO(scriptEmuInput, scriptEmuOutput)
     }
 
@@ -437,13 +436,18 @@ class CustomController(
             val emu = activity.bridgeOrchestrator as EmuInterface
             val scriptEmu = stateMachine as EmuInterface
 
-            val streams = QueueDuplexStreams()
+            val emuInput = QueueInputStream()
+            val scriptEmuInput = QueueInputStream()
+            val emuOutput = QueueOutputStream(scriptEmuInput)
+            val scriptEmuOutput = QueueOutputStream(emuInput)
+            emuInput.output = emu.output
+            scriptEmuInput.output = emuOutput
 
-            scriptEmu.set(streams.input, streams.output)
+            scriptEmu.set(scriptEmuInput, scriptEmuOutput)
 
             emu.hookIO(
-                streams.bridgeInput,
-                streams.bridgeOutput
+                emuInput,
+                emuOutput
             )
 
             stateMachine.start()
