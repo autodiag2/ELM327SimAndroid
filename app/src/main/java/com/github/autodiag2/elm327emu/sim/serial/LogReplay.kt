@@ -145,14 +145,16 @@ class LogReplay(
                                  * directly to the emulated
                                  * StateMachine.
                                  */
-                                logDebug(
-                                    "Sending ${entry.data}"
-                                )
+                                val hex =
+                                    entry.data.joinToString("") {
+                                        "%02X".format(it)
+                                    }
+                                logDebug("Sending: data=${hex} data.size=${entry.data.size} text=${entry.text}")
 
                                 getEmu().send(
                                     entry.data,
                                     entry.data.size,
-                                    0L
+                                    2000L
                                 )
 
                                 logDebug(
@@ -161,21 +163,19 @@ class LogReplay(
                             }
 
                             LogEntryType.SENT -> {
-
-                                /*
-                                 * Log SENT means data returned by
-                                 * the original emulator.
-                                 *
-                                 * During replay, receive the same
-                                 * number of bytes directly from
-                                 * the emulated StateMachine.
-                                 */
                                 val actual =
-                                    readReplayOutput(
-                                        entry.data.size
+                                    ByteArray(
+                                        entry.data.size + 100
                                     )
 
+                                val count =
+                                    getEmu().recv(
+                                        actual,
+                                        2000L
+                                    )
+                                logDebug("Received ${count} bytes")
                                 if (
+                                    count != entry.data.size ||
                                     !actual.contentEquals(
                                         entry.data
                                     )
@@ -183,7 +183,7 @@ class LogReplay(
                                     logDebug(
                                         "Replay SENT mismatch: " +
                                             "expected=${entry.data.size} bytes " +
-                                            "actual=${actual.size} bytes"
+                                            "actual=$count bytes"
                                     )
                                 }
                             }
@@ -213,47 +213,6 @@ class LogReplay(
                     onFinished?.invoke()
                 }
             }
-    }
-
-    private fun readReplayOutput(
-        expectedLength: Int
-    ): ByteArray {
-
-        if (expectedLength <= 0) {
-            return ByteArray(0)
-        }
-
-        val result =
-            ByteArray(
-                expectedLength
-            )
-
-        var offset = 0
-
-        while (
-            offset < expectedLength
-        ) {
-
-            val count =
-                getEmu().recv(
-                    result,
-                    0L
-                )
-
-            if (count < 0) {
-                throw IOException(
-                    "Replay output closed"
-                )
-            }
-
-            if (count == 0) {
-                continue
-            }
-
-            offset += count
-        }
-
-        return result
     }
 
     override fun stop() {
