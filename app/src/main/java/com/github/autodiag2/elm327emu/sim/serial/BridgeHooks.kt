@@ -215,34 +215,17 @@ class QueueOutputStream(
  */
 class QueueDuplexStreams {
 
-    // StateMachine -> Bridge
-    private val ISToBridge =
-        QueueInputStream()
+    // Emu side input : Bridge -> Emu
+    val input: InputStream = QueueInputStream()
 
-    // Bridge -> StateMachine
-    private val ISFromBridge =
-        QueueInputStream()
+    // Bridge side input : Emu -> Bridge
+    val bridgeInput: InputStream = QueueInputStream()
 
-    // StateMachine -> Bridge
-    val output: OutputStream =
-        QueueOutputStream(
-            ISToBridge
-        )
+    // Emu side output : Emu -> Bridge
+    val output: OutputStream = QueueOutputStream(bridgeInput as QueueInputStream)
 
-    // Bridge -> StateMachine
-    val input: InputStream =
-        ISFromBridge
-
-
-    // Bridge/Emu side input
-    val bridgeInput: InputStream =
-        ISToBridge
-
-    // Bridge/Emu side output
-    val bridgeOutput: OutputStream =
-        QueueOutputStream(
-            ISFromBridge
-        )
+    // Bridge side ouput : Bridge -> Emu
+    val bridgeOutput: OutputStream = QueueOutputStream(input as QueueInputStream)
 
     fun close() {
         output.close()

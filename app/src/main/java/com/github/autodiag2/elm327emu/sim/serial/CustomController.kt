@@ -427,10 +427,9 @@ class CustomController(
         val scriptEmuInput = QueueInputStream()
         val logReplayBridgeOutput = QueueOutputStream(scriptEmuInput)
 
-        scriptEmu.output = scriptEmuOutput
         logReplay.output = logReplayBridgeOutput
-        scriptEmu.input = scriptEmuInput
         logReplay.input = logReplayBridgeInput
+        scriptEmu.hookIO(scriptEmuInput, scriptEmuOutput)
     }
 
     fun startScript() {
@@ -440,8 +439,7 @@ class CustomController(
 
             val streams = QueueDuplexStreams()
 
-            scriptEmu.input = streams.input
-            scriptEmu.output = streams.output
+            scriptEmu.set(streams.input, streams.output)
 
             emu.hookIO(
                 streams.bridgeInput,
