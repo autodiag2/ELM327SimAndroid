@@ -54,6 +54,9 @@ class Sim(
     private val ecuAddSelect: Spinner
     var running: Boolean = false
     private lateinit var connectedClientsButton: Button
+    private lateinit var customSerialScriptSpinner: Spinner
+    private lateinit var customSerialScriptAdapter: ArrayAdapter<String>
+    private var customSerialExamples = emptyList<CustomSerialExample>()
 
     override fun customSerialOnRunStateChange(newstate: Boolean) {
         val button =
@@ -316,7 +319,16 @@ class Sim(
                 Toast.LENGTH_SHORT
             ).show()
 
-            setupCustomSerialScripts()
+            val savedExample =
+                CustomSerialExample(
+                    name = file.nameWithoutExtension
+                        .replace('_', ' '),
+                    file = file
+                )
+
+            refreshCustomSerialScripts(
+                preferredExample = savedExample
+            )
 
         } catch (e: Exception) {
             activity.appendLog(
@@ -459,40 +471,26 @@ class Sim(
     }
 
     private fun setupCustomSerialScripts() {
-        val spinner =
-            findViewById<Spinner>(
+        customSerialScriptSpinner =
+            findViewById(
                 R.id.custom_serial_script_spinner
             )
 
-        val examples =
-            getCustomSerialExamples()
-
-        val adapter =
+        customSerialScriptAdapter =
             ArrayAdapter(
                 context,
                 android.R.layout.simple_spinner_item,
-                examples.map { it.name }
+                mutableListOf()
             )
 
-        adapter.setDropDownViewResource(
+        customSerialScriptAdapter.setDropDownViewResource(
             android.R.layout.simple_spinner_dropdown_item
         )
 
-        spinner.adapter = adapter
+        customSerialScriptSpinner.adapter =
+            customSerialScriptAdapter
 
-        val defaultIndex =
-            examples.indexOfFirst {
-                it.name == "elm327 basic"
-            }
-
-        if (defaultIndex >= 0) {
-            spinner.setSelection(
-                defaultIndex,
-                false
-            )
-        }
-
-        spinner.onItemSelectedListener =
+        customSerialScriptSpinner.onItemSelectedListener =
             object : AdapterView.OnItemSelectedListener {
 
                 override fun onItemSelected(
@@ -502,7 +500,7 @@ class Sim(
                     id: Long
                 ) {
                     val example =
-                        examples.getOrNull(position)
+                        customSerialExamples.getOrNull(position)
                             ?: return
 
                     loadCustomSerialExample(
@@ -515,6 +513,47 @@ class Sim(
                 ) {
                 }
             }
+
+        refreshCustomSerialScripts(
+            preferredExample = null
+        )
+    }
+
+    private fun refreshCustomSerialScripts(
+        preferredExample: CustomSerialExample?
+    ) {
+        customSerialExamples =
+            getCustomSerialExamples()
+
+        customSerialScriptAdapter.clear()
+
+        customSerialScriptAdapter.addAll(
+            customSerialExamples.map {
+                it.name
+            }
+        )
+
+        customSerialScriptAdapter.notifyDataSetChanged()
+
+        val selectedIndex =
+            if (preferredExample != null) {
+                customSerialExamples.indexOfFirst {
+                    it.resourceId == preferredExample.resourceId &&
+                        it.file?.absolutePath ==
+                        preferredExample.file?.absolutePath
+                }
+            } else {
+                customSerialExamples.indexOfFirst {
+                    it.name == "elm327 basic"
+                }
+            }
+
+        if (selectedIndex >= 0) {
+            customSerialScriptSpinner.setSelection(
+                selectedIndex,
+                false
+            )
+        }
     }
 
     private fun loadCustomSerialExample(
