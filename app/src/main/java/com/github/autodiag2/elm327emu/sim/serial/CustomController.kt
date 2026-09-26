@@ -67,6 +67,9 @@ class CustomController(
         )
 
     private val logReplay = LogReplay(emuProvider = stateMachine, activity = activity, scope = scope)
+    @Volatile
+    private var replayStarting = false
+    private var replayStartJob: Job? = null
 
     private lateinit var replayToolbarContent: View
     private lateinit var replayToolbarArrow: TextView
@@ -209,44 +212,94 @@ class CustomController(
             )
 
         replayStart.setOnClickListener {
-            stop()
-            start()
-            val speed = replaySpeedToValue(replaySpeed.progress)
-            scope.launch {   
-                val emuProvider = activity.bridgeOrchestrator as EmuInterface.Provider
+            if (logReplay.isRunning() || replayStarting) {
+                replayStartJob?.cancel()
+                replayStartJob = null
+                replayStarting = false
+
+                logReplay.stop()
+                stateMachine.stop()
+
+                val emuProvider =
+                    activity.bridgeOrchestrator as EmuInterface.Provider
+
                 emuProvider.resetEmu()
-                logReplay.start(
-                    playSpeed = speed,
-                    onFinished = {
-                        stop()
-                    },
-                    onError = { error ->
-                        logDebug(
-                            "Replay error: ${error.message}"
+
+                listener?.customSerialOnRunStateChange(false)
+                replayUpdatePlayPause()
+                return@setOnClickListener
+            }
+
+            replayStarting = true
+            replayUpdatePlayPause()
+
+            val speed =
+                replaySpeedToValue(
+                    replaySpeed.progress
+                )
+
+            replayStartJob =
+                scope.launch {
+                    try {
+                        val emuProvider =
+                            activity.bridgeOrchestrator as EmuInterface.Provider
+
+                        emuProvider.resetEmu()
+
+                        val scriptEmu =
+                            stateMachine as EmuInterface
+
+                        emuProvider.setEmu(scriptEmu)
+
+                        stateMachine.start()
+
+                        if (!isActive || !replayStarting) {
+                            return@launch
+                        }
+
+                        logReplay.start(
+                            playSpeed = speed,
+                            onFinished = {
+                                replayStarting = false
+                                replayUpdatePlayPause()
+                                listener?.customSerialOnRunStateChange(false)
+                            },
+                            onError = { error ->
+                                replayStarting = false
+
+                                logDebug(
+                                    "Replay error: ${error.message}"
+                                )
+
+                                activity.runOnUiThread {
+                                    replayUpdatePlayPause()
+
+                                    Toast.makeText(
+                                        activity,
+                                        getString(
+                                            R.string.custom_serial_replay_error,
+                                            error.message ?: ""
+                                        ),
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
+                            }
                         )
 
-                        activity.runOnUiThread {
-                            replayUpdatePlayPause()
+                        replayStarting = false
+                        replayUpdatePlayPause()
 
-                            Toast.makeText(
-                                activity,
-                                getString(
-                                    R.string.custom_serial_replay_error,
-                                    error.message ?: ""
-                                ),
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
+                    } finally {
+                        replayStartJob = null
                     }
-                )
-            }
+                }
         }
         updateReplayToolbarArrow()
     }
 
     private fun replayUpdatePlayPause() {
         activity.runOnUiThread {
-            if (logReplay.isRunning()) {
+            if (logReplay.isRunning() || replayStarting) {
                 replayStart.setImageResource(R.drawable.ic_pause)
                 replayStart.contentDescription =
                     getString(R.string.custom_serial_replay_start)
