@@ -134,6 +134,12 @@
                         android:layout_height="wrap_content"
                         android:text="@string/sim_custom_serial_script_open" />
 
+                    <Button
+                        android:id="@+id/sim_custom_serial_script_save"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/sim_custom_serial_script_save" />
+
                     <ImageButton
                         android:id="@+id/sim_custom_serial_script_play_pause"
                         android:layout_width="48dp"

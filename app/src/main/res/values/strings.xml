@@ -78,6 +78,12 @@
     <string name="sim_custom_serial_script_export_clipboard">clipboard</string>
     <string name="sim_custom_serial_script_export_clipboard_success">Exported to clipboard</string>
     <string name="sim_custom_serial_script_export_file">file</string>
+    <string name="sim_custom_serial_script_save">Save</string>
+    <string name="sim_custom_serial_script_save_name">Script name</string>
+    <string name="sim_custom_serial_script_save_invalid_name">Enter a script name.</string>
+    <string name="sim_custom_serial_script_save_error">Cannot create script directory.</string>
+    <string name="sim_custom_serial_script_save_success">Saved %1$s</string>
+    <string name="sim_custom_serial_script_save_error_detail">Cannot save script: %1$s</string>
     <string name="activity_export_file_success">Export success</string>
     <string name="sim_customserial_edit_send_timeout_label">Timeout (ms):</string>
     <string name="sim_customserial_edit_send_text_label">ASCII text:</string>

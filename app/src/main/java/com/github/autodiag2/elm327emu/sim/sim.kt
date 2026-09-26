@@ -4,7 +4,6 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Button
-import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.PopupMenu
 import android.widget.Spinner
@@ -41,6 +40,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.cancelChildren
+import android.widget.EditText
+import java.util.Locale
 
 class Sim(
     private val activity: MainActivity
@@ -80,7 +81,8 @@ class Sim(
 
     private data class CustomSerialExample(
         val name: String,
-        val resourceId: Int
+        val resourceId: Int? = null,
+        val file: File? = null
     )
 
     init {
@@ -128,6 +130,11 @@ class Sim(
         }
         findViewById<Button>(R.id.sim_custom_serial_script_open).setOnClickListener {
             activity.showNestedScreen(customSerialScreen)
+        }
+        findViewById<Button>(
+            R.id.sim_custom_serial_script_save
+        ).setOnClickListener {
+            showSaveCustomSerialDialog()
         }
         
         findViewById<Button>(R.id.sim_state).apply {
@@ -220,6 +227,114 @@ class Sim(
         }
     }
 
+    private fun showSaveCustomSerialDialog() {
+        val input =
+            EditText(activity).apply {
+                hint = getString(
+                    R.string.sim_custom_serial_script_save_name
+                )
+                inputType =
+                    android.text.InputType.TYPE_CLASS_TEXT or
+                        android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+            }
+
+        AlertDialog.Builder(activity)
+            .setTitle(
+                R.string.sim_custom_serial_script_save
+            )
+            .setView(input)
+            .setPositiveButton(
+                android.R.string.ok
+            ) { _, _ ->
+                saveCustomSerialScript(
+                    input.text.toString()
+                )
+            }
+            .setNegativeButton(
+                android.R.string.cancel,
+                null
+            )
+            .show()
+    }
+
+    private fun saveCustomSerialScript(
+        name: String
+    ) {
+        var filename =
+            name.trim()
+                .replace(' ', '_')
+
+        if (filename.isEmpty()) {
+            Toast.makeText(
+                activity,
+                R.string.sim_custom_serial_script_save_invalid_name,
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+
+        if (!filename.endsWith(".json", ignoreCase = true)) {
+            filename += ".json"
+        }
+
+        val directory =
+            File(
+                activity.filesDir,
+                "sim/elm327/serialscript"
+            )
+
+        if (!directory.exists() &&
+            !directory.mkdirs()
+        ) {
+            Toast.makeText(
+                activity,
+                R.string.sim_custom_serial_script_save_error,
+                Toast.LENGTH_LONG
+            ).show()
+            return
+        }
+
+        try {
+            val file =
+                File(
+                    directory,
+                    filename
+                )
+
+            file.writeText(
+                customSerialScreen
+                    .toJson()
+                    .toString(2)
+            )
+
+            Toast.makeText(
+                activity,
+                getString(
+                    R.string.sim_custom_serial_script_save_success,
+                    filename
+                ),
+                Toast.LENGTH_SHORT
+            ).show()
+
+            setupCustomSerialScripts()
+
+        } catch (e: Exception) {
+            activity.appendLog(
+                "Cannot save custom serial script: ${e.message}",
+                LogLevel.ERROR
+            )
+
+            Toast.makeText(
+                activity,
+                getString(
+                    R.string.sim_custom_serial_script_save_error_detail,
+                    e.message ?: ""
+                ),
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
     public fun updateConnectedClientsButton() {
         post {
             val nclient = activity.clients?.size ?: 0
@@ -289,26 +404,58 @@ class Sim(
     }
 
     private fun getCustomSerialExamples(): List<CustomSerialExample> {
+        val examples = mutableListOf<CustomSerialExample>()
+
         val fields = R.raw::class.java.fields
 
-        return fields
+        fields
             .filter {
                 it.name.startsWith("customserial_")
             }
-            .mapNotNull { field ->
+            .forEach { field ->
                 try {
-                    CustomSerialExample(
-                        name = field.name
-                            .removePrefix("customserial_")
-                            .removeSuffix("_json")
-                            .replace('_', ' '),
-                        resourceId = field.getInt(null)
+                    examples.add(
+                        CustomSerialExample(
+                            name = field.name
+                                .removePrefix("customserial_")
+                                .removeSuffix("_json")
+                                .replace('_', ' '),
+                            resourceId = field.getInt(null)
+                        )
                     )
                 } catch (_: Exception) {
-                    null
                 }
             }
-            .sortedBy { it.name }
+
+        val scriptDir =
+            File(
+                activity.filesDir,
+                "sim/elm327/serialscript"
+            )
+
+        if (scriptDir.isDirectory) {
+            scriptDir
+                .listFiles { file ->
+                    file.isFile &&
+                        file.extension.equals(
+                            "json",
+                            ignoreCase = true
+                        )
+                }
+                ?.forEach { file ->
+                    examples.add(
+                        CustomSerialExample(
+                            name = file.nameWithoutExtension
+                                .replace('_', ' '),
+                            file = file
+                        )
+                    )
+                }
+        }
+
+        return examples.sortedBy {
+            it.name.lowercase(Locale.ROOT)
+        }
     }
 
     private fun setupCustomSerialScripts() {
@@ -359,7 +506,7 @@ class Sim(
                             ?: return
 
                     loadCustomSerialExample(
-                        example.resourceId
+                        example
                     )
                 }
 
@@ -371,14 +518,20 @@ class Sim(
     }
 
     private fun loadCustomSerialExample(
-        resourceId: Int
+        example: CustomSerialExample
     ) {
         try {
             val text =
-                resources
-                    .openRawResource(resourceId)
-                    .bufferedReader()
-                    .use { it.readText() }
+                if (example.resourceId != null) {
+                    resources
+                        .openRawResource(example.resourceId)
+                        .bufferedReader()
+                        .use { it.readText() }
+                } else {
+                    example.file
+                        ?.readText()
+                        ?: return
+                }
 
             val json =
                 JSONObject(text)

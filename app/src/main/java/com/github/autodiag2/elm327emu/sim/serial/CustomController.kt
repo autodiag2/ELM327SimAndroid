@@ -971,7 +971,7 @@ class CustomController(
         activity.launchJsonPicker { text ->
             if ( ! feedbackIfRunning() ) {
                 val json = JSONObject(text)
-                fromJson(text)
+                fromJson(json)
             }
         }
     }
