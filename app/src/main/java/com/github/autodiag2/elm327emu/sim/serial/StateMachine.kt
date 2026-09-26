@@ -140,14 +140,9 @@ class StateMachine(
     private fun setBlockStateBackPropagate(
         block: BlockController
     ) {
-        if (
-            block.type == BlockController.Type.CONTAINER ||
-            isGate(block)
-        ) {
+        if (block.type == BlockController.Type.CONTAINER) {
             val result =
-                if (isGate(block)) {
-                    evaluateGate(block)
-                } else {
+                run {
                     var atLeastOneInProgress = false
                     var allSuccess = true
                     var atLeastOneFailed = false
@@ -1006,7 +1001,7 @@ class StateMachine(
 
         val finishedCount = successCount + failedCount
         if ( finishedCount != inputs.size )  {
-            null
+            return null
         }
 
         return when (block.type) {
