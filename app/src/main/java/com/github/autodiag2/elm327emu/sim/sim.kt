@@ -35,18 +35,24 @@ import com.github.autodiag2.elm327emu.com.BluetoothBridge
 import com.github.autodiag2.elm327emu.com.NetworkBridge
 import com.github.autodiag2.elm327emu.com.BridgeOrchestrator
 import android.app.AlertDialog
+import android.widget.ImageButton
 
 class Sim(
     private val activity: MainActivity
-) : FrameLayout(activity), JsonConfigurable {
+) : FrameLayout(activity), JsonConfigurable, CustomController.Listener {
 
     public val customSerialScreen: CustomController
+    var customSerialScreenIsChecked: Boolean = false
     private val ecuListView: ViewGroup
     val ecus = mutableListOf<Ecu>()
     private val ecuAddSelect: Spinner
-    private var customSerialSwitch: androidx.appcompat.widget.SwitchCompat
     var running: Boolean = false
     private lateinit var connectedClientsButton: Button
+
+    override fun customSerialOnRunStateChange(newState: Boolean) {
+        customSerialScreenIsChecked = newState
+        updateCustomSerialScriptPlayPause()
+    }
 
     companion object {
 
@@ -99,20 +105,12 @@ class Sim(
             showConnectedClients()
         }
         updateConnectedClientsButton()
-        customSerialScreen = CustomController(activity)
+        customSerialScreen = CustomController(activity, listener = this)
         customSerialScreen.setReplayEntriesProvider {
             activity.logView.logRepo.buffer
         }
         findViewById<Button>(R.id.sim_custom_serial_script_open).setOnClickListener {
             activity.showNestedScreen(customSerialScreen)
-        }
-        customSerialSwitch =
-            findViewById<androidx.appcompat.widget.SwitchCompat>(
-                R.id.sim_custom_serial_script_enabled
-            )
-
-        customSerialSwitch.setOnClickListener {
-            onRunStateChange()
         }
         
         findViewById<Button>(R.id.sim_state).apply {
@@ -154,6 +152,13 @@ class Sim(
                     activity.requestPermissions()
                 }
             }
+        }
+        findViewById<ImageButton>(
+            R.id.sim_custom_serial_script_play_pause
+        ).setOnClickListener {
+            customSerialScreenIsChecked = !customSerialScreenIsChecked
+            updateCustomSerialScriptPlayPause()
+            onRunStateChange()
         }
         findViewById<ToggleButton>(R.id.ignition_state).apply {
             isChecked = libautodiag.getIgnitionStateAs() == IgnitionState.ON
@@ -252,10 +257,27 @@ class Sim(
         }
     }
 
+    private fun updateCustomSerialScriptPlayPause() {
+        val button =
+            findViewById<ImageButton>(
+                R.id.sim_custom_serial_script_play_pause
+            )
+
+        if (customSerialScreenIsChecked) {
+            button.setImageResource(R.drawable.ic_pause)
+            button.contentDescription =
+                getString(R.string.sim_custom_serial_script_pause)
+        } else {
+            button.setImageResource(R.drawable.ic_play)
+            button.contentDescription =
+                getString(R.string.sim_custom_serial_script_play)
+        }
+    }
+
     fun onRunStateChange() {
         logDebug("Running state of the sim : ${running}")
         if ( running ) {
-            customSerialScreen.onRunStateChange(customSerialSwitch.isChecked)
+            customSerialScreen.onRunStateChange(customSerialScreenIsChecked)
         } else {
             customSerialScreen.onRunStateChange(false)
         }

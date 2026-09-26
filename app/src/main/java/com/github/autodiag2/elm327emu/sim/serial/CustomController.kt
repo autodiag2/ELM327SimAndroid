@@ -40,11 +40,16 @@ const val SCHEMA = "autodiag/sim/elm327/serialscript"
 const val VERSION = 1.0
 
 class CustomController(
-    public val activity: MainActivity
+    public val activity: MainActivity,
+    private val listener: CustomController.Listener? = null
 ) : LinearLayout(activity),
     CustomView.Listener,
     JsonConfigurable,
     StateMachine.Listener {
+
+    interface Listener {
+        abstract fun customSerialOnRunStateChange(newState: Boolean)
+    }
 
     public var view: CustomView
 
@@ -1028,9 +1033,11 @@ class CustomController(
     }
     fun onStart() {
         onRunStateChange(true)
+        listener?.customSerialOnRunStateChange(true)
     }
     fun onStop() {
         onRunStateChange(false)
+        listener?.customSerialOnRunStateChange(false)
     }
     public fun onDuplicate() {
         if ( feedbackIfRunning() ) {

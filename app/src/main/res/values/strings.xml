@@ -110,6 +110,8 @@
     <string name="sim_custom_serial_script_dup">Clone</string>
     <string name="sim_custom_serial_script_start">Start</string>
     <string name="sim_custom_serial_script_stop">Stop</string>
+    <string name="sim_custom_serial_script_play">Play custom serial script</string>
+    <string name="sim_custom_serial_script_pause">Pause custom serial script</string>
     <string name="sim_custom_serial_script">Custom serial script</string>
     <string name="sim_custom_serial_script_open">Configure</string>
     <string name="sim_custom_serial_script_edit">Edit</string>
