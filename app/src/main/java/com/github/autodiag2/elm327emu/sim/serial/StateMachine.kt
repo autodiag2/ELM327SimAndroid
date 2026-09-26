@@ -132,13 +132,20 @@ class StateMachine(
                 }
                 all_SUCCESS = all_SUCCESS && ( child.state == BlockController.State.SUCCESS )
             }
+            val path = paths.find { it.block == block }
             if ( all_SUCCESS ) {
                 block.state = BlockController.State.SUCCESS
+                if ( path != null ) {
+                    advance(path)
+                }
             } else {
                 if ( at_least_one_IN_PROGRESS ) {
                     block.state = BlockController.State.IN_PROGRESS
                 } else if ( at_least_one_FAILED ) {
                     block.state = BlockController.State.FAILED
+                    if ( path != null ) {
+                        advance(path)
+                    }
                 }
             }
         }
