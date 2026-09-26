@@ -574,8 +574,8 @@ class StateMachine(
                 BlockController.State.IDLE
             )
 
-            path.state =
-                State.FINISHED
+            path.state = State.FINISHED
+            logDebug("PATH FINISHED ${path.id}")
         }
 
         paths.removeAll {
@@ -604,8 +604,8 @@ class StateMachine(
                     "block=${path.block.id}"
             )
 
-            path.state =
-                State.FINISHED
+            path.state = State.FINISHED
+            logDebug("PATH FINISHED ${path.id}")
         }
 
         paths.removeAll {
@@ -962,17 +962,11 @@ class StateMachine(
 
                         advance(path)
                     } else {
-                        path.state = State.FINISHED
-
                         val childRoots =
                             containerGetRootBlocks(block)
 
                         for (child in childRoots) {
                             createPath(child)
-                        }
-
-                        paths.removeAll {
-                            it.state == State.FINISHED
                         }
                     }
                 }
@@ -987,8 +981,8 @@ class StateMachine(
                 BlockController.State.FAILED
             )
 
-            path.state =
-                State.FINISHED
+            path.state = State.FINISHED
+            logDebug("PATH FINISHED")
         } catch (e: Exception) {
             logDebug("EXEC $blockType($blockId) EXCEPTION(${e.message})")
             setBlockState(
@@ -996,8 +990,8 @@ class StateMachine(
                 BlockController.State.FAILED
             )
 
-            path.state =
-                State.FINISHED
+            path.state = State.FINISHED
+            logDebug("PATH FINISHED")
         }
 
         logDebug("EXEC END $blockType($blockId) path=${path.id}")
@@ -1154,15 +1148,14 @@ class StateMachine(
                         BlockController.State.FAILED
                     )
 
-                    path.state =
-                        State.FINISHED
+                    path.state = State.FINISHED
+                    logDebug("PATH FINISHED")
                 }
             }
         }
 
         paths.removeAll {
-            it.state ==
-                State.FINISHED
+            it.state == State.FINISHED
         }
 
         if (paths.isEmpty()) {
@@ -1219,12 +1212,11 @@ class StateMachine(
             BlockController.State.FAILED
         )
 
-        path.state =
-            State.FINISHED
+        path.state = State.FINISHED
+        logDebug("PATH FINISHED ${path.id}")
 
         paths.removeAll {
-            it.state ==
-                State.FINISHED
+            it.state == State.FINISHED
         }
 
         if (paths.isEmpty()) {
@@ -1270,6 +1262,7 @@ class StateMachine(
 
     private fun onPathEnded(path: Path) {
         path.state = State.FINISHED
+        logDebug("PATH FINISHED ${path.id}")
     }
 
     private fun resolveBlockId(
