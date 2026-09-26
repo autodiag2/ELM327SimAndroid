@@ -71,7 +71,9 @@
     <string name="sim_custom_serial_script_import_clipboard_empty">Clipboard is empty</string>
     <string name="sim_custom_serial_script_import_clipboard_success">Script imported from clipboard</string>
     <string name="sim_custom_serial_script_import_clipboard_error">Failed to import script: %1$s</string>
-    <string name="sim_custom_serial_script_import_clipboard">Import (clipboard)</string>
+    <string name="sim_custom_serial_script_import_clipboard">clipboard</string>
+    <string name="sim_custom_serial_script_import_file">file</string>
+    <string name="sim_custom_serial_script_import_menu">Import</string>
     <string name="sim_custom_serial_script_export_menu">Export</string>
     <string name="sim_custom_serial_script_export_clipboard">clipboard</string>
     <string name="sim_custom_serial_script_export_clipboard_success">Exported to clipboard</string>

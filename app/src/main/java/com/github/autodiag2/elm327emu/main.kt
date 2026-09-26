@@ -541,6 +541,10 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
                 simView.customSerialScreen.onImportClipboard()
                 true
             }
+            R.id.sim_custom_serial_script_import_file -> {
+                simView.customSerialScreen.onImportFile()
+                true
+            }
             R.id.sim_custom_serial_script_export_file -> {
                 simView.customSerialScreen.onExportFile()
                 true

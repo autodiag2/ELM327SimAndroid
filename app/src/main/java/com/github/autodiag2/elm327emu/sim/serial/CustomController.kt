@@ -967,6 +967,15 @@ class CustomController(
         ).show()
     }
 
+    fun onImportFile() {
+        activity.launchJsonPicker { text ->
+            if ( ! feedbackIfRunning() ) {
+                val json = JSONObject(text)
+                fromJson(text)
+            }
+        }
+    }
+
     public fun onExportFile() {
         activity.fileExportPendingData =
             toJson().toString()
