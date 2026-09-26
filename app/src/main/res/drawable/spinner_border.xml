@@ -1,19 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <solid android:color="@android:color/transparent" />
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent" />
 
-    <stroke
-        android:width="1dp"
-        android:color="?attr/colorControlNormal" />
+            <stroke
+                android:width="1dp"
+                android:color="?attr/colorControlNormal" />
 
-    <corners android:radius="4dp" />
+            <corners android:radius="4dp" />
+        </shape>
+    </item>
 
-    <padding
-        android:left="12dp"
-        android:top="0dp"
-        android:right="12dp"
-        android:bottom="0dp" />
+    <item
+        android:width="8dp"
+        android:height="5dp"
+        android:gravity="center_vertical|start"
+        android:left="12dp">
 
-</shape>
+        <vector
+            android:width="8dp"
+            android:height="5dp"
+            android:viewportWidth="8"
+            android:viewportHeight="5">
+
+            <path
+                android:fillColor="?attr/colorControlNormal"
+                android:pathData="M0,0 L8,0 L4,5 Z" />
+
+        </vector>
+
+    </item>
+
+</layer-list>
