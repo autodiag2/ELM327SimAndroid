@@ -1297,18 +1297,7 @@ class StateMachine(
                 "block=${path.block.id}"
         )
 
-        val linkedBlockIds =
-            controller.links
-                .map {
-                    it.to
-                }
-                .toSet()
-
-        val rootBlocks =
-            controller.blocks
-                .filter {
-                    it.id !in linkedBlockIds
-                }
+        val rootBlocks = containerGetRootBlocks(path.block.parent)
 
         if (rootBlocks.isEmpty()) {
             path.state =
