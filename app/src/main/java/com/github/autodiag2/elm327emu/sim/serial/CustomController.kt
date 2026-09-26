@@ -727,6 +727,22 @@ class CustomController(
                         getString(
                             R.string.sim_custom_serial_script_block_name_container
                         )
+                    BlockController.Type.AND ->
+                        getString(
+                            R.string.sim_custom_serial_script_block_name_and
+                        )
+                    BlockController.Type.OR ->
+                        getString(
+                            R.string.sim_custom_serial_script_block_name_or
+                        )
+                    BlockController.Type.XOR ->
+                        getString(
+                            R.string.sim_custom_serial_script_block_name_xor
+                        )
+                    BlockController.Type.NOT ->
+                        getString(
+                            R.string.sim_custom_serial_script_block_name_not
+                        )
                 }
         }
 
@@ -928,6 +944,30 @@ class CustomController(
                     R.string.sim_custom_serial_script_share_script_title
                 )
             )
+        )
+    }
+
+    public fun onAddAnd() {
+        addBlock(
+            BlockController.Type.AND
+        )
+    }
+
+    public fun onAddOr() {
+        addBlock(
+            BlockController.Type.OR
+        )
+    }
+
+    public fun onAddXor() {
+        addBlock(
+            BlockController.Type.XOR
+        )
+    }
+
+    public fun onAddNot() {
+        addBlock(
+            BlockController.Type.NOT
         )
     }
 

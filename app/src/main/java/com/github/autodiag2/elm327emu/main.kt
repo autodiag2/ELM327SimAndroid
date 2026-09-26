@@ -565,6 +565,22 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
                 simView.customSerialScreen.onAddContainer()
                 true
             }
+            R.id.sim_custom_serial_script_add_and -> {
+                simView.customSerialScreen.onAddAnd()
+                true
+            }
+            R.id.sim_custom_serial_script_add_or -> {
+                simView.customSerialScreen.onAddOr()
+                true
+            }
+            R.id.sim_custom_serial_script_add_xor -> {
+                simView.customSerialScreen.onAddXor()
+                true
+            }
+            R.id.sim_custom_serial_script_add_not -> {
+                simView.customSerialScreen.onAddNot()
+                true
+            }
             R.id.sim_custom_serial_script_clear -> {
                 simView.customSerialScreen.clearWithDialog()
                 true

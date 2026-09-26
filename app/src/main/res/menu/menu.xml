@@ -98,6 +98,18 @@
                 <item
                     android:id="@+id/sim_custom_serial_script_add_container"
                     android:title="@string/sim_custom_serial_script_add_container" />
+                <item
+                    android:id="@+id/sim_custom_serial_script_add_and"
+                    android:title="@string/sim_custom_serial_script_add_and" />
+                <item
+                    android:id="@+id/sim_custom_serial_script_add_or"
+                    android:title="@string/sim_custom_serial_script_add_or" />
+                <item
+                    android:id="@+id/sim_custom_serial_script_add_xor"
+                    android:title="@string/sim_custom_serial_script_add_xor" />
+                <item
+                    android:id="@+id/sim_custom_serial_script_add_not"
+                    android:title="@string/sim_custom_serial_script_add_not" />
             </menu>
         </item>
         <item

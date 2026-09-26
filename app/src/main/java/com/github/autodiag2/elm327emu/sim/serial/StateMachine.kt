@@ -116,40 +116,88 @@ class StateMachine(
     private fun findPath(block: BlockController): Path? {
         return paths.find { it.block == block }
     }
-    private fun setBlockStateBackPropagate(block: BlockController) {
-        if ( block.type == BlockController.Type.CONTAINER ) {
-            var at_least_one_IN_PROGRESS = false
-            var all_SUCCESS = true
-            var at_least_one_FAILED = false
-            for(childId in block.children) {
-                val child = resolveBlock(childId)
-                if ( child.state == BlockController.State.IN_PROGRESS ) {
-                    at_least_one_IN_PROGRESS = true
+    private fun setBlockStateBackPropagate(
+        block: BlockController
+    ) {
+        if (
+            block.type == BlockController.Type.CONTAINER ||
+            isGate(block)
+        ) {
+            val result =
+                if (isGate(block)) {
+                    evaluateGate(block)
+                } else {
+                    var atLeastOneInProgress = false
+                    var allSuccess = true
+                    var atLeastOneFailed = false
+
+                    for (childId in block.children) {
+                        val child =
+                            resolveBlock(childId)
+
+                        if (
+                            child.state ==
+                            BlockController.State.IN_PROGRESS
+                        ) {
+                            atLeastOneInProgress = true
+                        }
+
+                        if (
+                            child.state ==
+                            BlockController.State.FAILED
+                        ) {
+                            atLeastOneFailed = true
+                        }
+
+                        allSuccess =
+                            allSuccess &&
+                                child.state ==
+                                BlockController.State.SUCCESS
+                    }
+
+                    when {
+                        allSuccess ->
+                            BlockController.State.SUCCESS
+
+                        atLeastOneInProgress ->
+                            BlockController.State.IN_PROGRESS
+
+                        atLeastOneFailed ->
+                            BlockController.State.FAILED
+
+                        else ->
+                            null
+                    }
                 }
-                if ( child.state == BlockController.State.FAILED ) {
-                    at_least_one_FAILED = true
-                }
-                all_SUCCESS = all_SUCCESS && ( child.state == BlockController.State.SUCCESS )
-            }
-            val path = paths.find { it.block == block }
-            if ( all_SUCCESS ) {
-                block.state = BlockController.State.SUCCESS
-                if ( path != null ) {
-                    advance(path)
-                }
-            } else {
-                if ( at_least_one_IN_PROGRESS ) {
-                    block.state = BlockController.State.IN_PROGRESS
-                } else if ( at_least_one_FAILED ) {
-                    block.state = BlockController.State.FAILED
-                    if ( path != null ) {
+
+            if (result != null) {
+                block.state = result
+
+                val path =
+                    paths.find {
+                        it.block == block
+                    }
+
+                if (
+                    result ==
+                    BlockController.State.SUCCESS ||
+                    result ==
+                    BlockController.State.FAILED
+                ) {
+                    if (path != null) {
                         advance(path)
                     }
                 }
+            } else {
+                block.state =
+                    BlockController.State.IN_PROGRESS
             }
         }
-        val parent = block.parent
-        if ( parent != null ) {
+
+        val parent =
+            block.parent
+
+        if (parent != null) {
             setBlockStateBackPropagate(parent)
         }
     }
@@ -862,6 +910,115 @@ class StateMachine(
         }
     }
 
+    private fun isGate(
+        block: BlockController
+    ): Boolean {
+        return block.type == BlockController.Type.AND ||
+            block.type == BlockController.Type.OR ||
+            block.type == BlockController.Type.XOR ||
+            block.type == BlockController.Type.NOT
+    }
+
+    private fun gateInputs(
+        gate: BlockController
+    ): List<BlockController> {
+        return controller.links
+            .filter {
+                it.to == gate.id
+            }
+            .mapNotNull { link ->
+                controller.blocks.find {
+                    it.id == link.from
+                }
+            }
+    }
+
+    private fun evaluateGate(
+        block: BlockController
+    ): BlockController.State? {
+
+        val inputs =
+            gateInputs(block)
+
+        if (inputs.isEmpty()) {
+            return BlockController.State.FAILED
+        }
+
+        val successCount =
+            inputs.count {
+                it.state == BlockController.State.SUCCESS
+            }
+
+        val failedCount =
+            inputs.count {
+                it.state == BlockController.State.FAILED
+            }
+
+        val finishedCount =
+            successCount + failedCount
+
+        return when (block.type) {
+
+            BlockController.Type.AND -> {
+                when {
+                    failedCount > 0 ->
+                        BlockController.State.FAILED
+
+                    successCount == inputs.size ->
+                        BlockController.State.SUCCESS
+
+                    else ->
+                        null
+                }
+            }
+
+            BlockController.Type.OR -> {
+                when {
+                    successCount > 0 ->
+                        BlockController.State.SUCCESS
+
+                    finishedCount == inputs.size ->
+                        BlockController.State.FAILED
+
+                    else ->
+                        null
+                }
+            }
+
+            BlockController.Type.XOR -> {
+                when {
+                    successCount > 1 ->
+                        BlockController.State.FAILED
+
+                    successCount == 1 ->
+                        BlockController.State.SUCCESS
+
+                    finishedCount == inputs.size ->
+                        BlockController.State.FAILED
+
+                    else ->
+                        null
+                }
+            }
+
+            BlockController.Type.NOT -> {
+                when {
+                    successCount > 0 ->
+                        BlockController.State.FAILED
+
+                    failedCount > 0 ->
+                        BlockController.State.SUCCESS
+
+                    else ->
+                        null
+                }
+            }
+
+            else ->
+                null
+        }
+    }
+
     private suspend fun execute(
         path: Path
     ) {
@@ -945,6 +1102,28 @@ class StateMachine(
                             createPath(child)
                         }
                         path.state = State.WAIT
+                    }
+                }
+                BlockController.Type.AND,
+                BlockController.Type.OR,
+                BlockController.Type.XOR,
+                BlockController.Type.NOT -> {
+                    setBlockState(
+                        block,
+                        BlockController.State.IN_PROGRESS
+                    )
+
+                    path.state =
+                        State.WAIT
+
+                    val result =
+                        evaluateGate(block)
+
+                    if (result != null) {
+                        setBlockState(
+                            block,
+                            result
+                        )
                     }
                 }
             }

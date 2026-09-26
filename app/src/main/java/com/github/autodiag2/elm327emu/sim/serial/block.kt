@@ -47,7 +47,11 @@ open class BlockController(
         DELAY,
         RECV,
         SEND,
-        CONTAINER
+        CONTAINER,
+        AND,
+        OR,
+        XOR,
+        NOT
     }
 
     companion object {
@@ -152,6 +156,10 @@ open class BlockController(
                     "recv" -> Type.RECV
                     "send" -> Type.SEND
                     "container" -> Type.CONTAINER
+                    "and" -> Type.AND
+                    "or" -> Type.OR
+                    "xor" -> Type.XOR
+                    "not" -> Type.NOT
                     else -> {
                         parseErrorHandler?.invoke(
                             "Unknown block type: $typeString"
@@ -273,6 +281,21 @@ open class BlockController(
                                 ""
                             ),
                         children = children,
+                        id = id
+                    )
+                }
+
+                BlockController.Type.AND,
+                BlockController.Type.OR,
+                BlockController.Type.XOR,
+                BlockController.Type.NOT -> {
+                    BlockController(
+                        type = type,
+                        name =
+                            blockContent.optString(
+                                "name",
+                                type.name
+                            ),
                         id = id
                     )
                 }
@@ -431,6 +454,28 @@ open class BlockController(
         )
 
         when (type) {
+            BlockController.Type.AND,
+            BlockController.Type.OR,
+            BlockController.Type.XOR,
+            BlockController.Type.NOT -> {
+                jsonBlock.put(
+                    "type",
+                    type.name.lowercase()
+                )
+
+                val value =
+                    JSONObject()
+
+                value.put(
+                    "name",
+                    name
+                )
+
+                jsonBlock.put(
+                    "content",
+                    value
+                )
+            }
             BlockController.Type.DELAY -> {
                 jsonBlock.put(
                     "type",
@@ -620,6 +665,12 @@ open class BlockController(
 
             Type.CONTAINER ->
                 editContainer()
+            Type.AND,
+            Type.OR,
+            Type.XOR,
+            Type.NOT -> {
+                
+            }
         }
     }
 

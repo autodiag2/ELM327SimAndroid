@@ -237,6 +237,25 @@ open class BlockView(
         return getWorldCoordsRecurse(this)
     }
 
+    private fun getSummary(): String {
+        return when (model!!.type) {
+                BlockController.Type.DELAY ->
+                    "${model!!.timeoutMs}ms"
+
+                BlockController.Type.SEND ->
+                    model!!.text
+
+                BlockController.Type.RECV ->
+                    model!!.text
+
+                BlockController.Type.AND,
+                BlockController.Type.OR,
+                BlockController.Type.XOR,
+                BlockController.Type.NOT,
+                BlockController.Type.CONTAINER ->
+                    ""
+            }
+    }
     private fun updateBlockContentSize() {
         if (
             model!!.type ==
@@ -247,20 +266,7 @@ open class BlockView(
 
         val title = model!!.name
 
-        val summary =
-            when (model!!.type) {
-                BlockController.Type.DELAY ->
-                    "${model!!.timeoutMs}ms"
-
-                BlockController.Type.SEND ->
-                    model!!.text
-
-                BlockController.Type.RECV ->
-                    model!!.text
-
-                BlockController.Type.CONTAINER ->
-                    ""
-            }
+        val summary = getSummary()
 
         val titlePaint =
             TextPaint(textPaint)
@@ -515,20 +521,7 @@ open class BlockView(
             */
             val title = model!!.name
 
-            val summary =
-                when (model!!.type) {
-                    BlockController.Type.DELAY ->
-                        "${model!!.timeoutMs}ms"
-
-                    BlockController.Type.SEND ->
-                        model!!.text
-
-                    BlockController.Type.RECV ->
-                        model!!.text
-
-                    BlockController.Type.CONTAINER ->
-                        ""
-                }
+            val summary = getSummary()
 
             val contentLeft =
                 nodeWorldPos.x + blockStandardContentPadding
