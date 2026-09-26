@@ -21,8 +21,7 @@ class StateMachine(
 
     enum class State {
         READY,
-        WAIT_DELAY,
-        WAIT_RECV,
+        WAIT,
         FINISHED
     }
 
@@ -700,16 +699,33 @@ class StateMachine(
                 continue
             }
 
-            when (path.state) {
-                State.WAIT_DELAY -> {
-                    val block =
-                        currentBlocks[
-                            path.block.id
-                        ] ?: continue
+            val block =
+                currentBlocks[
+                    path.block.id
+                ] ?: continue
 
+            when (path.state) {
+                State.WAIT -> {
                     if (
                         block.type !=
                         BlockController.Type.DELAY
+                    ) {
+                        path.state =
+                            State.READY
+
+                        path.wakeTime = 0L
+
+                        setBlockState(
+                            block,
+                            BlockController.State.IDLE
+                        )
+
+                        continue
+                    }
+
+                    if (
+                        block.type !=
+                        BlockController.Type.RECV
                     ) {
                         path.state =
                             State.READY
@@ -732,49 +748,6 @@ class StateMachine(
                         "Updated DELAY path=" +
                             "${path.id} " +
                             "block=${block.id} " +
-                            "wakeTime=${path.wakeTime}"
-                    )
-                }
-
-                State.WAIT_RECV -> {
-                    val block =
-                        currentBlocks[
-                            path.block.id
-                        ] ?: continue
-
-                    if (
-                        block.type !=
-                        BlockController.Type.RECV
-                    ) {
-                        path.state =
-                            State.READY
-
-                        path.wakeTime = 0L
-
-                        setBlockState(
-                            block,
-                            BlockController.State.IDLE
-                        )
-
-                        continue
-                    }
-
-                    val isRoot =
-                        block.id !in linkedIds
-
-                    path.wakeTime =
-                        if (isRoot) {
-                            Long.MAX_VALUE
-                        } else {
-                            now +
-                                block.timeoutMs
-                        }
-
-                    logDebug(
-                        "Updated RECV path=" +
-                            "${path.id} " +
-                            "block=${block.id} " +
-                            "root=$isRoot " +
                             "wakeTime=${path.wakeTime}"
                     )
                 }
@@ -818,38 +791,40 @@ class StateMachine(
             System.currentTimeMillis()
 
         for (path in paths.toList()) {
+            val block = path.block
             when (path.state) {
                 State.READY -> {
                     execute(path)
                 }
 
-                State.WAIT_DELAY -> {
+                State.WAIT -> {
                     if (
                         now >=
                         path.wakeTime
                     ) {
-                        path.state =
-                            State.READY
-
-                        setBlockState(
-                            path.block,
-                            BlockController.State.SUCCESS
-                        )
-
-                        advance(path)
-                    }
-                }
-
-                State.WAIT_RECV -> {
-                    if (
-                        now >=
-                        path.wakeTime
-                    ) {
-                        events.trySend(
-                            Event.Timeout(
-                                path.id
-                            )
-                        )
+                        when ( block.type ) {
+                            BlockController.Type.DELAY -> {
+                                path.state =
+                                    State.READY
+                                
+                                setBlockState(
+                                    path.block,
+                                    BlockController.State.SUCCESS
+                                )
+        
+                                advance(path)
+                            }
+                            BlockController.Type.RECV -> {
+                                events.trySend(
+                                    Event.Timeout(
+                                        path.id
+                                    )
+                                )
+                            }
+                            else -> {
+                            
+                            }
+                        }
                     }
                 }
 
@@ -913,8 +888,7 @@ class StateMachine(
                         System.currentTimeMillis() +
                             block.timeoutMs
 
-                    path.state =
-                        State.WAIT_DELAY
+                    path.state = State.WAIT
                 }
 
                 BlockController.Type.SEND -> {
@@ -948,8 +922,7 @@ class StateMachine(
                                 block.timeoutMs
                     }
 
-                    path.state =
-                        State.WAIT_RECV
+                    path.state = State.WAIT
                 }
 
                 BlockController.Type.CONTAINER -> {
@@ -1111,8 +1084,8 @@ class StateMachine(
         val waitingPaths =
             paths
                 .filter {
-                    it.state ==
-                        State.WAIT_RECV
+                    it.state == State.WAIT &&
+                    it.block.type == BlockController.Type.RECV
                 }
                 .toList()
 
@@ -1191,7 +1164,7 @@ class StateMachine(
 
         if (
             path.state !=
-            State.WAIT_RECV
+            State.WAIT
         ) {
             return
         }
