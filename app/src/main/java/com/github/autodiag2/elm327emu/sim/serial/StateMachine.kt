@@ -114,10 +114,46 @@ class StateMachine(
     override fun resetEmu() {
     }
 
+    private fun findPath(block: BlockController): Path? {
+        return paths.find { it.block == block }
+    }
+    private fun setBlockStateBackPropagate(block: BlockController) {
+        if ( block.type == BlockController.Type.CONTAINER ) {
+            var at_least_one_IN_PROGRESS = false
+            var all_SUCCESS = true
+            var at_least_one_FAILED = false
+            for(childId in block.children) {
+                val child = resolveBlock(childId)
+                if ( child.state == BlockController.State.IN_PROGRESS ) {
+                    at_least_one_IN_PROGRESS = true
+                }
+                if ( child.state == BlockController.State.FAILED ) {
+                    at_least_one_FAILED = true
+                }
+                all_SUCCESS = all_SUCCESS && ( child.state == BlockController.State.SUCCESS )
+            }
+            if ( all_SUCCESS ) {
+                block.state = BlockController.State.SUCCESS
+            } else {
+                if ( at_least_one_IN_PROGRESS ) {
+                    block.state = BlockController.State.IN_PROGRESS
+                } else if ( at_least_one_FAILED ) {
+                    block.state = BlockController.State.FAILED
+                }
+            }
+        }
+        val parent = block.parent
+        if ( parent != null ) {
+            setBlockStateBackPropagate(parent)
+        }
+    }
+
     private fun setBlockState(
         block: BlockController,
         state: BlockController.State
     ) {
+        block.state = state
+        setBlockStateBackPropagate(block)
         listener?.onBlockStateChanged(
             block,
             state

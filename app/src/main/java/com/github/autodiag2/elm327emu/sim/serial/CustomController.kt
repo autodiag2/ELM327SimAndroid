@@ -310,8 +310,6 @@ class CustomController(
         block: BlockController,
         state: BlockController.State
     ) {
-        block.state = state
-
         activity.runOnUiThread {
             view.refresh()
         }
