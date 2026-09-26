@@ -273,6 +273,9 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
         menu.setGroupVisible(R.id.action_menu_group_sim_custom_serial_script,
             activeScreen is CustomController
         )
+        menu.setGroupVisible(R.id.action_menu_group_logview,
+            activeScreen is LogView
+        )
         var simCustomSerialScreenIsSomeSelection = false
         if ( activeScreen is CustomController ) {
             val simCustomSerialScreen = activeScreen as CustomController
@@ -510,8 +513,6 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
                 showSaveAsDialog()
                 true
             }
-
-            // sims screen actions
             R.id.sim_list_menu_delete -> {
                 simListView.onDelete()
                 true
@@ -576,7 +577,22 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
                 simView.customSerialScreen.onDuplicate()
                 true
             }
-
+            R.id.logview_search -> {
+                logView.toggleTopBar()
+                true
+            }
+            R.id.logview_download -> {
+                logView.download()
+                true
+            }
+            R.id.logview_download_as -> {
+                logView.save()
+                true
+            }
+            R.id.logview_clear -> {
+                logView.clear()
+                true
+            }
             else -> super.onOptionsItemSelected(item)
         }
     }

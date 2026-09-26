@@ -12,7 +12,6 @@ import kotlinx.coroutines.sync.withLock
 
 import android.content.Context
 import android.widget.FrameLayout
-import android.widget.Button
 import kotlinx.coroutines.launch
 import java.io.File
 import androidx.lifecycle.lifecycleScope
@@ -29,17 +28,19 @@ import androidx.core.widget.doAfterTextChanged
 import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.LogEntryType
 import android.util.Log
-import android.os.Handler
-import android.os.Looper
-import androidx.core.view.isVisible
-import android.view.View
-import androidx.core.graphics.ColorUtils
 import androidx.core.content.ContextCompat
 import java.text.DateFormat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import android.content.SharedPreferences
+import android.os.Handler
+import android.os.Looper
+import androidx.core.view.isVisible
+import android.view.View
+import androidx.core.graphics.ColorUtils
+import android.widget.Button
+import android.widget.Toast
 
 enum class LogLevel(val value: Int) {
     NONE(0),
@@ -349,7 +350,7 @@ class LogAdapter(
             LogLevel.ERROR -> ContextCompat.getColor(ctx, R.color.sol_red)
             LogLevel.WARNING -> ContextCompat.getColor(ctx, R.color.sol_orange)
             LogLevel.NONE -> ContextCompat.getColor(ctx, R.color.sol_magenta)
-            LogLevel.DEBUG -> ColorUtils.setAlphaComponent(primaryColor, 128)
+            LogLevel.DEBUG -> androidx.core.graphics.ColorUtils.setAlphaComponent(primaryColor, 128)
         }
 
         holder.tv.setTextColor(colorInt)
@@ -384,6 +385,8 @@ class LogView(
     private var search = ""
 
     private val logAdapter = LogAdapter(activity.prefs)
+    private lateinit var logTopBar: View
+    private var logTopBarExpanded = false
     private val uiHandler = Handler(Looper.getMainLooper())
 
     private lateinit var overlayButtons: View
@@ -401,7 +404,25 @@ class LogView(
             }
             .start()
     }
+    private fun showOverlayButtons() {
+        uiHandler.removeCallbacks(hideOverlayRunnable)
 
+        if (!overlayButtons.isVisible) {
+            overlayButtons.apply {
+                alpha = 0f
+                translationY = 32f
+                isVisible = true
+            }
+        }
+
+        overlayButtons.animate()
+            .alpha(1f)
+            .translationY(0f)
+            .setDuration(150)
+            .start()
+
+        uiHandler.postDelayed(hideOverlayRunnable, OVERLAY_BUTTONS_ANIM_MS)
+    }
     val saveLogLauncher =
         activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) {
@@ -424,26 +445,6 @@ class LogView(
     init {
         LayoutInflater.from(context).inflate(R.layout.log, this, true)
         setupLogsView()
-    }
-
-    private fun showOverlayButtons() {
-        uiHandler.removeCallbacks(hideOverlayRunnable)
-
-        if (!overlayButtons.isVisible) {
-            overlayButtons.apply {
-                alpha = 0f
-                translationY = 32f
-                isVisible = true
-            }
-        }
-
-        overlayButtons.animate()
-            .alpha(1f)
-            .translationY(0f)
-            .setDuration(150)
-            .start()
-
-        uiHandler.postDelayed(hideOverlayRunnable, OVERLAY_BUTTONS_ANIM_MS)
     }
 
     private fun refresh() {
@@ -586,23 +587,22 @@ class LogView(
         }
     }
 
+    private lateinit var searchInput: EditText
     private fun setupLogsView() {
 
+        logTopBar = findViewById(R.id.log_top_bar)
+        logTopBar.isVisible = false
         val rv = findViewById<RecyclerView>(R.id.rvLogs)
 
         rv.viewTreeObserver.addOnGlobalLayoutListener {
             updateLayoutMetrics(rv)
         }
-
-        val btnClear = findViewById<Button>(R.id.btnClear)
         val btnUp = findViewById<Button>(R.id.btnUp)
         val btnDown = findViewById<Button>(R.id.btnDown)
-        val btnSave = findViewById<Button>(R.id.btnSave)
         overlayButtons = findViewById(R.id.overlayButtons)
         uiHandler.postDelayed(hideOverlayRunnable, OVERLAY_BUTTONS_ANIM_MS)
-        val btnDownload = findViewById<Button>(R.id.btnDownload)
-        
         val btnSearch = findViewById<EditText>(R.id.log_search)
+        searchInput = btnSearch
 
         btnSearch.doAfterTextChanged {
             search = it?.toString() ?: ""
@@ -623,7 +623,6 @@ class LogView(
         }
 
         rv.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-
             override fun onScrollStateChanged(rv: RecyclerView, newState: Int) {
                 if (newState == RecyclerView.SCROLL_STATE_IDLE) {
                     uiHandler.postDelayed(hideOverlayRunnable, OVERLAY_BUTTONS_ANIM_MS)
@@ -631,25 +630,13 @@ class LogView(
                     showOverlayButtons()
                 }
             }
-
             override fun onScrolled(rv: RecyclerView, dx: Int, dy: Int) {
                 if (dy < 0) {
                     stickToBottom = false
                 }
-
                 showOverlayButtons()
             }
         })
-
-        // ---- Buttons ----
-        btnClear.setOnClickListener {
-            scope.launch {
-                logRepo.clear()
-                mainScope.launch {
-                    refresh()
-                }
-            }
-        }
 
         btnUp.setOnClickListener {
             stickToBottom = false
@@ -661,14 +648,58 @@ class LogView(
             scrollToBottom(rv)
         }
 
-        btnSave.setOnClickListener {
-            openSaveLogDialog()
-        }
+    }
 
-        btnDownload.setOnClickListener {
-            scope.launch {
-                val file = File(activity.getExternalFilesDir(null), "elm327emu_log.txt")
-                file.writeText(logAdapterSnapshot())
+    fun toggleTopBar() {
+        logTopBarExpanded = !logTopBarExpanded
+        logTopBar.isVisible = logTopBarExpanded
+        if (logTopBarExpanded) {
+            search = searchInput.getText().toString()
+        } else {
+            search = ""
+        }
+        refresh()
+    }
+
+    // ---- PUBLIC BUTTON ACTIONS ----
+    fun clear() {
+        scope.launch {
+            logRepo.clear()
+            mainScope.launch {
+                refresh()
+            }
+        }
+    }
+
+    fun scrollUp() {
+        val rv = findViewById<RecyclerView>(R.id.rvLogs)
+        stickToBottom = false
+        rv.scrollToPosition(0)
+    }
+
+    fun scrollDown() {
+        val rv = findViewById<RecyclerView>(R.id.rvLogs)
+        stickToBottom = true
+        scrollToBottom(rv)
+    }
+
+    fun save() {
+        openSaveLogDialog()
+    }
+    var filename = "elm327emu_log.txt"
+    fun getString(resId: Int, vararg formatArgs: Any?): String {
+        return activity.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
+    }
+    fun download() {
+        scope.launch {
+            val file = File(activity.getExternalFilesDir(null), filename)
+            file.writeText(logAdapterSnapshot())
+            activity.runOnUiThread {
+                Toast.makeText(
+                    activity,
+                    getString(R.string.logview_saved_as, file.absolutePath),
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         }
     }
@@ -736,7 +767,7 @@ class LogView(
         val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
             type = "text/plain"
-            putExtra(Intent.EXTRA_TITLE, "elm327emu_log.txt")
+            putExtra(Intent.EXTRA_TITLE, filename)
         }
 
         saveLogLauncher.launch(intent)

@@ -27,6 +27,26 @@
             android:title="@string/sim_menu_export_clipboard" />
     </group>
 
+    <group android:id="@+id/action_menu_group_logview">
+
+        <item
+            android:id="@+id/logview_search"
+            android:title="@string/logview_search" />
+
+        <item
+            android:id="@+id/logview_download"
+            android:title="@string/logview_download" />
+
+        <item
+            android:id="@+id/logview_download_as"
+            android:title="@string/logview_download_as" />
+
+        <item
+            android:id="@+id/logview_clear"
+            android:title="@string/logview_clear" />
+
+    </group>
+
     <group android:id="@+id/action_menu_group_sim_ecu_gui_default">
         <item
             android:id="@+id/sim_ecu_gui_menu_start_godot"

@@ -17,31 +17,13 @@
             android:scrollbars="none">
 
             <LinearLayout
-                android:id="@+id/buttonsRow"
+                android:id="@+id/log_top_bar"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
                 android:background="@drawable/toolbar_with_border"
                 android:padding="5dp">
-
-                <Button
-                    android:id="@+id/btnDownload"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/log_btnDownload" />
-
-                <Button
-                    android:id="@+id/btnSave"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/log_btnSave" />
-
-                <Button
-                    android:id="@+id/btnClear"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/log_btnClear" />
                 
                 <EditText
                     android:id="@+id/log_search"
