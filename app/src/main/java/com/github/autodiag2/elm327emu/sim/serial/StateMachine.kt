@@ -28,6 +28,7 @@ class StateMachine(
 
     data class Path(
         val id: Int,
+        var origin: BlockController,
         var block: BlockController,
         var state: State = State.READY,
         var wakeTime: Long = 0L
@@ -455,8 +456,7 @@ class StateMachine(
 
         controller.resetBlockStates()
 
-        val initialBlocks =
-            containerGetRootBlocks()
+        val initialBlocks = containerGetRootBlocks()
 
         logDebug(
             "Execution roots: " +
@@ -465,8 +465,7 @@ class StateMachine(
                 }
         )
 
-        running =
-            initialBlocks.isNotEmpty()
+        running = initialBlocks.isNotEmpty()
 
         for (block in initialBlocks) {
             createPath(block)
@@ -1256,9 +1255,7 @@ class StateMachine(
                 "block=${path.block.id}"
         )
 
-        val fromId =
-            path.block.id
-
+        val fromId = path.block.id
         val nextBlocks =
             controller.links
                 .filter {
@@ -1275,11 +1272,8 @@ class StateMachine(
             return
         }
 
-        path.block =
-            nextBlocks.first()
-
-        path.state =
-            State.READY
+        path.block = nextBlocks.first()
+        path.state = State.READY
 
         for (
             block in
@@ -1289,42 +1283,8 @@ class StateMachine(
         }
     }
 
-    private fun onPathEnded(
-        path: Path
-    ) {
-        logDebug(
-            "path=${path.id} ended at " +
-                "block=${path.block.id}"
-        )
-
-        val rootBlocks = containerGetRootBlocks(path.block.parent)
-
-        if (rootBlocks.isEmpty()) {
-            path.state =
-                State.FINISHED
-
-            return
-        }
-
-        logDebug(
-            "path=${path.id} restarting with roots: " +
-                rootBlocks.joinToString(", ") {
-                    it.id.toString()
-                }
-        )
-
-        path.block =
-            rootBlocks.first()
-
-        path.state =
-            State.READY
-
-        for (
-            block in
-            rootBlocks.drop(1)
-        ) {
-            createPath(block)
-        }
+    private fun onPathEnded(path: Path) {
+        path.state = State.FINISHED
     }
 
     private fun resolveBlockId(
@@ -1335,31 +1295,34 @@ class StateMachine(
         }
     }
 
+    private fun resolveBlock(blockAny: Any): BlockController {
+        return when (blockAny) {
+            is Int ->
+                resolveBlockId(blockAny)
+                    ?: throw IllegalArgumentException(
+                        "Block not found: id=$blockAny"
+                    )
+
+            is BlockController ->
+                blockAny
+
+            else ->
+                throw IllegalArgumentException(
+                    "Invalid block type: " +
+                        "${blockAny::class.java.name}"
+                )
+        }
+    }
+
     private fun createPath(
         blockAny: Any
     ) {
-        val block =
-            when (blockAny) {
-                is Int ->
-                    resolveBlockId(blockAny)
-                        ?: throw IllegalArgumentException(
-                            "Block not found: id=$blockAny"
-                        )
-
-                is BlockController ->
-                    blockAny
-
-                else ->
-                    throw IllegalArgumentException(
-                        "Invalid block type: " +
-                            "${blockAny::class.java.name}"
-                    )
-            }
-
+        val block = resolveBlock(blockAny)
         val path =
             Path(
                 id = nextPathId++,
-                block = block
+                block = block,
+                origin = block
             )
 
         paths.add(path)
