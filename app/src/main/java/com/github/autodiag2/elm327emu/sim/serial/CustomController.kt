@@ -209,45 +209,37 @@ class CustomController(
             )
 
         replayStart.setOnClickListener {
-            if (logReplay.isRunning()) {
-                logReplay.stop()
-                replayUpdatePlayPause()
-            } else {
-                if ( isRunning() ) {
-                    stop()
-                }
-                val speed = replaySpeedToValue(replaySpeed.progress)
-                scope.launch {   
-                    val emuProvider = activity.bridgeOrchestrator as EmuInterface.Provider
-                    emuProvider.resetEmu()
-                    logReplay.start(
-                        playSpeed = speed,
-                        onFinished = {
-                            start()
+            stop()
+            start()
+            val speed = replaySpeedToValue(replaySpeed.progress)
+            scope.launch {   
+                val emuProvider = activity.bridgeOrchestrator as EmuInterface.Provider
+                emuProvider.resetEmu()
+                logReplay.start(
+                    playSpeed = speed,
+                    onFinished = {
+                        stop()
+                    },
+                    onError = { error ->
+                        logDebug(
+                            "Replay error: ${error.message}"
+                        )
+
+                        activity.runOnUiThread {
                             replayUpdatePlayPause()
-                        },
-                        onError = { error ->
-                            logDebug(
-                                "Replay error: ${error.message}"
-                            )
-    
-                            activity.runOnUiThread {
-                                replayUpdatePlayPause()
-    
-                                Toast.makeText(
-                                    activity,
-                                    getString(
-                                        R.string.custom_serial_replay_error,
-                                        error.message ?: ""
-                                    ),
-                                    Toast.LENGTH_LONG
-                                ).show()
-                            }
+
+                            Toast.makeText(
+                                activity,
+                                getString(
+                                    R.string.custom_serial_replay_error,
+                                    error.message ?: ""
+                                ),
+                                Toast.LENGTH_LONG
+                            ).show()
                         }
-                    )
-                }
+                    }
+                )
             }
-            replayUpdatePlayPause()
         }
         updateReplayToolbarArrow()
     }
@@ -425,19 +417,18 @@ class CustomController(
             emuProvider.setEmu(scriptEmu)
             stateMachine.start()
             listener?.customSerialOnRunStateChange(true)
+            replayUpdatePlayPause()
         }
     }
 
     private fun stop() {
         scope.launch {
             logReplay.stop()
-
-            replayUpdatePlayPause()
-
             stateMachine.stop()
             val emuProvider = activity.bridgeOrchestrator as EmuInterface.Provider
             emuProvider.resetEmu()
             listener?.customSerialOnRunStateChange(false)
+            replayUpdatePlayPause()
         }
     }
 
