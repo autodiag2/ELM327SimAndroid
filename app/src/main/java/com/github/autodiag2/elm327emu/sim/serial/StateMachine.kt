@@ -378,14 +378,6 @@ class StateMachine(
         )
     }
 
-    fun setupStart() {
-        sendQueue.clear()
-        recvQueue.clear()
-
-        recvCurrent = null
-        recvCurrentOffset = 0
-    }
-
     fun start() {
         events.trySend(
             Event.Start
