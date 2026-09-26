@@ -92,6 +92,7 @@
     <string name="sim_customserial_edit_recv_match_regex">Regular expression</string>
     <string name="sim_custom_serial_script_share_script_title">Share script</string>
     <string name="sim_custom_serial_script_export_share">Share</string>
+    <string name="sim_custom_serial_script_clear_emu_running">Running serial script running please stop it before</string>
     <string name="sim_custom_serial_script_clear_confirm">This will delete completely your script, are you sure ?</string>
     <string name="sim_custom_serial_script_block_name_container">Container</string>
     <string name="sim_custom_serial_script_block_name_delay">Delay</string>

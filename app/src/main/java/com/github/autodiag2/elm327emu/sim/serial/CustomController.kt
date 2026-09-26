@@ -584,12 +584,32 @@ class CustomController(
         )
     }
 
-    public fun clear() {
-        blocks.clear()
-        links.clear()
-        onUnselectAll()
+    private fun feedbackIfRunning(): Boolean {
+        if ( stateMachine.isRunning() ) {
+            AlertDialog.Builder(
+                activity
+            )
+                .setTitle(
+                    R.string.sim_custom_serial_script_clear_emu_running
+                )
+                .setPositiveButton(
+                    android.R.string.ok
+                ) { _, _ ->
 
-        onDataChanged()
+                }
+                .show()
+            return true
+        }
+        return false
+    }
+    public fun clear() {
+        if ( ! feedbackIfRunning() ) {
+            blocks.clear()
+            links.clear()
+            onUnselectAll()
+    
+            onDataChanged()
+        }
     }
 
     public fun clearWithDialog() {
@@ -614,6 +634,9 @@ class CustomController(
     private fun rmLink(
         link: Any
     ) {
+        if ( feedbackIfRunning() ) {
+            return
+        }
         var linko = link
 
         if (link is Int) {
@@ -647,6 +670,9 @@ class CustomController(
     private fun rmBlock(
         block: Any
     ) {
+        if ( feedbackIfRunning() ) {
+            return
+        }
         var blocko = block
 
         if (block is Int) {
@@ -703,6 +729,9 @@ class CustomController(
         to: BlockController? = null,
         name: String = ""
     ) {
+        if ( feedbackIfRunning() ) {
+            return
+        }
         var blockName = name
 
         if (name.isEmpty()) {
@@ -785,6 +814,9 @@ class CustomController(
     // ------- Action Menu listener -------
 
     public fun onImportClipboard() {
+        if ( feedbackIfRunning() ) {
+            return
+        }
         val clipboard =
             activity.getSystemService(
                 Context.CLIPBOARD_SERVICE
@@ -996,6 +1028,9 @@ class CustomController(
     }
 
     public fun onDuplicate() {
+        if ( feedbackIfRunning() ) {
+            return
+        }
         val selected =
             selectedBlocks
                 .mapNotNull { id ->
