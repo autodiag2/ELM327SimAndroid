@@ -593,6 +593,14 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
                 simView.customSerialScreen.onDuplicate()
                 true
             }
+            R.id.sim_custom_serial_script_start -> {
+                simView.customSerialScreen.onStart()
+                true
+            }
+            R.id.sim_custom_serial_script_stop -> {
+                simView.customSerialScreen.onStop()
+                true
+            }
             R.id.logview_search -> {
                 logView.toggleTopBar()
                 true

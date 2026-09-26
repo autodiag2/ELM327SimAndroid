@@ -1026,7 +1026,12 @@ class CustomController(
             BlockController.Type.CONTAINER
         )
     }
-
+    fun onStart() {
+        onRunStateChange(true)
+    }
+    fun onStop() {
+        onRunStateChange(false)
+    }
     public fun onDuplicate() {
         if ( feedbackIfRunning() ) {
             return

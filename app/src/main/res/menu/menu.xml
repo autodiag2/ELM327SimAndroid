@@ -113,6 +113,12 @@
             </menu>
         </item>
         <item
+            android:id="@+id/sim_custom_serial_script_start"
+            android:title="@string/sim_custom_serial_script_start" />
+        <item
+            android:id="@+id/sim_custom_serial_script_stop"
+            android:title="@string/sim_custom_serial_script_stop" />
+        <item
             android:id="@+id/sim_custom_serial_script_clear"
             android:title="@string/sim_custom_serial_script_clear" />
         <item
