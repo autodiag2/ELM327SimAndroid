@@ -931,10 +931,9 @@ class StateMachine(
                         BlockController.State.IN_PROGRESS
                     )
 
-                    val children =
-                        block.children
+                    val childRoots = containerGetRootBlocks(block)
 
-                    if (children.isEmpty()) {
+                    if (childRoots.isEmpty()) {
                         setBlockState(
                             block,
                             BlockController.State.SUCCESS
@@ -942,12 +941,10 @@ class StateMachine(
 
                         advance(path)
                     } else {
-                        val childRoots =
-                            containerGetRootBlocks(block)
-
                         for (child in childRoots) {
                             createPath(child)
                         }
+                        path.state = State.WAIT
                     }
                 }
             }
