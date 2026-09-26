@@ -892,11 +892,7 @@ class StateMachine(
         val blockType =
             block.type
 
-        logDebug(
-            "Executing $blockType " +
-                "path=${path.id} " +
-                "block=$blockId"
-        )
+        logDebug("EXEC $blockType($blockId) path=${path.id}")
 
         setBlockState(
             block,
@@ -984,18 +980,7 @@ class StateMachine(
         } catch (
             e: TimeoutCancellationException
         ) {
-            appendLog(
-                "$blockType timeout: " +
-                    "block=$blockId " +
-                    "timeout=${block.timeoutMs}ms",
-                LogLevel.ERROR
-            )
-
-            logDebug(
-                "$blockType TIMEOUT " +
-                    "path=${path.id} " +
-                    "block=$blockId"
-            )
+            logDebug("EXEC $blockType($blockId) TIMEOUT(${block.timeoutMs}ms)")
 
             setBlockState(
                 block,
@@ -1005,18 +990,7 @@ class StateMachine(
             path.state =
                 State.FINISHED
         } catch (e: Exception) {
-            appendLog(
-                "$blockType error: " +
-                    "block=$blockId: ${e.message}",
-                LogLevel.ERROR
-            )
-
-            logDebug(
-                "$blockType ERROR " +
-                    "path=${path.id} " +
-                    "block=$blockId: ${e.message}"
-            )
-
+            logDebug("EXEC $blockType($blockId) EXCEPTION(${e.message})")
             setBlockState(
                 block,
                 BlockController.State.FAILED
@@ -1026,11 +1000,7 @@ class StateMachine(
                 State.FINISHED
         }
 
-        logDebug(
-            "Execution end " +
-                "path=${path.id} " +
-                "block=$blockId"
-        )
+        logDebug("EXEC END $blockType($blockId) path=${path.id}")
     }
 
     private fun isDescendant(
@@ -1074,19 +1044,13 @@ class StateMachine(
                 )
             }
 
-        logDebug(
-            "SEND WRITE -> " +
-                bytes.toDebugString()
-        )
+        logDebug("EXEC SEND bytes=" + bytes.toDebugString())
 
         recvQueue.put(
             bytes.copyOf()
         )
 
-        logDebug(
-            "SEND WRITE DONE -> " +
-                bytes.toDebugString()
-        )
+        logDebug("EXEC SEND QUEUE -> ")
     }
 
     private fun ByteArray.toDebugString(): String {
@@ -1141,10 +1105,7 @@ class StateMachine(
             return
         }
 
-        logDebug(
-            "RECV ${bytes.size} bytes: " +
-                bytes.toDebugString()
-        )
+        logDebug("EXEC RECV ${bytes.size} bytes: " + bytes.toDebugString())
 
         val waitingPaths =
             paths
@@ -1160,11 +1121,7 @@ class StateMachine(
                     bytes
                 )
             ) {
-                logDebug(
-                    "RECV matched " +
-                        "path=${path.id} " +
-                        "block=${path.block.id}"
-                )
+                logDebug("EXEC RECV MATCH ${path.block.type}(${path.block.id}) path=${path.id}")
 
                 setBlockState(
                     path.block,
@@ -1190,12 +1147,7 @@ class StateMachine(
                         BlockController.State.IN_PROGRESS
                     )
 
-                    logDebug(
-                        "RECV failed for root " +
-                            "path=${path.id} " +
-                            "block=${path.block.id}, " +
-                            "keeping WAIT_RECV"
-                    )
+                    logDebug("EXEC RECV ${path.block.type}(${path.block.id}) path=${path.id} keeping WAIT_RECV")
                 } else {
                     setBlockState(
                         path.block,
@@ -1286,10 +1238,7 @@ class StateMachine(
     private fun advance(
         path: Path
     ) {
-        logDebug(
-            "advance path=${path.id} " +
-                "block=${path.block.id}"
-        )
+        logDebug("ADVANCE ${path.block.type}(${path.block.id}) path=${path.id}")
 
         val fromId = path.block.id
         val nextBlocks =
@@ -1363,11 +1312,7 @@ class StateMachine(
 
         paths.add(path)
 
-        logDebug(
-            "createPath " +
-                "path=${path.id} " +
-                "block=${block.id}"
-        )
+        logDebug("CREATE PATH ${block.type}(${block.id}) path=${path.id}")
     }
 
     fun isRunning(): Boolean {
