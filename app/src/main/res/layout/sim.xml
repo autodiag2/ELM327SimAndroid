@@ -118,11 +118,21 @@
                     android:padding="16dp"
                     android:gravity="center_vertical">
                     
-                    <Spinner    
+                    <Spinner
                         android:id="@+id/custom_serial_script_spinner"
                         android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/spinner_border"
+                        android:gravity="center_vertical"
+                        android:paddingStart="12dp"
+                        android:paddingEnd="12dp" />
+
+                    <Button
+                        android:id="@+id/sim_custom_serial_script_open"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp" />
+                        android:text="@string/sim_custom_serial_script_open" />
 
                     <ImageButton
                         android:id="@+id/sim_custom_serial_script_play_pause"
@@ -133,12 +143,6 @@
                         android:contentDescription="@string/sim_custom_serial_script_play"
                         android:padding="12dp"
                         android:src="@drawable/ic_play" />
-
-                    <Button
-                        android:id="@+id/sim_custom_serial_script_open"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/sim_custom_serial_script_open" />
 
                 </LinearLayout>
 
