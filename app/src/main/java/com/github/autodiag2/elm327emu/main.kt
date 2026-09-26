@@ -648,13 +648,6 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
     // Logic
     // -------------------------------
 
-    fun stopServer() {
-        bridgeOrchestrator.stop()
-        simView.onRunStateChange()
-        scope.coroutineContext.cancelChildren()
-        appendLog(getString(R.string.log_main_bluetooth_server_stopped), LogLevel.INFO)
-    }
-
     fun clearSocketFiles() {
         filesDir.listFiles()?.forEach {
             if (it.name.startsWith("socket")) it.delete()
@@ -677,13 +670,6 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
     fun showBluetoothEnablePopup() {
         val intent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
         enableBtLauncher.launch(intent)
-    }
-
-    fun startServer() {
-        scope.launch {
-            bridgeOrchestrator.start()
-            simView.onRunStateChange()
-        }
     }
 
     fun onDataReceived(data: ByteArray, size_used: Int) {

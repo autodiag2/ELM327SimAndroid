@@ -210,31 +210,30 @@ class CustomController(
 
         replayStart.setOnClickListener {
             if (logReplay.isRunning()) {
-                stateMachine.stop()
                 logReplay.stop()
-                listener?.customSerialOnRunStateChange(false)
                 replayUpdatePlayPause()
             } else {
-                stateMachine.stop()
-                listener?.customSerialOnRunStateChange(false)
+                if ( isRunning() ) {
+                    stop()
+                }
                 val speed = replaySpeedToValue(replaySpeed.progress)
                 scope.launch {   
                     val emuProvider = activity.bridgeOrchestrator as EmuInterface.Provider
                     emuProvider.resetEmu()
-                    stateMachine.start()
                     logReplay.start(
                         playSpeed = speed,
                         onFinished = {
-                            listener?.customSerialOnRunStateChange(true)
+                            start()
+                            replayUpdatePlayPause()
                         },
                         onError = { error ->
                             logDebug(
                                 "Replay error: ${error.message}"
                             )
-
+    
                             activity.runOnUiThread {
                                 replayUpdatePlayPause()
-
+    
                                 Toast.makeText(
                                     activity,
                                     getString(
@@ -246,9 +245,9 @@ class CustomController(
                             }
                         }
                     )
-                    replayUpdatePlayPause()
                 }
             }
+            replayUpdatePlayPause()
         }
         updateReplayToolbarArrow()
     }
@@ -419,16 +418,17 @@ class CustomController(
 
     // ------------ StateMachine ------------
 
-    private fun startScript() {
+    private fun start() {
         scope.launch {
             val emuProvider = activity.bridgeOrchestrator as EmuInterface.Provider
             val scriptEmu = stateMachine as EmuInterface
             emuProvider.setEmu(scriptEmu)
             stateMachine.start()
+            listener?.customSerialOnRunStateChange(true)
         }
     }
 
-    private fun stopScript() {
+    private fun stop() {
         scope.launch {
             logReplay.stop()
 
@@ -437,18 +437,17 @@ class CustomController(
             stateMachine.stop()
             val emuProvider = activity.bridgeOrchestrator as EmuInterface.Provider
             emuProvider.resetEmu()
+            listener?.customSerialOnRunStateChange(false)
         }
     }
 
     // ------------ End StateMachine ------------
 
-    fun onRunStateChange(
-        state: Boolean
-    ) {
-        if (state) {
-            startScript()
+    fun toggleStart() {
+        if ( isRunning() ) {
+            stop()
         } else {
-            stopScript()
+            start()
         }
     }
 
@@ -1028,12 +1027,14 @@ class CustomController(
         )
     }
     fun onStart() {
-        onRunStateChange(true)
-        listener?.customSerialOnRunStateChange(true)
+        if ( ! isRunning() ) {
+            toggleStart()
+        }
     }
     fun onStop() {
-        onRunStateChange(false)
-        listener?.customSerialOnRunStateChange(false)
+        if ( isRunning() ) {
+            toggleStart()
+        }
     }
     public fun onDuplicate() {
         if ( feedbackIfRunning() ) {

@@ -36,22 +36,39 @@ import com.github.autodiag2.elm327emu.com.NetworkBridge
 import com.github.autodiag2.elm327emu.com.BridgeOrchestrator
 import android.app.AlertDialog
 import android.widget.ImageButton
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.cancelChildren
 
 class Sim(
     private val activity: MainActivity
 ) : FrameLayout(activity), JsonConfigurable, CustomController.Listener {
 
+    val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     public val customSerialScreen: CustomController
-    var customSerialScreenIsChecked: Boolean = false
     private val ecuListView: ViewGroup
     val ecus = mutableListOf<Ecu>()
     private val ecuAddSelect: Spinner
     var running: Boolean = false
     private lateinit var connectedClientsButton: Button
 
-    override fun customSerialOnRunStateChange(newState: Boolean) {
-        customSerialScreenIsChecked = newState
-        updateCustomSerialScriptPlayPause()
+    override fun customSerialOnRunStateChange(newstate: Boolean) {
+        val button =
+            findViewById<ImageButton>(
+                R.id.sim_custom_serial_script_play_pause
+            )
+
+        if (newstate) {
+            button.setImageResource(R.drawable.ic_pause)
+            button.contentDescription =
+                getString(R.string.sim_custom_serial_script_pause)
+        } else {
+            button.setImageResource(R.drawable.ic_play)
+            button.contentDescription =
+                getString(R.string.sim_custom_serial_script_play)
+        }
     }
 
     companion object {
@@ -144,9 +161,9 @@ class Sim(
                         )
 
                     if (running) {
-                        activity.startServer()
+                        start()
                     } else {
-                        activity.stopServer()
+                        stop()
                     }
                 } else {
                     activity.requestPermissions()
@@ -156,9 +173,7 @@ class Sim(
         findViewById<ImageButton>(
             R.id.sim_custom_serial_script_play_pause
         ).setOnClickListener {
-            customSerialScreenIsChecked = !customSerialScreenIsChecked
-            updateCustomSerialScriptPlayPause()
-            onRunStateChange()
+            customSerialScreen.toggleStart()
         }
         findViewById<ToggleButton>(R.id.ignition_state).apply {
             isChecked = libautodiag.getIgnitionStateAs() == IgnitionState.ON
@@ -171,6 +186,22 @@ class Sim(
         }
         buildAddECUToGUI(Ecu.DEFAULT_ADDRESS, getString(R.string.sim_ecu_gui_ecu_name), EcuType.gui)
         setupCustomSerialScripts()
+    }
+
+    fun stop() {
+        activity.bridgeOrchestrator.stop()
+        scope.coroutineContext.cancelChildren()
+        appendLog(getString(R.string.log_main_bluetooth_server_stopped), LogLevel.INFO)
+    }
+
+    fun start() {
+        scope.launch {
+            activity.bridgeOrchestrator.start()
+        }
+    }
+
+    fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {
+        activity.appendLog(text, level)
     }
 
     private fun bridgeType(bridge: Bridge): String {
@@ -254,32 +285,6 @@ class Sim(
                 "sim.Sim",
                 message
             )
-        }
-    }
-
-    private fun updateCustomSerialScriptPlayPause() {
-        val button =
-            findViewById<ImageButton>(
-                R.id.sim_custom_serial_script_play_pause
-            )
-
-        if (customSerialScreenIsChecked) {
-            button.setImageResource(R.drawable.ic_pause)
-            button.contentDescription =
-                getString(R.string.sim_custom_serial_script_pause)
-        } else {
-            button.setImageResource(R.drawable.ic_play)
-            button.contentDescription =
-                getString(R.string.sim_custom_serial_script_play)
-        }
-    }
-
-    fun onRunStateChange() {
-        logDebug("Running state of the sim : ${running}")
-        if ( running ) {
-            customSerialScreen.onRunStateChange(customSerialScreenIsChecked)
-        } else {
-            customSerialScreen.onRunStateChange(false)
         }
     }
 
