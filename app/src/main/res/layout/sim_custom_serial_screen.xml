@@ -61,11 +61,15 @@
 
             </LinearLayout>
 
-            <Button
+            <ImageButton
                 android:id="@+id/custom_serial_replay_start"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/custom_serial_replay_start" />
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_marginEnd="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/custom_serial_replay_start"
+                android:padding="12dp"
+                android:src="@drawable/ic_play" />
 
         </LinearLayout>
 

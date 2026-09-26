@@ -35,6 +35,7 @@ import java.io.IOException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import android.widget.ImageButton
 
 const val SCHEMA = "autodiag/sim/elm327/serialscript"
 const val VERSION = 1.0
@@ -71,7 +72,7 @@ class CustomController(
     private lateinit var replayToolbarArrow: TextView
     private lateinit var replaySpeed: SeekBar
     private lateinit var replaySpeedValue: TextView
-    private lateinit var replayStart: Button
+    private lateinit var replayStart: ImageButton
     private lateinit var replayToolbar: View
 
     public val blocks =
@@ -208,15 +209,14 @@ class CustomController(
             )
 
         replayStart.setOnClickListener {
-            stateMachine.stop()
             if (logReplay.isRunning()) {
+                stateMachine.stop()
                 logReplay.stop()
-
-                replayStart.text =
-                    getString(
-                        R.string.custom_serial_replay_start
-                    )
+                listener?.customSerialOnRunStateChange(false)
+                replayUpdatePlayPause()
             } else {
+                stateMachine.stop()
+                listener?.customSerialOnRunStateChange(false)
                 val speed = replaySpeedToValue(replaySpeed.progress)
                 scope.launch {   
                     val emuProvider = activity.bridgeOrchestrator as EmuInterface.Provider
@@ -225,12 +225,7 @@ class CustomController(
                     logReplay.start(
                         playSpeed = speed,
                         onFinished = {
-                            activity.runOnUiThread {
-                                replayStart.text =
-                                    getString(
-                                        R.string.custom_serial_replay_start
-                                    )
-                            }
+                            listener?.customSerialOnRunStateChange(true)
                         },
                         onError = { error ->
                             logDebug(
@@ -238,10 +233,7 @@ class CustomController(
                             )
 
                             activity.runOnUiThread {
-                                replayStart.text =
-                                    getString(
-                                        R.string.custom_serial_replay_start
-                                    )
+                                replayUpdatePlayPause()
 
                                 Toast.makeText(
                                     activity,
@@ -254,16 +246,25 @@ class CustomController(
                             }
                         }
                     )
-                    activity.runOnUiThread {
-                        replayStart.text =
-                            getString(
-                                R.string.custom_serial_replay_stop
-                            )
-                    }
+                    replayUpdatePlayPause()
                 }
             }
         }
         updateReplayToolbarArrow()
+    }
+
+    private fun replayUpdatePlayPause() {
+        activity.runOnUiThread {
+            if (logReplay.isRunning()) {
+                replayStart.setImageResource(R.drawable.ic_pause)
+                replayStart.contentDescription =
+                    getString(R.string.custom_serial_replay_start)
+            } else {
+                replayStart.setImageResource(R.drawable.ic_play)
+                replayStart.contentDescription =
+                    getString(R.string.custom_serial_replay_stop)
+            }
+        }
     }
 
     private fun replaySpeedToValue(
@@ -418,7 +419,7 @@ class CustomController(
 
     // ------------ StateMachine ------------
 
-    fun startScript() {
+    private fun startScript() {
         scope.launch {
             val emuProvider = activity.bridgeOrchestrator as EmuInterface.Provider
             val scriptEmu = stateMachine as EmuInterface
@@ -427,16 +428,11 @@ class CustomController(
         }
     }
 
-    fun stopScript() {
+    private fun stopScript() {
         scope.launch {
             logReplay.stop()
 
-            activity.runOnUiThread {
-                replayStart.text =
-                    getString(
-                        R.string.custom_serial_replay_start
-                    )
-            }
+            replayUpdatePlayPause()
 
             stateMachine.stop()
             val emuProvider = activity.bridgeOrchestrator as EmuInterface.Provider
