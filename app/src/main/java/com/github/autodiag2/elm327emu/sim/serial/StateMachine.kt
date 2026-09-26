@@ -113,8 +113,29 @@ class StateMachine(
     override fun resetEmu() {
     }
 
-    private fun findPath(block: BlockController): Path? {
-        return paths.find { it.block == block }
+    private fun findPath(blockAny: Any): Path? {
+        var blockId = -1
+        if ( blockAny is Int ) {
+            blockId = blockAny
+        } else if ( blockAny is BlockController ) {
+            blockId = blockAny.id
+        }
+        return paths.find { it.block.id == blockId }
+    }
+    private fun mergePathAt(block: BlockController, incoming: Path): Path {
+        val existing = paths.find { it.block.id == block.id }
+
+        if (existing != null) {
+            logDebug(
+                "MERGE PATH ${incoming.id} INTO PATH ${existing.id} " +
+                "AT BLOCK ${block.id}"
+            )
+
+            paths.remove(incoming)
+            return existing
+        }
+
+        return incoming
     }
     private fun setBlockStateBackPropagate(
         block: BlockController
@@ -919,30 +940,59 @@ class StateMachine(
             block.type == BlockController.Type.NOT
     }
 
-    private fun gateInputs(
-        gate: BlockController
-    ): List<BlockController> {
+    private fun gateInputs(gate: BlockController): List<BlockController> {
         return controller.links
-            .filter {
-                it.to == gate.id
-            }
+            .filter { it.to == gate.id }
             .mapNotNull { link ->
-                controller.blocks.find {
-                    it.id == link.from
-                }
+                controller.blocks.find { it.id == link.from }
             }
+    }
+
+    private fun evaluateGatePath(path: Path) {
+        val result = evaluateGate(path.block)
+
+        when (result) {
+            BlockController.State.SUCCESS -> {
+                setBlockState(
+                    path.block,
+                    BlockController.State.SUCCESS
+                )
+
+                advance(path)
+            }
+
+            BlockController.State.FAILED -> {
+                setBlockState(
+                    path.block,
+                    BlockController.State.FAILED
+                )
+
+                advance(path)
+            }
+
+            null -> {
+                path.state = State.WAIT
+
+                setBlockState(
+                    path.block,
+                    BlockController.State.IN_PROGRESS
+                )
+
+                logDebug(
+                    "GATE WAIT ${path.block.id}"
+                )
+            }
+
+            else -> {
+            }
+        }
     }
 
     private fun evaluateGate(
         block: BlockController
     ): BlockController.State? {
 
-        val inputs =
-            gateInputs(block)
-
-        if (inputs.isEmpty()) {
-            return BlockController.State.FAILED
-        }
+        val inputs = gateInputs(block)
 
         val successCount =
             inputs.count {
@@ -954,8 +1004,10 @@ class StateMachine(
                 it.state == BlockController.State.FAILED
             }
 
-        val finishedCount =
-            successCount + failedCount
+        val finishedCount = successCount + failedCount
+        if ( finishedCount != inputs.size )  {
+            null
+        }
 
         return when (block.type) {
 
@@ -1108,23 +1160,7 @@ class StateMachine(
                 BlockController.Type.OR,
                 BlockController.Type.XOR,
                 BlockController.Type.NOT -> {
-                    setBlockState(
-                        block,
-                        BlockController.State.IN_PROGRESS
-                    )
-
-                    path.state =
-                        State.WAIT
-
-                    val result =
-                        evaluateGate(block)
-
-                    if (result != null) {
-                        setBlockState(
-                            block,
-                            result
-                        )
-                    }
+                    evaluateGatePath(path)
                 }
             }
         } catch (
@@ -1386,9 +1422,12 @@ class StateMachine(
     private fun advance(
         path: Path
     ) {
-        logDebug("ADVANCE ${path.block.type}(${path.block.id}) path=${path.id}")
+        logDebug(
+            "ADVANCE ${path.block.type}(${path.block.id}) path=${path.id}"
+        )
 
         val fromId = path.block.id
+
         val nextBlocks =
             controller.links
                 .filter {
@@ -1405,14 +1444,54 @@ class StateMachine(
             return
         }
 
-        path.block = nextBlocks.first()
+        val firstBlock = nextBlocks.first()
+
+        if (isGate(firstBlock)) {
+            val existingPath =
+                findPath(firstBlock)
+
+            if (existingPath != null &&
+                existingPath !== path
+            ) {
+                logDebug(
+                    "MERGE PATH ${path.id} INTO GATE " +
+                        "${existingPath.id} " +
+                        "BLOCK ${firstBlock.id}"
+                )
+
+                path.state = State.FINISHED
+
+                evaluateGatePath(existingPath)
+
+                return
+            }
+        }
+
+        path.block = firstBlock
         path.state = State.READY
 
         for (
             block in
             nextBlocks.drop(1)
         ) {
-            createPath(block)
+            if (isGate(block)) {
+                val existingPath =
+                    findPath(block)
+
+                if (existingPath != null) {
+                    logDebug(
+                        "MERGE NEW BRANCH INTO GATE " +
+                            "${existingPath.id} " +
+                            "BLOCK ${block.id}"
+                    )
+
+                    evaluateGatePath(existingPath)
+                } else {
+                    createPath(block)
+                }
+            } else {
+                createPath(block)
+            }
         }
     }
 

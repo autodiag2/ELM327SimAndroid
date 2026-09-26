@@ -669,7 +669,7 @@ open class BlockController(
             Type.OR,
             Type.XOR,
             Type.NOT -> {
-                
+
             }
         }
     }
@@ -830,6 +830,17 @@ open class BlockController(
             .show()
     }
 
+    fun isGate(): Boolean {
+        return when (type) {
+            BlockController.Type.AND,
+            BlockController.Type.OR,
+            BlockController.Type.XOR,
+            BlockController.Type.NOT -> true
+
+            else -> false
+        }
+    }
+    
     private fun editSend() {
         val layout =
             android.view.LayoutInflater
