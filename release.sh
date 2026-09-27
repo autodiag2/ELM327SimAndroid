@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/bash
 
 ORIGIN="./media"
 CHANGELOG_DIR="fastlane/metadata/android/en-US/changelogs"
@@ -112,6 +112,10 @@ echo "Created: $changelog_file"
 log "Running media/update_fastlane.sh"
 
 ./media/update_fastlane.sh
+
+# 4.1. Saving changes
+git add .
+git commit -m "update release metadatas"
 
 # ----------------------------------------------------------------------
 # 5. Bump version
