@@ -233,11 +233,19 @@ class Sim(
     }
 
     private fun showSaveCustomSerialDialog() {
+        val currentName =
+            customSerialExamples
+                .getOrNull(customSerialScriptSpinner.selectedItemPosition)
+                ?.name
+                ?: ""
+
         val input =
             EditText(activity).apply {
                 hint = getString(
                     R.string.sim_custom_serial_script_save_name
                 )
+                setText(currentName)
+                setSelection(text.length)
                 inputType =
                     android.text.InputType.TYPE_CLASS_TEXT or
                         android.text.InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
