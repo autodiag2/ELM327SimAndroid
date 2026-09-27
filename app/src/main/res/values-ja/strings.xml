@@ -251,7 +251,7 @@
     <string name="log_ble_gatt_characteristic_write_failed">GATT 特性への書き込みに失敗しました: %1$s</string>
     <string name="log_ble_server_started">サーバーを開始しました</string>
     <string name="log_ble_advertising_started">アドバタイズを開始しました</string>
-    <string name="log_ble_advertising_failed">アドバタイズに失敗しました: %1$d</string>
+    <string name="log_ble_advertising_failed">アドバタイズに失敗しました: %1$s</string>
     <string name="log_ble_advertising_data">アドバタイズデータ (%1$d バイト)</string>
     <string name="log_ble_advertising_not_supported">アドバタイズはサポートされていません</string>
     <string name="log_ble_advertiser_null">bluetoothLeAdvertiser == null</string>

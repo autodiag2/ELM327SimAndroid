@@ -251,7 +251,7 @@
     <string name="log_ble_gatt_characteristic_write_failed">Schreiben in GATT-Characteristic fehlgeschlagen: %1$s</string>
     <string name="log_ble_server_started">Server gestartet</string>
     <string name="log_ble_advertising_started">Werbung gestartet</string>
-    <string name="log_ble_advertising_failed">Werbung fehlgeschlagen: %1$d</string>
+    <string name="log_ble_advertising_failed">Werbung fehlgeschlagen: %1$s</string>
     <string name="log_ble_advertising_data">Werbedaten (%1$d Bytes)</string>
     <string name="log_ble_advertising_not_supported">Werbung nicht unterstützt</string>
     <string name="log_ble_advertiser_null">bluetoothLeAdvertiser == null</string>

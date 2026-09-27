@@ -251,7 +251,7 @@
     <string name="log_ble_gatt_characteristic_write_failed">GATT 特征写入失败：%1$s</string>
     <string name="log_ble_server_started">服务器已启动</string>
     <string name="log_ble_advertising_started">已开始广播</string>
-    <string name="log_ble_advertising_failed">广播失败：%1$d</string>
+    <string name="log_ble_advertising_failed">广播失败：%1$s</string>
     <string name="log_ble_advertising_data">广播数据（%1$d 字节）</string>
     <string name="log_ble_advertising_not_supported">不支持广播</string>
     <string name="log_ble_advertiser_null">bluetoothLeAdvertiser == null</string>

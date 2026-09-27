@@ -378,7 +378,29 @@ class BLEBridge(
         }
 
         override fun onStartFailure(errorCode: Int) {
-            appendLog(getString(R.string.log_ble_advertising_failed, errorCode), LogLevel.DEBUG)
+            appendLog(getString(R.string.log_ble_advertising_failed, advertiseErrorToString(errorCode)), LogLevel.DEBUG)
+        }
+    }
+
+    private fun advertiseErrorToString(errorCode: Int): String {
+        return when (errorCode) {
+            AdvertiseCallback.ADVERTISE_FAILED_DATA_TOO_LARGE ->
+                "ADVERTISE_FAILED_DATA_TOO_LARGE"
+
+            AdvertiseCallback.ADVERTISE_FAILED_TOO_MANY_ADVERTISERS ->
+                "ADVERTISE_FAILED_TOO_MANY_ADVERTISERS"
+
+            AdvertiseCallback.ADVERTISE_FAILED_ALREADY_STARTED ->
+                "ADVERTISE_FAILED_ALREADY_STARTED"
+
+            AdvertiseCallback.ADVERTISE_FAILED_INTERNAL_ERROR ->
+                "ADVERTISE_FAILED_INTERNAL_ERROR"
+
+            AdvertiseCallback.ADVERTISE_FAILED_FEATURE_UNSUPPORTED ->
+                "ADVERTISE_FAILED_FEATURE_UNSUPPORTED"
+
+            else ->
+                "UNKNOWN($errorCode)"
         }
     }
 
