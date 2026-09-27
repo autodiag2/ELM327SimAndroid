@@ -78,23 +78,19 @@ done
 
 log "Preparing release notes"
 
-[[ -d "$CHANGELOG_DIR" ]] ||
-    fail "Changelog directory not found: $CHANGELOG_DIR"
+last_version=0
 
-last_changelog=0
-
-for file in "$CHANGELOG_DIR"/*.txt; do
-    [[ -e "$file" ]] || continue
-
-    name="$(basename "$file" .txt)"
-
-    if [[ "$name" =~ ^[0-9]+$ ]] && (( name > last_changelog )); then
-        last_changelog=$name
+for tag in $(git tag); do
+    if [[ "$tag" =~ ^v([0-9]+)$ ]] && (( BASH_REMATCH[1] > last_version )); then
+        last_version=${BASH_REMATCH[1]}
     fi
 done
 
-next_changelog=$((last_changelog + 1))
-changelog_file="$CHANGELOG_DIR/${next_changelog}.txt"
+next_version=$((last_version + 1))
+changelog_file="$CHANGELOG_DIR/${next_version}.txt"
+
+echo "Last version: v${last_version}"
+echo "Next version: v${next_version}.txt"
 
 log "Copying release notes"
 
