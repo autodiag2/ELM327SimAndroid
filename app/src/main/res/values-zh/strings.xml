@@ -386,4 +386,5 @@
     <string name="settings_wifi_hotspot_gatewayIp_error_multiple_ap_interfaces">找到多个 Wi-Fi AP 接口：%1$s</string>
     <string name="settings_wifi_hotspot_gatewayIp_error_no_root">未安装 root</string>
     <string name="settings_wifi_hotspot_gatewayIp_error_root_denied">root 权限被拒绝</string>
+    <string name="settings_bluetooth_le_name_too_large_warning">蓝牙名称对于 BLE 扫描响应而言过长（最多 %1$d 个 UTF-8 字节）</string>
 </resources>

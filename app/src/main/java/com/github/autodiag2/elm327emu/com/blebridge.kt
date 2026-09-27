@@ -109,6 +109,9 @@ class BLEBridge(
                 )
             }
         }
+
+        val getScanResponseAvailableSpace: Int = 29
+
     }
     
     data class NotificationPacket(
@@ -475,7 +478,6 @@ class BLEBridge(
                 .build()
             
             val advData = AdvertiseData.Builder()
-                .setIncludeDeviceName(true)
                 .addServiceUuid(ParcelUuid(ELM_SERVICE_UUID))
                 .build()
             
@@ -489,6 +491,7 @@ class BLEBridge(
                 return@launch
             }
             val scanResp = AdvertiseData.Builder()
+                .setIncludeDeviceName(true)
                 .build()
 
             val btManager = activity.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager

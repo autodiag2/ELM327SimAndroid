@@ -386,4 +386,5 @@
     <string name="settings_wifi_hotspot_gatewayIp_error_multiple_ap_interfaces">Se han encontrado varias interfaces Wi-Fi AP: %1$s</string>
     <string name="settings_wifi_hotspot_gatewayIp_error_no_root">No hay root instalado</string>
     <string name="settings_wifi_hotspot_gatewayIp_error_root_denied">Permiso root denegado</string>
+    <string name="settings_bluetooth_le_name_too_large_warning">El nombre de Bluetooth es demasiado largo para la respuesta de escaneo BLE (máximo %1$d bytes UTF-8)</string>
 </resources>

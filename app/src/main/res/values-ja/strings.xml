@@ -386,4 +386,5 @@
     <string name="settings_wifi_hotspot_gatewayIp_error_multiple_ap_interfaces">複数の Wi-Fi AP インターフェースが見つかりました: %1$s</string>
     <string name="settings_wifi_hotspot_gatewayIp_error_no_root">root がインストールされていません</string>
     <string name="settings_wifi_hotspot_gatewayIp_error_root_denied">root 権限が拒否されました</string>
+    <string name="settings_bluetooth_le_name_too_large_warning">Bluetooth名がBLEスキャン応答には長すぎます（最大%1$d UTF-8バイト）</string>
 </resources>

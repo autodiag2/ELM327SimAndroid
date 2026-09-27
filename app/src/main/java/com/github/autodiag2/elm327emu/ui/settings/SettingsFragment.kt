@@ -19,6 +19,7 @@ import android.widget.LinearLayout
 import android.widget.Spinner
 import android.widget.ImageView
 import com.github.autodiag2.elm327emu.com.LocalHotspotManager
+import com.github.autodiag2.elm327emu.com.BLEBridge
 import com.github.autodiag2.elm327emu.ui.settings.generateQrBitmap
 import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.LogLevel
@@ -532,6 +533,27 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         name.text = adapterName
         name.isEnabled = activityMain.isPermissionsGranted()
+
+        name.setOnBindEditTextListener { editText ->
+            fun updateNameWarning() {
+                val nameSize =
+                    editText.text.toString()
+                        .toByteArray(Charsets.UTF_8)
+                        .size
+
+                if (nameSize > BLEBridge.getScanResponseAvailableSpace) {
+                    editText.error = getString(R.string.settings_bluetooth_le_name_too_large_warning, BLEBridge.getScanResponseAvailableSpace)
+                } else {
+                    editText.error = null
+                }
+            }
+
+            editText.doAfterTextChanged {
+                updateNameWarning()
+            }
+
+            updateNameWarning()
+        }
 
         name.setOnPreferenceChangeListener { _, newValue ->
             val newName = (newValue as String).trim()

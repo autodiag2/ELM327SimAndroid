@@ -386,4 +386,5 @@
     <string name="settings_wifi_hotspot_gatewayIp_error_multiple_ap_interfaces">Mehrere WLAN-AP-Schnittstellen gefunden: %1$s</string>
     <string name="settings_wifi_hotspot_gatewayIp_error_no_root">Kein Root installiert</string>
     <string name="settings_wifi_hotspot_gatewayIp_error_root_denied">Root-Berechtigung verweigert</string>
+    <string name="settings_bluetooth_le_name_too_large_warning">Bluetooth-Name ist zu lang für die BLE-Scan-Antwort (maximal %1$d UTF-8-Bytes)</string>
 </resources>
