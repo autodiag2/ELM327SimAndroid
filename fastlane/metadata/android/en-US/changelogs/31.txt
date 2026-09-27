@@ -1,9 +1,0 @@
-- fix atrv
-- better handling of missing permission
-- emulator listen by default on all interfaces (wifi/network, bluetooth SPP, BLE)
-- complete rewrite of settings screen with androidx.preference
-- fix bluetooth device name not changing instantly
-- autostart the sim at app launch
-- add timestamp logging feature
-- drop BLE initial banner as it cause some scantool to break
-- add custom scripting through UI blocks
