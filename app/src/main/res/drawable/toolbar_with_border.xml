@@ -1,16 +1,14 @@
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item>
-        <shape>
-            <solid android:color="?attr/colorPrimary"/>
+        <shape android:shape="rectangle">
+            <solid android:color="?attr/android:textColor"/>
         </shape>
     </item>
 
-    <item
-        android:gravity="bottom"
-        android:top="54dp"> <!-- actionBarSize (56dp) - border height (2dp) -->
-        <shape>
-            <solid android:color="?attr/android:textColor"/>
+    <item android:bottom="2dp">
+        <shape android:shape="rectangle">
+            <solid android:color="?attr/colorPrimary"/>
         </shape>
     </item>
 
