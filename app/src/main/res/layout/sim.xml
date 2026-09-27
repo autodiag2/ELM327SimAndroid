@@ -49,44 +49,62 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
+                        android:orientation="vertical"
                         android:background="@drawable/border"
                         android:padding="16dp">
 
-                        <EditText
-                            android:id="@+id/ecu_id_input"
-                            android:layout_width="wrap_content"
+                        <LinearLayout
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:hint="E8"
-                            android:maxLength="2"
-                            android:inputType="textCapCharacters|textNoSuggestions"
-                            android:ems="2"
+                            android:orientation="horizontal"
                             android:gravity="center"
-                            android:layout_marginStart="8dp"
-                            android:paddingTop="5dp"
-                            android:paddingBottom="5dp"
-                            android:background="?attr/android:colorPrimaryDark"
-                            android:text="E8" />
+                            android:padding="1dp">
+                            
+                            <EditText
+                                android:id="@+id/ecu_id_input"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:hint="E8"
+                                android:maxLength="2"
+                                android:inputType="textCapCharacters|textNoSuggestions"
+                                android:ems="2"
+                                android:gravity="center"
+                                android:layout_marginStart="8dp"
+                                android:paddingTop="5dp"
+                                android:paddingBottom="5dp"
+                                android:background="?attr/android:colorPrimaryDark"
+                                android:text="E8" />
 
-                        <Spinner
-                            android:id="@+id/ecu_type_spinner"
-                            android:layout_width="wrap_content"
+                            <Spinner
+                                android:id="@+id/ecu_type_spinner"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:layout_marginStart="8dp"
+                                android:layout_marginEnd="8dp"
+                                android:background="@drawable/spinner_border"
+                                android:gravity="center"
+                                android:paddingStart="12dp"
+                                android:paddingTop="5dp"
+                                android:paddingBottom="5dp"
+                                android:paddingEnd="12dp" />
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:layout_marginStart="8dp"
-                            android:layout_marginEnd="8dp"
-                            android:background="@drawable/spinner_border"
+                            android:orientation="horizontal"
                             android:gravity="center"
-                            android:paddingStart="12dp"
-                            android:paddingTop="5dp"
-                            android:paddingBottom="5dp"
-                            android:paddingEnd="12dp" />
+                            android:padding="1dp">
 
-                        <Button
-                            android:id="@+id/add_ecu"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/sim_add_ecu" />
+                            <Button
+                                android:id="@+id/add_ecu"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/sim_add_ecu" />
+
+                        </LinearLayout>
 
                     </LinearLayout>
 
@@ -124,47 +142,65 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
+                    android:orientation="vertical"
                     android:background="@drawable/border"
                     android:padding="16dp"
                     android:gravity="center_vertical">
 
-                    <Spinner
-                        android:id="@+id/custom_serial_script_spinner"
-                        android:layout_width="0dp"
-                        android:layout_height="48dp"
-                        android:layout_weight="1"
-                        android:layout_marginEnd="4dp"
-                        android:background="@drawable/spinner_border"
-                        android:gravity="center_vertical"
-                        android:paddingStart="12dp"
-                        android:paddingEnd="12dp" />
-
-                    <Button
-                        android:id="@+id/sim_custom_serial_script_open"
-                        android:layout_width="wrap_content"
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        android:layout_marginEnd="4dp"
-                        android:text="@string/sim_custom_serial_script_open" />
+                        android:orientation="horizontal"
+                        android:padding="1dp"
+                        android:gravity="center">
 
-                    <Button
-                        android:id="@+id/sim_custom_serial_script_save"
-                        android:layout_width="wrap_content"
+                        <Spinner
+                            android:id="@+id/custom_serial_script_spinner"
+                            android:layout_width="0dp"
+                            android:layout_height="48dp"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="4dp"
+                            android:background="@drawable/spinner_border"
+                            android:gravity="center_vertical"
+                            android:paddingStart="12dp"
+                            android:paddingEnd="12dp" />
+
+                        <ImageButton
+                            android:id="@+id/sim_custom_serial_script_play_pause"
+                            android:layout_width="48dp"
+                            android:layout_height="48dp"
+                            android:layout_marginStart="4dp"
+                            android:background="?attr/selectableItemBackgroundBorderless"
+                            android:contentDescription="@string/sim_custom_serial_script_play"
+                            android:padding="12dp"
+                            android:src="@drawable/ic_play" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="4dp"
-                        android:layout_marginEnd="4dp"
-                        android:text="@string/sim_custom_serial_script_save" />
+                        android:orientation="horizontal"
+                        android:padding="1dp"
+                        android:gravity="center">
 
-                    <ImageButton
-                        android:id="@+id/sim_custom_serial_script_play_pause"
-                        android:layout_width="48dp"
-                        android:layout_height="48dp"
-                        android:layout_marginStart="4dp"
-                        android:background="?attr/selectableItemBackgroundBorderless"
-                        android:contentDescription="@string/sim_custom_serial_script_play"
-                        android:padding="12dp"
-                        android:src="@drawable/ic_play" />
+                        <Button
+                            android:id="@+id/sim_custom_serial_script_open"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp"
+                            android:text="@string/sim_custom_serial_script_open" />
+
+                        <Button
+                            android:id="@+id/sim_custom_serial_script_save"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="4dp"
+                            android:layout_marginEnd="4dp"
+                            android:text="@string/sim_custom_serial_script_save" />
+
+                    </LinearLayout>
 
                 </LinearLayout>
 
