@@ -133,7 +133,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         savedInstanceState: Bundle?,
         rootKey: String?
     ) {
-        setPreferencesFromResource(R.layout.settings, rootKey)
+        setPreferencesFromResource(R.xml.settings, rootKey)
 
         activityMain = requireActivity() as MainActivity
         prefs = activityMain.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
