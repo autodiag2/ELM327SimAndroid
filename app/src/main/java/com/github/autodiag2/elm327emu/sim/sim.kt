@@ -58,20 +58,22 @@ class Sim(
     private lateinit var customSerialScriptAdapter: ArrayAdapter<String>
     private var customSerialExamples = emptyList<CustomSerialExample>()
 
-    override fun customSerialOnRunStateChange(newstate: Boolean) {
-        val button =
-            findViewById<ImageButton>(
-                R.id.sim_custom_serial_script_play_pause
-            )
-
-        if (newstate) {
-            button.setImageResource(R.drawable.ic_pause)
-            button.contentDescription =
-                getString(R.string.sim_custom_serial_script_pause)
-        } else {
-            button.setImageResource(R.drawable.ic_play)
-            button.contentDescription =
-                getString(R.string.sim_custom_serial_script_play)
+    override fun customSerialOnRunStateChange(newState: Boolean) {
+        activity.runOnUiThread {
+            val button =
+                findViewById<ImageButton>(
+                    R.id.sim_custom_serial_script_play_pause
+                )
+    
+            if (newState) {
+                button.setImageResource(R.drawable.ic_pause)
+                button.contentDescription =
+                    getString(R.string.sim_custom_serial_script_pause)
+            } else {
+                button.setImageResource(R.drawable.ic_play)
+                button.contentDescription =
+                    getString(R.string.sim_custom_serial_script_play)
+            }
         }
     }
 
