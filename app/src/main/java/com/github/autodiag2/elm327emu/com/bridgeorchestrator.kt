@@ -149,8 +149,7 @@ class BridgeOrchestrator(
         }
         if (enabled) {
             if ( job != null ) {
-                bridge.stop()
-                job.cancel()
+                stopBridge(bridge)
                 setJob(null)
             }
             bridge.start()
@@ -207,10 +206,20 @@ class BridgeOrchestrator(
         setupBluetoothBridge()
     }
 
+    fun stopBridge(bridge: Bridge) {
+        val job = when (bridge) {
+            bleBridge -> bleBridgeJob
+            ntBridge -> ntBridgeJob
+            btBridge -> btBridgeJob
+            else -> null
+        }
+        bridge.stop()
+        job?.cancel()
+    }
     fun stopBridges() {
-        bleBridge.stop()
-        ntBridge.stop()
-        btBridge.stop()
+        stopBridge(bleBridge)
+        stopBridge(ntBridge)
+        stopBridge(btBridge)
     }
 
     fun stop() {
