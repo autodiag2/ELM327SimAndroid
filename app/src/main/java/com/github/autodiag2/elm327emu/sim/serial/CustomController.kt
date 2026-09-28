@@ -94,7 +94,7 @@ class CustomController(
         orientation = VERTICAL
 
         LayoutInflater.from(activity).inflate(
-            R.layout.sim_custom_serial_screen,
+            R.xml.sim_custom_serial_screen,
             this,
             true
         )
@@ -138,6 +138,8 @@ class CustomController(
             findViewById(
                 R.id.custom_serial_replay_toolbar_content
             )
+        var replayTimeline: ReplayTimelineView = replayToolbarContent.findViewById(R.id.custom_serial_replay_timeline)
+        logReplay.setReplayTimelineView(replayTimeline)
 
         replayToolbarArrow =
             findViewById(

@@ -28,12 +28,15 @@ class LogReplay(
     LOG_TAG = "LR",
     listener = listener
 ) {
-
+    private var replayTimeline: ReplayTimelineView? = null
     var logEntriesProvider: (() -> List<LogEntry>)? = null
 
     @Volatile
     private var job: Job? = null
 
+    fun setReplayTimelineView(replayTimeline: ReplayTimelineView?) {
+        this.replayTimeline = replayTimeline
+    }
     fun getEmu(): EmuInterface {
         return emuProvider.getEmu()
     }
@@ -56,18 +59,19 @@ class LogReplay(
         start(
             playSpeed = 1.0,
             onFinished = null,
-            onError = null
+            onError = null,
+            onProgress = null
         )
     }
 
     fun start(
         playSpeed: Double = 1.0,
         onFinished: (() -> Unit)? = null,
-        onError: ((Throwable) -> Unit)? = null
+        onError: ((Throwable) -> Unit)? = null,
+        onProgress: ((Int, Int) -> Unit)? = null,
     ) {
 
-        val entries: List<LogEntry>? =
-            logEntriesProvider?.invoke()
+        val entries: List<LogEntry>? = logEntriesProvider?.invoke()
 
         if (
             entries == null ||
@@ -98,6 +102,7 @@ class LogReplay(
                 1.0
             }
 
+        replayTimeline?.setEntries(entries)
         job =
             scope.launch {
 
@@ -105,12 +110,17 @@ class LogReplay(
 
                     var previousTimestamp: Long? = null
 
-                    for (entry in entries) {
+                    val total = entries.size
+                    for ((index, entry) in entries.withIndex()) {
 
                         if (!isActive) {
                             return@launch
                         }
-
+                        val played = index + 1
+                        activity.runOnUiThread {
+                            replayTimeline?.setPlayedEntries(played)
+                        }
+                        onProgress?.invoke(played, total)
                         val previous =
                             previousTimestamp
 
