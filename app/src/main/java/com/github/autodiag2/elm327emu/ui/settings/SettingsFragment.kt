@@ -211,8 +211,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
             return
         }
 
-        val devices = adapter.bondedDevices
-            .sortedBy { it.name ?: it.address }
+        val devices = adapter.bondedDevices.sortedBy { it.name ?: it.address }
 
         if (devices.isEmpty()) {
 
@@ -258,7 +257,13 @@ class SettingsFragment : PreferenceFragmentCompat() {
             R.id.settings_bt_device_pair
         )
 
-        name.text = device.name ?: device.address
+        val alias =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                device.alias
+            } else {
+                null
+            }
+        name.text = alias ?: device.name ?: device.address
         address.text = device.address
         status.text = bluetoothDeviceStatus(device)
 
