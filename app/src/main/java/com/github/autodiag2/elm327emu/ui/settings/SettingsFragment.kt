@@ -189,9 +189,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
             }
         }
 
+        dialog.show()
         refreshPairedBluetoothDevices(list)
 
-        dialog.show()
     }
 
     private fun refreshPairedBluetoothDevices(
@@ -241,6 +241,13 @@ class SettingsFragment : PreferenceFragmentCompat() {
             false
         )
 
+        val ble = row.findViewById<TextView>(
+            R.id.settings_bt_device_ble
+        )
+
+        val classic = row.findViewById<TextView>(
+            R.id.settings_bt_device_classic
+        )
         val name = row.findViewById<TextView>(
             R.id.settings_bt_device_name
         )
@@ -263,9 +270,67 @@ class SettingsFragment : PreferenceFragmentCompat() {
             } else {
                 null
             }
+        
         name.text = alias ?: device.name ?: device.address
         address.text = device.address
         status.text = bluetoothDeviceStatus(device)
+
+        val bleSupported: Boolean
+        val classicSupported: Boolean
+
+        if (device.bondState != BluetoothDevice.BOND_BONDED) {
+            bleSupported = true
+            classicSupported = false
+        } else {
+            when (device.type) {
+                BluetoothDevice.DEVICE_TYPE_LE -> {
+                    bleSupported = true
+                    classicSupported = false
+                }
+
+                BluetoothDevice.DEVICE_TYPE_DUAL -> {
+                    bleSupported = true
+                    classicSupported = true
+                }
+
+                BluetoothDevice.DEVICE_TYPE_CLASSIC -> {
+                    bleSupported = false
+                    classicSupported = true
+                }
+
+                else -> {
+                    bleSupported = false
+                    classicSupported = false
+                }
+            }
+        }
+
+        val attributes = requireContext().theme.obtainStyledAttributes(
+            intArrayOf(
+                R.attr.colorAccentSuccess,
+                R.attr.colorAccentFailed
+            )
+        )
+
+        val colorSuccess = attributes.getColor(
+            0,
+            0xff00ff00.toInt()
+        )
+
+        val colorFailed = attributes.getColor(
+            1,
+            0xffff0000.toInt()
+        )
+
+        attributes.recycle()
+
+        ble.setTextColor(
+            if (bleSupported) colorSuccess else colorFailed
+        )
+
+        classic.setTextColor(
+            if (classicSupported) colorSuccess else colorFailed
+        )
 
         pairButton.setOnClickListener {
             pairBluetoothDevice(

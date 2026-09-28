@@ -22,6 +22,8 @@
     <string name="settings_section_bluetooth">Bluetooth Settings</string>
     <string name="settings_section_ble">Bluetooth LE Settings</string>
     <string name="settings_section_wifi">Wi-Fi Settings</string>
+    <string name="settings_bt_device_classic">Classic</string>
+    <string name="settings_bt_device_ble">BLE</string>
     <string name="settings_section_bt_classic">Bluetooth Classic(RFCOMM SPP) Settings</string>
     <string name="settings_bt_classic_ensure_device_paired">Ensure device paired</string>
     <string name="settings_bt_classic_ensure_device_paired_summary">View paired Bluetooth devices and pairing status</string>
