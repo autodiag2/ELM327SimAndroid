@@ -39,7 +39,7 @@ Available with [releases](https://github.com/autodiag2/ELM327SimAndroid/releases
 <br />
 [<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on-en.png" width="250">](https://f-droid.org/fr/packages/com.github.autodiag2.elm327emu/)
 
-**Compatibility**: The application supports Android 5.1 (API 22) and newer. However, the embedded Godot engine requires Android 7.0 (API 24) or later, so Godot-based features are available only on devices running Android 7.0+. For older devices prefer `com.github.autodiag2.elm327emu.apk`. For full featured app prefer `com.github.autodiag2.elm327emu-full.apk`. Bluetooth LE is not perfect it may not work with your scantool.
+**Compatibility**: The application supports Android 5.1 (API 22) and newer. However, the embedded Godot engine requires Android 7.0 (API 24) or later, so Godot-based features are available only on devices running Android 7.0+. For older devices prefer `com.github.autodiag2.elm327emu.apk`. For full featured app prefer `com.github.autodiag2.elm327emu-full.apk`.
 
 ## Dev
 See [this](/doc/DEV.md)
