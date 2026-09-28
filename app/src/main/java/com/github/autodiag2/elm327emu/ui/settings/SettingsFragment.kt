@@ -170,6 +170,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
             R.id.settings_bt_classic_paired_devices_list
         )
 
+        val duplicateWarning = view.findViewById<TextView>(
+            R.id.settings_bt_classic_duplicate_warning
+        )
+
         val pairNew = view.findViewById<Button>(
             R.id.settings_bt_classic_pair_new
         )
@@ -197,12 +201,13 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
 
         dialog.show()
-        refreshPairedBluetoothDevices(list)
+        refreshPairedBluetoothDevices(list, duplicateWarning)
 
     }
 
     private fun refreshPairedBluetoothDevices(
-        list: LinearLayout
+        list: LinearLayout,
+        duplicateWarning: TextView
     ) {
 
         list.removeAllViews()
@@ -233,6 +238,20 @@ class SettingsFragment : PreferenceFragmentCompat() {
             return
         }
 
+        val names = devices.map { device ->
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                device.alias ?: device.name ?: device.address
+            } else {
+                device.name ?: device.address
+            }
+        }
+
+        duplicateWarning.visibility =
+            if (names.size != names.distinct().size)
+                View.VISIBLE
+            else
+                View.GONE
+                
         for (device in devices) {
             addBluetoothDeviceRow(list, device)
         }

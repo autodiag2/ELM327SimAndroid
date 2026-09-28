@@ -25,6 +25,7 @@
     <string name="settings_bt_device_classic">Classic</string>
     <string name="settings_bt_device_ble">BLE</string>
     <string name="settings_section_bt_classic">Bluetooth Classic(RFCOMM SPP) Settings</string>
+    <string name="settings_bt_classic_duplicate_warning">Warning: multiple paired devices have the same name, that can be a hint that you have BLE paired additionally to Classic SPP, please forget the pair and do it again with button below</string>
     <string name="settings_bt_classic_ensure_device_paired">Ensure device paired</string>
     <string name="settings_bt_classic_ensure_device_paired_summary">View paired Bluetooth devices and pairing status</string>
     <string name="settings_bt_classic_paired_devices">Paired Bluetooth devices</string>
