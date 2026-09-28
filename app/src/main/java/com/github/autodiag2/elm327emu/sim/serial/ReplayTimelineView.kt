@@ -459,12 +459,11 @@ class ReplayTimelineView @JvmOverloads constructor(
         }
 
         val borderWidth = dp(2f)
-        val curveHalfWidth = dp(3f) / 2f
 
-        val left = borderWidth + curveHalfWidth
-        val right = width.toFloat() - borderWidth - curveHalfWidth
-        val top = borderWidth + curveHalfWidth
-        val bottom = height.toFloat() - borderWidth - curveHalfWidth
+        val left = borderWidth
+        val right = width.toFloat() - borderWidth
+        val top = borderWidth
+        val bottom = height.toFloat() - borderWidth
 
         val chartWidth =
             right - left
@@ -674,12 +673,6 @@ class ReplayTimelineView @JvmOverloads constructor(
         canvas.save()
 
         curvePaint.alpha = 255
-        curvePaint.color = colorAccentInProgress
-
-        canvas.drawPath(
-            path,
-            curvePaint
-        )
 
         canvas.clipRect(
             left,
@@ -689,6 +682,24 @@ class ReplayTimelineView @JvmOverloads constructor(
         )
 
         curvePaint.color = colorAccentSuccess
+
+        canvas.drawPath(
+            path,
+            curvePaint
+        )
+
+        canvas.restore()
+
+        canvas.save()
+
+        canvas.clipRect(
+            clippedIndicatorX,
+            top,
+            right,
+            bottom
+        )
+
+        curvePaint.color = colorAccentInProgress
 
         canvas.drawPath(
             path,
