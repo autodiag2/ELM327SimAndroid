@@ -207,7 +207,14 @@ class BridgeOrchestrator(
         setupBluetoothBridge()
     }
 
+    fun stopBridges() {
+        bleBridge.stop()
+        ntBridge.stop()
+        btBridge.stop()
+    }
+
     fun stop() {
+        stopBridges()
         scope.coroutineContext.cancelChildren()
         emuStop()
         started = false

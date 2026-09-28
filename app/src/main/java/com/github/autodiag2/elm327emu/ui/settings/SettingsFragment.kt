@@ -182,10 +182,17 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         pairNew.setOnClickListener {
             try {
+                activityMain.bridgeOrchestrator.stopBridges()
                 startActivity(
                     Intent(Settings.ACTION_BLUETOOTH_SETTINGS)
                 )
             } catch (_: Exception) {
+            }
+        }
+
+        dialog.setOnDismissListener {
+            activityMain.scope.launch {
+                activityMain.bridgeOrchestrator.setupBridges()
             }
         }
 
