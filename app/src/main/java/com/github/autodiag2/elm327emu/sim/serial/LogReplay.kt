@@ -107,20 +107,17 @@ class LogReplay(
             scope.launch {
 
                 try {
-
+                    replayTimeline?.startPlayback(speed)
                     var previousTimestamp: Long? = null
 
                     val total = entries.size
                     for ((index, entry) in entries.withIndex()) {
 
                         if (!isActive) {
+                            replayTimeline?.stopPlayback()
                             return@launch
                         }
-                        val played = index + 1
-                        activity.runOnUiThread {
-                            replayTimeline?.setPlayedEntries(played)
-                        }
-                        onProgress?.invoke(played, total)
+                       
                         val previous =
                             previousTimestamp
 
@@ -140,6 +137,7 @@ class LogReplay(
                         }
 
                         if (!isActive) {
+                            replayTimeline?.stopPlayback()
                             return@launch
                         }
 
@@ -203,8 +201,13 @@ class LogReplay(
                             }
                         }
 
-                        previousTimestamp =
-                            entry.ts
+                        previousTimestamp = entry.ts
+
+                        val played = index + 1
+                        activity.runOnUiThread {
+                            replayTimeline?.setPlayedEntries(played)
+                        }
+                        onProgress?.invoke(played, total)
                     }
 
                 } catch (e: IOException) {
@@ -220,15 +223,16 @@ class LogReplay(
                     }
 
                 } finally {
-
+                    replayTimeline?.stopPlayback()
                     onFinished?.invoke()
                 }
             }
     }
 
     override fun stop() {
-
+        replayTimeline?.stopPlayback()
         job?.cancel()
         job = null
     }
+
 }
