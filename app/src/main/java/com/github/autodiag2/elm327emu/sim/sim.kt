@@ -42,6 +42,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.cancelChildren
 import android.widget.EditText
 import java.util.Locale
+import android.content.res.ColorStateList
 
 class Sim(
     private val activity: MainActivity
@@ -188,6 +189,32 @@ class Sim(
             customSerialScreen.toggleStart()
         }
         findViewById<ToggleButton>(R.id.ignition_state).apply {
+            val attributes = context.theme.obtainStyledAttributes(
+                intArrayOf(
+                    R.attr.colorAccentSuccess,
+                    R.attr.colorAccentInProgress
+                )
+            )
+            val colorSuccess = attributes.getColor(
+                0,
+                0xff00ff00.toInt()
+            )
+            val colorInProgress = attributes.getColor(
+                1,
+                0xff009688.toInt()
+            )
+            attributes.recycle()
+            backgroundTintList = ColorStateList(
+                arrayOf(
+                    intArrayOf(android.R.attr.state_checked),
+                    intArrayOf()
+                ),
+                intArrayOf(
+                    colorSuccess,
+                    colorInProgress
+                )
+            )
+
             isChecked = libautodiag.getIgnitionStateAs() == IgnitionState.ON
 
             setOnCheckedChangeListener { _, isChecked ->
