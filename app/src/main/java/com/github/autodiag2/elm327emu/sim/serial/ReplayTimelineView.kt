@@ -42,13 +42,13 @@ class ReplayTimelineView @JvmOverloads constructor(
 
     private var playedEntries = 0
 
-    private var replayStartTime = 0L
-
-    private var replaySpeed = 1.0
+    private var speedProvider: (() -> Double)? = null
 
     private var replayRunning = false
 
     private var indicatorPosition = 0f
+    private var replayTimestamp = 0.0
+    private var replayLastUpdateTime = 0L
 
     /**
      * Exponential decay time in milliseconds.
@@ -126,6 +126,8 @@ class ReplayTimelineView @JvmOverloads constructor(
 
     fun setEntries(entries: List<LogEntry>) {
 
+        replayTimestamp = 0.0
+        replayLastUpdateTime = 0L
         timestamps =
             if (entries.isEmpty()) {
                 LongArray(0)
@@ -222,23 +224,17 @@ class ReplayTimelineView @JvmOverloads constructor(
         refresh()
     }
 
-    fun startPlayback(speed: Double) {
+    fun startPlayback(speedProvider: (() -> Double)? = null) {
 
         if (timestamps.isEmpty()) {
             return
         }
 
-        replaySpeed =
-            if (
-                speed.isFinite() &&
-                speed > 0.0
-            ) {
-                speed
-            } else {
-                1.0
-            }
+        this.speedProvider = speedProvider
 
-        replayStartTime =
+        replayTimestamp = timestamps.first().toDouble()
+
+        replayLastUpdateTime =
             System.currentTimeMillis()
 
         replayRunning = true
@@ -265,41 +261,46 @@ class ReplayTimelineView @JvmOverloads constructor(
         }
     }
 
+    private fun getSpeed(): Double {
+        return speedProvider?.invoke() ?: 1.0
+    }
+
     private fun updateIndicator() {
 
         if (timestamps.isEmpty()) {
-
             indicatorPosition = 0f
-
             refresh()
-
             return
         }
 
         if (timestamps.size == 1) {
-
             indicatorPosition = 0f
-
             refresh()
-
             return
         }
 
-        val elapsed =
-            (
-                System.currentTimeMillis() -
-                    replayStartTime
-                ).coerceAtLeast(0L)
+        val now =
+            System.currentTimeMillis()
 
-        val replayElapsed =
-            elapsed * replaySpeed
+        if (replayRunning) {
+
+            val elapsed =
+                (
+                    now -
+                        replayLastUpdateTime
+                    ).coerceAtLeast(0L)
+
+            replayTimestamp +=
+                elapsed * getSpeed()
+
+            replayLastUpdateTime = now
+        }
 
         val firstTimestamp =
             timestamps.first()
 
         val targetTimestamp =
-            firstTimestamp +
-                replayElapsed.toLong()
+            replayTimestamp
 
         if (targetTimestamp >= timestamps.last()) {
 
@@ -617,11 +618,8 @@ class ReplayTimelineView @JvmOverloads constructor(
                 val elapsed =
                     if (replayRunning) {
 
-                        (
-                            System.currentTimeMillis() -
-                                replayStartTime
-                            ).coerceAtLeast(0L) *
-                            replaySpeed
+                        replayTimestamp -
+                            firstTimestamp
 
                     } else {
 

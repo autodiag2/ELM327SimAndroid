@@ -15,6 +15,7 @@ import android.widget.Toast
 import com.github.autodiag2.elm327emu.MainActivity
 import com.github.autodiag2.elm327emu.com.Bridge
 import com.github.autodiag2.elm327emu.sim.EmuInterface
+import kotlinx.coroutines.currentCoroutineContext
 
 class LogReplay(
     emuProvider: EmuInterface.Provider,
@@ -57,15 +58,61 @@ class LogReplay(
 
     override suspend fun start() {
         start(
-            playSpeed = 1.0,
+            playSpeedProvider = null,
             onFinished = null,
             onError = null,
             onProgress = null
         )
     }
 
+    fun getSpeed(playSpeedProvider:(() -> Double)? = null): Double {
+        val playSpeed = playSpeedProvider?.invoke() ?: 1.0
+        val speed =
+            if (
+                playSpeed.isFinite() &&
+                playSpeed > 0.0
+            ) {
+                playSpeed
+            } else {
+                1.0
+            }
+        return speed
+    }
+
+    private suspend fun delayDynamic(
+        duration: Long,
+        playSpeedProvider: (() -> Double)?
+    ) {
+        var remaining = duration.toDouble()
+
+        while (remaining > 0.0 && currentCoroutineContext().isActive) {
+
+            val speed = getSpeed(playSpeedProvider)
+
+            val wallDelay =
+                (remaining / speed)
+                    .coerceAtMost(16.0)
+                    .toLong()
+                    .coerceAtLeast(1L)
+
+            val start =
+                System.currentTimeMillis()
+
+            delay(wallDelay)
+
+            val actualElapsed =
+                (
+                    System.currentTimeMillis() -
+                        start
+                    ).coerceAtLeast(0L)
+
+            remaining -=
+                actualElapsed * speed
+        }
+    }
+
     fun start(
-        playSpeed: Double = 1.0,
+        playSpeedProvider:(() -> Double)? = null,
         onFinished: (() -> Unit)? = null,
         onError: ((Throwable) -> Unit)? = null,
         onProgress: ((Int, Int) -> Unit)? = null,
@@ -92,22 +139,14 @@ class LogReplay(
 
         job?.cancel()
 
-        val speed =
-            if (
-                playSpeed.isFinite() &&
-                playSpeed > 0.0
-            ) {
-                playSpeed
-            } else {
-                1.0
-            }
-
         replayTimeline?.setEntries(entries)
         job =
             scope.launch {
 
                 try {
-                    replayTimeline?.startPlayback(speed)
+                    replayTimeline?.startPlayback {
+                        getSpeed(playSpeedProvider)
+                    }
                     var previousTimestamp: Long? = null
 
                     val total = entries.size
@@ -127,12 +166,11 @@ class LogReplay(
                                 (entry.ts - previous)
                                     .coerceAtLeast(0L)
 
-                            val wait =
-                                (elapsed / speed)
-                                    .toLong()
-
-                            if (wait > 0L) {
-                                delay(wait)
+                            if (elapsed > 0L) {
+                                delayDynamic(
+                                    elapsed,
+                                    playSpeedProvider
+                                )
                             }
                         }
 

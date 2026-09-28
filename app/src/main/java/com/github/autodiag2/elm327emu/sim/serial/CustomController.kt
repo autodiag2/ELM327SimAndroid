@@ -235,11 +235,6 @@ class CustomController(
             replayStarting = true
             replayUpdatePlayPause()
 
-            val speed =
-                replaySpeedToValue(
-                    replaySpeed.progress
-                )
-
             replayStartJob =
                 scope.launch {
                     try {
@@ -260,7 +255,11 @@ class CustomController(
                         }
 
                         logReplay.start(
-                            playSpeed = speed,
+                            playSpeedProvider = {
+                                replaySpeedToValue(
+                                    replaySpeed.progress
+                                )
+                            },
                             onFinished = {
                                 replayStarting = false
                                 replayUpdatePlayPause()
