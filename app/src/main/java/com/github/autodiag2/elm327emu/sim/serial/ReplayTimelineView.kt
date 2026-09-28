@@ -37,18 +37,23 @@ class ReplayTimelineView @JvmOverloads constructor(
     }
 
     private var points = IntArray(0)
+
     private var timestamps = LongArray(0)
 
     private var playedEntries = 0
 
     private var replayStartTime = 0L
+
     private var replaySpeed = 1.0
+
     private var replayRunning = false
 
     private var indicatorPosition = 0f
 
     private val updateRunnable = object : Runnable {
+
         override fun run() {
+
             if (!replayRunning) {
                 return
             }
@@ -62,11 +67,17 @@ class ReplayTimelineView @JvmOverloads constructor(
     }
 
     init {
+
         val attributes = context.theme.obtainStyledAttributes(
             intArrayOf(android.R.attr.colorAccent)
         )
 
-        val accentColor = attributes.getColor(0, 0xff009688.toInt())
+        val accentColor =
+            attributes.getColor(
+                0,
+                0xff009688.toInt()
+            )
+
         attributes.recycle()
 
         curvePaint.color = accentColor
@@ -76,12 +87,15 @@ class ReplayTimelineView @JvmOverloads constructor(
     }
 
     fun setEntries(entries: List<LogEntry>) {
+
         points = IntArray(entries.size)
+
         timestamps = LongArray(entries.size)
 
         var count = 0
 
         entries.forEachIndexed { index, entry ->
+
             timestamps[index] = entry.ts
 
             if (
@@ -95,7 +109,9 @@ class ReplayTimelineView @JvmOverloads constructor(
         }
 
         playedEntries = 0
+
         indicatorPosition = 0f
+
         replayRunning = false
 
         removeCallbacks(updateRunnable)
@@ -104,14 +120,25 @@ class ReplayTimelineView @JvmOverloads constructor(
     }
 
     fun setPlayedEntries(count: Int) {
-        playedEntries = count.coerceIn(0, points.size)
+
+        playedEntries =
+            count.coerceIn(
+                0,
+                points.size
+            )
 
         if (!replayRunning) {
+
             indicatorPosition =
                 if (points.isEmpty()) {
                     0f
                 } else {
-                    (playedEntries - 1).coerceIn(0, points.lastIndex).toFloat()
+                    (playedEntries - 1)
+                        .coerceIn(
+                            0,
+                            points.lastIndex
+                        )
+                        .toFloat()
                 }
         }
 
@@ -119,62 +146,85 @@ class ReplayTimelineView @JvmOverloads constructor(
     }
 
     fun startPlayback(speed: Double) {
+
         if (points.isEmpty()) {
             return
         }
 
         replaySpeed =
-            if (speed.isFinite() && speed > 0.0) {
+            if (
+                speed.isFinite() &&
+                speed > 0.0
+            ) {
                 speed
             } else {
                 1.0
             }
 
-        replayStartTime = System.currentTimeMillis()
+        replayStartTime =
+            System.currentTimeMillis()
+
         replayRunning = true
 
         removeCallbacks(updateRunnable)
+
         post(updateRunnable)
 
         invalidate()
     }
 
     fun stopPlayback() {
+
         replayRunning = false
+
         removeCallbacks(updateRunnable)
+
         invalidate()
     }
 
     private fun updateIndicator() {
+
         if (timestamps.isEmpty()) {
+
             indicatorPosition = 0f
+
             invalidate()
+
             return
         }
 
         if (timestamps.size == 1) {
+
             indicatorPosition = 0f
+
             invalidate()
+
             return
         }
 
         val elapsed =
-            (System.currentTimeMillis() - replayStartTime)
-                .coerceAtLeast(0L)
+            (
+                System.currentTimeMillis() -
+                    replayStartTime
+                ).coerceAtLeast(0L)
 
         val replayElapsed =
             elapsed * replaySpeed
 
-        val firstTimestamp = timestamps.first()
+        val firstTimestamp =
+            timestamps.first()
 
         val targetTimestamp =
-            firstTimestamp + replayElapsed.toLong()
+            firstTimestamp +
+                replayElapsed.toLong()
 
         if (targetTimestamp >= timestamps.last()) {
-            indicatorPosition = timestamps.lastIndex.toFloat()
-            replayRunning = false
-            removeCallbacks(updateRunnable)
+
+            indicatorPosition =
+                timestamps.lastIndex.toFloat()
+
             invalidate()
+
             return
         }
 
@@ -187,22 +237,30 @@ class ReplayTimelineView @JvmOverloads constructor(
             index++
         }
 
-        val t1 = timestamps[index]
-        val t2 = timestamps[index + 1]
+        val t1 =
+            timestamps[index]
+
+        val t2 =
+            timestamps[index + 1]
 
         indicatorPosition =
             if (t2 <= t1) {
                 index.toFloat()
             } else {
                 index +
-                    (targetTimestamp - t1).toFloat() /
-                    (t2 - t1).toFloat()
+                    (
+                        targetTimestamp - t1
+                    ).toFloat() /
+                    (
+                        t2 - t1
+                    ).toFloat()
             }
 
         invalidate()
     }
 
     override fun onDraw(canvas: Canvas) {
+
         super.onDraw(canvas)
 
         if (points.isEmpty()) {
@@ -211,37 +269,77 @@ class ReplayTimelineView @JvmOverloads constructor(
 
         val borderWidth = dp(2f)
 
-        val left = paddingLeft.toFloat() + borderWidth
-        val right = width.toFloat() - paddingRight.toFloat() - borderWidth
-        val top = paddingTop.toFloat() + borderWidth
-        val bottom = height.toFloat() - paddingBottom.toFloat() - borderWidth
+        val left =
+            paddingLeft.toFloat() +
+                borderWidth
 
-        val chartWidth = right - left
-        val chartHeight = bottom - top
+        val right =
+            width.toFloat() -
+                paddingRight.toFloat() -
+                borderWidth
 
-        if (chartWidth <= 0f || chartHeight <= 0f) {
+        val top =
+            paddingTop.toFloat() +
+                borderWidth
+
+        val bottom =
+            height.toFloat() -
+                paddingBottom.toFloat() -
+                borderWidth
+
+        val chartWidth =
+            right - left
+
+        val chartHeight =
+            bottom - top
+
+        if (
+            chartWidth <= 0f ||
+            chartHeight <= 0f
+        ) {
             return
         }
 
-        val maxValue = points.maxOrNull() ?: 0
+        val maxValue =
+            points.maxOrNull() ?: 0
 
         if (maxValue <= 0) {
             return
         }
 
+        val firstTimestamp =
+            timestamps.first()
+
+        val lastTimestamp =
+            timestamps.last()
+
+        val timestampRange =
+            lastTimestamp - firstTimestamp
+
         val path = Path()
 
         points.forEachIndexed { index, value ->
+
             val x =
-                if (points.size == 1) {
+                if (
+                    timestampRange <= 0L
+                ) {
                     left
                 } else {
-                    left + chartWidth * index / (points.size - 1)
+                    left +
+                        chartWidth *
+                        (
+                            timestamps[index] -
+                                firstTimestamp
+                        ).toFloat() /
+                        timestampRange.toFloat()
                 }
 
             val y =
                 bottom -
-                    chartHeight * value / maxValue.toFloat()
+                    chartHeight *
+                    value /
+                    maxValue.toFloat()
 
             if (index == 0) {
                 path.moveTo(x, y)
@@ -268,62 +366,135 @@ class ReplayTimelineView @JvmOverloads constructor(
             axisPaint
         )
 
+        val indicatorX =
+            if (points.size == 1) {
+                left
+            } else if (timestampRange <= 0L) {
+                left
+            } else {
+                val elapsed =
+                    if (replayRunning) {
+                        (
+                            System.currentTimeMillis() -
+                                replayStartTime
+                            ).coerceAtLeast(0L) *
+                            replaySpeed
+                    } else {
+                        val index =
+                            indicatorPosition
+                                .coerceIn(
+                                    0f,
+                                    points.lastIndex.toFloat()
+                                )
+
+                        val lower =
+                            index.toInt()
+
+                        val upper =
+                            (lower + 1)
+                                .coerceAtMost(
+                                    points.lastIndex
+                                )
+
+                        if (lower == upper) {
+                            (
+                                timestamps[lower] -
+                                    firstTimestamp
+                            ).toDouble()
+                        } else {
+                            val fraction =
+                                index - lower
+
+                            val t1 =
+                                timestamps[lower]
+
+                            val t2 =
+                                timestamps[upper]
+
+                            t1 +
+                                (
+                                    t2 - t1
+                                ) * fraction
+                        }
+                    }
+
+                left +
+                    chartWidth *
+                    elapsed.toFloat() /
+                    timestampRange.toFloat()
+            }
+
+        val clippedIndicatorX =
+            indicatorX.coerceIn(
+                left,
+                right
+            )
+
         canvas.save()
 
         curvePaint.alpha = 55
-        canvas.drawPath(path, curvePaint)
 
-        val indicatorX =
-            left +
-                if (points.size == 1) {
-                    0f
-                } else {
-                    chartWidth *
-                        indicatorPosition /
-                        (points.size - 1)
-                }
+        canvas.drawPath(
+            path,
+            curvePaint
+        )
 
         canvas.clipRect(
             left,
             top,
-            indicatorX.coerceIn(left, right),
+            clippedIndicatorX,
             bottom
         )
 
         curvePaint.alpha = 255
-        canvas.drawPath(path, curvePaint)
+
+        canvas.drawPath(
+            path,
+            curvePaint
+        )
 
         canvas.restore()
 
         positionPaint.alpha = 220
 
         canvas.drawLine(
-            indicatorX.coerceIn(left, right),
+            clippedIndicatorX,
             top,
-            indicatorX.coerceIn(left, right),
+            clippedIndicatorX,
             bottom,
             positionPaint
         )
 
         borderPaint.alpha = 255
 
-        val borderRect = RectF(
-            borderWidth,
-            borderWidth,
-            width.toFloat() - borderWidth,
-            height.toFloat() - borderWidth
-        )
+        val borderRect =
+            RectF(
+                borderWidth,
+                borderWidth,
+                width.toFloat() -
+                    borderWidth,
+                height.toFloat() -
+                    borderWidth
+            )
 
-        canvas.drawRect(borderRect, borderPaint)
+        canvas.drawRect(
+            borderRect,
+            borderPaint
+        )
     }
 
     override fun onDetachedFromWindow() {
+
         replayRunning = false
+
         removeCallbacks(updateRunnable)
+
         super.onDetachedFromWindow()
     }
 
     private fun dp(value: Float): Float {
-        return value * resources.displayMetrics.density
+
+        return value *
+            resources.displayMetrics.density
     }
 }
