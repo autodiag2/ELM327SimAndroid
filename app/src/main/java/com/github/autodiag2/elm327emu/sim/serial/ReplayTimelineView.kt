@@ -10,6 +10,7 @@ import android.view.View
 
 import com.github.autodiag2.elm327emu.LogEntry
 import com.github.autodiag2.elm327emu.LogEntryType
+import com.github.autodiag2.elm327emu.R
 
 class ReplayTimelineView @JvmOverloads constructor(
     context: Context,
@@ -61,6 +62,10 @@ class ReplayTimelineView @JvmOverloads constructor(
             field = value.coerceAtLeast(1.0)
         }
 
+    private var colorAccentInProgress = 0
+    private var colorAccentSuccess = 0
+    private var colorAccent = 0
+
     private val updateRunnable = object : Runnable {
 
         override fun run() {
@@ -78,23 +83,45 @@ class ReplayTimelineView @JvmOverloads constructor(
     }
 
     init {
-
         val attributes = context.theme.obtainStyledAttributes(
-            intArrayOf(android.R.attr.colorAccent)
+            intArrayOf(
+                R.attr.colorAccentInProgress,
+                R.attr.colorAccentSuccess,
+                android.R.attr.textColor,
+                android.R.attr.colorAccent
+            )
         )
 
-        val accentColor =
+        colorAccentInProgress =
             attributes.getColor(
                 0,
                 0xff009688.toInt()
             )
 
+        colorAccentSuccess =
+            attributes.getColor(
+                1,
+                0xff009688.toInt()
+            )
+
+        val textColor =
+            attributes.getColor(
+                2,
+                0xff000000.toInt()
+            )
+
+        colorAccent =
+            attributes.getColor(
+                3,
+                0xff009688.toInt()
+            )
+
         attributes.recycle()
 
-        curvePaint.color = accentColor
-        borderPaint.color = accentColor
-        positionPaint.color = accentColor
-        axisPaint.color = accentColor
+        curvePaint.color = colorAccentInProgress
+        borderPaint.color = textColor
+        positionPaint.color = colorAccent
+        axisPaint.color = textColor
     }
 
     fun setEntries(entries: List<LogEntry>) {
@@ -676,7 +703,8 @@ class ReplayTimelineView @JvmOverloads constructor(
 
         canvas.save()
 
-        curvePaint.alpha = 55
+        curvePaint.alpha = 255
+        curvePaint.color = colorAccentInProgress
 
         canvas.drawPath(
             path,
@@ -690,7 +718,7 @@ class ReplayTimelineView @JvmOverloads constructor(
             bottom
         )
 
-        curvePaint.alpha = 255
+        curvePaint.color = colorAccentSuccess
 
         canvas.drawPath(
             path,
