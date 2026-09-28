@@ -193,7 +193,7 @@ class ReplayTimelineView @JvmOverloads constructor(
 
         removeCallbacks(updateRunnable)
 
-        invalidate()
+        refresh()
     }
 
     fun setPlayedEntries(count: Int) {
@@ -219,7 +219,7 @@ class ReplayTimelineView @JvmOverloads constructor(
                 }
         }
 
-        invalidate()
+        refresh()
     }
 
     fun startPlayback(speed: Double) {
@@ -247,7 +247,7 @@ class ReplayTimelineView @JvmOverloads constructor(
 
         post(updateRunnable)
 
-        invalidate()
+        refresh()
     }
 
     fun stopPlayback() {
@@ -256,7 +256,13 @@ class ReplayTimelineView @JvmOverloads constructor(
 
         removeCallbacks(updateRunnable)
 
-        invalidate()
+        refresh()
+    }
+
+    fun refresh() {
+        post {
+            invalidate()
+        }
     }
 
     private fun updateIndicator() {
@@ -265,7 +271,7 @@ class ReplayTimelineView @JvmOverloads constructor(
 
             indicatorPosition = 0f
 
-            invalidate()
+            refresh()
 
             return
         }
@@ -274,7 +280,7 @@ class ReplayTimelineView @JvmOverloads constructor(
 
             indicatorPosition = 0f
 
-            invalidate()
+            refresh()
 
             return
         }
@@ -300,7 +306,7 @@ class ReplayTimelineView @JvmOverloads constructor(
             indicatorPosition =
                 timestamps.lastIndex.toFloat()
 
-            invalidate()
+            refresh()
 
             return
         }
@@ -333,7 +339,7 @@ class ReplayTimelineView @JvmOverloads constructor(
                     ).toFloat()
             }
 
-        invalidate()
+        refresh()
     }
 
     private fun calculateMonotonicTangents(

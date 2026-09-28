@@ -459,7 +459,9 @@ class CustomView(
     }
 
     public fun refresh() {
-        invalidate()
+        post {
+            invalidate()
+        }
     }
 
     public fun addBlock(
