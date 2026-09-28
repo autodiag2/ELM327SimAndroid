@@ -459,24 +459,12 @@ class ReplayTimelineView @JvmOverloads constructor(
         }
 
         val borderWidth = dp(2f)
+        val curveHalfWidth = dp(3f) / 2f
 
-        val left =
-            paddingLeft.toFloat() +
-                borderWidth
-
-        val right =
-            width.toFloat() -
-                paddingRight.toFloat() -
-                borderWidth
-
-        val top =
-            paddingTop.toFloat() +
-                borderWidth
-
-        val bottom =
-            height.toFloat() -
-                paddingBottom.toFloat() -
-                borderWidth
+        val left = borderWidth + curveHalfWidth
+        val right = width.toFloat() - borderWidth - curveHalfWidth
+        val top = borderWidth + curveHalfWidth
+        val bottom = height.toFloat() - borderWidth - curveHalfWidth
 
         val chartWidth =
             right - left
@@ -610,24 +598,6 @@ class ReplayTimelineView @JvmOverloads constructor(
             }
         }
 
-        axisPaint.alpha = 70
-
-        canvas.drawLine(
-            left,
-            bottom,
-            right,
-            bottom,
-            axisPaint
-        )
-
-        canvas.drawLine(
-            left,
-            top,
-            left,
-            bottom,
-            axisPaint
-        )
-
         val indicatorX =
             if (timestamps.size == 1) {
 
@@ -739,14 +709,14 @@ class ReplayTimelineView @JvmOverloads constructor(
 
         borderPaint.alpha = 255
 
+        val borderHalfWidth = dp(2f) / 2f
+
         val borderRect =
             RectF(
-                borderWidth,
-                borderWidth,
-                width.toFloat() -
-                    borderWidth,
-                height.toFloat() -
-                    borderWidth
+                borderHalfWidth,
+                borderHalfWidth,
+                width.toFloat() - borderHalfWidth,
+                height.toFloat() - borderHalfWidth
             )
 
         canvas.drawRect(
