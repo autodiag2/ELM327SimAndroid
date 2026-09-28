@@ -36,8 +36,7 @@ class ReplayTimelineView @JvmOverloads constructor(
         strokeWidth = dp(2f)
     }
 
-    private var points = IntArray(0)
-
+    private var rates = FloatArray(0)
     private var timestamps = LongArray(0)
 
     private var playedEntries = 0
@@ -49,6 +48,18 @@ class ReplayTimelineView @JvmOverloads constructor(
     private var replayRunning = false
 
     private var indicatorPosition = 0f
+
+    /**
+     * Exponential decay time in milliseconds.
+     *
+     * 1000 ms means that the interaction activity falls
+     * to about 37% of its value after one second without
+     * another interaction.
+     */
+    var decayTimeMs = 100.0
+        set(value) {
+            field = value.coerceAtLeast(1.0)
+        }
 
     private val updateRunnable = object : Runnable {
 
@@ -88,24 +99,63 @@ class ReplayTimelineView @JvmOverloads constructor(
 
     fun setEntries(entries: List<LogEntry>) {
 
-        points = IntArray(entries.size)
-
-        timestamps = LongArray(entries.size)
-
-        var count = 0
-
-        entries.forEachIndexed { index, entry ->
-
-            timestamps[index] = entry.ts
-
-            if (
-                entry.type == LogEntryType.SENT ||
-                entry.type == LogEntryType.RECV
-            ) {
-                count++
+        timestamps =
+            if (entries.isEmpty()) {
+                LongArray(0)
+            } else {
+                entries.map { it.ts }.toLongArray()
             }
 
-            points[index] = count
+        rates =
+            FloatArray(timestamps.size)
+
+        /*
+         * The rate is an exponentially decaying interaction
+         * activity measured in interactions/second.
+         *
+         * Every SENT/RECV interaction adds:
+         *
+         *     1000 / decayTimeMs
+         *
+         * interactions/second.
+         *
+         * Between interactions:
+         *
+         *     rate(t) = rate(t0) * exp(-dt / decayTime)
+         */
+        var activity = 0.0
+
+        for (index in timestamps.indices) {
+
+            if (index > 0) {
+
+                val elapsed =
+                    (
+                        timestamps[index] -
+                            timestamps[index - 1]
+                        ).coerceAtLeast(0L)
+
+                activity *=
+                    Math.exp(
+                        -elapsed /
+                            decayTimeMs
+                    )
+            }
+
+            if (
+                entries[index].type ==
+                    LogEntryType.SENT ||
+                entries[index].type ==
+                    LogEntryType.RECV
+            ) {
+
+                activity +=
+                    1000.0 /
+                        decayTimeMs
+            }
+
+            rates[index] =
+                activity.toFloat()
         }
 
         playedEntries = 0
@@ -124,19 +174,19 @@ class ReplayTimelineView @JvmOverloads constructor(
         playedEntries =
             count.coerceIn(
                 0,
-                points.size
+                timestamps.size
             )
 
         if (!replayRunning) {
 
             indicatorPosition =
-                if (points.isEmpty()) {
+                if (timestamps.isEmpty()) {
                     0f
                 } else {
                     (playedEntries - 1)
                         .coerceIn(
                             0,
-                            points.lastIndex
+                            timestamps.lastIndex
                         )
                         .toFloat()
                 }
@@ -147,7 +197,7 @@ class ReplayTimelineView @JvmOverloads constructor(
 
     fun startPlayback(speed: Double) {
 
-        if (points.isEmpty()) {
+        if (timestamps.isEmpty()) {
             return
         }
 
@@ -259,11 +309,125 @@ class ReplayTimelineView @JvmOverloads constructor(
         invalidate()
     }
 
+    private fun calculateMonotonicTangents(
+        x: FloatArray,
+        y: FloatArray
+    ): FloatArray {
+
+        val count = x.size
+
+        val tangents =
+            FloatArray(count)
+
+        if (count < 2) {
+            return tangents
+        }
+
+        val slopes =
+            FloatArray(count - 1)
+
+        for (index in 0 until count - 1) {
+
+            val dx =
+                x[index + 1] -
+                    x[index]
+
+            slopes[index] =
+                if (dx <= 0f) {
+                    0f
+                } else {
+                    (
+                        y[index + 1] -
+                            y[index]
+                        ) / dx
+                }
+        }
+
+        tangents[0] =
+            slopes[0]
+
+        tangents[count - 1] =
+            slopes[count - 2]
+
+        for (index in 1 until count - 1) {
+
+            val previousSlope =
+                slopes[index - 1]
+
+            val nextSlope =
+                slopes[index]
+
+            if (
+                previousSlope == 0f ||
+                nextSlope == 0f ||
+                previousSlope * nextSlope < 0f
+            ) {
+
+                tangents[index] = 0f
+
+            } else {
+
+                tangents[index] =
+                    (
+                        previousSlope +
+                            nextSlope
+                        ) / 2f
+            }
+        }
+
+        for (index in 0 until count - 1) {
+
+            val slope =
+                slopes[index]
+
+            if (slope == 0f) {
+
+                tangents[index] = 0f
+                tangents[index + 1] = 0f
+
+                continue
+            }
+
+            val a =
+                tangents[index] /
+                    slope
+
+            val b =
+                tangents[index + 1] /
+                    slope
+
+            val magnitude =
+                a * a +
+                    b * b
+
+            if (magnitude > 9f) {
+
+                val scale =
+                    3f /
+                        Math.sqrt(
+                            magnitude.toDouble()
+                        ).toFloat()
+
+                tangents[index] =
+                    scale *
+                        a *
+                        slope
+
+                tangents[index + 1] =
+                    scale *
+                        b *
+                        slope
+            }
+        }
+
+        return tangents
+    }
+
     override fun onDraw(canvas: Canvas) {
 
         super.onDraw(canvas)
 
-        if (points.isEmpty()) {
+        if (rates.isEmpty()) {
             return
         }
 
@@ -301,9 +465,9 @@ class ReplayTimelineView @JvmOverloads constructor(
         }
 
         val maxValue =
-            points.maxOrNull() ?: 0
+            rates.maxOrNull() ?: 0f
 
-        if (maxValue <= 0) {
+        if (maxValue <= 0f) {
             return
         }
 
@@ -314,16 +478,19 @@ class ReplayTimelineView @JvmOverloads constructor(
             timestamps.last()
 
         val timestampRange =
-            lastTimestamp - firstTimestamp
+            lastTimestamp -
+                firstTimestamp
 
-        val path = Path()
+        val curveX =
+            FloatArray(rates.size)
 
-        points.forEachIndexed { index, value ->
+        val curveY =
+            FloatArray(rates.size)
 
-            val x =
-                if (
-                    timestampRange <= 0L
-                ) {
+        rates.forEachIndexed { index, rate ->
+
+            curveX[index] =
+                if (timestampRange <= 0L) {
                     left
                 } else {
                     left +
@@ -335,16 +502,84 @@ class ReplayTimelineView @JvmOverloads constructor(
                         timestampRange.toFloat()
                 }
 
-            val y =
+            curveY[index] =
                 bottom -
                     chartHeight *
-                    value /
-                    maxValue.toFloat()
+                    rate /
+                    maxValue
+        }
 
-            if (index == 0) {
-                path.moveTo(x, y)
-            } else {
-                path.lineTo(x, y)
+        val path = Path()
+
+        path.moveTo(
+            curveX[0],
+            curveY[0]
+        )
+
+        if (rates.size > 1) {
+
+            val tangents =
+                calculateMonotonicTangents(
+                    curveX,
+                    curveY
+                )
+
+            for (
+                index in
+                    0 until rates.lastIndex
+            ) {
+
+                val x1 =
+                    curveX[index]
+
+                val y1 =
+                    curveY[index]
+
+                val x2 =
+                    curveX[index + 1]
+
+                val y2 =
+                    curveY[index + 1]
+
+                val dx =
+                    x2 - x1
+
+                if (dx <= 0f) {
+
+                    path.lineTo(
+                        x2,
+                        y2
+                    )
+
+                    continue
+                }
+
+                val control1X =
+                    x1 +
+                        dx / 3f
+
+                val control1Y =
+                    y1 +
+                        tangents[index] *
+                        dx / 3f
+
+                val control2X =
+                    x2 -
+                        dx / 3f
+
+                val control2Y =
+                    y2 -
+                        tangents[index + 1] *
+                        dx / 3f
+
+                path.cubicTo(
+                    control1X,
+                    control1Y,
+                    control2X,
+                    control2Y,
+                    x2,
+                    y2
+                )
             }
         }
 
@@ -367,41 +602,50 @@ class ReplayTimelineView @JvmOverloads constructor(
         )
 
         val indicatorX =
-            if (points.size == 1) {
+            if (timestamps.size == 1) {
+
                 left
+
             } else if (timestampRange <= 0L) {
+
                 left
+
             } else {
+
                 val elapsed =
                     if (replayRunning) {
+
                         (
                             System.currentTimeMillis() -
                                 replayStartTime
                             ).coerceAtLeast(0L) *
                             replaySpeed
+
                     } else {
+
                         val index =
-                            indicatorPosition
-                                .coerceIn(
-                                    0f,
-                                    points.lastIndex.toFloat()
-                                )
+                            indicatorPosition.coerceIn(
+                                0f,
+                                timestamps.lastIndex.toFloat()
+                            )
 
                         val lower =
                             index.toInt()
 
                         val upper =
-                            (lower + 1)
-                                .coerceAtMost(
-                                    points.lastIndex
-                                )
+                            (lower + 1).coerceAtMost(
+                                timestamps.lastIndex
+                            )
 
                         if (lower == upper) {
+
                             (
                                 timestamps[lower] -
                                     firstTimestamp
                             ).toDouble()
+
                         } else {
+
                             val fraction =
                                 index - lower
 
