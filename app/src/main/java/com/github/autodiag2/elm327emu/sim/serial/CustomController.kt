@@ -109,6 +109,11 @@ class CustomController(
         setupReplayToolbar()
     }
 
+    override fun onRunStateChanged(newState: Boolean) {
+        Log.d("some", "newState=${newState}")
+        listener?.customSerialOnRunStateChange(newState)
+    }
+
     fun isRunning(): Boolean {
         return stateMachine.isRunning()
     }
@@ -227,7 +232,6 @@ class CustomController(
 
                 emuProvider.resetEmu()
 
-                listener?.customSerialOnRunStateChange(false)
                 replayUpdatePlayPause()
                 return@setOnClickListener
             }
@@ -263,7 +267,7 @@ class CustomController(
                             onFinished = {
                                 replayStarting = false
                                 replayUpdatePlayPause()
-                                listener?.customSerialOnRunStateChange(false)
+                                stateMachine.stop()
                             },
                             onError = { error ->
                                 replayStarting = false
@@ -465,12 +469,16 @@ class CustomController(
     // ------------ StateMachine ------------
 
     private fun start() {
+        try {
+            1/0
+        } catch(e: Exception) {
+            e.printStackTrace()
+        }
         scope.launch {
             val emuProvider = activity.bridgeOrchestrator as EmuInterface.Provider
             val scriptEmu = stateMachine as EmuInterface
             emuProvider.setEmu(scriptEmu)
             stateMachine.start()
-            listener?.customSerialOnRunStateChange(true)
             replayUpdatePlayPause()
         }
     }
@@ -481,7 +489,6 @@ class CustomController(
             stateMachine.stop()
             val emuProvider = activity.bridgeOrchestrator as EmuInterface.Provider
             emuProvider.resetEmu()
-            listener?.customSerialOnRunStateChange(false)
             replayUpdatePlayPause()
         }
     }

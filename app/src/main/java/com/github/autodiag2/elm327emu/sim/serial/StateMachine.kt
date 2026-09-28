@@ -47,6 +47,7 @@ class StateMachine(
             block: BlockController,
             state: BlockController.State
         )
+        fun onRunStateChanged(newState: Boolean)
     }
 
     private val scope =
@@ -558,7 +559,7 @@ class StateMachine(
     }
 
     private suspend fun handleStart() {
-        handleStop()
+        handleStop(listenerEvent = false)
 
         controller.resetBlockStates()
 
@@ -581,9 +582,10 @@ class StateMachine(
             startInputReader()
             handleTick()
         }
+        listener?.onRunStateChanged(running)
     }
 
-    private fun handleStop() {
+    private fun handleStop(listenerEvent: Boolean = true) {
         running = false
 
         inputJob?.cancel()
@@ -599,6 +601,9 @@ class StateMachine(
         recvCurrentOffset = 0
 
         logDebug("STOPPED")
+        if ( listenerEvent ) {
+            listener?.onRunStateChanged(false)
+        }
     }
 
     /**
@@ -832,6 +837,7 @@ class StateMachine(
             )
 
             running = false
+            listener?.onRunStateChanged(running)
 
             inputJob?.cancel()
             inputJob = null
@@ -905,6 +911,7 @@ class StateMachine(
 
         if (paths.isEmpty()) {
             running = false
+            listener?.onRunStateChanged(running)
 
             inputJob?.cancel()
             inputJob = null
@@ -1347,6 +1354,7 @@ class StateMachine(
 
         if (paths.isEmpty()) {
             running = false
+            listener?.onRunStateChanged(running)
 
             inputJob?.cancel()
             inputJob = null
@@ -1408,6 +1416,7 @@ class StateMachine(
 
         if (paths.isEmpty()) {
             running = false
+            listener?.onRunStateChanged(running)
 
             inputJob?.cancel()
             inputJob = null
@@ -1564,7 +1573,8 @@ class StateMachine(
 
     fun destroy() {
         running = false
-
+        listener?.onRunStateChanged(running)
+        
         inputJob?.cancel()
         inputJob = null
 
