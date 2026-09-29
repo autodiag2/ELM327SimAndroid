@@ -143,6 +143,9 @@ class CustomController(
             findViewById(
                 R.id.custom_serial_replay_toolbar_content
             )
+        replayToolbarContent.setOnTouchListener { _, _ ->
+            true
+        }
         var replayTimeline: ReplayTimelineView = replayToolbarContent.findViewById(R.id.custom_serial_replay_timeline)
         logReplay.setReplayTimelineView(replayTimeline)
 
