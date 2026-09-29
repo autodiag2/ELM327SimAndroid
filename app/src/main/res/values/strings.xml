@@ -71,6 +71,8 @@
     <string name="custom_serial_replay_script_not_running">Start the custom serial script first</string>
     <string name="custom_serial_replay_no_log">No log entries to replay</string>
     <string name="custom_serial_replay_error">Replay error: %1$s</string>
+    <string name="custom_serial_replay_tap_start">Tap start</string>
+    <string name="custom_serial_replay_log_empty">Log empty</string>
     <string name="sim_custom_serial_script_import_clipboard_empty">Clipboard is empty</string>
     <string name="sim_custom_serial_script_import_clipboard_success">Script imported from clipboard</string>
     <string name="sim_custom_serial_script_import_clipboard_error">Failed to import script: %1$s</string>

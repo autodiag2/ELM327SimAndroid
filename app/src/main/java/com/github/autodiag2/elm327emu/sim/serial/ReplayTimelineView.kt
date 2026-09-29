@@ -22,6 +22,12 @@ class ReplayTimelineView @JvmOverloads constructor(
         strokeWidth = dp(3f)
     }
 
+    private val emptyTextPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        textAlign = Paint.Align.CENTER
+        textSize = dp(14f)
+    }
+
     private val borderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeWidth = dp(2f)
@@ -122,6 +128,7 @@ class ReplayTimelineView @JvmOverloads constructor(
         borderPaint.color = textColor
         positionPaint.color = colorAccent
         axisPaint.color = textColor
+        emptyTextPaint.color = textColor
     }
 
     fun setEntries(entries: List<LogEntry>) {
@@ -461,11 +468,56 @@ class ReplayTimelineView @JvmOverloads constructor(
 
         super.onDraw(canvas)
 
+        val borderWidth = dp(2f)
+
+        val borderHalfWidth = dp(2f) / 2f
+
+        val borderRect =
+            RectF(
+                borderHalfWidth,
+                borderHalfWidth,
+                width.toFloat() - borderHalfWidth,
+                height.toFloat() - borderHalfWidth
+            )
+
+        borderPaint.alpha = 255
+
+        canvas.drawRect(
+            borderRect,
+            borderPaint
+        )
+
         if (rates.isEmpty()) {
+
+            emptyTextPaint.alpha = 255
+
+            val centerX =
+                width.toFloat() / 2f
+
+            val centerY =
+                height.toFloat() / 2f -
+                (
+                    emptyTextPaint.ascent() +
+                        emptyTextPaint.descent()
+                    ) / 2f
+
+            canvas.drawText(
+                if (replayRunning) {
+                    context.getString(
+                        R.string.custom_serial_replay_log_empty
+                    )
+                } else {
+                    context.getString(
+                        R.string.custom_serial_replay_tap_start
+                    )
+                },
+                centerX,
+                centerY,
+                emptyTextPaint
+            )
+
             return
         }
-
-        val borderWidth = dp(2f)
 
         val left = borderWidth
         val right = width.toFloat() - borderWidth
@@ -720,23 +772,6 @@ class ReplayTimelineView @JvmOverloads constructor(
             clippedIndicatorX,
             bottom,
             positionPaint
-        )
-
-        borderPaint.alpha = 255
-
-        val borderHalfWidth = dp(2f) / 2f
-
-        val borderRect =
-            RectF(
-                borderHalfWidth,
-                borderHalfWidth,
-                width.toFloat() - borderHalfWidth,
-                height.toFloat() - borderHalfWidth
-            )
-
-        canvas.drawRect(
-            borderRect,
-            borderPaint
         )
     }
 
