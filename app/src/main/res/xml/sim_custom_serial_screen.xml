@@ -16,6 +16,7 @@
         android:layout_gravity="top|center_horizontal"
         android:orientation="vertical"
         android:padding="4dp"
+        android:visibility="gone"
         android:background="@drawable/custom_serial_replay_toolbar_background"
         android:elevation="6dp">
 
@@ -89,21 +90,29 @@
 
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/custom_serial_replay_toolbar_arrow"
+    <FrameLayout
+        android:id="@+id/custom_serial_replay_toolbar_arrow_container"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="top|center_horizontal"
-        android:minWidth="32dp"
-        android:minHeight="24dp"
-        android:gravity="center"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp"
-        android:paddingTop="2dp"
-        android:paddingBottom="2dp"
         android:background="@drawable/custom_serial_replay_arrow_background"
-        android:elevation="7dp"
-        android:text="@string/custom_serial_toolbar_arrow_down"
-        android:textSize="25sp" />
+        android:layout_gravity="top|center_horizontal">
+
+        <TextView
+            android:id="@+id/custom_serial_replay_toolbar_arrow"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|center_horizontal"
+            android:minWidth="32dp"
+            android:minHeight="24dp"
+            android:gravity="center"
+            android:paddingStart="8dp"
+            android:paddingEnd="8dp"
+            android:paddingTop="2dp"
+            android:elevation="7dp"
+            android:text="@string/custom_serial_toolbar_arrow_down"
+            android:textSize="25sp" 
+            android:paddingBottom="2dp" />
+
+    </FrameLayout>
 
 </FrameLayout>

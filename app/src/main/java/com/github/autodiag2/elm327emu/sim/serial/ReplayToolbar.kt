@@ -1,42 +1,43 @@
 package com.github.autodiag2.elm327emu.sim.serial
 
+import android.animation.ValueAnimator
 import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.text.InputType
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
+import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.SeekBar
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.view.setPadding
-import org.json.JSONArray
-import org.json.JSONObject
-import com.github.autodiag2.elm327emu.R
-import android.util.Log
 import com.github.autodiag2.elm327emu.BuildConfig
-import com.github.autodiag2.elm327emu.ui.JsonConfigurable
-import com.github.autodiag2.elm327emu.MainActivity
-import com.github.autodiag2.elm327emu.LogLevel
 import com.github.autodiag2.elm327emu.LogEntry
+import com.github.autodiag2.elm327emu.LogLevel
+import com.github.autodiag2.elm327emu.MainActivity
+import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.sim.EmuInterface
+import com.github.autodiag2.elm327emu.ui.JsonConfigurable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
-import java.io.ByteArrayOutputStream
-import java.io.IOException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
-import android.widget.ImageButton
-import android.app.Activity
+import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONObject
+import java.io.ByteArrayOutputStream
+import java.io.IOException
 
 class ReplayToolbar(
     private val activity: MainActivity,
@@ -45,78 +46,199 @@ class ReplayToolbar(
 ) {
     @Volatile
     private var starting = false
+
     private var startJob: Job? = null
 
     private lateinit var content: View
     private lateinit var arrow: TextView
+    private lateinit var arrowContainer: View
     private lateinit var speed: SeekBar
     private lateinit var speedValue: TextView
     private lateinit var startButton: ImageButton
     private lateinit var root: View
 
+    private var toolbarExpanded = false
+    private var toolbarAnimationGeneration = 0
+    private var toolbarHeightAnimator: ValueAnimator? = null
+
+    private fun animateToolbar(expanded: Boolean) {
+        toolbarExpanded = expanded
+        val generation = ++toolbarAnimationGeneration
+
+        toolbarHeightAnimator?.cancel()
+        toolbarHeightAnimator = null
+
+        content.animate().cancel()
+        arrow.animate().cancel()
+
+        if (expanded) {
+            content.layoutParams = content.layoutParams.apply {
+                height = 0
+            }
+            content.alpha = 0f
+            root.visibility = View.VISIBLE
+            content.visibility = View.VISIBLE
+
+            content.post {
+                if (generation != toolbarAnimationGeneration || !toolbarExpanded) {
+                    return@post
+                }
+
+                val width = content.width.takeIf { it > 0 } ?: root.width
+                if (width <= 0) return@post
+
+                content.measure(
+                    View.MeasureSpec.makeMeasureSpec(
+                        width,
+                        View.MeasureSpec.EXACTLY
+                    ),
+                    View.MeasureSpec.makeMeasureSpec(
+                        0,
+                        View.MeasureSpec.UNSPECIFIED
+                    )
+                )
+
+                val targetHeight = content.measuredHeight
+                toolbarHeightAnimator = ValueAnimator.ofInt(0, targetHeight).apply {
+                    duration = 250L
+                    addUpdateListener { animator ->
+                        content.layoutParams = content.layoutParams.apply {
+                            height = animator.animatedValue as Int
+                        }
+                    }
+                    addListener(object : android.animation.AnimatorListenerAdapter() {
+                        override fun onAnimationEnd(animation: android.animation.Animator) {
+                            if (generation != toolbarAnimationGeneration) return
+
+                            content.layoutParams = content.layoutParams.apply {
+                                height = ViewGroup.LayoutParams.WRAP_CONTENT
+                            }
+                            toolbarHeightAnimator = null
+                        }
+                    })
+                    start()
+                }
+
+                content.animate()
+                    .alpha(1f)
+                    .setDuration(250L)
+                    .start()
+            }
+        } else {
+            val currentHeight = if (content.layoutParams.height >= 0) {
+                content.layoutParams.height
+            } else {
+                content.height
+            }
+
+            // Collapse the container upward while fading it out.
+            toolbarHeightAnimator = ValueAnimator.ofInt(currentHeight, 0).apply {
+                duration = 250L
+
+                addUpdateListener { animator ->
+                    if (generation == toolbarAnimationGeneration) {
+                        val height = animator.animatedValue as Int
+
+                        content.layoutParams = content.layoutParams.apply {
+                            this.height = height
+                        }
+                        content.requestLayout()
+                    }
+                }
+
+                addListener(object : android.animation.AnimatorListenerAdapter() {
+                    override fun onAnimationEnd(animation: android.animation.Animator) {
+                        if (generation == toolbarAnimationGeneration) {
+                            content.visibility = View.GONE
+                            root.visibility = View.GONE
+                            content.alpha = 1f
+
+                            content.layoutParams = content.layoutParams.apply {
+                                height = ViewGroup.LayoutParams.WRAP_CONTENT
+                            }
+                            content.requestLayout()
+
+                            arrowContainer.translationY = 0f
+                            toolbarHeightAnimator = null
+                        }
+                    }
+                })
+
+                start()
+            }
+
+            content.animate()
+                .alpha(0f)
+                .setDuration(250L)
+                .start()
+        }
+
+        arrow.animate()
+            .rotation(if (expanded) 180f else 0f)
+            .setDuration(250L)
+            .start()
+    }
+
     fun setupReplayToolbar() {
-        root = customController.findViewById(R.id.custom_serial_replay_toolbar)
-        content =
-            customController.findViewById(
-                R.id.custom_serial_replay_toolbar_content
-            )
+        root = customController.findViewById(
+            R.id.custom_serial_replay_toolbar
+        )
+
+        content = customController.findViewById(
+            R.id.custom_serial_replay_toolbar_content
+        )
+
         content.setOnTouchListener { _, _ ->
             true
         }
-        var replayTimeline: ReplayTimelineView = content.findViewById(R.id.custom_serial_replay_timeline)
+
+        val replayTimeline: ReplayTimelineView =
+            content.findViewById(R.id.custom_serial_replay_timeline)
+
         customController.logReplay.setReplayTimelineView(replayTimeline)
 
-        arrow =
-            customController.findViewById(
-                R.id.custom_serial_replay_toolbar_arrow
-            )
+        arrow = customController.findViewById(
+            R.id.custom_serial_replay_toolbar_arrow
+        )
 
-        speed =
-            customController.findViewById(
-                R.id.custom_serial_replay_speed
-            )
+        arrowContainer = customController.findViewById(
+            R.id.custom_serial_replay_toolbar_arrow_container
+        )
 
-        speedValue =
-            customController.findViewById(
-                R.id.custom_serial_replay_speed_value
-            )
+        speed = customController.findViewById(
+            R.id.custom_serial_replay_speed
+        )
 
-        startButton =
-            customController.findViewById(
-                R.id.custom_serial_replay_start
-            )
+        speedValue = customController.findViewById(
+            R.id.custom_serial_replay_speed_value
+        )
 
-        arrow.setOnClickListener {
-            val expanded = content.visibility != View.VISIBLE
+        startButton = customController.findViewById(
+            R.id.custom_serial_replay_start
+        )
 
-            content.visibility =
-                if (expanded) View.VISIBLE else View.GONE
+        // Keep the arrow at the bottom as the container height changes.
+        root.addOnLayoutChangeListener {
+                _, _, _, _, _, _, _, _, _ ->
+            if (content.visibility == View.VISIBLE) {
+                arrowContainer.translationY = root.height.toFloat()
+            }
+        }
 
-            arrow.setText(
-                if (expanded) {
-                    R.string.custom_serial_toolbar_arrow_up
-                } else {
-                    R.string.custom_serial_toolbar_arrow_down
-                }
-            )
-
-            updatearrow()
+        arrowContainer.setOnClickListener {
+            animateToolbar(!toolbarExpanded)
         }
 
         speed.setOnSeekBarChangeListener(
             object : SeekBar.OnSeekBarChangeListener {
-
                 override fun onProgressChanged(
                     seekBar: SeekBar?,
                     progress: Int,
                     fromUser: Boolean
                 ) {
-                    speedValue.text =
-                        formatspeed(
-                            speedToValue(
-                                progress
-                            )
-                        )
+                    speedValue.text = formatspeed(
+                        speedToValue(progress)
+                    )
                 }
 
                 override fun onStartTrackingTouch(
@@ -131,12 +253,9 @@ class ReplayToolbar(
             }
         )
 
-        speedValue.text =
-            formatspeed(
-                speedToValue(
-                    speed.progress
-                )
-            )
+        speedValue.text = formatspeed(
+            speedToValue(speed.progress)
+        )
 
         startButton.setOnClickListener {
             if (customController.logReplay.isRunning() || starting) {
@@ -159,77 +278,59 @@ class ReplayToolbar(
             starting = true
             replayUpdatePlayPause()
 
-            startJob =
-                scope.launch {
-                    try {
-                        val emuProvider =
-                            activity.bridgeOrchestrator as EmuInterface.Provider
+            startJob = scope.launch {
+                try {
+                    val emuProvider =
+                        activity.bridgeOrchestrator as EmuInterface.Provider
 
-                        emuProvider.resetEmu()
+                    emuProvider.resetEmu()
 
-                        val scriptEmu =
-                            customController.stateMachine as EmuInterface
+                    val scriptEmu =
+                        customController.stateMachine as EmuInterface
 
-                        emuProvider.setEmu(scriptEmu)
+                    emuProvider.setEmu(scriptEmu)
 
-                        customController.stateMachine.start()
+                    customController.stateMachine.start()
 
-                        if (!isActive || !starting) {
-                            return@launch
-                        }
-
-                        customController.logReplay.start(
-                            playSpeedProvider = {
-                                speedToValue(
-                                    speed.progress
-                                )
-                            },
-                            onFinished = {
-                                starting = false
-                                replayUpdatePlayPause()
-                                customController.stateMachine.stop()
-                            },
-                            onError = { error ->
-                                starting = false
-
-                                logDebug(
-                                    "Replay error: ${error.message}"
-                                )
-
-                                activity.runOnUiThread {
-                                    replayUpdatePlayPause()
-
-                                    Toast.makeText(
-                                        activity,
-                                        getString(
-                                            R.string.custom_serial_replay_error,
-                                            error.message ?: ""
-                                        ),
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                }
-                            }
-                        )
-
-                        starting = false
-                        replayUpdatePlayPause()
-
-                    } finally {
-                        startJob = null
+                    if (!isActive || !starting) {
+                        return@launch
                     }
-                }
-        }
-        updatearrow()
-    }
 
-    private fun updatearrow() {
-        if (content.visibility == View.VISIBLE) {
-            content.post {
-                arrow.translationY =
-                    root.height.toFloat()
+                    customController.logReplay.start(
+                        playSpeedProvider = {
+                            speedToValue(speed.progress)
+                        },
+                        onFinished = {
+                            starting = false
+                            replayUpdatePlayPause()
+                            customController.stateMachine.stop()
+                        },
+                        onError = { error ->
+                            starting = false
+
+                            logDebug("Replay error: ${error.message}")
+
+                            activity.runOnUiThread {
+                                replayUpdatePlayPause()
+
+                                Toast.makeText(
+                                    activity,
+                                    getString(
+                                        R.string.custom_serial_replay_error,
+                                        error.message ?: ""
+                                    ),
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        }
+                    )
+
+                    starting = false
+                    replayUpdatePlayPause()
+                } finally {
+                    startJob = null
+                }
             }
-        } else {
-            arrow.translationY = 0f
         }
     }
 
@@ -255,11 +356,10 @@ class ReplayToolbar(
          * 50  -> 1.00x
          * 100 -> 4.00x
          */
-        return 0.25 *
-            Math.pow(
-                16.0,
-                progress.coerceIn(0, 100) / 100.0
-            )
+        return 0.25 * Math.pow(
+            16.0,
+            progress.coerceIn(0, 100) / 100.0
+        )
     }
 
     private fun formatspeed(
@@ -277,7 +377,7 @@ class ReplayToolbar(
         }
     }
 
-    public fun logDebug(
+    fun logDebug(
         message: String
     ) {
         if (BuildConfig.DEBUG) {
