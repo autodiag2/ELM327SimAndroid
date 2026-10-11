@@ -44,55 +44,55 @@ class ReplayToolbar(
     private val scope: CoroutineScope
 ) {
     @Volatile
-    private var replayStarting = false
-    private var replayStartJob: Job? = null
+    private var starting = false
+    private var startJob: Job? = null
 
-    private lateinit var replayToolbarContent: View
-    private lateinit var replayToolbarArrow: TextView
-    private lateinit var replaySpeed: SeekBar
-    private lateinit var replaySpeedValue: TextView
-    private lateinit var replayStart: ImageButton
-    private lateinit var replayToolbar: View
+    private lateinit var content: View
+    private lateinit var arrow: TextView
+    private lateinit var speed: SeekBar
+    private lateinit var speedValue: TextView
+    private lateinit var startButton: ImageButton
+    private lateinit var root: View
 
     fun setupReplayToolbar() {
-        replayToolbar = customController.findViewById(R.id.custom_serial_replay_toolbar)
-        replayToolbarContent =
+        root = customController.findViewById(R.id.custom_serial_replay_toolbar)
+        content =
             customController.findViewById(
                 R.id.custom_serial_replay_toolbar_content
             )
-        replayToolbarContent.setOnTouchListener { _, _ ->
+        content.setOnTouchListener { _, _ ->
             true
         }
-        var replayTimeline: ReplayTimelineView = replayToolbarContent.findViewById(R.id.custom_serial_replay_timeline)
+        var replayTimeline: ReplayTimelineView = content.findViewById(R.id.custom_serial_replay_timeline)
         customController.logReplay.setReplayTimelineView(replayTimeline)
 
-        replayToolbarArrow =
+        arrow =
             customController.findViewById(
                 R.id.custom_serial_replay_toolbar_arrow
             )
 
-        replaySpeed =
+        speed =
             customController.findViewById(
                 R.id.custom_serial_replay_speed
             )
 
-        replaySpeedValue =
+        speedValue =
             customController.findViewById(
                 R.id.custom_serial_replay_speed_value
             )
 
-        replayStart =
+        startButton =
             customController.findViewById(
                 R.id.custom_serial_replay_start
             )
 
-        replayToolbarArrow.setOnClickListener {
-            val expanded = replayToolbarContent.visibility != View.VISIBLE
+        arrow.setOnClickListener {
+            val expanded = content.visibility != View.VISIBLE
 
-            replayToolbarContent.visibility =
+            content.visibility =
                 if (expanded) View.VISIBLE else View.GONE
 
-            replayToolbarArrow.setText(
+            arrow.setText(
                 if (expanded) {
                     R.string.custom_serial_toolbar_arrow_up
                 } else {
@@ -100,10 +100,10 @@ class ReplayToolbar(
                 }
             )
 
-            updateReplayToolbarArrow()
+            updatearrow()
         }
 
-        replaySpeed.setOnSeekBarChangeListener(
+        speed.setOnSeekBarChangeListener(
             object : SeekBar.OnSeekBarChangeListener {
 
                 override fun onProgressChanged(
@@ -111,9 +111,9 @@ class ReplayToolbar(
                     progress: Int,
                     fromUser: Boolean
                 ) {
-                    replaySpeedValue.text =
-                        formatReplaySpeed(
-                            replaySpeedToValue(
+                    speedValue.text =
+                        formatspeed(
+                            speedToValue(
                                 progress
                             )
                         )
@@ -131,18 +131,18 @@ class ReplayToolbar(
             }
         )
 
-        replaySpeedValue.text =
-            formatReplaySpeed(
-                replaySpeedToValue(
-                    replaySpeed.progress
+        speedValue.text =
+            formatspeed(
+                speedToValue(
+                    speed.progress
                 )
             )
 
-        replayStart.setOnClickListener {
-            if (customController.logReplay.isRunning() || replayStarting) {
-                replayStartJob?.cancel()
-                replayStartJob = null
-                replayStarting = false
+        startButton.setOnClickListener {
+            if (customController.logReplay.isRunning() || starting) {
+                startJob?.cancel()
+                startJob = null
+                starting = false
 
                 customController.logReplay.stop()
                 customController.stateMachine.stop()
@@ -156,10 +156,10 @@ class ReplayToolbar(
                 return@setOnClickListener
             }
 
-            replayStarting = true
+            starting = true
             replayUpdatePlayPause()
 
-            replayStartJob =
+            startJob =
                 scope.launch {
                     try {
                         val emuProvider =
@@ -174,23 +174,23 @@ class ReplayToolbar(
 
                         customController.stateMachine.start()
 
-                        if (!isActive || !replayStarting) {
+                        if (!isActive || !starting) {
                             return@launch
                         }
 
                         customController.logReplay.start(
                             playSpeedProvider = {
-                                replaySpeedToValue(
-                                    replaySpeed.progress
+                                speedToValue(
+                                    speed.progress
                                 )
                             },
                             onFinished = {
-                                replayStarting = false
+                                starting = false
                                 replayUpdatePlayPause()
                                 customController.stateMachine.stop()
                             },
                             onError = { error ->
-                                replayStarting = false
+                                starting = false
 
                                 logDebug(
                                     "Replay error: ${error.message}"
@@ -211,43 +211,43 @@ class ReplayToolbar(
                             }
                         )
 
-                        replayStarting = false
+                        starting = false
                         replayUpdatePlayPause()
 
                     } finally {
-                        replayStartJob = null
+                        startJob = null
                     }
                 }
         }
-        updateReplayToolbarArrow()
+        updatearrow()
     }
 
-    private fun updateReplayToolbarArrow() {
-        if (replayToolbarContent.visibility == View.VISIBLE) {
-            replayToolbarContent.post {
-                replayToolbarArrow.translationY =
-                    replayToolbar.height.toFloat()
+    private fun updatearrow() {
+        if (content.visibility == View.VISIBLE) {
+            content.post {
+                arrow.translationY =
+                    root.height.toFloat()
             }
         } else {
-            replayToolbarArrow.translationY = 0f
+            arrow.translationY = 0f
         }
     }
 
     fun replayUpdatePlayPause() {
         activity.runOnUiThread {
-            if (customController.logReplay.isRunning() || replayStarting) {
-                replayStart.setImageResource(R.drawable.ic_pause)
-                replayStart.contentDescription =
+            if (customController.logReplay.isRunning() || starting) {
+                startButton.setImageResource(R.drawable.ic_pause)
+                startButton.contentDescription =
                     getString(R.string.custom_serial_replay_start)
             } else {
-                replayStart.setImageResource(R.drawable.ic_play)
-                replayStart.contentDescription =
+                startButton.setImageResource(R.drawable.ic_play)
+                startButton.contentDescription =
                     getString(R.string.custom_serial_replay_stop)
             }
         }
     }
 
-    private fun replaySpeedToValue(
+    private fun speedToValue(
         progress: Int
     ): Double {
         /*
@@ -262,7 +262,7 @@ class ReplayToolbar(
             )
     }
 
-    private fun formatReplaySpeed(
+    private fun formatspeed(
         speed: Double
     ): String {
         return when {
