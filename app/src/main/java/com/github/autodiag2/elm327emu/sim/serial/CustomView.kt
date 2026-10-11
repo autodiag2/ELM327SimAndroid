@@ -922,37 +922,16 @@ class CustomView(
         screenX: Float,
         screenY: Float
     ): LinkView? {
-        val point =
-            screenToWorld(
-                screenX,
-                screenY
-            )
-
+        val point = screenToWorld(screenX, screenY)
         val x = point.first
         val y = point.second
+        val blocksById = model!!.blocks.associateBy { it.id }
 
         for (link in model!!.links) {
-            val from = model!!.blocks.find {
-                it.id == link.from
-            }
+            val from = blocksById[link.from] ?: continue
+            val to = blocksById[link.to] ?: continue
 
-            val to = model!!.blocks.find {
-                it.id == link.to
-            }
-
-            if (from == null ||
-                to == null
-            ) {
-                continue
-            }
-
-            if (isPointNearLink(
-                    x,
-                    y,
-                    from.view!!,
-                    to.view!!
-                )
-            ) {
+            if (isPointNearLink(x, y, from.view!!, to.view!!)) {
                 return link.view!!
             }
         }
