@@ -23,22 +23,24 @@ open class BlockView(
      * Relative to container
      */
     var x: Float,
+
     /**
      * Relative to container
      */
     var y: Float,
+
     context: Context,
     var width: Float = 260f,
     var height: Float = 100f,
     model: BlockController? = null,
     public val parentView: CustomView
 ) : ElementView<BlockController>(model = model, context = context) {
-    
+
     companion object {
         private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG)
         private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
         private val containerTitleHeight = 40f
-        private val blockStandardContentPadding : Float = 40f
+        private val blockStandardContentPadding: Float = 40f
         public val blockBorderWidthSelected: Float = 10f
         public val blockBorderWidth: Float = 3f
         private val portRadius = 20f
@@ -48,12 +50,12 @@ open class BlockView(
         private val executionIndicatorPadding = 10f
         private val executionIndicatorFlashPeriod = 500L
         private val executionIndicatorFlashOnTime = 250L
+        private val summaryMaxLines = 10
 
         init {
             paint.style = Paint.Style.FILL
             portPaint.style = Paint.Style.FILL
         }
-
     }
 
     init {
@@ -85,9 +87,11 @@ open class BlockView(
     }
 
     // ----- Temp region -----
+
     private fun getTextSize(): Float {
         return 16f * parentView.resources.displayMetrics.scaledDensity
     }
+
     public fun logDebug(message: String) {
         parentView.logDebug(message)
     }
@@ -103,20 +107,23 @@ open class BlockView(
             it.id == childId
         }
     }
+
     private fun portIsDestination(): Boolean {
         return parentView.hoveredDestination?.model?.id == model!!.id
     }
+
     private fun portIsSource(): Boolean {
         return parentView.linkingFrom?.model?.id == model!!.id
-    }   
+    }
+
     // ----- End Temp region -----
 
     public fun updateContainerBounds() {
         val children = containerResolveChilds()
 
-        /*
-        * Update nested containers first.
-        */
+        /**
+         * Update nested containers first.
+         */
         for (childBlock in children) {
             if (
                 childBlock.type ==
@@ -126,11 +133,11 @@ open class BlockView(
             }
         }
 
-        /*
-        * ------------------------------------------------------------
-        * Minimum size required by the container title.
-        * ------------------------------------------------------------
-        */
+        /**
+         * ------------------------------------------------------------
+         * Minimum size required by the container title.
+         * ------------------------------------------------------------
+         */
 
         val titleWidth =
             getTextWidth(
@@ -149,11 +156,11 @@ open class BlockView(
             titleHeight +
             blockStandardContentPadding * 2f
 
-        /*
-        * ------------------------------------------------------------
-        * Size required by children.
-        * ------------------------------------------------------------
-        */
+        /**
+         * ------------------------------------------------------------
+         * Size required by children.
+         * ------------------------------------------------------------
+         */
 
         var childrenRequiredWidth = 0f
         var childrenRequiredHeight = 0f
@@ -174,11 +181,11 @@ open class BlockView(
                 )
         }
 
-        /*
-        * Children are positioned in the container's local
-        * coordinate system. Keep the existing container padding
-        * around them and reserve the title area.
-        */
+        /**
+         * Children are positioned in the container's local
+         * coordinate system. Keep the existing container padding
+         * around them and reserve the title area.
+         */
         val childrenWidth =
             childrenRequiredWidth +
             blockStandardContentPadding
@@ -188,11 +195,11 @@ open class BlockView(
             blockStandardContentPadding +
             containerTitleHeight
 
-        /*
-        * ------------------------------------------------------------
-        * Final container size.
-        * ------------------------------------------------------------
-        */
+        /**
+         * ------------------------------------------------------------
+         * Final container size.
+         * ------------------------------------------------------------
+         */
 
         width =
             max(
@@ -212,9 +219,9 @@ open class BlockView(
                 )
             )
     }
-    
+
     private fun getWorldCoordsRecurse(blockView: BlockView): Coordinates {
-        if ( blockView.model!!.parent == null ) {
+        if (blockView.model!!.parent == null) {
             return Coordinates(blockView.x, blockView.y)
         } else {
             val coords = getWorldCoordsRecurse(blockView.model!!.parent!!.view!!)
@@ -237,25 +244,30 @@ open class BlockView(
         return getWorldCoordsRecurse(this)
     }
 
-    private fun getSummary(): String {
-        return when (model!!.type) {
-                BlockController.Type.DELAY ->
-                    "${model!!.timeoutMs}ms"
+    private fun getSummary(maxLines: Int = summaryMaxLines): List<String> {
+        val summary = when (model!!.type) {
+            BlockController.Type.DELAY ->
+                "${model!!.timeoutMs}ms"
 
-                BlockController.Type.SEND ->
-                    model!!.text
+            BlockController.Type.SEND ->
+                model!!.text
 
-                BlockController.Type.RECV ->
-                    model!!.text
+            BlockController.Type.RECV ->
+                model!!.text
 
-                BlockController.Type.AND,
-                BlockController.Type.OR,
-                BlockController.Type.XOR,
-                BlockController.Type.NOT,
-                BlockController.Type.CONTAINER ->
-                    ""
-            }
+            BlockController.Type.AND,
+            BlockController.Type.OR,
+            BlockController.Type.XOR,
+            BlockController.Type.NOT,
+            BlockController.Type.CONTAINER ->
+                ""
+        }
+
+        return summary
+            .split(Regex("\\\\r\\\\n|\\\\r|\\\\n|\\r\\n|\\r|\\n"))
+            .take(maxLines.coerceAtLeast(0))    
     }
+
     private fun updateBlockContentSize() {
         if (
             model!!.type ==
@@ -265,21 +277,12 @@ open class BlockView(
         }
 
         val title = model!!.name
-
         val summary = getSummary()
 
-        val titlePaint =
-            TextPaint(textPaint)
+        val titlePaint = TextPaint(textPaint)
+        val summaryPaint = TextPaint(textPaint)
 
-        val summaryPaint =
-            TextPaint(textPaint)
-
-        val titleBounds =
-            android.graphics.Rect()
-
-        val summaryBounds =
-            android.graphics.Rect()
-
+        val titleBounds = android.graphics.Rect()
         titlePaint.getTextBounds(
             title,
             0,
@@ -287,26 +290,31 @@ open class BlockView(
             titleBounds
         )
 
-        summaryPaint.getTextBounds(
-            summary,
-            0,
-            summary.length,
-            summaryBounds
-        )
+        val summaryBounds = summary.map { line ->
+            android.graphics.Rect().also { bounds ->
+                summaryPaint.getTextBounds(
+                    line,
+                    0,
+                    line.length,
+                    bounds
+                )
+            }
+        }
 
         val lineSpacing = 4f
 
         val requiredWidth =
             max(
                 titleBounds.width(),
-                summaryBounds.width()
+                summaryBounds.maxOfOrNull { it.width() } ?: 0
             ) +
             blockStandardContentPadding * 2f
 
         val requiredHeight =
             titleBounds.height() +
             lineSpacing +
-            summaryBounds.height() +
+            summaryBounds.sumOf { it.height() }.toFloat() +
+            lineSpacing * (summary.size - 1).coerceAtLeast(0) +
             blockStandardContentPadding * 2f
 
         width =
@@ -349,6 +357,7 @@ open class BlockView(
                 return
             }
         }
+
         val color =
             when (model!!.state) {
                 BlockController.State.IDLE ->
@@ -428,11 +437,11 @@ open class BlockView(
             model!!.type ==
                 BlockController.Type.CONTAINER
 
-        /*
-        * ------------------------------------------------------------
-        * Block background
-        * ------------------------------------------------------------
-        */
+        /**
+         * ------------------------------------------------------------
+         * Block background
+         * ------------------------------------------------------------
+         */
 
         paint.style = Paint.Style.FILL
         paint.color = colorPrimaryDark
@@ -452,11 +461,11 @@ open class BlockView(
             nodeWorldPos
         )
 
-        /*
-        * ------------------------------------------------------------
-        * Block border
-        * ------------------------------------------------------------
-        */
+        /**
+         * ------------------------------------------------------------
+         * Block border
+         * ------------------------------------------------------------
+         */
 
         paint.style = Paint.Style.STROKE
 
@@ -468,10 +477,10 @@ open class BlockView(
             }
 
         paint.color = if (selected) {
-                    accentColor
-                } else {
-                    textColor
-                }
+            accentColor
+        } else {
+            textColor
+        }
 
         canvas.drawRoundRect(
             rect,
@@ -480,18 +489,18 @@ open class BlockView(
             paint
         )
 
-        /*
-        * ------------------------------------------------------------
-        * Block text
-        * ------------------------------------------------------------
-        */
+        /**
+         * ------------------------------------------------------------
+         * Block text
+         * ------------------------------------------------------------
+         */
 
         textPaint.color = textColor
 
         if (isContainer) {
-            /*
-            * Containers have their title near the top.
-            */
+            /**
+             * Containers have their title near the top.
+             */
             val fontMetrics =
                 textPaint.fontMetrics
 
@@ -511,18 +520,15 @@ open class BlockView(
                 textPaint
             )
         } else {
-            /*
-            * Non-container blocks have:
-            *
-            *     title
-            *     summary
-            *
-            * both centered in the 
-            */
+            /**
+             * Non-container blocks have a title and multiple summary lines.
+             */
+
             val title = model!!.name
-
-            val summary = getSummary()
-
+            val summaryLines = getSummary()
+            logDebug(
+                "Block ${model!!.id} summary lines: ${summaryLines}"
+            )
             val contentLeft =
                 nodeWorldPos.x + blockStandardContentPadding
 
@@ -572,24 +578,7 @@ open class BlockView(
                     TextUtils.TruncateAt.END
                 ).toString()
 
-            val summaryText =
-                TextUtils.ellipsize(
-                    summary,
-                    summaryPaint,
-                    contentWidth,
-                    TextUtils.TruncateAt.END
-                ).toString()
-
-            val titleWidth =
-                titlePaint.measureText(titleText)
-
-            val summaryWidth =
-                summaryPaint.measureText(summaryText)
-
             val titleBounds =
-                android.graphics.Rect()
-
-            val summaryBounds =
                 android.graphics.Rect()
 
             titlePaint.getTextBounds(
@@ -599,68 +588,96 @@ open class BlockView(
                 titleBounds
             )
 
-            summaryPaint.getTextBounds(
-                summaryText,
-                0,
-                summaryText.length,
-                summaryBounds
-            )
+            val summaryItems = summaryLines.map { line ->
+                val text =
+                    TextUtils.ellipsize(
+                        line,
+                        summaryPaint,
+                        contentWidth,
+                        TextUtils.TruncateAt.END
+                    ).toString()
+
+                val bounds =
+                    android.graphics.Rect()
+
+                summaryPaint.getTextBounds(
+                    text,
+                    0,
+                    text.length,
+                    bounds
+                )
+
+                Triple(
+                    text,
+                    bounds,
+                    summaryPaint.measureText(text)
+                )
+            }
 
             val lineSpacing = 4f
+
+            val summaryHeight =
+                summaryItems.sumOf {
+                    it.second.height()
+                }.toFloat() +
+                lineSpacing * (summaryItems.size - 1).coerceAtLeast(0)
 
             val totalHeight =
                 titleBounds.height() +
                 lineSpacing +
-                summaryBounds.height()
+                summaryHeight
 
-            val startTop =
+            var currentTop =
                 contentTop +
-                    max(
-                        0f,
-                        (contentHeight - totalHeight) / 2f
-                    )
+                max(
+                    0f,
+                    (contentHeight - totalHeight) / 2f
+                )
 
             val titleBaseline =
-                startTop - titleBounds.top
-
-            val summaryTop =
-                startTop +
-                    titleBounds.height() +
-                    lineSpacing
-
-            val summaryBaseline =
-                summaryTop - summaryBounds.top
+                currentTop - titleBounds.top
 
             canvas.drawText(
                 titleText,
-                (contentLeft + contentRight - titleWidth) / 2f,
+                (contentLeft + contentRight - titlePaint.measureText(titleText)) / 2f,
                 titleBaseline,
                 titlePaint
             )
 
-            canvas.drawText(
-                summaryText,
-                (contentLeft + contentRight - summaryWidth) / 2f,
-                summaryBaseline,
-                summaryPaint
-            )
+            currentTop +=
+                titleBounds.height() + lineSpacing
+
+            for ((text, bounds, textWidth) in summaryItems) {
+                val baseline =
+                    currentTop - bounds.top
+
+                canvas.drawText(
+                    text,
+                    (contentLeft + contentRight - textWidth) / 2f,
+                    baseline,
+                    summaryPaint
+                )
+
+                currentTop +=
+                    bounds.height() + lineSpacing
+            }
         }
 
-        /*
-        * ------------------------------------------------------------
-        * Ports
-        * ------------------------------------------------------------
-        */
+        /**
+         * ------------------------------------------------------------
+         * Ports
+         * ------------------------------------------------------------
+         */
 
         drawPorts(
             canvas
         )
 
-        /*
-        * ------------------------------------------------------------
-        * Children
-        * ------------------------------------------------------------
-        */
+        /**
+         * ------------------------------------------------------------
+         * Children
+         * ------------------------------------------------------------
+         */
 
         for (childId in model!!.children) {
             val child = containerResolveChild(childId)
@@ -669,7 +686,7 @@ open class BlockView(
                 drawn
             )
         }
-    }    
+    }
 
     private fun drawPorts(
         canvas: Canvas
@@ -683,7 +700,7 @@ open class BlockView(
         val nodeWorldPos = getWorldCoords()
 
         portPaint.color =
-            if ( portIsDestination() || selected ) {
+            if (portIsDestination() || selected) {
                 colorAccent
             } else {
                 0xff555555.toInt()
