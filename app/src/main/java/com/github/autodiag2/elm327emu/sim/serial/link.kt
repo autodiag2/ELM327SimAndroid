@@ -84,45 +84,9 @@ open class LinkView(
         ) {
             val path = Path()
 
-            val control1X: Float
-            val control1Y: Float
-            val control2X: Float
-            val control2Y: Float
-
-            if (endX < startX) {
-                /*
-                * Backward edge.
-                *
-                * Route below the blocks to produce a pronounced
-                * U / half-circle-like curve instead of a straight line.
-                */
-                val curveOffset =
-                    max(
-                        100f,
-                        abs(startX - endX) * 0.5f
-                    )
-
-                control1X = startX
-                control1Y = startY + curveOffset
-
-                control2X = endX
-                control2Y = endY + curveOffset
-            } else {
-                /*
-                * Normal forward edge.
-                */
-                val controlDistance =
-                    max(
-                        40f,
-                        (endX - startX) * 0.5f
-                    )
-
-                control1X = startX + controlDistance
-                control1Y = startY
-
-                control2X = endX - controlDistance
-                control2Y = endY
-            }
+            val controlPoints = getCurveControlPoints(
+                startX, startY, endX, endY
+            )
 
             path.moveTo(
                 startX,
@@ -130,10 +94,10 @@ open class LinkView(
             )
 
             path.cubicTo(
-                control1X,
-                control1Y,
-                control2X,
-                control2Y,
+                controlPoints.control1X,
+                controlPoints.control1Y,
+                controlPoints.control2X,
+                controlPoints.control2Y,
                 endX,
                 endY
             )
@@ -151,31 +115,31 @@ open class LinkView(
 
             val arrowX =
                 inverse * inverse * inverse * startX +
-                3f * inverse * inverse * t * control1X +
-                3f * inverse * t * t * control2X +
+                3f * inverse * inverse * t * controlPoints.control1X +
+                3f * inverse * t * t * controlPoints.control2X +
                 t * t * t * endX
 
             val arrowY =
                 inverse * inverse * inverse * startY +
-                3f * inverse * inverse * t * control1Y +
-                3f * inverse * t * t * control2Y +
+                3f * inverse * inverse * t * controlPoints.control1Y +
+                3f * inverse * t * t * controlPoints.control2Y +
                 t * t * t * endY
 
             val tangentX =
                 3f * inverse * inverse *
-                    (control1X - startX) +
+                    (controlPoints.control1X - startX) +
                 6f * inverse * t *
-                    (control2X - control1X) +
+                    (controlPoints.control2X - controlPoints.control1X) +
                 3f * t * t *
-                    (endX - control2X)
+                    (endX - controlPoints.control2X)
 
             val tangentY =
                 3f * inverse * inverse *
-                    (control1Y - startY) +
+                    (controlPoints.control1Y - startY) +
                 6f * inverse * t *
-                    (control2Y - control1Y) +
+                    (controlPoints.control2Y - controlPoints.control1Y) +
                 3f * t * t *
-                    (endY - control2Y)
+                    (endY - controlPoints.control2Y)
 
             val angle =
                 kotlin.math.atan2(
@@ -192,6 +156,61 @@ open class LinkView(
                 angle
             )
         }
+        private data class CurveControlPoints(
+            val control1X: Float,
+            val control1Y: Float,
+            val control2X: Float,
+            val control2Y: Float
+        )
+
+        private fun getCurveControlPoints(
+            startX: Float,
+            startY: Float,
+            endX: Float,
+            endY: Float
+        ): CurveControlPoints {
+            return if (endX < startX) {
+                val curveOffset = max(100f, abs(startX - endX) * 0.5f)
+
+                CurveControlPoints(
+                    startX,
+                    startY + curveOffset,
+                    endX,
+                    endY + curveOffset
+                )
+            } else {
+                val controlDistance = max(40f, (endX - startX) * 0.5f)
+
+                CurveControlPoints(
+                    startX + controlDistance,
+                    startY,
+                    endX - controlDistance,
+                    endY
+                )
+            }
+        }
+    }
+
+    private fun getCurvePoint(
+        t: Float,
+        startX: Float,
+        startY: Float,
+        endX: Float,
+        endY: Float,
+        controlPoints: CurveControlPoints
+    ): Coordinates {
+        val inverse = 1f - t
+
+        return Coordinates(
+            inverse * inverse * inverse * startX +
+                3f * inverse * inverse * t * controlPoints.control1X +
+                3f * inverse * t * t * controlPoints.control2X +
+                t * t * t * endX,
+            inverse * inverse * inverse * startY +
+                3f * inverse * inverse * t * controlPoints.control1Y +
+                3f * inverse * t * t * controlPoints.control2Y +
+                t * t * t * endY
+        )
     }
     // Temp section
     public fun isSelected(): Boolean {
@@ -227,6 +246,91 @@ open class LinkView(
             toWorldPos.x,
             toWorldPos.y + to.view!!.height / 2f,
             paint
+        )
+    }
+
+    public fun isPointNearLink(
+        x: Float,
+        y: Float,
+        from: BlockView,
+        to: BlockView,
+        sensitivity: Float = 30f
+    ): Boolean {
+        val fromWorldPos = from.getWorldCoords()
+        val toWorldPos = to.getWorldCoords()
+
+        val startX = fromWorldPos.x + from.width
+        val startY = fromWorldPos.y + from.height / 2f
+        val endX = toWorldPos.x
+        val endY = toWorldPos.y + to.height / 2f
+
+        val controlPoints = getCurveControlPoints(
+            startX,
+            startY,
+            endX,
+            endY
+        )
+
+        var previous = Coordinates(startX, startY)
+
+        for (i in 1..30) {
+            val current = getCurvePoint(
+                i / 30f,
+                startX,
+                startY,
+                endX,
+                endY,
+                controlPoints
+            )
+
+            if (
+                distanceToSegment(
+                    x,
+                    y,
+                    previous.x,
+                    previous.y,
+                    current.x,
+                    current.y
+                ) <= sensitivity
+            ) {
+                return true
+            }
+
+            previous = current
+        }
+
+        return false
+    }
+
+    private fun distanceToSegment(
+        x: Float,
+        y: Float,
+        startX: Float,
+        startY: Float,
+        endX: Float,
+        endY: Float
+    ): Float {
+        val dx = endX - startX
+        val dy = endY - startY
+
+        if (dx == 0f && dy == 0f) {
+            return kotlin.math.sqrt(
+                (x - startX) * (x - startX) +
+                    (y - startY) * (y - startY)
+            )
+        }
+
+        val t = (
+            ((x - startX) * dx + (y - startY) * dy) /
+                (dx * dx + dy * dy)
+            ).coerceIn(0f, 1f)
+
+        val closestX = startX + t * dx
+        val closestY = startY + t * dy
+
+        return kotlin.math.sqrt(
+            (x - closestX) * (x - closestX) +
+                (y - closestY) * (y - closestY)
         )
     }
 

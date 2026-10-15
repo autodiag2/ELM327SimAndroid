@@ -1009,85 +1009,12 @@ class CustomView(
             val from = blocksById[link.from] ?: continue
             val to = blocksById[link.to] ?: continue
 
-            if (isPointNearLink(x, y, from.view!!, to.view!!)) {
+            if (link.view!!.isPointNearLink(x, y, from.view!!, to.view!!)) {
                 return link.view!!
             }
         }
 
         return null
-    }
-
-    private fun isPointNearLink(
-        x: Float,
-        y: Float,
-        from: BlockView,
-        to: BlockView
-    ): Boolean {
-        val fromWorldPos = from.getWorldCoords()
-        val toWorldPos = to.getWorldCoords()
-        val startX =
-            fromWorldPos.x + from.width
-
-        val startY =
-            fromWorldPos.y + from.height / 2f
-
-        val endX =
-            toWorldPos.x
-
-        val endY =
-            toWorldPos.y + to.height / 2f
-
-        val controlDistance =
-            max(
-                40f,
-                abs(endX - startX) * 0.5f
-            )
-
-        var previousX = startX
-        var previousY = startY
-
-        val steps = 30
-
-        for (i in 1..steps) {
-            val t =
-                i.toFloat() / steps
-
-            val inverse =
-                1f - t
-
-            val currentX =
-                inverse * inverse * inverse * startX +
-                3f * inverse * inverse * t *
-                (startX + controlDistance) +
-                3f * inverse * t * t *
-                (endX - controlDistance) +
-                t * t * t * endX
-
-            val currentY =
-                inverse * inverse * inverse * startY +
-                3f * inverse * inverse * t *
-                startY +
-                3f * inverse * t * t *
-                endY +
-                t * t * t * endY
-
-            if (distanceToSegment(
-                    x,
-                    y,
-                    previousX,
-                    previousY,
-                    currentX,
-                    currentY
-                ) <= linkSelectionSensitivity
-            ) {
-                return true
-            }
-
-            previousX = currentX
-            previousY = currentY
-        }
-
-        return false
     }
 
     private fun distanceToSegment(
