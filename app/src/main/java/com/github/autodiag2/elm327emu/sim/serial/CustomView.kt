@@ -101,6 +101,18 @@ class CustomView(
                         return true
                     }
 
+                    val link = findLink(
+                        event.x,
+                        event.y
+                    )
+
+                    if (link != null) {
+                        model?.onElementClicked(link)
+
+                        invalidate()
+                        return true
+                    }
+
                     val block = findBlock(
                         event.x,
                         event.y
@@ -109,18 +121,6 @@ class CustomView(
                     if (block != null) {
                         bringBlockToFront(block)
                         model?.onElementClicked(block)
-
-                        invalidate()
-                        return true
-                    }
-
-                    val link = findLink(
-                        event.x,
-                        event.y
-                    )
-
-                    if (link != null) {
-                        model?.onElementClicked(link)
 
                         invalidate()
                         return true
