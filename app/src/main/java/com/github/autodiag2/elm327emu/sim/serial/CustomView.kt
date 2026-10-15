@@ -52,6 +52,8 @@ class CustomView(
     private val linkPreviewPaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
     private val containerRect = RectF()
+    private val drawnBlockIds = mutableSetOf<Int>()
+    private val blocksById = mutableMapOf<Int, BlockController>()
 
     private val gestureDetector: GestureDetector
     private val scaleDetector: ScaleGestureDetector
@@ -687,6 +689,13 @@ class CustomView(
     ) {
         super.onDraw(canvas)
 
+        val currentModel = model ?: return
+
+        blocksById.clear()
+        for (block in currentModel.blocks) {
+            blocksById[block.id] = block
+        }
+
         canvas.save()
 
         canvas.translate(
@@ -731,18 +740,17 @@ class CustomView(
     private fun drawBlocks(
         canvas: Canvas
     ) {
-        val drawn =
-            mutableSetOf<Int>()
+        drawnBlockIds.clear()
 
         for (block in model!!.blocks) {
             if (block.parent == null) {
-                block.view!!.draw(canvas, drawn)
+                block.view!!.draw(canvas, drawnBlockIds)
             }
         }
 
         for (block in model!!.blocks) {
-            if (!drawn.contains(block.id)) {
-                block.view!!.draw(canvas, drawn)
+            if (!drawnBlockIds.contains(block.id)) {
+                block.view!!.draw(canvas, drawnBlockIds)
             }
         }
     }
@@ -751,17 +759,10 @@ class CustomView(
         canvas: Canvas
     ) {
         for (link in model!!.links) {
-            val from = model!!.blocks.find {
-                it.id == link.from
-            }
+            val from = blocksById[link.from]
+            val to = blocksById[link.to]
 
-            val to = model!!.blocks.find {
-                it.id == link.to
-            }
-
-            if (from == null ||
-                to == null
-            ) {
+            if (from == null || to == null) {
                 continue
             }
 
