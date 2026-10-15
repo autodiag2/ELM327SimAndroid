@@ -174,6 +174,13 @@ class CustomController(
         from: BlockView,
         to: BlockView
     ) {
+        val existingLink = links.find {
+            it.from == from.model!!.id &&
+                it.to == to.model!!.id
+        }
+        if (existingLink != null) {
+            return
+        }
         val linkModel =
             LinkController(
                 from.model!!.id,
@@ -1399,6 +1406,13 @@ class CustomController(
                 return
             }
 
+            val existingLink = links.find {
+                it.from == from && 
+                it.to == to
+            }
+            if (existingLink != null) {
+                return
+            }
             val link =
                 LinkController(
                     from = from,
