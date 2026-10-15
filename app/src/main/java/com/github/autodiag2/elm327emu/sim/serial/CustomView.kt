@@ -54,6 +54,8 @@ class CustomView(
     private val containerRect = RectF()
     private val drawnBlockIds = mutableSetOf<Int>()
     private val blocksById = mutableMapOf<Int, BlockController>()
+    private val viewportRect = RectF()
+    private val linkBoundsRect = RectF()
 
     private val gestureDetector: GestureDetector
     private val scaleDetector: ScaleGestureDetector
@@ -690,11 +692,17 @@ class CustomView(
         super.onDraw(canvas)
 
         val currentModel = model ?: return
-
         blocksById.clear()
         for (block in currentModel.blocks) {
             blocksById[block.id] = block
         }
+
+        viewportRect.set(
+            -offsetX / scale,
+            -offsetY / scale,
+            (width - offsetX) / scale,
+            (height - offsetY) / scale
+        )
 
         canvas.save()
 
@@ -708,6 +716,8 @@ class CustomView(
             scale
         )
 
+        canvas.clipRect(viewportRect)
+
         updateAllContainerBounds()
 
         drawBlocks(canvas)
@@ -715,6 +725,7 @@ class CustomView(
         drawLinkPreview(canvas)
 
         canvas.restore()
+
         if (hasInProgressBlock()) {
             postInvalidateDelayed(250L)
         }
@@ -737,20 +748,67 @@ class CustomView(
         }
     }
 
+    private fun markDescendantsDrawn(
+        block: BlockController,
+        drawn: MutableSet<Int>
+    ) {
+        if (!drawn.add(block.id)) {
+            return
+        }
+
+        for (childId in block.children) {
+            val child = blocksById[childId] ?: continue
+            markDescendantsDrawn(child, drawn)
+        }
+    }
+
     private fun drawBlocks(
         canvas: Canvas
     ) {
         drawnBlockIds.clear()
 
         for (block in model!!.blocks) {
-            if (block.parent == null) {
-                block.view!!.draw(canvas, drawnBlockIds)
+            if (block.parent != null) {
+                continue
             }
+
+            val blockView = block.view!!
+            val pos = blockView.getWorldCoords()
+
+            if (!RectF(
+                    pos.x,
+                    pos.y,
+                    pos.x + blockView.width,
+                    pos.y + blockView.height
+                ).intersects(
+                    viewportRect.left,
+                    viewportRect.top,
+                    viewportRect.right,
+                    viewportRect.bottom
+                )
+            ) {
+                markDescendantsDrawn(block, drawnBlockIds)
+                continue
+            }
+
+            blockView.draw(canvas, drawnBlockIds)
         }
 
         for (block in model!!.blocks) {
             if (!drawnBlockIds.contains(block.id)) {
-                block.view!!.draw(canvas, drawnBlockIds)
+                val blockView = block.view!!
+                val pos = blockView.getWorldCoords()
+
+                if (
+                    pos.x + blockView.width >= viewportRect.left &&
+                    pos.x <= viewportRect.right &&
+                    pos.y + blockView.height >= viewportRect.top &&
+                    pos.y <= viewportRect.bottom
+                ) {
+                    blockView.draw(canvas, drawnBlockIds)
+                } else {
+                    markDescendantsDrawn(block, drawnBlockIds)
+                }
             }
         }
     }
@@ -759,10 +817,29 @@ class CustomView(
         canvas: Canvas
     ) {
         for (link in model!!.links) {
-            val from = blocksById[link.from]
-            val to = blocksById[link.to]
+            val from = blocksById[link.from] ?: continue
+            val to = blocksById[link.to] ?: continue
 
-            if (from == null || to == null) {
+            val fromPos = from.view!!.getWorldCoords()
+            val toPos = to.view!!.getWorldCoords()
+
+            linkBoundsRect.set(
+                min(fromPos.x + from.view!!.width, toPos.x),
+                min(
+                    fromPos.y + from.view!!.height / 2f,
+                    toPos.y + to.view!!.height / 2f
+                ),
+                max(fromPos.x + from.view!!.width, toPos.x),
+                max(
+                    fromPos.y + from.view!!.height / 2f,
+                    toPos.y + to.view!!.height / 2f
+                )
+            )
+
+            // Include some margin for the curved link.
+            linkBoundsRect.inset(-100f, -100f)
+
+            if (!RectF.intersects(viewportRect, linkBoundsRect)) {
                 continue
             }
 
