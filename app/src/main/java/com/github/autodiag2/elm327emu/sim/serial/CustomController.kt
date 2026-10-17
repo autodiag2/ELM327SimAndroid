@@ -101,7 +101,6 @@ class CustomController(
     }
 
     override fun onRunStateChanged(newState: Boolean) {
-        Log.d("some", "newState=${newState}")
         listener?.customSerialOnRunStateChange(newState)
     }
 
@@ -562,6 +561,14 @@ class CustomController(
         if (name.isEmpty()) {
             blockName =
                 when (type) {
+                    BlockController.Type.CLIENT_CONNECTED ->
+                        getString(
+                            R.string.sim_custom_serial_script_block_name_client_connected
+                        )
+                    BlockController.Type.CLIENT_DISCONNECTED ->
+                        getString(
+                            R.string.sim_custom_serial_script_block_name_client_disconnected
+                        )
                     BlockController.Type.DELAY ->
                         getString(
                             R.string.sim_custom_serial_script_block_name_delay
@@ -634,6 +641,14 @@ class CustomController(
 
     private fun getScriptName(): String {
         return "TODO.json"
+    }
+
+    fun onClientConnected(descriptor: String) {
+        stateMachine.onClientConnected(descriptor)
+    }
+
+    fun onClientDisconnected(descriptor: String) {
+        stateMachine.onClientDisconnected(descriptor)
     }
 
     // ------- Action Menu listener -------
@@ -813,6 +828,16 @@ class CustomController(
         )
     }
 
+    public fun onAddClientConnected() {
+        addBlock(
+            BlockController.Type.CLIENT_CONNECTED
+        )
+    }
+    public fun onAddClientDisconnected() {
+        addBlock(
+            BlockController.Type.CLIENT_DISCONNECTED
+        )
+    }
     public fun onAddAnd() {
         addBlock(
             BlockController.Type.AND

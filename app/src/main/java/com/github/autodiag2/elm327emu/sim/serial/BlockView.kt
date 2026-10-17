@@ -282,6 +282,8 @@ open class BlockView(
             BlockController.Type.OR,
             BlockController.Type.XOR,
             BlockController.Type.NOT,
+            BlockController.Type.CLIENT_CONNECTED,
+            BlockController.Type.CLIENT_DISCONNECTED,
             BlockController.Type.CONTAINER ->
                 ""
         }

@@ -144,7 +144,30 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
 
     public var clients: List<BridgeOrchestrator.ConnectedClient>? = null
 
-    override fun onClientConnectUpdate(clients: List<BridgeOrchestrator.ConnectedClient>) {
+    override fun onClientConnectUpdate(
+        clients: List<BridgeOrchestrator.ConnectedClient>
+    ) {
+        for (client in clients) {
+            if (this.clients.orEmpty().none {
+                    it.clientIdentifier == client.clientIdentifier
+                } == true
+            ) {
+                simView.customSerialScreen.onClientConnected(
+                    client.clientIdentifier
+                )
+            }
+        }
+
+        for (client in this.clients.orEmpty()) {
+            if (clients.none {
+                    it.clientIdentifier == client.clientIdentifier
+                }
+            ) {
+                simView.customSerialScreen.onClientDisconnected(
+                    client.clientIdentifier
+                )
+            }
+        }
         this.clients = clients
         simView.updateConnectedClientsButton()
     }
@@ -583,6 +606,14 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
             }
             R.id.sim_custom_serial_script_add_not -> {
                 simView.customSerialScreen.onAddNot()
+                true
+            }
+            R.id.sim_custom_serial_script_add_client_connected -> {
+                simView.customSerialScreen.onAddClientConnected()
+                true
+            }
+            R.id.sim_custom_serial_script_add_client_disconnected -> {
+                simView.customSerialScreen.onAddClientDisconnected()
                 true
             }
             R.id.sim_custom_serial_script_clear -> {

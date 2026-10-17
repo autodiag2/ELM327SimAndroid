@@ -40,6 +40,7 @@ class StateMachine(
         data class Receive(val bytes: ByteArray) : Event()
         data class Timeout(val pathId: Int) : Event()
         data object Tick : Event()
+        data class ClientConnection(val event: ClientEvent) : Event()
     }
 
     interface Listener {
@@ -65,6 +66,12 @@ class StateMachine(
     private var stateJob: Job? = null
     private var inputJob: Job? = null
 
+    private enum class ClientEvent {
+        CONNECTED,
+        DISCONNECTED
+    }
+
+    private val clientEventQueue = ArrayDeque<ClientEvent>()
     /*
      * Data received from a bridge through EmuInterface.send().
      *
@@ -114,6 +121,13 @@ class StateMachine(
     override fun resetEmu() {
     }
 
+    fun onClientConnected(clientIdentifier: String) {
+        events.trySend(Event.ClientConnection(ClientEvent.CONNECTED))
+    }
+
+    fun onClientDisconnected(clientIdentifier: String) {
+        events.trySend(Event.ClientConnection(ClientEvent.DISCONNECTED))
+    }
     private fun findPath(blockAny: Any): Path? {
         var blockId = -1
         if ( blockAny is Int ) {
@@ -506,9 +520,58 @@ class StateMachine(
         )
     }
 
+    private fun processClientConnectionEvents() {
+        val iterator = clientEventQueue.iterator()
+
+        while (iterator.hasNext()) {
+            val event = iterator.next()
+
+            val expectedType = when (event) {
+                ClientEvent.CONNECTED ->
+                    BlockController.Type.CLIENT_CONNECTED
+
+                ClientEvent.DISCONNECTED ->
+                    BlockController.Type.CLIENT_DISCONNECTED
+            }
+
+            val path = paths.firstOrNull {
+                it.state == State.WAIT &&
+                    it.block.type == expectedType
+            } ?: continue
+
+            iterator.remove()
+
+            logDebug(
+                "EXEC $expectedType MATCH " +
+                    "block=${path.block.id} path=${path.id}"
+            )
+
+            path.state = State.READY
+
+            setBlockState(
+                path.block,
+                BlockController.State.SUCCESS
+            )
+
+            advance(path)
+        }
+
+        paths.removeAll {
+            it.state == State.FINISHED
+        }
+    }
+
     private suspend fun stateLoop() {
         for (event in events) {
             when (event) {
+                is Event.ClientConnection -> {
+                    clientEventQueue.addLast(event.event)
+
+                    if (running) {
+                        processClientConnectionEvents()
+                        handleTick()
+                    }
+                }
                 Event.Start -> {
                     handleStart()
                 }
@@ -752,13 +815,6 @@ class StateMachine(
         val now =
             System.currentTimeMillis()
 
-        val linkedIds =
-            controller.links
-                .map {
-                    it.to
-                }
-                .toSet()
-
         for (path in paths.toList()) {
             if (
                 !currentBlocks.containsKey(
@@ -862,15 +918,18 @@ class StateMachine(
 
         for (path in paths.toList()) {
             val block = path.block
+            val isTimeout = (
+                block.timeoutMs > 0 ||
+                block.type == BlockController.Type.DELAY
+            )
             when (path.state) {
                 State.READY -> {
                     execute(path)
                 }
-
+                
                 State.WAIT -> {
                     if (
-                        now >=
-                        path.wakeTime
+                        isTimeout && now >= path.wakeTime
                     ) {
                         when ( block.type ) {
                             BlockController.Type.DELAY -> {
@@ -884,6 +943,9 @@ class StateMachine(
         
                                 advance(path)
                             }
+                            BlockController.Type.CLIENT_DISCONNECTED,
+                            BlockController.Type.CLIENT_CONNECTED,
+                            BlockController.Type.SEND,
                             BlockController.Type.RECV -> {
                                 events.trySend(
                                     Event.Timeout(
@@ -1116,6 +1178,33 @@ class StateMachine(
 
         try {
             when (blockType) {
+                BlockController.Type.CLIENT_CONNECTED,
+                BlockController.Type.CLIENT_DISCONNECTED -> {
+                    val expectedEvent =
+                        if (blockType == BlockController.Type.CLIENT_CONNECTED) {
+                            ClientEvent.CONNECTED
+                        } else {
+                            ClientEvent.DISCONNECTED
+                        }
+
+                    val eventIndex = clientEventQueue.indexOf(expectedEvent)
+
+                    if (eventIndex >= 0) {
+                        clientEventQueue.removeAt(eventIndex)
+
+                        setBlockState(
+                            block,
+                            BlockController.State.SUCCESS
+                        )
+
+                        advance(path)
+                    } else {
+                        path.wakeTime =
+                            System.currentTimeMillis() + block.timeoutMs
+
+                        path.state = State.WAIT
+                    }
+                }
                 BlockController.Type.DELAY -> {
                     path.wakeTime =
                         System.currentTimeMillis() +
@@ -1388,22 +1477,21 @@ class StateMachine(
             return
         }
 
-        val exception =
-            TimeoutException(
-                "RECV timeout for " +
-                    "block=${path.block.id}"
-            )
+        val exception = TimeoutException(
+            "${path.block.type} timeout for block=${path.block.id}"
+        )
 
         appendLog(
             exception.message
-                ?: "RECV timeout",
+                ?: "${path.block.type} timeout",
             LogLevel.ERROR
         )
 
         logDebug(
-            "RECV TIMEOUT " +
+            "${path.block.type} TIMEOUT " +
                 "path=${path.id} " +
-                "block=${path.block.id}"
+                "block=${path.block.id} " +
+                "timeout=${path.block.timeoutMs}ms"
         )
 
         failBlock(path)

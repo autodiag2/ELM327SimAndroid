@@ -51,7 +51,9 @@ open class BlockController(
         AND,
         OR,
         XOR,
-        NOT
+        NOT,
+        CLIENT_CONNECTED,
+        CLIENT_DISCONNECTED
     }
 
     companion object {
@@ -160,6 +162,8 @@ open class BlockController(
                     "or" -> Type.OR
                     "xor" -> Type.XOR
                     "not" -> Type.NOT
+                    "client_connected" -> Type.CLIENT_CONNECTED
+                    "client_disconnected" -> Type.CLIENT_DISCONNECTED
                     else -> {
                         parseErrorHandler?.invoke(
                             "Unknown block type: $typeString"
@@ -188,7 +192,34 @@ open class BlockController(
                         id = id
                     )
                 }
-
+                BlockController.Type.CLIENT_CONNECTED -> {
+                    BlockController(
+                        type = type,
+                        timeoutMs = blockContent.optInt(
+                            "timeoutMs",
+                            DEFAULT_TIMEOUT_MS
+                        ),
+                        name = blockContent.optString(
+                            "name",
+                            "Client connected"
+                        ),
+                        id = id
+                    )
+                }
+                BlockController.Type.CLIENT_DISCONNECTED -> {
+                    BlockController(
+                        type = type,
+                        timeoutMs = blockContent.optInt(
+                            "timeoutMs",
+                            DEFAULT_TIMEOUT_MS
+                        ),
+                        name = blockContent.optString(
+                            "name",
+                            "Client disconnected"
+                        ),
+                        id = id
+                    )
+                }
                 BlockController.Type.RECV -> {
                     BlockController(
                         type = type,
@@ -476,6 +507,24 @@ open class BlockController(
                     value
                 )
             }
+            BlockController.Type.CLIENT_CONNECTED -> {
+                jsonBlock.put("type", "client_connected")
+
+                val value = JSONObject()
+                value.put("name", name)
+                value.put("timeoutMs", timeoutMs)
+
+                jsonBlock.put("content", value)
+            }
+            BlockController.Type.CLIENT_DISCONNECTED -> {
+                jsonBlock.put("type", "client_disconnected")
+
+                val value = JSONObject()
+                value.put("name", name)
+                value.put("timeoutMs", timeoutMs)
+
+                jsonBlock.put("content", value)
+            }
             BlockController.Type.DELAY -> {
                 jsonBlock.put(
                     "type",
@@ -665,6 +714,9 @@ open class BlockController(
 
             Type.CONTAINER ->
                 editContainer()
+            Type.CLIENT_CONNECTED,
+            Type.CLIENT_DISCONNECTED -> 
+                editClientConnectionState()
             Type.AND,
             Type.OR,
             Type.XOR,
@@ -674,6 +726,49 @@ open class BlockController(
         }
     }
 
+    private fun editClientConnectionState() {
+        val layout =
+            android.view.LayoutInflater
+                .from(view!!.context)
+                .inflate(
+                    R.layout.sim_customserial_edit_client_connection_state,
+                    null
+                )
+
+        val input =
+            layout.findViewById<EditText>(
+                R.id.sim_customserial_edit_client_connection_state_timeout
+            )
+
+        input.setText(
+            timeoutMs.toString()
+        )
+
+        android.app.AlertDialog.Builder(
+            view!!.context
+        )
+            .setTitle(
+                R.string.sim_custom_serial_script_client_connection_state
+            )
+            .setView(layout)
+            .setPositiveButton(
+                android.R.string.ok
+            ) { _, _ ->
+                timeoutMs =
+                    input.text
+                        .toString()
+                        .toIntOrNull()
+                        ?.coerceAtLeast(0)
+                        ?: DEFAULT_TIMEOUT_MS
+
+                onDataChanged()
+            }
+            .setNegativeButton(
+                android.R.string.cancel,
+                null
+            )
+            .show()
+    }
     private fun editDelay() {
         val layout =
             android.view.LayoutInflater

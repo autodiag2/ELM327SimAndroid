@@ -110,6 +110,12 @@
                 <item
                     android:id="@+id/sim_custom_serial_script_add_not"
                     android:title="@string/sim_custom_serial_script_add_not" />
+                <item
+                    android:id="@+id/sim_custom_serial_script_add_client_connected"
+                    android:title="@string/sim_custom_serial_script_add_client_connected" />
+                <item
+                    android:id="@+id/sim_custom_serial_script_add_client_disconnected"
+                    android:title="@string/sim_custom_serial_script_add_client_disconnected" />
             </menu>
         </item>
         <item
