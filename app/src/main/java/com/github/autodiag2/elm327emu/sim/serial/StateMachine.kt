@@ -1073,6 +1073,29 @@ class StateMachine(
         }
     }
 
+    private fun failBlock(path: Path) {
+        setBlockState(
+            path.block,
+            BlockController.State.FAILED
+        )
+
+        val hasGateAfter = controller.links
+            .filter { it.from == path.block.id }
+            .mapNotNull { link ->
+                controller.blocks.find { it.id == link.to }
+            }
+            .firstOrNull()
+            ?.let { isGate(it) } == true
+
+        if (hasGateAfter) {
+            advance(path)
+            logDebug("ADVANCE to gate after failed block ${path.block.id} path=${path.id}")
+        } else {
+            path.state = State.FINISHED
+            logDebug("PATH FINISHED ${path.id}")
+        }
+    }
+
     private suspend fun execute(
         path: Path
     ) {
@@ -1170,22 +1193,10 @@ class StateMachine(
         ) {
             logDebug("EXEC $blockType($blockId) TIMEOUT(${block.timeoutMs}ms)")
 
-            setBlockState(
-                block,
-                BlockController.State.FAILED
-            )
-
-            path.state = State.FINISHED
-            logDebug("PATH FINISHED")
+            failBlock(path)
         } catch (e: Exception) {
             logDebug("EXEC $blockType($blockId) EXCEPTION(${e.message})")
-            setBlockState(
-                block,
-                BlockController.State.FAILED
-            )
-
-            path.state = State.FINISHED
-            logDebug("PATH FINISHED")
+            failBlock(path)
         }
 
         logDebug("EXEC END $blockType($blockId) path=${path.id}")
@@ -1337,13 +1348,7 @@ class StateMachine(
 
                     logDebug("EXEC RECV ${path.block.type}(${path.block.id}) path=${path.id} keeping WAIT_RECV")
                 } else {
-                    setBlockState(
-                        path.block,
-                        BlockController.State.FAILED
-                    )
-
-                    path.state = State.FINISHED
-                    logDebug("PATH FINISHED")
+                    failBlock(path)
                 }
             }
         }
