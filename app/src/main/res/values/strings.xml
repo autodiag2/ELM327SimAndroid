@@ -90,6 +90,9 @@
     <string name="sim_custom_serial_script_save_success">Saved %1$s</string>
     <string name="sim_custom_serial_script_save_error_detail">Cannot save script: %1$s</string>
     <string name="activity_export_file_success">Export success</string>
+    <string name="sim_customserial_edit_log_level">Log level:</string>
+    <string name="sim_customserial_edit_log_text">Message:</string>
+    <string name="sim_customserial_edit_log_hint">Enter the message to log</string>
     <string name="sim_customserial_edit_send_timeout_label">Timeout (ms):</string>
     <string name="sim_customserial_edit_send_text_label">ASCII text:</string>
     <string name="sim_customserial_edit_send_eol">Automatically append EOL</string>
@@ -110,6 +113,7 @@
     <string name="sim_custom_serial_script_clear_confirm">This will delete completely your script, are you sure ?</string>
     <string name="sim_custom_serial_script_client_connection_state">Client connection state</string>
     <string name="sim_custom_serial_script_client_connection_state_timeout">Timeout (ms)</string>
+    <string name="sim_custom_serial_script_block_name_log">Log</string>
     <string name="sim_custom_serial_script_block_name_client_connected">Client connected</string>
     <string name="sim_custom_serial_script_block_name_client_disconnected">Client disconnected</string>
     <string name="sim_custom_serial_script_block_name_container">Container</string>
@@ -120,6 +124,7 @@
     <string name="sim_custom_serial_script_block_name_or">OR</string>
     <string name="sim_custom_serial_script_block_name_xor">XOR</string>
     <string name="sim_custom_serial_script_block_name_not">NOT</string>
+    <string name="sim_custom_serial_script_add_log">Logger</string>
     <string name="sim_custom_serial_script_add_and">AND</string>
     <string name="sim_custom_serial_script_add_or">OR</string>
     <string name="sim_custom_serial_script_add_xor">XOR</string>

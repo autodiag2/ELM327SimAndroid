@@ -278,6 +278,7 @@ open class BlockView(
             BlockController.Type.RECV ->
                 model!!.text
 
+            BlockController.Type.LOG -> model!!.text
             BlockController.Type.AND,
             BlockController.Type.OR,
             BlockController.Type.XOR,

@@ -16,6 +16,8 @@ import com.github.autodiag2.elm327emu.R
 import androidx.core.view.setPadding
 // end view imports
 
+import com.github.autodiag2.elm327emu.LogLevel
+
 private val DEFAULT_TIMEOUT_MS: Int = 0
 
 open class BlockController(
@@ -31,7 +33,8 @@ open class BlockController(
     val children: MutableList<Int> = mutableListOf(),
     var parent: BlockController? = null,
     id: Int? = null,
-    var state: State = State.IDLE
+    var state: State = State.IDLE,
+    var logLevel: LogLevel = LogLevel.DEBUG
 ) : ElementController<BlockView>(
     view = view,
     id = id
@@ -51,6 +54,7 @@ open class BlockController(
         AND,
         OR,
         XOR,
+        LOG,
         NOT,
         CLIENT_CONNECTED,
         CLIENT_DISCONNECTED
@@ -162,6 +166,7 @@ open class BlockController(
                     "or" -> Type.OR
                     "xor" -> Type.XOR
                     "not" -> Type.NOT
+                    "log" -> Type.LOG
                     "client_connected" -> Type.CLIENT_CONNECTED
                     "client_disconnected" -> Type.CLIENT_DISCONNECTED
                     else -> {
@@ -189,6 +194,15 @@ open class BlockController(
                                 "name",
                                 "Delay"
                             ),
+                        id = id
+                    )
+                }
+                BlockController.Type.LOG -> {
+                    BlockController(
+                        type = type,
+                        name = blockContent.optString("name", "Log"),
+                        text = blockContent.optString("text", ""),
+                        logLevel = LogLevel.valueOf(blockContent.optString("level", "DEBUG").uppercase()),
                         id = id
                     )
                 }
@@ -507,6 +521,16 @@ open class BlockController(
                     value
                 )
             }
+            BlockController.Type.LOG -> {
+                jsonBlock.put("type", "log")
+
+                val value = JSONObject()
+                value.put("name", name)
+                value.put("text", text)
+                value.put("level", logLevel.name.lowercase())
+
+                jsonBlock.put("content", value)
+            }
             BlockController.Type.CLIENT_CONNECTED -> {
                 jsonBlock.put("type", "client_connected")
 
@@ -700,12 +724,49 @@ open class BlockController(
 
         return jsonBlock
     }
+    
+    private fun editLog() {
+        val layout = android.view.LayoutInflater
+            .from(view!!.context)
+            .inflate(
+                R.layout.sim_customserial_edit_log,
+                null
+            )
+
+        val level = layout.findViewById<Spinner>(
+            R.id.sim_customserial_edit_log_level
+        )
+
+        val message = layout.findViewById<EditText>(
+            R.id.sim_customserial_edit_log_text
+        )
+
+        val levels = LogLevel.entries
+
+        level.setSelection(
+            levels.indexOf(logLevel).coerceAtLeast(0)
+        )
+
+        message.setText(text)
+
+        android.app.AlertDialog.Builder(view!!.context)
+            .setTitle(name.ifBlank { "Log" })
+            .setView(layout)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                logLevel = levels[level.selectedItemPosition]
+                text = message.text.toString()
+                onDataChanged()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
 
     public fun edit() {
         when (type) {
             Type.DELAY ->
                 editDelay()
 
+            Type.LOG -> editLog()
             Type.RECV ->
                 editReceive()
 

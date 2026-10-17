@@ -564,6 +564,9 @@ class CustomController(
         if (name.isEmpty()) {
             blockName =
                 when (type) {
+                    BlockController.Type.LOG -> getString(
+                            R.string.sim_custom_serial_script_block_name_log
+                        )
                     BlockController.Type.CLIENT_CONNECTED ->
                         getString(
                             R.string.sim_custom_serial_script_block_name_client_connected
@@ -838,11 +841,10 @@ class CustomController(
         )
     }
 
+    public fun onAddLog() {
+        addBlock(BlockController.Type.LOG)
+    }
     public fun onAddClientConnected() {
-        onExecutionLog("some", LogLevel.INFO)
-        onExecutionLog("some", LogLevel.WARNING)
-        onExecutionLog("some", LogLevel.ERROR)
-        onExecutionLog("some", LogLevel.DEBUG)
         addBlock(
             BlockController.Type.CLIENT_CONNECTED
         )

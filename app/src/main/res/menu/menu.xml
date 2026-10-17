@@ -88,6 +88,10 @@
                     android:title="@string/sim_custom_serial_script_add_delay" />
 
                 <item
+                    android:id="@+id/sim_custom_serial_script_add_log"
+                    android:title="@string/sim_custom_serial_script_add_log" />
+
+                <item
                     android:id="@+id/sim_custom_serial_script_add_recv"
                     android:title="@string/sim_custom_serial_script_add_recv" />
 

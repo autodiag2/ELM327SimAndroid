@@ -53,49 +53,55 @@ class LogPanel(parentView: CustomController) {
     }
 
     fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {
-        val logText = panel.findViewById<TextView>(R.id.custom_serial_log_text)
-        val scroll = panel.findViewById<ScrollView>(R.id.custom_serial_log_scroll)
-        val context = logText.context
+        container.post {
+            val logText = panel.findViewById<TextView>(R.id.custom_serial_log_text)
+            val scroll = panel.findViewById<ScrollView>(R.id.custom_serial_log_scroll)
+            val context = logText.context
 
-        val primaryColor = android.util.TypedValue().let { value ->
-            context.theme.resolveAttribute(
-                android.R.attr.textColorPrimary,
-                value,
-                true
-            )
-            if (value.resourceId != 0) {
-                ContextCompat.getColor(context, value.resourceId)
-            } else {
-                value.data
+            val primaryColor = android.util.TypedValue().let { value ->
+                context.theme.resolveAttribute(
+                    android.R.attr.textColorPrimary,
+                    value,
+                    true
+                )
+                if (value.resourceId != 0) {
+                    ContextCompat.getColor(context, value.resourceId)
+                } else {
+                    value.data
+                }
             }
-        }
 
-        val color = when (level) {
-            LogLevel.INFO -> ContextCompat.getColor(context, R.color.sol_blue)
-            LogLevel.ERROR -> ContextCompat.getColor(context, R.color.sol_red)
-            LogLevel.WARNING -> ContextCompat.getColor(context, R.color.sol_orange)
-            LogLevel.NONE -> ContextCompat.getColor(context, R.color.sol_magenta)
-            LogLevel.DEBUG -> androidx.core.graphics.ColorUtils
-                .setAlphaComponent(primaryColor, 128)
-        }
+            val color = when (level) {
+                LogLevel.INFO -> ContextCompat.getColor(context, R.color.sol_blue)
+                LogLevel.ERROR -> ContextCompat.getColor(context, R.color.sol_red)
+                LogLevel.WARNING -> ContextCompat.getColor(context, R.color.sol_orange)
+                LogLevel.NONE -> ContextCompat.getColor(context, R.color.sol_magenta)
+                LogLevel.DEBUG -> androidx.core.graphics.ColorUtils
+                    .setAlphaComponent(primaryColor, 128)
+            }
 
-        val timestamp = java.text.SimpleDateFormat(
-            "HH:mm:ss.SSS",
-            java.util.Locale.getDefault()
-        ).format(java.util.Date())
+            val timestamp = java.text.SimpleDateFormat(
+                "HH:mm:ss.SSS",
+                java.util.Locale.getDefault()
+            ).format(java.util.Date())
 
-        val line = android.text.SpannableString("$text\n") // $timestamp [$level]
-        line.setSpan(
-            android.text.style.ForegroundColorSpan(color),
-            0,
-            line.length,
-            android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-        )
+            val line = android.text.SpannableString("$text\n") // $timestamp [$level]
+            line.setSpan(
+                android.text.style.ForegroundColorSpan(color),
+                0,
+                line.length,
+                android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+            )
 
-        logText.append(line)
+            logText.append(line)
 
-        scroll.post {
-            scroll.fullScroll(android.view.View.FOCUS_DOWN)
+            scroll.post {
+                scroll.fullScroll(View.FOCUS_DOWN)
+            }
+
+            panel.requestLayout()
+            container.requestLayout()
+            container.invalidate()
         }
     }
 

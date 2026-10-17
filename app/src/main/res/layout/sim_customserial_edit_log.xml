@@ -1,0 +1,41 @@
+
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:labelFor="@id/sim_customserial_edit_log_level"
+        android:text="@string/sim_customserial_edit_log_level"
+        android:layout_marginBottom="4dp" />
+
+    <Spinner
+        android:id="@+id/sim_customserial_edit_log_level"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:entries="@array/log_levels"
+        android:spinnerMode="dropdown" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:labelFor="@id/sim_customserial_edit_log_text"
+        android:text="@string/sim_customserial_edit_log_text"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="4dp" />
+
+    <EditText
+        android:id="@+id/sim_customserial_edit_log_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="top|start"
+        android:inputType="textCapSentences|textMultiLine"
+        android:minLines="3"
+        android:maxLines="8"
+        android:hint="@string/sim_customserial_edit_log_hint"
+        android:scrollbars="vertical" />
+
+</LinearLayout>

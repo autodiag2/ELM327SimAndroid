@@ -1157,6 +1157,10 @@ class StateMachine(
         }
     }
 
+    fun appendLogToPanel(text: String, level: LogLevel) {
+        controller.onExecutionLog(text, level)
+    }
+
     private suspend fun execute(
         path: Path
     ) {
@@ -1178,6 +1182,16 @@ class StateMachine(
 
         try {
             when (blockType) {
+                BlockController.Type.LOG -> {
+                    appendLogToPanel(block.text, block.logLevel)
+
+                    setBlockState(
+                        block,
+                        BlockController.State.SUCCESS
+                    )
+
+                    advance(path)
+                }
                 BlockController.Type.CLIENT_CONNECTED,
                 BlockController.Type.CLIENT_DISCONNECTED -> {
                     val expectedEvent =

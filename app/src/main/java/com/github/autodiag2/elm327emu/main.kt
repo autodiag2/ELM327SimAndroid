@@ -576,6 +576,10 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
                 simView.customSerialScreen.shareConfigAsText()
                 true
             }
+            R.id.sim_custom_serial_script_add_log -> {
+                simView.customSerialScreen.onAddLog()
+                true
+            }
             R.id.sim_custom_serial_script_add_delay -> {
                 simView.customSerialScreen.onAddDelay()
                 true
