@@ -16,7 +16,7 @@ import com.github.autodiag2.elm327emu.R
 import androidx.core.view.setPadding
 // end view imports
 
-private val DEFAULT_TIMEOUT_MS: Int = 2000
+private val DEFAULT_TIMEOUT_MS: Int = 0
 
 open class BlockController(
     var type: BlockController.Type,
@@ -195,7 +195,7 @@ open class BlockController(
                         timeoutMs =
                             blockContent.optInt(
                                 "timeoutMs",
-                                0
+                                DEFAULT_TIMEOUT_MS
                             ),
                         name =
                             blockContent.optString(
@@ -228,7 +228,7 @@ open class BlockController(
                         timeoutMs =
                             blockContent.optInt(
                                 "timeoutMs",
-                                0
+                                DEFAULT_TIMEOUT_MS
                             ),
                         name =
                             blockContent.optString(
@@ -707,7 +707,7 @@ open class BlockController(
                         .toString()
                         .toIntOrNull()
                         ?.coerceAtLeast(0)
-                        ?: 0
+                        ?: DEFAULT_TIMEOUT_MS
 
                 onDataChanged()
             }
@@ -801,7 +801,7 @@ open class BlockController(
                         .toString()
                         .toIntOrNull()
                         ?.coerceAtLeast(0)
-                        ?: 0
+                        ?: DEFAULT_TIMEOUT_MS
 
                 match =
                     if (
@@ -900,7 +900,7 @@ open class BlockController(
                         .toString()
                         .toIntOrNull()
                         ?.coerceAtLeast(0)
-                        ?: 0
+                        ?: DEFAULT_TIMEOUT_MS
 
                 text =
                     initial_text.text.toString()
