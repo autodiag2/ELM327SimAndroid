@@ -115,4 +115,71 @@
 
     </FrameLayout>
 
+    <LinearLayout
+        android:id="@+id/custom_serial_log_panel"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="end"
+        android:orientation="horizontal"
+        android:clickable="true"
+        android:focusable="true"
+        android:elevation="6dp">
+
+        <FrameLayout
+            android:id="@+id/custom_serial_log_toggle_container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:background="@drawable/custom_serial_log_arrow_background">
+
+            <TextView
+                android:id="@+id/custom_serial_log_toggle"
+                android:layout_width="32dp"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:text="‹"
+                android:textSize="25sp" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:id="@+id/custom_serial_log_content"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:background="@drawable/custom_serial_replay_toolbar_background"
+            android:orientation="vertical"
+            android:visibility="gone"
+            android:padding="4dp">
+
+            <TextView
+                android:id="@+id/custom_serial_log_title"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="4dp"
+                android:text="Log"
+                android:textStyle="bold" />
+
+            <ScrollView
+                android:id="@+id/custom_serial_log_scroll"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:fillViewport="true">
+
+                <TextView
+                    android:id="@+id/custom_serial_log_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="monospace"
+                    android:padding="4dp"
+                    android:hint="@string/custom_serial_log_hint"
+                    android:textIsSelectable="true"
+                    android:textSize="12sp" />
+
+            </ScrollView>
+        </LinearLayout>
+    </LinearLayout>
+
 </FrameLayout>

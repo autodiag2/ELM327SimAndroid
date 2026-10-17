@@ -67,6 +67,8 @@ class CustomController(
         )
 
     val logReplay = LogReplay(emuProvider = stateMachine, activity = activity, scope = scope)
+    val logPanel = LogPanel(this)
+
     private val replayToolbar = ReplayToolbar(activity, this, scope)
 
     public val blocks =
@@ -98,6 +100,7 @@ class CustomController(
         view.model = this
 
         replayToolbar.setupReplayToolbar()
+        logPanel.setup()
     }
 
     override fun onRunStateChanged(newState: Boolean) {
@@ -828,7 +831,18 @@ class CustomController(
         )
     }
 
+    public fun onExecutionLog(text: String, level: LogLevel = LogLevel.INFO) {
+        logPanel.appendLog(
+            text,
+            level
+        )
+    }
+
     public fun onAddClientConnected() {
+        onExecutionLog("some", LogLevel.INFO)
+        onExecutionLog("some", LogLevel.WARNING)
+        onExecutionLog("some", LogLevel.ERROR)
+        onExecutionLog("some", LogLevel.DEBUG)
         addBlock(
             BlockController.Type.CLIENT_CONNECTED
         )
