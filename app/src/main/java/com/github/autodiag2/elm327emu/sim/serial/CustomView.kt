@@ -100,6 +100,10 @@ class CustomView(
                     ) {
                         return true
                     }
+                    if (toggleFoldAt(event.x, event.y)) {
+                        invalidate()
+                        return true
+                    }
 
                     val link = findLink(
                         event.x,
@@ -748,20 +752,6 @@ class CustomView(
         }
     }
 
-    private fun markDescendantsDrawn(
-        block: BlockController,
-        drawn: MutableSet<Int>
-    ) {
-        if (!drawn.add(block.id)) {
-            return
-        }
-
-        for (childId in block.children) {
-            val child = blocksById[childId] ?: continue
-            markDescendantsDrawn(child, drawn)
-        }
-    }
-
     private fun drawBlocks(
         canvas: Canvas
     ) {
@@ -796,6 +786,10 @@ class CustomView(
 
         for (block in model!!.blocks) {
             if (!drawnBlockIds.contains(block.id)) {
+                if (isBlockHidden(block)) {
+                    drawnBlockIds.add(block.id)
+                    continue
+                }
                 val blockView = block.view!!
                 val pos = blockView.getWorldCoords()
 
@@ -819,6 +813,12 @@ class CustomView(
         for (link in model!!.links) {
             val from = blocksById[link.from] ?: continue
             val to = blocksById[link.to] ?: continue
+            if (
+                isBlockHidden(from) ||
+                isBlockHidden(to)
+            ) {
+                continue
+            }
 
             val fromPos = from.view!!.getWorldCoords()
             val toPos = to.view!!.getWorldCoords()
@@ -877,6 +877,9 @@ class CustomView(
         val candidates = mutableListOf<BlockView>()
 
         for (block in model!!.blocks) {
+            if (isBlockHidden(block)) {
+                continue
+            }
             val blockView = block.view!!
 
             val blockWorldPos = blockView.getWorldCoords()
@@ -1008,6 +1011,10 @@ class CustomView(
         for (link in model!!.links) {
             val from = blocksById[link.from] ?: continue
             val to = blocksById[link.to] ?: continue
+            if (isBlockHidden(from) ||
+                isBlockHidden(to)) {
+                continue
+            }
 
             if (link.view!!.isPointNearLink(x, y, from.view!!, to.view!!)) {
                 return link.view!!
@@ -1268,6 +1275,64 @@ class CustomView(
         }
 
         return true
+    }
+
+    internal fun markDescendantsDrawn(
+        block: BlockController,
+        drawn: MutableSet<Int>
+    ) {
+        if (!drawn.add(block.id)) {
+            return
+        }
+
+        for (childId in block.children) {
+            val child = blocksById[childId] ?: continue
+            markDescendantsDrawn(child, drawn)
+        }
+    }
+
+    private fun isBlockHidden(
+        block: BlockController
+    ): Boolean {
+        var parent = block.parent
+
+        while (parent != null) {
+            if (
+                parent.type == BlockController.Type.CONTAINER &&
+                parent.view?.isFolded == true
+            ) {
+                return true
+            }
+
+            parent = parent.parent
+        }
+
+        return false
+    }
+
+    private fun toggleFoldAt(
+        screenX: Float,
+        screenY: Float
+    ): Boolean {
+        val (x, y) = screenToWorld(screenX, screenY)
+
+        for (block in model!!.blocks.asReversed()) {
+            if (
+                block.type != BlockController.Type.CONTAINER ||
+                isBlockHidden(block)
+            ) {
+                continue
+            }
+
+            val blockView = block.view!!
+
+            if (blockView.containsFoldToggle(x, y)) {
+                blockView.toggleFold()
+                return true
+            }
+        }
+
+        return false
     }
 
     fun resetView() {

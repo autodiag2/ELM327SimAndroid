@@ -2,9 +2,11 @@ package com.github.autodiag2.elm327emu.sim.serial
 
 import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.sim.serial.CustomView.Coordinates
+
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.Path
 import android.graphics.RectF
 import android.text.InputType
 import android.text.TextPaint
@@ -14,7 +16,9 @@ import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.Spinner
+
 import kotlin.math.max
+
 import android.util.Log
 import androidx.core.view.setPadding
 
@@ -51,6 +55,7 @@ open class BlockView(
         private val executionIndicatorFlashPeriod = 500L
         private val executionIndicatorFlashOnTime = 250L
         private val summaryMaxLines = 10
+        private val foldIndicatorSize = 10f
 
         init {
             paint.style = Paint.Style.FILL
@@ -121,7 +126,7 @@ open class BlockView(
     public fun updateContainerBounds() {
         val children = containerResolveChilds()
 
-        /**
+        /*
          * Update nested containers first.
          */
         for (childBlock in children) {
@@ -133,7 +138,7 @@ open class BlockView(
             }
         }
 
-        /**
+        /*
          * ------------------------------------------------------------
          * Minimum size required by the container title.
          * ------------------------------------------------------------
@@ -156,7 +161,25 @@ open class BlockView(
             titleHeight +
             blockStandardContentPadding * 2f
 
-        /**
+        /*
+         * A folded container only needs enough room for its title
+         * and fold indicator. Its children retain their positions.
+         */
+        if (isFolded) {
+            width = max(
+                260f,
+                titleRequiredWidth + 48f
+            )
+
+            height = max(
+                140f,
+                titleRequiredHeight + containerTitleHeight
+            )
+
+            return
+        }
+
+        /*
          * ------------------------------------------------------------
          * Size required by children.
          * ------------------------------------------------------------
@@ -181,7 +204,7 @@ open class BlockView(
                 )
         }
 
-        /**
+        /*
          * Children are positioned in the container's local
          * coordinate system. Keep the existing container padding
          * around them and reserve the title area.
@@ -195,7 +218,7 @@ open class BlockView(
             blockStandardContentPadding +
             containerTitleHeight
 
-        /**
+        /*
          * ------------------------------------------------------------
          * Final container size.
          * ------------------------------------------------------------
@@ -264,8 +287,8 @@ open class BlockView(
         }
 
         return summary
-            .split(Regex("\\\\r\\\\n|\\\\r|\\\\n|\\r\\n|\\r|\\n"))
-            .take(maxLines.coerceAtLeast(0))    
+            .split(Regex("\\\\\r\\\\\n|\\\\\r|\\\\\n|\r\n|\r|\n"))
+            .take(maxLines.coerceAtLeast(0))
     }
 
     private fun updateBlockContentSize() {
@@ -351,9 +374,9 @@ open class BlockView(
             isRunning()
         ) {
             val phase =
-                System.currentTimeMillis() % 500L
+                System.currentTimeMillis() % executionIndicatorFlashPeriod
 
-            if (phase >= 250L) {
+            if (phase >= executionIndicatorFlashOnTime) {
                 return
             }
         }
@@ -437,7 +460,7 @@ open class BlockView(
             model!!.type ==
                 BlockController.Type.CONTAINER
 
-        /**
+        /*
          * ------------------------------------------------------------
          * Block background
          * ------------------------------------------------------------
@@ -461,7 +484,7 @@ open class BlockView(
             nodeWorldPos
         )
 
-        /**
+        /*
          * ------------------------------------------------------------
          * Block border
          * ------------------------------------------------------------
@@ -489,7 +512,7 @@ open class BlockView(
             paint
         )
 
-        /**
+        /*
          * ------------------------------------------------------------
          * Block text
          * ------------------------------------------------------------
@@ -498,7 +521,7 @@ open class BlockView(
         textPaint.color = textColor
 
         if (isContainer) {
-            /**
+            /*
              * Containers have their title near the top.
              */
             val fontMetrics =
@@ -519,16 +542,42 @@ open class BlockView(
                 textY,
                 textPaint
             )
+
+            /*
+             * Draw the fold indicator at the top-right.
+             */
+            val size = foldIndicatorSize
+            val centerX = nodeWorldPos.x + width - 28f
+            val centerY = nodeWorldPos.y + blockStandardContentPadding
+
+            val path = Path()
+
+            if (isFolded) {
+                path.moveTo(centerX - size * 0.7f, centerY - size)
+                path.lineTo(centerX - size * 0.7f, centerY + size)
+                path.lineTo(centerX + size * 0.7f, centerY)
+            } else {
+                path.moveTo(centerX - size, centerY - size * 0.7f)
+                path.lineTo(centerX + size, centerY - size * 0.7f)
+                path.lineTo(centerX, centerY + size * 0.7f)
+            }
+
+            path.close()
+            paint.style = Paint.Style.FILL
+            paint.color = textColor
+            canvas.drawPath(path, paint)
         } else {
-            /**
+            /*
              * Non-container blocks have a title and multiple summary lines.
              */
 
             val title = model!!.name
             val summaryLines = getSummary()
+
             logDebug(
                 "Block ${model!!.id} summary lines: ${summaryLines}"
             )
+
             val contentLeft =
                 nodeWorldPos.x + blockStandardContentPadding
 
@@ -663,7 +712,7 @@ open class BlockView(
             }
         }
 
-        /**
+        /*
          * ------------------------------------------------------------
          * Ports
          * ------------------------------------------------------------
@@ -673,18 +722,25 @@ open class BlockView(
             canvas
         )
 
-        /**
+        /*
          * ------------------------------------------------------------
          * Children
          * ------------------------------------------------------------
          */
 
-        for (childId in model!!.children) {
-            val child = containerResolveChild(childId)
-            child?.view?.draw(
-                canvas,
+        if (isContainer && isFolded) {
+            parentView.markDescendantsDrawn(
+                model!!,
                 drawn
             )
+        } else {
+            for (childId in model!!.children) {
+                val child = containerResolveChild(childId)
+                child?.view?.draw(
+                    canvas,
+                    drawn
+                )
+            }
         }
     }
 
@@ -737,5 +793,33 @@ open class BlockView(
             container.width - blockStandardContentPadding,
             container.height - blockStandardContentPadding
         )
+    }
+
+    var isFolded: Boolean = false
+        private set
+
+    fun toggleFold() {
+        if (model?.type != BlockController.Type.CONTAINER) {
+            return
+        }
+
+        isFolded = !isFolded
+        updateContainerBounds()
+        parentView.refresh()
+    }
+
+    fun containsFoldToggle(x: Float, y: Float): Boolean {
+        if (
+            model?.type != BlockController.Type.CONTAINER
+        ) {
+            return false
+        }
+
+        val pos = getWorldCoords()
+
+        return x >= pos.x + width - 56f &&
+            x <= pos.x + width &&
+            y >= pos.y &&
+            y <= pos.y + blockStandardContentPadding * 2f
     }
 }
