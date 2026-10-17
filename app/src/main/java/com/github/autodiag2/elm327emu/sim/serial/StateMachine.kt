@@ -1084,8 +1084,7 @@ class StateMachine(
             .mapNotNull { link ->
                 controller.blocks.find { it.id == link.to }
             }
-            .firstOrNull()
-            ?.let { isGate(it) } == true
+            .any { isGate(it) }
 
         if (hasGateAfter) {
             advance(path)
@@ -1407,13 +1406,7 @@ class StateMachine(
                 "block=${path.block.id}"
         )
 
-        setBlockState(
-            path.block,
-            BlockController.State.FAILED
-        )
-
-        path.state = State.FINISHED
-        logDebug("PATH FINISHED ${path.id}")
+        failBlock(path)
 
         paths.removeAll {
             it.state == State.FINISHED
@@ -1436,6 +1429,8 @@ class StateMachine(
         )
 
         val fromId = path.block.id
+        val currentBlockFailed =
+            path.block.state == BlockController.State.FAILED
 
         val nextBlocks =
             controller.links
@@ -1453,7 +1448,21 @@ class StateMachine(
             return
         }
 
-        val firstBlock = nextBlocks.first()
+        val eligibleBlocks = if (currentBlockFailed) {
+            nextBlocks.filter { isGate(it) }
+        } else {
+            nextBlocks
+        }
+
+        if (eligibleBlocks.isEmpty()) {
+            path.state = State.FINISHED
+            logDebug(
+                "PATH FINISHED after failed block $fromId path=${path.id}"
+            )
+            return
+        }
+
+        val firstBlock = eligibleBlocks.first()
 
         if (isGate(firstBlock)) {
             val existingPath =
@@ -1469,9 +1478,7 @@ class StateMachine(
                 )
 
                 path.state = State.FINISHED
-
                 evaluateGatePath(existingPath)
-
                 return
             }
         }
@@ -1479,10 +1486,7 @@ class StateMachine(
         path.block = firstBlock
         path.state = State.READY
 
-        for (
-            block in
-            nextBlocks.drop(1)
-        ) {
+        for (block in eligibleBlocks.drop(1)) {
             if (isGate(block)) {
                 val existingPath =
                     findPath(block)
