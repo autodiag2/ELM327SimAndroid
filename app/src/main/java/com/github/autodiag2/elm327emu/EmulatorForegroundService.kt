@@ -13,6 +13,7 @@ import androidx.core.app.NotificationCompat
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import com.github.autodiag2.elm327emu.com.BridgeOrchestrator
+import com.github.autodiag2.elm327emu.sim.Sim
 import android.content.Context
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,6 +31,7 @@ class EmulatorForegroundService : Service() {
     }
 
     val log = LogController(this)
+    val sim = Sim(this)
 
     inner class LocalBinder : Binder() {
         fun getService() = this@EmulatorForegroundService
@@ -66,7 +68,7 @@ class EmulatorForegroundService : Service() {
         return START_STICKY
     }
 
-    private fun startEmulator() {
+    public fun startEmulator() {
         startForeground(NOTIFICATION_ID, buildNotification())
 
         scope.launch {
@@ -74,7 +76,7 @@ class EmulatorForegroundService : Service() {
         }
     }
 
-    private fun stopEmulator() {
+    public fun stopEmulator() {
         bridgeOrchestrator.stop()
     }
 

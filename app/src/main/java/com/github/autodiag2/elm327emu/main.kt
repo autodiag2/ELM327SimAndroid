@@ -29,7 +29,11 @@ import com.github.autodiag2.elm327emu.com.BridgeOrchestrator
 import com.github.autodiag2.elm327emu.sim.SimSummary
 import com.github.autodiag2.elm327emu.sim.Sim
 import com.github.autodiag2.elm327emu.sim.SimList
+import com.github.autodiag2.elm327emu.sim.SimView
 import com.github.autodiag2.elm327emu.ui.NestedScreen
+import com.github.autodiag2.elm327emu.ui.settings.SettingsFragment
+import com.github.autodiag2.elm327emu.sim.serial.CustomController
+import com.github.autodiag2.elm327emu.sim.serial.CustomView
 import java.io.File
 import com.github.autodiag2.elm327emu.sim.ecu.EcuGui
 import com.github.autodiag2.elm327emu.sim.GuiGodot
@@ -37,9 +41,6 @@ import android.widget.Button
 import com.github.autodiag2.elm327emu.LogEntryType
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.whenResumed
-import com.github.autodiag2.elm327emu.ui.settings.SettingsFragment
-import com.github.autodiag2.elm327emu.sim.serial.CustomController
-import com.github.autodiag2.elm327emu.sim.serial.CustomView
 import android.util.Log
 import android.content.ComponentName
 import android.content.Context
@@ -66,18 +67,15 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
             val connectedService = binder.getService()
             emulatorService = connectedService
             logController = connectedService.log
-            simView.connect(connectedService)
+            connectedService.sim.attachView(simView)
             serviceBound = true
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
             emulatorService = null
-            simView.disconnect()
             serviceBound = false
         }
     }
-
-    lateinit var btAdapter: BluetoothAdapter
 
     private val enableBtLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -96,7 +94,7 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
     private lateinit var drawer: DrawerLayout
     lateinit var toolbar: Toolbar
 
-    lateinit var simView: Sim
+    lateinit var simView: SimView
     lateinit var logView: LogView
     lateinit var logController: LogController
     private lateinit var settingsFragment: SettingsFragment
@@ -183,7 +181,7 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
                     it.clientIdentifier == client.clientIdentifier
                 } == true
             ) {
-                simView.customSerialScreen.onClientConnected(
+                service!!.sim.customSerialScreen.onClientConnected(
                     client.clientIdentifier
                 )
             }
@@ -194,7 +192,7 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
                     it.clientIdentifier == client.clientIdentifier
                 }
             ) {
-                simView.customSerialScreen.onClientDisconnected(
+                service!!.sim.customSerialScreen.onClientDisconnected(
                     client.clientIdentifier
                 )
             }
@@ -358,7 +356,7 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
                     lastConfigName = name
                     val file = File(filesDir, "config/${name}.json")
                     file.parentFile?.mkdirs()
-                    simView.saveConfig(file.absolutePath)
+                    service!!.sim.saveConfig(file.absolutePath)
                     appendLog(getString(R.string.sim_list_log_save_success, name), LogLevel.INFO)
                     simListView.refresh()
                 }
@@ -391,6 +389,7 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        startForegroundService()
         setContentView(R.layout.activity_main)
         settingsContainer = findViewById(R.id.settingsContainer)
 
@@ -424,10 +423,6 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
             }
         )
 
-        // ---- System services ----
-        val manager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        btAdapter = manager.adapter
-
         // ---- Init core components ----
         MainActivityRef.activity = this
 
@@ -447,12 +442,12 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
         showHamburger()
 
         // ---- Views ----
-        simView = Sim(this)
+        simView = SimView(this)
         logView = LogView(this)
         settingsFragment = SettingsFragment()
         statsView = StatsView(this)
         simListView = SimList(this) { file ->
-            simView.loadConfig(file.absolutePath)
+            service!!.sim.loadConfig(file.absolutePath)
             handleBack()
         }
 
@@ -505,6 +500,27 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
 
     }
 
+    fun startForegroundService() {
+        if ( service == null ) {
+            val intent = Intent(this, EmulatorForegroundService::class.java)
+                .setAction(EmulatorForegroundService.ACTION_START)
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(intent)
+            } else {
+                startService(intent)
+            }
+        }
+    }
+
+    fun stopForegroundService() {
+        if ( service != null ) {
+            stopService(
+                Intent(this, EmulatorForegroundService::class.java)
+            )
+        }
+    }
+
     override fun onCreateOptionsMenu(menu: android.view.Menu): Boolean {
         menuInflater.inflate(R.menu.menu, menu)
         return true
@@ -514,7 +530,7 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
         return when (item.itemId) {
 
             R.id.sim_menu_clear -> {
-                simView.ecuClear()
+                service!!.sim.ecuClear()
                 SimGeneratorGuiManager.clear()
                 true
             }
@@ -531,7 +547,7 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
                     ?.maxByOrNull { it.lastModified() }
 
                 if (latest != null) {
-                    simView.loadConfig(latest.absolutePath)
+                    service!!.sim.loadConfig(latest.absolutePath)
                     appendLog(getString(R.string.sim_list_load_latest_success, latest.name), LogLevel.INFO)
                 } else {
                     appendLog(getString(R.string.sim_list_load_latest_no_config), LogLevel.ERROR)
@@ -551,7 +567,7 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
                 }
 
                 try {
-                    simView.loadConfigJSON(text)
+                    service!!.sim.loadConfigJSON(text)
                 } catch (e: Exception) {
                 }
 
@@ -561,7 +577,7 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
             R.id.sim_menu_export_clipboard -> {
 
                 try {
-                    val json = simView.saveConfigAsJson()
+                    val json = service!!.sim.saveConfigAsJson()
 
                     val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
                     val clip = android.content.ClipData.newPlainText("ECU Config", json)
@@ -604,87 +620,87 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
                 true
             }
             R.id.sim_custom_serial_script_export_clipboard -> {
-                simView.customSerialScreen.onExportClipboard()
+                service!!.sim.customSerialScreen.onExportClipboard()
                 true
             }
             R.id.sim_custom_serial_script_import_clipboard -> {
-                simView.customSerialScreen.onImportClipboard()
+                service!!.sim.customSerialScreen.onImportClipboard()
                 true
             }
             R.id.sim_custom_serial_script_import_file -> {
-                simView.customSerialScreen.onImportFile()
+                service!!.sim.customSerialScreen.onImportFile()
                 true
             }
             R.id.sim_custom_serial_script_export_file -> {
-                simView.customSerialScreen.onExportFile()
+                service!!.sim.customSerialScreen.onExportFile()
                 true
             }
             R.id.sim_custom_serial_script_export_share -> {
-                simView.customSerialScreen.shareConfigAsText()
+                service!!.sim.customSerialScreen.shareConfigAsText()
                 true
             }
             R.id.sim_custom_serial_script_add_log -> {
-                simView.customSerialScreen.onAddLog()
+                service!!.sim.customSerialScreen.onAddLog()
                 true
             }
             R.id.sim_custom_serial_script_add_delay -> {
-                simView.customSerialScreen.onAddDelay()
+                service!!.sim.customSerialScreen.onAddDelay()
                 true
             }
             R.id.sim_custom_serial_script_add_recv -> {
-                simView.customSerialScreen.onAddRecv()
+                service!!.sim.customSerialScreen.onAddRecv()
                 true
             }
             R.id.sim_custom_serial_script_add_send -> {
-                simView.customSerialScreen.onAddSend()
+                service!!.sim.customSerialScreen.onAddSend()
                 true
             }
             R.id.sim_custom_serial_script_add_container -> {
-                simView.customSerialScreen.onAddContainer()
+                service!!.sim.customSerialScreen.onAddContainer()
                 true
             }
             R.id.sim_custom_serial_script_add_and -> {
-                simView.customSerialScreen.onAddAnd()
+                service!!.sim.customSerialScreen.onAddAnd()
                 true
             }
             R.id.sim_custom_serial_script_add_or -> {
-                simView.customSerialScreen.onAddOr()
+                service!!.sim.customSerialScreen.onAddOr()
                 true
             }
             R.id.sim_custom_serial_script_add_xor -> {
-                simView.customSerialScreen.onAddXor()
+                service!!.sim.customSerialScreen.onAddXor()
                 true
             }
             R.id.sim_custom_serial_script_add_not -> {
-                simView.customSerialScreen.onAddNot()
+                service!!.sim.customSerialScreen.onAddNot()
                 true
             }
             R.id.sim_custom_serial_script_add_client_connected -> {
-                simView.customSerialScreen.onAddClientConnected()
+                service!!.sim.customSerialScreen.onAddClientConnected()
                 true
             }
             R.id.sim_custom_serial_script_add_client_disconnected -> {
-                simView.customSerialScreen.onAddClientDisconnected()
+                service!!.sim.customSerialScreen.onAddClientDisconnected()
                 true
             }
             R.id.sim_custom_serial_script_clear -> {
-                simView.customSerialScreen.clearWithDialog()
+                service!!.sim.customSerialScreen.clearWithDialog()
                 true
             }
             R.id.sim_custom_serial_script_del -> {
-                simView.customSerialScreen.onDelete()
+                service!!.sim.customSerialScreen.onDelete()
                 true
             }
             R.id.sim_custom_serial_script_dup -> {
-                simView.customSerialScreen.onDuplicate()
+                service!!.sim.customSerialScreen.onDuplicate()
                 true
             }
             R.id.sim_custom_serial_script_start -> {
-                simView.customSerialScreen.onStart()
+                service!!.sim.customSerialScreen.onStart()
                 true
             }
             R.id.sim_custom_serial_script_stop -> {
-                simView.customSerialScreen.onStop()
+                service!!.sim.customSerialScreen.onStop()
                 true
             }
             R.id.logview_search -> {
