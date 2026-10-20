@@ -265,7 +265,7 @@ class Sim(
     }
 
     fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {
-        activity.appendLog(text, level)
+        activity.service?.log?.append(text, level)
     }
 
     private fun bridgeType(bridge: Bridge): String {
@@ -393,7 +393,7 @@ class Sim(
             )
 
         } catch (e: Exception) {
-            activity.appendLog(
+            appendLog(
                 "Cannot save custom serial script: ${e.message}",
                 LogLevel.ERROR
             )
@@ -638,13 +638,13 @@ class Sim(
                 JSONObject(text)
 
             customSerialScreen.fromJson(json) { error ->
-                activity.appendLog(
+                appendLog(
                     "Custom serial script: $error",
                     LogLevel.ERROR
                 )
             }
         } catch (e: Exception) {
-            activity.appendLog(
+            appendLog(
                 "Cannot load custom serial script: ${e.message}",
                 LogLevel.ERROR
             )
@@ -698,7 +698,7 @@ class Sim(
         val schema = desc.optString("schema")
 
         if(schema.isEmpty() || !schema.startsWith(SCHEMA)) {
-            activity.appendLog(
+            appendLog(
                 getString(R.string.sim_invalid_ecu_schema, schema),
                 LogLevel.ERROR
             )
@@ -707,7 +707,7 @@ class Sim(
 
         val schemaVersion = desc.optDouble("version")
         if ( schemaVersion != SCHEMA_VERSION ) {
-            activity.appendLog(
+            appendLog(
                 getString(R.string.sim_unsupported_ecu_schema_version, schemaVersion),
                 LogLevel.ERROR
             )
@@ -716,7 +716,7 @@ class Sim(
 
         val content = desc.optJSONObject("content")
         if ( content == null ) {
-            activity.appendLog(
+            appendLog(
                 getString(R.string.sim_no_content, schemaVersion),
                 LogLevel.ERROR
             )
