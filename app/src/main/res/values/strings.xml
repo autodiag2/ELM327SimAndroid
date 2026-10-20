@@ -6,6 +6,10 @@
     <string name="com_bridge_bt_classic">Bluetooth Classic</string>
     <string name="com_bridge_ble">Bluetooth LE</string>
     <string name="com_bridge_nt">Network</string>
+    <string name="notification_channel_name">ELM327 Emulator</string>
+    <string name="notification_title">ELM327 Emulator</string>
+    <string name="notification_content">ELM327 Emulator is running</string>
+    <string name="notification_action_stop">Stop</string>
     <string name="log_btnDownload">Download log</string>
     <string name="log_btnSave">Save as...</string>
     <string name="log_btnClear">Clear log</string>

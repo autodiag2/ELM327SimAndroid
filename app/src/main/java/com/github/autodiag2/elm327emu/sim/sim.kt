@@ -43,6 +43,17 @@ import kotlinx.coroutines.cancelChildren
 import android.widget.EditText
 import java.util.Locale
 import android.content.res.ColorStateList
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.Service
+import android.content.Intent
+import android.os.Binder
+import android.os.Build
+import android.os.IBinder
+import androidx.core.app.NotificationCompat
+import com.github.autodiag2.elm327emu.EmulatorForegroundService
 
 class Sim(
     private val activity: MainActivity
@@ -228,12 +239,23 @@ class Sim(
     }
 
     fun stop() {
+        context.stopService(
+            Intent(context, EmulatorForegroundService::class.java)
+        )
         activity.bridgeOrchestrator.stop()
         scope.coroutineContext.cancelChildren()
         appendLog(getString(R.string.log_main_bluetooth_server_stopped), LogLevel.INFO)
     }
 
     fun start() {
+        val intent = Intent(context, EmulatorForegroundService::class.java)
+            .setAction(EmulatorForegroundService.ACTION_START)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(intent)
+        } else {
+            context.startService(intent)
+        }
         scope.launch {
             activity.bridgeOrchestrator.start()
         }
