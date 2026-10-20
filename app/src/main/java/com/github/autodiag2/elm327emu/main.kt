@@ -39,6 +39,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.whenResumed
 import com.github.autodiag2.elm327emu.ui.settings.SettingsFragment
 import com.github.autodiag2.elm327emu.sim.serial.CustomController
+import com.github.autodiag2.elm327emu.sim.serial.CustomView
 import android.util.Log
 import android.content.ComponentName
 import android.content.Context
@@ -324,18 +325,18 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
             activeScreen is EcuGui
         )
         menu.setGroupVisible(R.id.action_menu_group_sim_custom_serial_script,
-            activeScreen is CustomController
+            activeScreen is CustomView
         )
         menu.setGroupVisible(R.id.action_menu_group_logview,
             activeScreen is LogView
         )
         var simCustomSerialScreenIsSomeSelection = false
-        if ( activeScreen is CustomController ) {
-            val simCustomSerialScreen = activeScreen as CustomController
-            simCustomSerialScreenIsSomeSelection = simCustomSerialScreen.isSomeSelection()
+        if ( activeScreen is CustomView ) {
+            val simCustomSerialScreen = activeScreen as CustomView
+            simCustomSerialScreenIsSomeSelection = simCustomSerialScreen.model!!.isSomeSelection()
         }
         menu.setGroupVisible(R.id.action_menu_group_sim_custom_serial_script_any_element_selected,
-            activeScreen is CustomController && simCustomSerialScreenIsSomeSelection
+            activeScreen is CustomView && simCustomSerialScreenIsSomeSelection
         )
 
         return super.onPrepareOptionsMenu(menu)

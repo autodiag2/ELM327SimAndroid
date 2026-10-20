@@ -44,8 +44,7 @@ const val VERSION = 1.0
 class CustomController(
     public val activity: MainActivity,
     private val listener: CustomController.Listener? = null
-) : LinearLayout(activity),
-    CustomView.Listener,
+) : CustomView.Listener,
     JsonConfigurable,
     StateMachine.Listener {
 
@@ -53,7 +52,7 @@ class CustomController(
         abstract fun customSerialOnRunStateChange(newState: Boolean)
     }
 
-    public var view: CustomView
+    public var view: CustomView? = null
 
     val stateMachine =
         StateMachine(
@@ -71,35 +70,12 @@ class CustomController(
     val logPanel = LogPanel(this)
 
     private val replayToolbar = ReplayToolbar(activity, this, scope)
-
-    public val blocks =
-        mutableListOf<BlockController>()
-
-    public val links =
-        mutableListOf<LinkController>()
-
-    val selectedBlocks =
-        mutableSetOf<Int>()
-
-    val selectedLinks =
-        mutableSetOf<Pair<Int, Int>>()
+    public val blocks = mutableListOf<BlockController>()
+    public val links = mutableListOf<LinkController>()
+    val selectedBlocks = mutableSetOf<Int>()
+    val selectedLinks = mutableSetOf<Pair<Int, Int>>()
 
     init {
-        orientation = VERTICAL
-
-        LayoutInflater.from(activity).inflate(
-            R.xml.sim_custom_serial_screen,
-            this,
-            true
-        )
-
-        view =
-            findViewById(
-                R.id.custom_serial_view
-            )
-
-        view.model = this
-
         replayToolbar.setupReplayToolbar()
         logPanel.setup()
     }
@@ -130,7 +106,7 @@ class CustomController(
      */
     public fun onDataChanged() {
         stateMachine.customModelChanged()
-        view.refresh()
+        view?.refresh()
     }
 
     // ------------ listener state machine ------------
@@ -140,7 +116,7 @@ class CustomController(
         state: BlockController.State
     ) {
         activity.runOnUiThread {
-            view.refresh()
+            view?.refresh()
         }
     }
 
@@ -148,7 +124,7 @@ class CustomController(
         for(block in blocks) {
             block.resetState()
         }
-        view.refresh()
+        view?.refresh()
     }
 
     // ------------ Listeners of view ------------
@@ -191,7 +167,7 @@ class CustomController(
             )
 
         val linkView =
-            view.addLink(
+            view?.addLink(
                 model = linkModel
             )
 
@@ -359,7 +335,7 @@ class CustomController(
             selectedBlocks.remove(block.id)
         }
 
-        view.refresh()
+        view?.refresh()
     }
 
     fun toggleLinkSelection(
@@ -375,13 +351,13 @@ class CustomController(
             selectedLinks.remove(key)
         }
 
-        view.refresh()
+        view?.refresh()
     }
 
     fun clearSelection() {
         selectedBlocks.clear()
         selectedLinks.clear()
-        view.refresh()
+        view?.refresh()
     }
 
     fun hasSelection(): Boolean {
@@ -620,14 +596,17 @@ class CustomController(
                 name = blockName
             )
 
-        val blockView =
-            view.addBlock(
-                model = block
+        val view = this.view
+        if ( view != null ) {
+            val blockView =
+                view.addBlock(
+                    model = block
+                )
+    
+            block.viewLink(
+                blockView
             )
-
-        block.viewLink(
-            blockView
-        )
+        }
 
         blocks.add(block)
 
@@ -975,14 +954,17 @@ class CustomController(
             duplicate.children.clear()
             duplicate.parent = parent
 
-            val blockView =
-                view.addBlock(
-                    model = duplicate
+            val view = this.view
+            if ( view != null ) {
+                val blockView =
+                    view.addBlock(
+                        model = duplicate
+                    )
+    
+                duplicate.viewLink(
+                    blockView
                 )
-
-            duplicate.viewLink(
-                blockView
-            )
+            }
 
             blocks.add(duplicate)
 
@@ -1072,14 +1054,17 @@ class CustomController(
                     to = newTo.id
                 )
 
-            val linkView =
-                view.addLink(
-                    model = duplicateLink
+            val view = this.view
+            if ( view != null ) {
+                val linkView =
+                    view.addLink(
+                        model = duplicateLink
+                    )
+    
+                duplicateLink.viewLink(
+                    linkView
                 )
-
-            duplicateLink.viewLink(
-                linkView
-            )
+            }
 
             links.add(
                 duplicateLink
@@ -1363,15 +1348,18 @@ class CustomController(
         /*
          * Add blocks to the view.
          */
-        for (block in importedBlocks) {
-            val blockView =
-                view.addBlock(
-                    model = block
+        val view = this.view
+        if ( view != null ) {
+            for (block in importedBlocks) {
+                val blockView =
+                    view.addBlock(
+                        model = block
+                    )
+    
+                block.viewLink(
+                    blockView
                 )
-
-            block.viewLink(
-                blockView
-            )
+            }
         }
 
         for (block in importedBlocks) {
@@ -1461,14 +1449,17 @@ class CustomController(
                     to = to
                 )
 
-            val linkView =
-                view.addLink(
-                    model = link
+            val view = this.view
+            if ( view != null ) {
+                val linkView =
+                    view.addLink(
+                        model = link
+                    )
+    
+                link.viewLink(
+                    linkView
                 )
-
-            link.viewLink(
-                linkView
-            )
+            }
 
             links.add(link)
         }
@@ -1481,10 +1472,7 @@ class CustomController(
     public fun dp(
         value: Int
     ): Int {
-        return (
-            value *
-                resources.displayMetrics.density
-            ).toInt()
+        return view?.dp(value) ?: value
     }
 
     private fun debugBlockTree() {

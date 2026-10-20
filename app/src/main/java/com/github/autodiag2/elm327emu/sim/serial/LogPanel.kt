@@ -30,7 +30,7 @@ import java.util.Date
 import java.util.Locale
 import android.widget.ScrollView
 
-class LogPanel(parentView: CustomController) {
+class LogPanel(custom: CustomController) {
 
     private var expanded = false
     
@@ -38,7 +38,7 @@ class LogPanel(parentView: CustomController) {
     private val container: View
 
     init {
-        container = parentView
+        container = custom.view!!
     }
 
     fun setup() {

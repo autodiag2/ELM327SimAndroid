@@ -143,7 +143,10 @@ class Sim(
         updateConnectedClientsButton()
         customSerialScreen = CustomController(activity, listener = this)
         findViewById<Button>(R.id.sim_custom_serial_script_open).setOnClickListener {
-            activity.showNestedScreen(customSerialScreen)
+            val view = customSerialScreen.view
+            if ( view != null) {
+                activity.showNestedScreen(view)
+            }
         }
         findViewById<Button>(
             R.id.sim_custom_serial_script_save

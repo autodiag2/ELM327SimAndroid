@@ -19,11 +19,13 @@ import com.github.autodiag2.elm327emu.R
 import android.util.TypedValue
 import android.text.TextUtils
 import android.text.TextPaint
+import android.widget.LinearLayout
+import android.view.LayoutInflater
 
 class CustomView(
     context: Context,
     attrs: AttributeSet? = null
-) : View(context, attrs) {
+) : LinearLayout(context, attrs) {
 
     data class Coordinates(
         public var x: Float = 0f,
@@ -77,6 +79,14 @@ class CustomView(
     private var movedDuringGesture = false
 
     init {
+
+        orientation = VERTICAL
+
+        LayoutInflater.from(context).inflate(
+            R.xml.sim_custom_serial_screen,
+            this,
+            true
+        )
 
         linkPreviewPaint.style = Paint.Style.STROKE
         linkPreviewPaint.strokeWidth = 5f
@@ -231,6 +241,15 @@ class CustomView(
                 }
             }
         )
+    }
+    
+    public fun dp(
+        value: Int
+    ): Int {
+        return (
+            value *
+                resources.displayMetrics.density
+            ).toInt()
     }
 
     private fun bringBlockToFront(block: BlockView) {
