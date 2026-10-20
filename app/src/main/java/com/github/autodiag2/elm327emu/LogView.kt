@@ -105,11 +105,12 @@ fun search_match(entry: LogEntry, search: String): Boolean {
 
     return containsSubArray(entry.data, pattern)
 }
-class LogRepository(private val context: MainActivity) {
+class LogRepository(private val context: Context) {
 
     public val buffer = ArrayList<LogEntry>()
     private val mutex = Mutex()
     private var counter = 0L
+    val prefs by lazy { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
 
     suspend fun search(text: String): List<LogEntry> {
         return mutex.withLock {
@@ -190,7 +191,7 @@ class LogRepository(private val context: MainActivity) {
             var entry: LogEntry? = null
             var deleted: LogEntry? = null
             var modified: LogEntry? = null
-            if (context.prefs.getBoolean("log_exchange_dup_search", false) &&
+            if (prefs.getBoolean("log_exchange_dup_search", false) &&
                 type == LogEntryType.SENT &&
                 buffer.size >= 3
             ) {
@@ -226,7 +227,7 @@ class LogRepository(private val context: MainActivity) {
                         }
 
                         exchanges++
-                        if (exchanges > context.prefs.getInt("log_exchange_dup_search_depth", 10)) {
+                        if (exchanges > prefs.getInt("log_exchange_dup_search_depth", 10)) {
                             break
                         }
 
@@ -378,13 +379,13 @@ class LogAdapter(
 class LogView(
     private val activity: MainActivity
 ) : FrameLayout(activity) {
-
-    val logRepo: LogRepository = LogRepository(activity)
+    val prefs by lazy { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
+    val logRepo: LogRepository = LogRepository(context)
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val mainScope = CoroutineScope(Dispatchers.Main)
     private var search = ""
 
-    private val logAdapter = LogAdapter(activity.prefs)
+    private val logAdapter = LogAdapter(prefs)
     private lateinit var logTopBar: View
     private var logTopBarExpanded = false
     private val uiHandler = Handler(Looper.getMainLooper())
@@ -507,7 +508,7 @@ class LogView(
             ?: ByteArray(0)
         
         append(
-            activity.getString(
+            context.getString(
                 if (type == LogEntryType.RECV)
                     R.string.log_main_data_received
                 else
@@ -609,7 +610,7 @@ class LogView(
             refresh()
         }
 
-        rv.layoutManager = LinearLayoutManager(activity)
+        rv.layoutManager = LinearLayoutManager(context)
         rv.adapter = logAdapter
         rv.itemAnimator = null
 
@@ -688,15 +689,15 @@ class LogView(
     }
     var filename = "elm327emu_log.txt"
     fun getString(resId: Int, vararg formatArgs: Any?): String {
-        return activity.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
+        return context.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
     }
     fun download() {
         scope.launch {
-            val file = File(activity.getExternalFilesDir(null), filename)
+            val file = File(context.getExternalFilesDir(null), filename)
             file.writeText(logAdapterSnapshot())
             activity.runOnUiThread {
                 Toast.makeText(
-                    activity,
+                    context,
                     getString(R.string.logview_saved_as, file.absolutePath),
                     Toast.LENGTH_SHORT
                 ).show()
@@ -707,7 +708,7 @@ class LogView(
     // ---- PUBLIC APPEND API ----
     fun append(text: String, level: LogLevel = LogLevel.DEBUG, data: ByteArray? = null, size_used: Int = data?.size ?: 0, serial: ByteArray? = null, serial_size: Int = serial?.size ?: 0, type: LogEntryType = LogEntryType.NONE) {
 
-        val currentLevel = activity.prefs.getInt("log_level", LogLevel_DEFAULT.ordinal)
+        val currentLevel = prefs.getInt("log_level", LogLevel_DEFAULT.ordinal)
         if (currentLevel < level.ordinal) return
 
         scope.launch {
