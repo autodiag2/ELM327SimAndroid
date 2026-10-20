@@ -13,7 +13,6 @@ import androidx.drawerlayout.widget.DrawerLayout
 import com.google.android.material.navigation.NavigationView
 import android.content.Intent
 import androidx.appcompat.widget.Toolbar
-import android.content.Context
 import android.view.View
 import android.bluetooth.BluetoothManager
 import android.net.Uri
@@ -41,10 +40,33 @@ import androidx.lifecycle.whenResumed
 import com.github.autodiag2.elm327emu.ui.settings.SettingsFragment
 import com.github.autodiag2.elm327emu.sim.serial.CustomController
 import android.util.Log
+import android.content.ComponentName
+import android.content.Context
+import android.content.ServiceConnection
+import android.os.IBinder
 
 private const val REQUEST_CODE = 1
 
 class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionListener {
+
+    private var emulatorService: EmulatorForegroundService? = null
+    private var serviceBound = false
+
+    private val serviceConnection = object : ServiceConnection {
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            val binder = service as EmulatorForegroundService.LocalBinder
+            emulatorService = binder.getService()
+            val connectedService = binder.getService()
+            emulatorService = connectedService
+            logView.logRepo = connectedService.logRepo
+            serviceBound = true
+        }
+
+        override fun onServiceDisconnected(name: ComponentName?) {
+            emulatorService = null
+            serviceBound = false
+        }
+    }
 
     lateinit var btAdapter: BluetoothAdapter
 
@@ -340,6 +362,23 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
     // Lifecycle
     // -------------------------------
 
+    override fun onStart() {
+        super.onStart()
+        bindService(
+            Intent(this, EmulatorForegroundService::class.java),
+            serviceConnection,
+            Context.BIND_AUTO_CREATE
+        )
+    }
+
+    override fun onStop() {
+        if (serviceBound) {
+            unbindService(serviceConnection)
+            serviceBound = false
+            emulatorService = null
+        }
+        super.onStop()
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -451,7 +490,7 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
 
         // autostart
         prefs.getBoolean("app_emu_autostart", true).let { autostart ->
-            if (autostart) {
+            if (false && autostart) {
                 simView.findViewById<Button>(R.id.sim_state).performClick()
             }
         }

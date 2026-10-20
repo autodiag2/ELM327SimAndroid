@@ -198,7 +198,7 @@ class LogView(
     private val activity: MainActivity
 ) : FrameLayout(activity) {
     val prefs by lazy { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
-    val logRepo: LogRepository = LogRepository(context)
+    public lateinit var logRepo: LogRepository
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val mainScope = CoroutineScope(Dispatchers.Main)
     private var search = ""
@@ -279,7 +279,7 @@ class LogView(
                     logAdapter.notifyChanged(result.entry)
                 }
             } else {
-                val entries = logRepo.search(search)
+                val entries = logRepo.search(search) ?: emptyList()
                 mainScope.launch {
                     logAdapter.replace(entries)
                     if (stickToBottom && search.isBlank()) {
@@ -436,7 +436,6 @@ class LogView(
 
     // ---- PUBLIC APPEND API ----
     fun append(text: String, level: LogLevel = LogLevel.DEBUG, data: ByteArray? = null, size_used: Int = data?.size ?: 0, serial: ByteArray? = null, serial_size: Int = serial?.size ?: 0, type: LogEntryType = LogEntryType.NONE) {
-
         scope.launch {
 
             val result: AppendResult? = logRepo.append(text, level, data, size_used, serial, serial_size, type)
