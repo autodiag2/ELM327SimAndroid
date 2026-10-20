@@ -36,6 +36,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import android.widget.ImageButton
+import com.github.autodiag2.elm327emu.EmulatorForegroundService
 
 const val SCHEMA = "autodiag/sim/elm327/serialscript"
 const val VERSION = 1.0
@@ -66,7 +67,7 @@ class CustomController(
                 SupervisorJob()
         )
 
-    val logReplay = LogReplay(emuProvider = stateMachine, activity = activity, scope = scope)
+    val logReplay = LogReplayController(emuProvider = stateMachine, service = EmulatorForegroundService(), scope = scope)
     val logPanel = LogPanel(this)
 
     private val replayToolbar = ReplayToolbar(activity, this, scope)
@@ -250,7 +251,7 @@ class CustomController(
 
     private fun start() {
         scope.launch {
-            val emuProvider = activity.bridgeOrchestrator as EmuInterface.Provider
+            val emuProvider = activity.service?.bridgeOrchestrator as EmuInterface.Provider
             val scriptEmu = stateMachine as EmuInterface
             emuProvider.setEmu(scriptEmu)
             stateMachine.start()
@@ -262,7 +263,7 @@ class CustomController(
         scope.launch {
             logReplay.stop()
             stateMachine.stop()
-            val emuProvider = activity.bridgeOrchestrator as EmuInterface.Provider
+            val emuProvider = activity.service?.bridgeOrchestrator as EmuInterface.Provider
             emuProvider.resetEmu()
             replayToolbar.replayUpdatePlayPause()
         }

@@ -267,7 +267,7 @@ class ReplayToolbar(
                 customController.stateMachine.stop()
 
                 val emuProvider =
-                    activity.bridgeOrchestrator as EmuInterface.Provider
+                    activity.service?.bridgeOrchestrator as EmuInterface.Provider
 
                 emuProvider.resetEmu()
 
@@ -281,7 +281,7 @@ class ReplayToolbar(
             startJob = scope.launch {
                 try {
                     val emuProvider =
-                        activity.bridgeOrchestrator as EmuInterface.Provider
+                        activity.service?.bridgeOrchestrator as EmuInterface.Provider
 
                     emuProvider.resetEmu()
 

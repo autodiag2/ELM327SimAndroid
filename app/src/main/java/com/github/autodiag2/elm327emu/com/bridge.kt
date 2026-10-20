@@ -20,7 +20,7 @@ import com.github.autodiag2.elm327emu.EmulatorForegroundService
 open class Bridge(
     protected val emuProvider: EmuInterface.Provider,
     protected val scope: CoroutineScope,
-    protected val service: EmulatorForegroundService,
+    protected var service: EmulatorForegroundService,
     private val LOG_TAG: String,
     protected val listener: Listener? = null
 ) {

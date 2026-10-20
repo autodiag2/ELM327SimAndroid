@@ -16,27 +16,30 @@ import com.github.autodiag2.elm327emu.MainActivity
 import com.github.autodiag2.elm327emu.com.Bridge
 import com.github.autodiag2.elm327emu.sim.EmuInterface
 import kotlinx.coroutines.currentCoroutineContext
+import android.os.Handler
+import android.os.Looper
+import com.github.autodiag2.elm327emu.EmulatorForegroundService
 
-class LogReplay(
+class LogReplayController(
     emuProvider: EmuInterface.Provider,
     scope: CoroutineScope,
-    activity: MainActivity,
+    service: EmulatorForegroundService,
     listener: Listener? = null
 ) : Bridge(
     emuProvider = emuProvider,
     scope = scope,
-    activity = activity,
+    service = service,
     LOG_TAG = "LR",
     listener = listener
 ) {
-    private var replayTimeline: ReplayTimelineView? = null
+    private var viewReplayTimeline: ReplayTimelineView? = null
     var logEntriesProvider: (() -> List<LogEntry>)? = null
 
     @Volatile
     private var job: Job? = null
 
-    fun setReplayTimelineView(replayTimeline: ReplayTimelineView?) {
-        this.replayTimeline = replayTimeline
+    fun setReplayTimelineView(viewReplayTimeline: ReplayTimelineView?) {
+        this.viewReplayTimeline = viewReplayTimeline
     }
     fun getEmu(): EmuInterface {
         return emuProvider.getEmu()
@@ -50,7 +53,7 @@ class LogReplay(
     ) {
         if (BuildConfig.DEBUG) {
             Log.d(
-                "sim.serial.LogReplay",
+                "sim.serial.LogReplayController",
                 message
             )
         }
@@ -124,9 +127,9 @@ class LogReplay(
             entries == null ||
             entries.isEmpty()
         ) {
-            activity.runOnUiThread {
+            Handler(Looper.getMainLooper()).post {
                 Toast.makeText(
-                    activity,
+                    service,
                     getString(
                         R.string.custom_serial_replay_no_log
                     ),
@@ -139,12 +142,12 @@ class LogReplay(
 
         job?.cancel()
 
-        replayTimeline?.setEntries(entries)
+        viewReplayTimeline?.setEntries(entries)
         job =
             scope.launch {
 
                 try {
-                    replayTimeline?.startPlayback {
+                    viewReplayTimeline?.startPlayback {
                         getSpeed(playSpeedProvider)
                     }
                     var previousTimestamp: Long? = null
@@ -153,7 +156,7 @@ class LogReplay(
                     for ((index, entry) in entries.withIndex()) {
 
                         if (!isActive) {
-                            replayTimeline?.stopPlayback()
+                            viewReplayTimeline?.stopPlayback()
                             return@launch
                         }
                        
@@ -175,7 +178,7 @@ class LogReplay(
                         }
 
                         if (!isActive) {
-                            replayTimeline?.stopPlayback()
+                            viewReplayTimeline?.stopPlayback()
                             return@launch
                         }
 
@@ -242,8 +245,8 @@ class LogReplay(
                         previousTimestamp = entry.ts
 
                         val played = index + 1
-                        activity.runOnUiThread {
-                            replayTimeline?.setPlayedEntries(played)
+                        Handler(Looper.getMainLooper()).post {
+                            viewReplayTimeline?.setPlayedEntries(played)
                         }
                         onProgress?.invoke(played, total)
                     }
@@ -261,14 +264,14 @@ class LogReplay(
                     }
 
                 } finally {
-                    replayTimeline?.stopPlayback()
+                    viewReplayTimeline?.stopPlayback()
                     onFinished?.invoke()
                 }
             }
     }
 
     override fun stop() {
-        replayTimeline?.stopPlayback()
+        viewReplayTimeline?.stopPlayback()
         job?.cancel()
         job = null
     }
