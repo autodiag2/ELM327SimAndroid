@@ -142,9 +142,6 @@ class Sim(
         }
         updateConnectedClientsButton()
         customSerialScreen = CustomController(activity, listener = this)
-        customSerialScreen.setReplayEntriesProvider {
-            activity.logView.logRepo.buffer
-        }
         findViewById<Button>(R.id.sim_custom_serial_script_open).setOnClickListener {
             activity.showNestedScreen(customSerialScreen)
         }
@@ -236,6 +233,16 @@ class Sim(
         }
         buildAddECUToGUI(Ecu.DEFAULT_ADDRESS, getString(R.string.sim_ecu_gui_ecu_name), EcuType.gui)
         setupCustomSerialScripts()
+    }
+
+    fun connect(service: EmulatorForegroundService) {
+        customSerialScreen.setReplayEntriesProvider {
+            service.log.model.buffer
+        }
+    }
+
+    fun disconnect() {
+        
     }
 
     fun stop() {

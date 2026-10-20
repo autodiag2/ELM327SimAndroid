@@ -19,8 +19,8 @@
     <string name="logview_search">Search</string>
     <string name="logview_download">Save</string>
     <string name="logview_download_as">Save as</string>
+    <string name="logview_saved_as">Saved as %1$s</string>
     <string name="logview_clear">Clear</string>
-    <string name="logview_saved_as">Save as %1$s</string>
     <string name="settings_autostart">Autostart emulator on app launch</string>
     <string name="settings_section_general">General Settings</string>
     <string name="settings_section_bluetooth">Bluetooth Settings</string>

@@ -21,7 +21,7 @@ class EmulatorForegroundService : Service() {
         private const val NOTIFICATION_ID = 1001
     }
 
-    val logRepo: LogRepository = LogRepository(this)
+    val log = LogController(this)
 
     inner class LocalBinder : Binder() {
         fun getService() = this@EmulatorForegroundService

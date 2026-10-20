@@ -49,7 +49,7 @@ private const val REQUEST_CODE = 1
 
 class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionListener {
 
-    private var emulatorService: EmulatorForegroundService? = null
+    public var emulatorService: EmulatorForegroundService? = null
     private var serviceBound = false
 
     private val serviceConnection = object : ServiceConnection {
@@ -58,12 +58,14 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
             emulatorService = binder.getService()
             val connectedService = binder.getService()
             emulatorService = connectedService
-            logView.logRepo = connectedService.logRepo
+            logController = connectedService.log
+            simView.connect(connectedService)
             serviceBound = true
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
             emulatorService = null
+            simView.disconnect()
             serviceBound = false
         }
     }
@@ -90,6 +92,7 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
 
     lateinit var simView: Sim
     lateinit var logView: LogView
+    lateinit var logController: LogController
     private lateinit var settingsFragment: SettingsFragment
     private lateinit var settingsContainer: FrameLayout
     lateinit var statsView: StatsView
@@ -680,19 +683,19 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
                 true
             }
             R.id.logview_search -> {
-                logView.toggleTopBar()
+                logController.view?.toggleTopBar()
                 true
             }
             R.id.logview_download -> {
-                logView.download()
+                logController.download()
                 true
             }
             R.id.logview_download_as -> {
-                logView.save()
+                logController.save()
                 true
             }
             R.id.logview_clear -> {
-                logView.clear()
+                logController.clear()
                 true
             }
             else -> super.onOptionsItemSelected(item)
@@ -767,17 +770,17 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
     }
 
     fun onDataReceived(data: ByteArray, size_used: Int) {
-        logView.logData(LogEntryType.RECV, data, size_used)
+        logController.logData(LogEntryType.RECV, data, size_used)
         statsView.onDataReceived(data, size_used)
     }
 
     fun onDataSent(data: ByteArray, size_used: Int) {
-        logView.logData(LogEntryType.SENT, data, size_used)
+        logController.logData(LogEntryType.SENT, data, size_used)
         statsView.onDataSent(data, size_used)
     }
 
     fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {
-        logView.append(text, level)
+        logController.append(text, level)
     }
 
     override fun onDestroy() {

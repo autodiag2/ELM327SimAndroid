@@ -198,12 +198,11 @@ class LogView(
     private val activity: MainActivity
 ) : FrameLayout(activity) {
     val prefs by lazy { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
-    public lateinit var logRepo: LogRepository
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val mainScope = CoroutineScope(Dispatchers.Main)
-    private var search = ""
+    public var search = ""
 
-    private val logAdapter = LogAdapter(context)
+    public val logAdapter = LogAdapter(context)
     private lateinit var logTopBar: View
     private var logTopBarExpanded = false
     private val uiHandler = Handler(Looper.getMainLooper())
@@ -242,63 +241,26 @@ class LogView(
 
         uiHandler.postDelayed(hideOverlayRunnable, OVERLAY_BUTTONS_ANIM_MS)
     }
+    public var modelText = ""
     val saveLogLauncher =
         activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) {
                 val uri = result.data?.data ?: return@registerForActivityResult
                 activity.lifecycleScope.launch(Dispatchers.IO) {
                     activity.contentResolver.openOutputStream(uri)?.use { out ->
-                        val text = logRepo.snapshotUnsafe()
-                            .joinToString("\n") { it.text }
+                        val text = modelText
                         out.write(text.toByteArray())
                     }
                 }
             }
         }
 
-    private var stickToBottom = true
-    private var userTouching = false
+    public var stickToBottom = true
+    public var userTouching = false
 
     init {
         LayoutInflater.from(context).inflate(R.layout.log, this, true)
         setupLogsView()
-    }
-
-    private fun refresh(result: AppendResult? = null) {
-        scope.launch {
-            if (result != null && search.isBlank()) {
-                if ( result.deleted != null ) {
-                    logAdapter.remove(result.deleted)
-                }
-                if ( result.modified != null ) {
-                    logAdapter.notifyChanged(result.modified)
-                }
-                if (result.inserted) {
-                    logAdapter.append(result.entry)
-                } else {
-                    logAdapter.notifyChanged(result.entry)
-                }
-            } else {
-                val entries = logRepo.search(search) ?: emptyList()
-                mainScope.launch {
-                    logAdapter.replace(entries)
-                    if (stickToBottom && search.isBlank()) {
-                        scrollToBottomSafe()
-                    }
-                }
-            }
-        }
-    }
-
-    fun logData(
-        type: LogEntryType,
-        data: ByteArray,
-        length: Int = data.size
-    ) {
-        scope.launch {
-            val result = logRepo.logData(type, data, length)
-            refresh(result)
-        }
     }
 
     private fun updateLayoutMetrics(rv: RecyclerView) {
@@ -392,14 +354,6 @@ class LogView(
     }
 
     // ---- PUBLIC BUTTON ACTIONS ----
-    fun clear() {
-        scope.launch {
-            logRepo.clear()
-            mainScope.launch {
-                refresh()
-            }
-        }
-    }
 
     fun scrollUp() {
         val rv = findViewById<RecyclerView>(R.id.rvLogs)
@@ -413,44 +367,23 @@ class LogView(
         scrollToBottom(rv)
     }
 
-    fun save() {
-        openSaveLogDialog()
+    fun save(filename: String) {
+        openSaveLogDialog(filename)
     }
-    var filename = "elm327emu_log.txt"
+    
     fun getString(resId: Int, vararg formatArgs: Any?): String {
         return context.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
     }
-    fun download() {
-        scope.launch {
-            val file = File(context.getExternalFilesDir(null), filename)
-            file.writeText(logAdapterSnapshot())
-            activity.runOnUiThread {
-                Toast.makeText(
-                    context,
-                    getString(R.string.logview_saved_as, file.absolutePath),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-    }
-
-    // ---- PUBLIC APPEND API ----
-    fun append(text: String, level: LogLevel = LogLevel.DEBUG, data: ByteArray? = null, size_used: Int = data?.size ?: 0, serial: ByteArray? = null, serial_size: Int = serial?.size ?: 0, type: LogEntryType = LogEntryType.NONE) {
-        scope.launch {
-
-            val result: AppendResult? = logRepo.append(text, level, data, size_used, serial, serial_size, type)
-            mainScope.launch {
-                refresh(result)
-                // ---- ONLY auto-scroll if allowed ----
-                if (stickToBottom && !userTouching) {
-                    scrollToBottomSafe()
-                }
-            }
-        }
+    fun onDownload(filename: String) {
+        Toast.makeText(
+            context,
+            getString(R.string.logview_saved_as, filename),
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
     // ---- SAFE SCROLL ----
-    private fun scrollToBottomSafe() {
+    public fun scrollToBottomSafe() {
         val rv = findViewById<RecyclerView>(R.id.rvLogs)
         rv.post {
             val count = logAdapter.itemCount
@@ -467,12 +400,7 @@ class LogView(
         }
     }
 
-    private fun logAdapterSnapshot(): String {
-        // simple export helper (no repo snapshot needed anymore)
-        return ""
-    }
-
-    fun openSaveLogDialog() {
+    fun openSaveLogDialog(filename: String) {
         val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
             type = "text/plain"
@@ -481,4 +409,32 @@ class LogView(
 
         saveLogLauncher.launch(intent)
     }
+
+    fun refresh(result: AppendResult? = null, entries: List<LogEntry>? = null) {
+        scope.launch {
+            if (result != null && search.isBlank()) {
+                if ( result.deleted != null ) {
+                    logAdapter.remove(result.deleted)
+                }
+                if ( result.modified != null ) {
+                    logAdapter.notifyChanged(result.modified)
+                }
+                if (result.inserted) {
+                    logAdapter.append(result.entry)
+                } else {
+                    logAdapter.notifyChanged(result.entry)
+                }
+            } else {
+                mainScope.launch {
+                    if ( entries != null ) {
+                        logAdapter.replace(entries)
+                    }
+                    if (stickToBottom && search.isBlank()) {
+                        scrollToBottomSafe()
+                    }
+                }
+            }
+        }
+    }
+
 }
