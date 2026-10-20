@@ -37,12 +37,14 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import android.widget.ImageButton
 import com.github.autodiag2.elm327emu.EmulatorForegroundService
+import android.os.Handler
+import android.os.Looper
 
 const val SCHEMA = "autodiag/sim/elm327/serialscript"
 const val VERSION = 1.0
 
 class CustomController(
-    public val activity: MainActivity,
+    public val service: EmulatorForegroundService,
     private val listener: CustomController.Listener? = null
 ) : CustomView.Listener,
     JsonConfigurable,
@@ -66,10 +68,10 @@ class CustomController(
                 SupervisorJob()
         )
 
-    val logReplay = LogReplayController(emuProvider = stateMachine, service = EmulatorForegroundService(), scope = scope)
+    val logReplay = LogReplayController(emuProvider = stateMachine, service = service, scope = scope)
     val logPanel = LogPanel(this)
 
-    private val replayToolbar = ReplayToolbar(activity, this, scope)
+    private val replayToolbar = ReplayToolbar(service = service, this, scope)
     public val blocks = mutableListOf<BlockController>()
     public val links = mutableListOf<LinkController>()
     val selectedBlocks = mutableSetOf<Int>()
@@ -115,7 +117,7 @@ class CustomController(
         block: BlockController,
         state: BlockController.State
     ) {
-        activity.runOnUiThread {
+        Handler(Looper.getMainLooper()).post {
             view?.refresh()
         }
     }
@@ -227,7 +229,7 @@ class CustomController(
 
     private fun start() {
         scope.launch {
-            val emuProvider = activity.service?.bridgeOrchestrator as EmuInterface.Provider
+            val emuProvider = service.bridgeOrchestrator as EmuInterface.Provider
             val scriptEmu = stateMachine as EmuInterface
             emuProvider.setEmu(scriptEmu)
             stateMachine.start()
@@ -239,7 +241,7 @@ class CustomController(
         scope.launch {
             logReplay.stop()
             stateMachine.stop()
-            val emuProvider = activity.service?.bridgeOrchestrator as EmuInterface.Provider
+            val emuProvider = service.bridgeOrchestrator as EmuInterface.Provider
             emuProvider.resetEmu()
             replayToolbar.replayUpdatePlayPause()
         }
@@ -380,7 +382,7 @@ class CustomController(
         resId: Int,
         vararg formatArgs: Any?
     ): String {
-        return activity.getString(
+        return service.getString(
             resId,
             *formatArgs.map {
                 it ?: ""
@@ -391,7 +393,7 @@ class CustomController(
     private fun feedbackIfRunning(): Boolean {
         if ( stateMachine.isRunning() ) {
             AlertDialog.Builder(
-                activity
+                view!!.context as MainActivity
             )
                 .setTitle(
                     R.string.sim_custom_serial_script_clear_emu_running
@@ -418,7 +420,7 @@ class CustomController(
 
     public fun clearWithDialog() {
         AlertDialog.Builder(
-            activity
+            view!!.context as MainActivity
         )
             .setTitle(
                 R.string.sim_custom_serial_script_clear_confirm
@@ -644,13 +646,13 @@ class CustomController(
             return
         }
         val clipboard =
-            activity.getSystemService(
+            service.getSystemService(
                 Context.CLIPBOARD_SERVICE
             ) as android.content.ClipboardManager
 
         if (!clipboard.hasPrimaryClip()) {
             Toast.makeText(
-                activity,
+                service,
                 getString(
                     R.string.sim_custom_serial_script_import_clipboard_empty
                 ),
@@ -665,30 +667,34 @@ class CustomController(
                 ?: return
 
         if (clip.itemCount == 0) {
-            Toast.makeText(
-                activity,
-                getString(
-                    R.string.sim_custom_serial_script_import_clipboard_empty
-                ),
-                Toast.LENGTH_SHORT
-            ).show()
+            Handler(Looper.getMainLooper()).post {
+                Toast.makeText(
+                    service,
+                    getString(
+                        R.string.sim_custom_serial_script_import_clipboard_empty
+                    ),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
 
             return
         }
 
         val text =
             clip.getItemAt(0)
-                .coerceToText(activity)
+                .coerceToText(service)
                 .toString()
 
         if (text.isBlank()) {
-            Toast.makeText(
-                activity,
-                getString(
-                    R.string.sim_custom_serial_script_import_clipboard_empty
-                ),
-                Toast.LENGTH_SHORT
-            ).show()
+            Handler(Looper.getMainLooper()).post {
+                Toast.makeText(
+                    service,
+                    getString(
+                        R.string.sim_custom_serial_script_import_clipboard_empty
+                    ),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
 
             return
         }
@@ -699,27 +705,31 @@ class CustomController(
 
             fromJson(json)
 
-            Toast.makeText(
-                activity,
-                getString(
-                    R.string.sim_custom_serial_script_import_clipboard_success
-                ),
-                Toast.LENGTH_SHORT
-            ).show()
+            Handler(Looper.getMainLooper()).post {
+                Toast.makeText(
+                    service,
+                    getString(
+                        R.string.sim_custom_serial_script_import_clipboard_success
+                    ),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
         } catch (e: Exception) {
             logDebug(
                 "Clipboard import failed: " +
                     e.message
             )
 
-            Toast.makeText(
-                activity,
-                getString(
-                    R.string.sim_custom_serial_script_import_clipboard_error,
-                    e.message ?: ""
-                ),
-                Toast.LENGTH_LONG
-            ).show()
+            Handler(Looper.getMainLooper()).post {
+                Toast.makeText(
+                    service,
+                    getString(
+                        R.string.sim_custom_serial_script_import_clipboard_error,
+                        e.message ?: ""
+                    ),
+                    Toast.LENGTH_LONG
+                ).show()
+            }
         }
     }
 
@@ -728,7 +738,7 @@ class CustomController(
             toJson().toString()
 
         val clipboard =
-            activity.getSystemService(
+            service.getSystemService(
                 android.content.Context.CLIPBOARD_SERVICE
             ) as android.content.ClipboardManager
 
@@ -740,16 +750,19 @@ class CustomController(
 
         clipboard.setPrimaryClip(clip)
 
-        Toast.makeText(
-            activity,
-            getString(
-                R.string.sim_custom_serial_script_export_clipboard_success
-            ),
-            Toast.LENGTH_SHORT
-        ).show()
+        Handler(Looper.getMainLooper()).post {
+            Toast.makeText(
+                service,
+                getString(
+                    R.string.sim_custom_serial_script_export_clipboard_success
+                ),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
     }
 
     fun onImportFile() {
+        val activity = view!!.context as MainActivity
         activity.launchJsonPicker { text ->
             if ( ! feedbackIfRunning() ) {
                 val json = JSONObject(text)
@@ -759,6 +772,7 @@ class CustomController(
     }
 
     public fun onExportFile() {
+        val activity = view!!.context as MainActivity
         activity.fileExportPendingData =
             toJson().toString()
 
@@ -804,6 +818,8 @@ class CustomController(
                 )
             }
 
+        val activity = view!!.context as MainActivity
+
         activity.startActivity(
             Intent.createChooser(
                 intent,
@@ -823,6 +839,10 @@ class CustomController(
 
     public fun onAddLog() {
         addBlock(BlockController.Type.LOG)
+    }
+
+    public fun appendLog(message: String, level: LogLevel = LogLevel.DEBUG) {
+        service.log.append(message, level)
     }
     public fun onAddClientConnected() {
         addBlock(

@@ -38,9 +38,12 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
 import java.io.IOException
+import com.github.autodiag2.elm327emu.EmulatorForegroundService
+import android.os.Handler
+import android.os.Looper
 
 class ReplayToolbar(
-    private val activity: MainActivity,
+    private val service: EmulatorForegroundService,
     private val customController: CustomController,
     private val scope: CoroutineScope
 ) {
@@ -267,7 +270,7 @@ class ReplayToolbar(
                 customController.stateMachine.stop()
 
                 val emuProvider =
-                    activity.service?.bridgeOrchestrator as EmuInterface.Provider
+                    service.bridgeOrchestrator as EmuInterface.Provider
 
                 emuProvider.resetEmu()
 
@@ -280,8 +283,7 @@ class ReplayToolbar(
 
             startJob = scope.launch {
                 try {
-                    val emuProvider =
-                        activity.service?.bridgeOrchestrator as EmuInterface.Provider
+                    val emuProvider = service.bridgeOrchestrator as EmuInterface.Provider
 
                     emuProvider.resetEmu()
 
@@ -310,11 +312,11 @@ class ReplayToolbar(
 
                             logDebug("Replay error: ${error.message}")
 
-                            activity.runOnUiThread {
+                            Handler(Looper.getMainLooper()).post {
                                 replayUpdatePlayPause()
 
                                 Toast.makeText(
-                                    activity,
+                                    service,
                                     getString(
                                         R.string.custom_serial_replay_error,
                                         error.message ?: ""
@@ -335,7 +337,7 @@ class ReplayToolbar(
     }
 
     fun replayUpdatePlayPause() {
-        activity.runOnUiThread {
+        Handler(Looper.getMainLooper()).post {
             if (customController.logReplay.isRunning() || starting) {
                 startButton.setImageResource(R.drawable.ic_pause)
                 startButton.contentDescription =
@@ -392,7 +394,7 @@ class ReplayToolbar(
         resId: Int,
         vararg formatArgs: Any?
     ): String {
-        return activity.getString(
+        return service.getString(
             resId,
             *formatArgs.map {
                 it ?: ""

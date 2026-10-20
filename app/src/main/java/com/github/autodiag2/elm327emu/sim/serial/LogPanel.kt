@@ -30,18 +30,15 @@ import java.util.Date
 import java.util.Locale
 import android.widget.ScrollView
 
-class LogPanel(custom: CustomController) {
+class LogPanel(val custom: CustomController) {
 
     private var expanded = false
     
     private lateinit var panel: View
-    private val container: View
-
-    init {
-        container = custom.view!!
-    }
+    private lateinit var container: View
 
     fun setup() {
+        container = custom.view!!
         panel = container.findViewById(R.id.custom_serial_log_panel)
         val logText = panel.findViewById<TextView>(R.id.custom_serial_log_text)
         val scroll = panel.findViewById<ScrollView>(R.id.custom_serial_log_scroll)

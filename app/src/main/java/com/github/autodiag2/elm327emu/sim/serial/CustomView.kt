@@ -21,6 +21,7 @@ import android.text.TextUtils
 import android.text.TextPaint
 import android.widget.LinearLayout
 import android.view.LayoutInflater
+import com.github.autodiag2.elm327emu.MainActivity
 
 class CustomView(
     context: Context,
@@ -77,9 +78,10 @@ class CustomView(
     private var lastPointerCount = 0
 
     private var movedDuringGesture = false
-
+    private val activity: MainActivity
     init {
 
+        activity = context as MainActivity
         orientation = VERTICAL
 
         LayoutInflater.from(context).inflate(

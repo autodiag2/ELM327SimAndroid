@@ -23,7 +23,9 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import com.github.autodiag2.elm327emu.IgnitionState
+
 import com.github.autodiag2.elm327emu.sim.serial.CustomController
+import com.github.autodiag2.elm327emu.sim.serial.CustomView
 import android.widget.AdapterView
 import android.view.View
 import android.util.Log
@@ -141,7 +143,8 @@ class Sim(
             showConnectedClients()
         }
         updateConnectedClientsButton()
-        customSerialScreen = CustomController(activity, listener = this)
+        customSerialScreen = CustomController(activity.service!!, listener = this)
+        customSerialScreen.view = CustomView(activity)
         findViewById<Button>(R.id.sim_custom_serial_script_open).setOnClickListener {
             val view = customSerialScreen.view
             if ( view != null) {

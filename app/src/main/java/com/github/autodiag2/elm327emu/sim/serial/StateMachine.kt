@@ -494,7 +494,7 @@ class StateMachine(
         text: String,
         level: LogLevel = LogLevel.DEBUG
     ) {
-        controller.activity.appendLog(
+        controller.appendLog(
             text,
             level
         )
