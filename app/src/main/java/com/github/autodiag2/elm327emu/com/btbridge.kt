@@ -19,16 +19,17 @@ import com.github.autodiag2.elm327emu.sim.EmuInterface
 
 import android.util.Log
 import com.github.autodiag2.elm327emu.BuildConfig
+import com.github.autodiag2.elm327emu.EmulatorForegroundService
 
 class BluetoothBridge(
     emuProvider: EmuInterface.Provider,
     scope: CoroutineScope,
-    activity: MainActivity,
+    service: EmulatorForegroundService,
     listener: Bridge.Listener? = null
 ) : Bridge(
     emuProvider = emuProvider,
     scope = scope,
-    activity = activity,
+    service = service,
     LOG_TAG = "BT SPP",
     listener = listener
 ) {
@@ -175,7 +176,7 @@ class BluetoothBridge(
                                 val request =
                                     requestQueue.receive()
 
-                                activity.onDataReceived(
+                                service.onDataReceived(
                                     request,
                                     request.size
                                 )
@@ -199,7 +200,7 @@ class BluetoothBridge(
 
                                 output.flush()
 
-                                activity.onDataSent(
+                                service.onDataSent(
                                     bufferLoop,
                                     n
                                 )
@@ -278,21 +279,21 @@ class BluetoothBridge(
 
     override suspend fun start() {
 
-        if (!activity.btAdapter.isEnabled) {
+        if (!service.btAdapter.isEnabled) {
 
-            activity.showBluetoothEnablePopup()
+            //activity.showBluetoothEnablePopup()
 
             return
         }
 
         secureServer =
-            activity.btAdapter.listenUsingRfcommWithServiceRecord(
+            service.btAdapter.listenUsingRfcommWithServiceRecord(
                 getString(R.string.app_name),
                 classicalBtUUID
             )
 
         insecureServer =
-            activity.btAdapter.listenUsingInsecureRfcommWithServiceRecord(
+            service.btAdapter.listenUsingInsecureRfcommWithServiceRecord(
                 getString(R.string.app_name),
                 classicalBtUUID
             )

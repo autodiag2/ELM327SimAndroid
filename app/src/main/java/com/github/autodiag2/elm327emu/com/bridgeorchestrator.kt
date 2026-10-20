@@ -23,12 +23,13 @@ import android.util.Log
 import com.github.autodiag2.elm327emu.BuildConfig
 import kotlinx.coroutines.*
 import com.github.autodiag2.elm327emu.sim.EmuManaged
+import com.github.autodiag2.elm327emu.EmulatorForegroundService
 
 /**
  * Driven by the need of hotpluging and unplugging interfaces, this class orchestrates the bridges and the emulator.
  */
 class BridgeOrchestrator(
-    private val activity: MainActivity,
+    private val service: EmulatorForegroundService,
     private val basePort: Int = 35000,
     private val clientConnectionListener: ClientConnectionListener? = null
 ): EmuInterface.Provider, Bridge.Listener {
@@ -36,14 +37,13 @@ class BridgeOrchestrator(
     private val emuManaged = EmuManaged()
     private var emu: EmuInterface = emuManaged
     protected val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    public val bleBridge = BLEBridge(emuProvider = this, scope = scope, activity = activity, listener = this)
+    public val bleBridge = BLEBridge(emuProvider = this, scope = scope, service = service, listener = this)
     private var bleBridgeJob: Job? = null
-    public val ntBridge = NetworkBridge(emuProvider = this, scope = scope, activity = activity, basePort = basePort, listener = this)
+    public val ntBridge = NetworkBridge(emuProvider = this, scope = scope, service = service, basePort = basePort, listener = this)
     private var ntBridgeJob: Job? = null
-    public val btBridge = BluetoothBridge(emuProvider = this, scope = scope, activity = activity, listener = this)
+    public val btBridge = BluetoothBridge(emuProvider = this, scope = scope, service = service, listener = this)
     private var btBridgeJob: Job? = null
-    private val prefs =
-        activity.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+    private val prefs = service.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
 
     data class ConnectedClient(
         val clientIdentifier: String,
@@ -59,7 +59,7 @@ class BridgeOrchestrator(
     private var started = false
 
     suspend fun start() {
-        activity.clearSocketFiles()
+        service.clearSocketFiles()
         emuStart()
 
         started = true
@@ -167,7 +167,7 @@ class BridgeOrchestrator(
 
                     if (
                         (bridge is BLEBridge || bridge is BluetoothBridge) &&
-                        !activity.btAdapter.isEnabled
+                        !service.btAdapter.isEnabled
                     ) {
                         logDebug("bluetooth not enabled, abort launch")
                         break
@@ -238,15 +238,15 @@ class BridgeOrchestrator(
     }
 
     protected fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {
-        activity.appendLog(text, level)
+        service.log.append(text, level)
     }
 
     protected fun getString(resId: Int, vararg formatArgs: Any?): String {
-        return activity.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
+        return service.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
     }
 
     protected fun emuStart() {
-        val filesDirPath = activity.filesDir.absolutePath
+        val filesDirPath = service.filesDir.absolutePath
         val location = libautodiag.launchEmu(filesDirPath)
         appendLog(getString(R.string.log_network_native_sim_location, location),
             LogLevel.DEBUG

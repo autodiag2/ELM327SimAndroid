@@ -50,6 +50,12 @@ private const val REQUEST_CODE = 1
 class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionListener {
 
     public var emulatorService: EmulatorForegroundService? = null
+    var service: EmulatorForegroundService?
+        get() = emulatorService
+        set(value) {
+            emulatorService = value
+        }
+
     private var serviceBound = false
 
     private val serviceConnection = object : ServiceConnection {
@@ -76,15 +82,14 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) {
                 appendLog(getString(R.string.log_main_bluetooth_enabled), LogLevel.INFO)
-                bridgeOrchestrator.setupBluetoothBridge()
-                bridgeOrchestrator.setupBleBridge()
+                service?.bridgeOrchestrator?.setupBluetoothBridge()
+                service?.bridgeOrchestrator?.setupBleBridge()
             } else {
                 appendLog(getString(R.string.log_main_bluetooth_enable_failed), LogLevel.ERROR)
             }
         }
 
     val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    lateinit var bridgeOrchestrator: BridgeOrchestrator
 
     lateinit var contentFrame: FrameLayout
     private lateinit var drawer: DrawerLayout
@@ -385,7 +390,6 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        bridgeOrchestrator = BridgeOrchestrator(activity = this, clientConnectionListener = this)
         setContentView(R.layout.activity_main)
         settingsContainer = findViewById(R.id.settingsContainer)
 
@@ -745,12 +749,6 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
     // Logic
     // -------------------------------
 
-    fun clearSocketFiles() {
-        filesDir.listFiles()?.forEach {
-            if (it.name.startsWith("socket")) it.delete()
-        }
-    }
-
     fun requestNearbyWifiPermission(callback: (Boolean) -> Unit) {
         pendingWifiHotspotPermCallback = callback;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -769,16 +767,6 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
         enableBtLauncher.launch(intent)
     }
 
-    fun onDataReceived(data: ByteArray, size_used: Int) {
-        logController.logData(LogEntryType.RECV, data, size_used)
-        statsView.onDataReceived(data, size_used)
-    }
-
-    fun onDataSent(data: ByteArray, size_used: Int) {
-        logController.logData(LogEntryType.SENT, data, size_used)
-        statsView.onDataSent(data, size_used)
-    }
-
     fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {
         logController.append(text, level)
     }
@@ -787,4 +775,16 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
         MainActivityRef.activity = null
         super.onDestroy()
     }
+
+    // TO remove
+    fun onDataReceived(data: ByteArray, size_used: Int) {
+        // log
+        statsView.onDataReceived(data, size_used)
+    }
+
+    fun onDataSent(data: ByteArray, size_used: Int) {
+        //logController.logData(LogEntryType.SENT, data, size_used)
+        statsView.onDataSent(data, size_used)
+    }
+    // END TO remove
 }

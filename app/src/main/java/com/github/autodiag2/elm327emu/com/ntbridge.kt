@@ -11,14 +11,15 @@ import java.io.OutputStream
 import java.net.ServerSocket
 import kotlinx.coroutines.channels.Channel
 import com.github.autodiag2.elm327emu.sim.EmuInterface
+import com.github.autodiag2.elm327emu.EmulatorForegroundService
 
 class NetworkBridge(
     emuProvider: EmuInterface.Provider,
     scope: CoroutineScope,
-    activity: MainActivity,
+    service: EmulatorForegroundService,
     private val basePort: Int = 35000,
     listener: Bridge.Listener? = null
-): Bridge(emuProvider = emuProvider, scope = scope, activity = activity, LOG_TAG = "NT", listener = listener) {
+): Bridge(emuProvider = emuProvider, scope = scope, service = service, LOG_TAG = "NT", listener = listener) {
 
     private var serverSocket: ServerSocket? = null
     private var clientSocket: Socket? = null
@@ -64,7 +65,7 @@ class NetworkBridge(
                     try {
                         val request = requestQueue.receive()
 
-                        activity.onDataReceived(request, request.size)
+                        service.onDataReceived(request, request.size)
 
                         val n = emuProvider.getEmu().transact(
                             request,
@@ -76,7 +77,7 @@ class NetworkBridge(
                         netOutput?.write(bufferLoop, 0, n)
                         netOutput?.flush()
 
-                        activity.onDataSent(bufferLoop, n)
+                        service.onDataSent(bufferLoop, n)
 
                     } catch (e: Exception) {
                         appendLog(

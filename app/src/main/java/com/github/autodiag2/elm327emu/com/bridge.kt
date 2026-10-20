@@ -15,11 +15,12 @@ import java.io.InputStream
 import java.io.OutputStream
 import kotlinx.coroutines.isActive
 import com.github.autodiag2.elm327emu.sim.EmuInterface
+import com.github.autodiag2.elm327emu.EmulatorForegroundService
 
 open class Bridge(
     protected val emuProvider: EmuInterface.Provider,
     protected val scope: CoroutineScope,
-    protected val activity: MainActivity,
+    protected val service: EmulatorForegroundService,
     private val LOG_TAG: String,
     protected val listener: Listener? = null
 ) {
@@ -30,11 +31,11 @@ open class Bridge(
     }
 
     protected fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {
-        activity.appendLog(LOG_TAG + ": " + text, level)
+        service.log.append(LOG_TAG + ": " + text, level)
     }
 
     protected fun getString(resId: Int, vararg formatArgs: Any?): String {
-        return activity.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
+        return service.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
     }
 
     open suspend fun start() {

@@ -10,6 +10,14 @@ import android.os.Binder
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothManager
+import com.github.autodiag2.elm327emu.com.BridgeOrchestrator
+import android.content.Context
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 class EmulatorForegroundService : Service() {
 
@@ -28,13 +36,16 @@ class EmulatorForegroundService : Service() {
     }
 
     private val binder = LocalBinder()
-
-    var isRunning = false
-        private set
+    protected val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    lateinit var btManager: BluetoothManager
+    lateinit var btAdapter: BluetoothAdapter
+    val bridgeOrchestrator: BridgeOrchestrator = BridgeOrchestrator(service = this, clientConnectionListener = null)  // TODO clientConnectionListener = this)
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        btManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        btAdapter = btManager.adapter
     }
 
     override fun onBind(intent: Intent?): IBinder = binder
@@ -56,25 +67,15 @@ class EmulatorForegroundService : Service() {
     }
 
     private fun startEmulator() {
-        if (isRunning) return
-
         startForeground(NOTIFICATION_ID, buildNotification())
-        isRunning = true
 
-        // TODO: Start the emulator runtime here.
+        scope.launch {
+            bridgeOrchestrator.start()
+        }
     }
 
     private fun stopEmulator() {
-        if (!isRunning) {
-            stopSelf()
-            return
-        }
-
-        // TODO: Stop the emulator runtime and close its bridges.
-
-        isRunning = false
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        stopSelf()
+        bridgeOrchestrator.stop()
     }
 
     private fun buildNotification(): Notification {
@@ -124,11 +125,23 @@ class EmulatorForegroundService : Service() {
     }
 
     override fun onDestroy() {
-        if (isRunning) {
-            // TODO: Stop the emulator runtime and close its bridges.
-            isRunning = false
-        }
-
         super.onDestroy()
     }
+
+    fun onDataReceived(data: ByteArray, size_used: Int) {
+        log.logData(LogEntryType.RECV, data, size_used)
+        //statsView.onDataReceived(data, size_used
+    }
+
+    fun onDataSent(data: ByteArray, size_used: Int) {
+        log.logData(LogEntryType.SENT, data, size_used)
+        //statsView.onDataSent(data, size_used)
+    }
+
+    fun clearSocketFiles() {
+        filesDir.listFiles()?.forEach {
+            if (it.name.startsWith("socket")) it.delete()
+        }
+    }
+
 }

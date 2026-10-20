@@ -22,7 +22,7 @@ import androidx.annotation.RequiresApi
 import com.github.autodiag2.elm327emu.sim.EmuInterface
 import android.util.Log
 import com.github.autodiag2.elm327emu.BuildConfig
-
+import com.github.autodiag2.elm327emu.EmulatorForegroundService
 private data class PendingRequest(
     val device: BluetoothDevice,
     val requestId: Int,
@@ -33,12 +33,11 @@ private data class PendingRequest(
 class BLEBridge(
     emuProvider: EmuInterface.Provider,
     scope: CoroutineScope,
-    activity: MainActivity,
+    service: EmulatorForegroundService,
     listener: Bridge.Listener? = null
-) : Bridge(emuProvider = emuProvider, scope = scope, activity = activity, LOG_TAG = "BLE", listener = listener) {
+) : Bridge(emuProvider = emuProvider, scope = scope, service = service, LOG_TAG = "BLE", listener = listener) {
 
-    private val prefs =
-        activity.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+    private val prefs = service.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
 
     private val requestQueue = Channel<PendingRequest>(Channel.UNLIMITED)
     private val ELM_SERVICE_UUID: UUID
@@ -356,7 +355,7 @@ class BLEBridge(
                 return
             }
 
-            activity.onDataReceived(value, value.size)
+            service.onDataReceived(value, value.size)
 
             appendLog(
                 getString(R.string.log_ble_request_queued, value.size),
@@ -452,8 +451,8 @@ class BLEBridge(
     }
 
     override suspend fun start() {
-        if (!activity.btAdapter.isEnabled) {
-            activity.showBluetoothEnablePopup()
+        if (!service.btAdapter.isEnabled) {
+            //activity.showBluetoothEnablePopup()
             return
         }
 
@@ -481,11 +480,11 @@ class BLEBridge(
                 .addServiceUuid(ParcelUuid(ELM_SERVICE_UUID))
                 .build()
             
-            if (!activity.btAdapter.isMultipleAdvertisementSupported) {
+            if (!service.btAdapter.isMultipleAdvertisementSupported) {
                 appendLog(getString(R.string.log_ble_advertising_not_supported), LogLevel.WARNING)
             }
 
-            advertiser = activity.btAdapter.bluetoothLeAdvertiser ?: run {
+            advertiser = service.btAdapter.bluetoothLeAdvertiser ?: run {
                 appendLog(getString(R.string.log_ble_advertiser_null), LogLevel.DEBUG)
                 appendLog(getString(R.string.log_ble_peripherical_mode_error), LogLevel.ERROR)
                 return@launch
@@ -494,8 +493,8 @@ class BLEBridge(
                 .setIncludeDeviceName(true)
                 .build()
 
-            val btManager = activity.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-            gattServer = btManager.openGattServer(activity, gattCallback)
+            val btManager = service.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+            gattServer = btManager.openGattServer(service, gattCallback)
 
             val service = BluetoothGattService(
                 ELM_SERVICE_UUID,
@@ -569,11 +568,11 @@ class BLEBridge(
 
             if (n > 0) {
                 if ( ! sendTx(request.device, buffer.copyOf(n)) ) {
-                    activity.appendLog(getString(R.string.log_ble_failed_to_send_2))
+                    service.log.append(getString(R.string.log_ble_failed_to_send_2))
                 }
-                activity.onDataSent(buffer, n)
+                service.onDataSent(buffer, n)
             } else {
-                activity.appendLog(getString(R.string.log_ble_nothing_received), LogLevel.ERROR)
+                service.log.append(getString(R.string.log_ble_nothing_received), LogLevel.ERROR)
             }
 
         } catch (e: Exception) {

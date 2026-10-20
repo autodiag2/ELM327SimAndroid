@@ -125,7 +125,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         name.isEnabled = enabled
 
         if (enabled) {
-            name.text = activityMain.btAdapter.getName() ?: ""
+            name.text = activityMain.service?.btAdapter?.getName() ?: ""
         }
     }
 
@@ -186,7 +186,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         pairNew.setOnClickListener {
             try {
-                activityMain.bridgeOrchestrator.stopBridges()
+                activityMain.service?.bridgeOrchestrator?.stopBridges()
                 startActivity(
                     Intent(Settings.ACTION_BLUETOOTH_SETTINGS)
                 )
@@ -196,7 +196,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         dialog.setOnDismissListener {
             activityMain.scope.launch {
-                activityMain.bridgeOrchestrator.setupBridges()
+                activityMain.service?.bridgeOrchestrator?.setupBridges()
             }
         }
 
@@ -212,7 +212,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         list.removeAllViews()
 
-        val adapter = activityMain.btAdapter
+        val adapter = activityMain.service?.btAdapter
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
             ActivityCompat.checkSelfPermission(
@@ -223,7 +223,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
             return
         }
 
-        val devices = adapter.bondedDevices.sortedBy { it.name ?: it.address }
+        val devices = adapter?.bondedDevices?.sortedBy { it.name ?: it.address } ?: emptyList()
 
         if (devices.isEmpty()) {
 
@@ -577,9 +577,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
                     .apply()
 
                 when(key) {
-                    "com_nt_enabled" -> activityMain.bridgeOrchestrator.setupNetworkBridge()
-                    "com_ble_enabled" -> activityMain.bridgeOrchestrator.setupBleBridge()
-                    "com_bt_enabled" -> activityMain.bridgeOrchestrator.setupBluetoothBridge()
+                    "com_nt_enabled" -> activityMain.service?.bridgeOrchestrator?.setupNetworkBridge()
+                    "com_ble_enabled" -> activityMain.service?.bridgeOrchestrator?.setupBleBridge()
+                    "com_bt_enabled" -> activityMain.service?.bridgeOrchestrator?.setupBluetoothBridge()
                 }
 
                 true
@@ -622,7 +622,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         val adapterName =
             if (activityMain.isPermissionsGranted()) {
-                activityMain.btAdapter.getName() ?: ""
+                activityMain.service?.btAdapter?.getName() ?: ""
             } else {
                 getString(R.string.settings_missing_permission)
             }
@@ -660,9 +660,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 prefs.edit()
                     .putString(PREF_BT_NAME, newName)
                     .apply()
-                activityMain.btAdapter.setName(newName)
-                activityMain.bridgeOrchestrator.setupBleBridge()
-                activityMain.bridgeOrchestrator.setupBluetoothBridge()
+                activityMain.service?.btAdapter?.setName(newName)
+                activityMain.service?.bridgeOrchestrator?.setupBleBridge()
+                activityMain.service?.bridgeOrchestrator?.setupBluetoothBridge()
 
                 true
             }
@@ -707,7 +707,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 .putString(PREF_BLE_RX, selected.rx)
                 .apply()
 
-            activityMain.bridgeOrchestrator.setupBleBridge()
+            activityMain.service?.bridgeOrchestrator?.setupBleBridge()
             updateBleCustomSummary()
 
             true
@@ -785,7 +785,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                     .value = bleProfiles.lastIndex.toString()
 
                 updateBleCustomSummary()
-                activityMain.bridgeOrchestrator.setupBleBridge()
+                activityMain.service?.bridgeOrchestrator?.setupBleBridge()
             }
             .show()
     }

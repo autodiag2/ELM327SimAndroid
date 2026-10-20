@@ -242,14 +242,13 @@ class Sim(
     }
 
     fun disconnect() {
-        
+
     }
 
     fun stop() {
         context.stopService(
             Intent(context, EmulatorForegroundService::class.java)
         )
-        activity.bridgeOrchestrator.stop()
         scope.coroutineContext.cancelChildren()
         appendLog(getString(R.string.log_main_bluetooth_server_stopped), LogLevel.INFO)
     }
@@ -262,9 +261,6 @@ class Sim(
             context.startForegroundService(intent)
         } else {
             context.startService(intent)
-        }
-        scope.launch {
-            activity.bridgeOrchestrator.start()
         }
     }
 
