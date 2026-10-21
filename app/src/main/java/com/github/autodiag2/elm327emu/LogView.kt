@@ -133,17 +133,28 @@ class LogAdapter(
     }
 
     override fun onBindViewHolder(holder: VH, position: Int) {
-        assert(items.size <= position)
+        if ( items.size <= position ) {
+            Log.w("LogView", "Failed to display ${position}/${items.size}")
+            return
+        }
         val item = items[position]
         var displayText = item.text
-        if ( item.data.size > 0 && item.type != LogEntryType.NONE ) {
-            displayText = context.getString(
-                if (item.type == LogEntryType.RECV)
-                    R.string.log_main_data_received
-                else
-                    R.string.log_main_data_sent,
-                dataLogFormat(item.data, item.data.size)
-            )
+        if ( item.type != LogEntryType.NONE ) {
+            var data: ByteArray? = item.data
+            if ( data == null || data.size == 0 ) {
+                data = item.serial
+            }
+            if ( data.size > 0  ) {
+                displayText = context.getString(
+                    if (item.type == LogEntryType.RECV)
+                        R.string.log_main_data_received
+                    else
+                        R.string.log_main_data_sent,
+                    dataLogFormat(data, data.size)
+                )
+            } else {
+                displayText = item.text
+            }
         }
         if (item.count > 1) {
             holder.tv.text = "×${item.count} ${displayText}"
