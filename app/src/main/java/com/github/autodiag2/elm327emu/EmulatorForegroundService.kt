@@ -19,6 +19,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import android.util.Log
 
 class EmulatorForegroundService : Service() {
 
@@ -63,12 +64,16 @@ class EmulatorForegroundService : Service() {
         when (intent?.action) {
             ACTION_STOP -> {
                 stopEmulator()
-                return START_NOT_STICKY
             }
-            ACTION_START, null -> startEmulator()
+            ACTION_START -> {
+                startEmulator()
+            }
+            null -> {
+                
+            }
         }
 
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     public fun startEmulator() {

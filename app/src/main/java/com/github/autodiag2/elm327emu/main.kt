@@ -67,7 +67,9 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
             val connectedService = binder.getService()
             emulatorService = connectedService
             logController = connectedService.log
+            assert(::logView.isInitialized)
             logController.attachView(logView)
+            assert(::simView.isInitialized)
             connectedService.sim.attachView(simView)
             serviceBound = true
         }
@@ -502,7 +504,6 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
     fun startForegroundService() {
         if ( service == null ) {
             val intent = Intent(this, EmulatorForegroundService::class.java)
-                .setAction(EmulatorForegroundService.ACTION_START)
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 startForegroundService(intent)

@@ -133,6 +133,10 @@ class LogAdapter(
     }
 
     override fun onBindViewHolder(holder: VH, position: Int) {
+        if ( items.size <= position ) {
+            Log.w("LogView", "requested item does not exists")
+            return
+        }
         val item = items[position]
         var displayText = item.text
         if ( item.data.size > 0 && item.type != LogEntryType.NONE ) {
@@ -411,12 +415,12 @@ class LogView(
     }
 
     fun refresh(result: AppendResult? = null, entries: List<LogEntry>? = null) {
-        scope.launch {
+        mainScope.launch {
             if (result != null && search.isBlank()) {
-                if ( result.deleted != null ) {
+                if (result.deleted != null) {
                     logAdapter.remove(result.deleted)
                 }
-                if ( result.modified != null ) {
+                if (result.modified != null) {
                     logAdapter.notifyChanged(result.modified)
                 }
                 if (result.inserted) {
@@ -425,13 +429,11 @@ class LogView(
                     logAdapter.notifyChanged(result.entry)
                 }
             } else {
-                mainScope.launch {
-                    if ( entries != null ) {
-                        logAdapter.replace(entries)
-                    }
-                    if (stickToBottom && search.isBlank()) {
-                        scrollToBottomSafe()
-                    }
+                if (entries != null) {
+                    logAdapter.replace(entries)
+                }
+                if (stickToBottom && search.isBlank()) {
+                    scrollToBottomSafe()
                 }
             }
         }
