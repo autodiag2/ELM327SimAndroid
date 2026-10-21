@@ -35,7 +35,7 @@ import com.github.autodiag2.elm327emu.ui.settings.SettingsFragment
 import com.github.autodiag2.elm327emu.sim.serial.CustomController
 import com.github.autodiag2.elm327emu.sim.serial.CustomView
 import java.io.File
-import com.github.autodiag2.elm327emu.sim.ecu.EcuGui
+import com.github.autodiag2.elm327emu.sim.ecu.EcuGuiView
 import com.github.autodiag2.elm327emu.sim.GuiGodot
 import android.widget.Button
 import com.github.autodiag2.elm327emu.LogEntryType
@@ -320,7 +320,7 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
             1 == simListNumberOfSelectedItems
         )
         menu.setGroupVisible(R.id.action_menu_group_sim_ecu_gui_default, 
-            activeScreen is EcuGui
+            activeScreen is EcuGuiView
         )
         menu.setGroupVisible(R.id.action_menu_group_sim_custom_serial_script,
             activeScreen is CustomView

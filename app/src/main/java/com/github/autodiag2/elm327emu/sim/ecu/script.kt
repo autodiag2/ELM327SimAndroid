@@ -2,7 +2,6 @@ package com.github.autodiag2.elm327emu.sim.ecu
 
 import android.content.ClipData
 import android.content.ClipboardManager
-import android.content.Context
 import android.view.LayoutInflater
 import android.widget.Button
 import android.widget.EditText
@@ -16,6 +15,8 @@ import org.luaj.vm2.LuaTable
 import org.luaj.vm2.LuaValue
 import org.luaj.vm2.lib.jse.JsePlatform
 import com.github.autodiag2.elm327emu.LogLevel
+import android.content.Context
+import com.github.autodiag2.elm327emu.EmulatorForegroundService
 
 interface EcuByteArrayHandler {
     fun response(request: ByteArray): ByteArray
@@ -118,54 +119,31 @@ class LuaJEcuHandler(
         }
     }
 }
-fun getScript(ecu: Ecu): String {
-    val luaEditor = ecu.findViewById<EditText>(R.id.lua_editor)
-    return luaEditor.text.toString()
-}
-fun updateScript(script: String, ecu: Ecu) {
-    val errorReturn = ecu.findViewById<TextView>(R.id.error_return)
-    try {
-        val handler = LuaJEcuHandler(script, errorReturn)
 
-        // bind to ECU (native side)
-        libautodiag.setResponseByteArrayByAddress(
-            ecu.address,
-            handler
-        )
-        errorReturn.setText(getString(ecu.context,
-            R.string.sim_ecu_script_lua_parse_success
-        ))
-    } catch (e: Exception) {
-        errorReturn.setText(getString(ecu.context,
-            R.string.sim_ecu_script_lua_load_parse_error, e.message))
-    }
-}
-class EcuScript(
-    address: EcuAddress = DEFAULT_ADDRESS,
-    name: String? = null,
-    private val activity: MainActivity
-): Ecu(EcuType.bytearray, address, name ?: activity.getString(EcuType.bytearray.label_id), activity) {
+class EcuScriptView(context: Context) : EcuView(context) {
+    public lateinit var onApply: ((text: String) -> Unit)
+    public val luaEditor: EditText
+    
     init {
-        LayoutInflater.from(activity).inflate(R.layout.sim_ecu_script, this, true)
-        val luaEditor = findViewById<EditText>(R.id.lua_editor)
+        LayoutInflater.from(context).inflate(R.layout.sim_ecu_script, this, true)
+        luaEditor = findViewById<EditText>(R.id.lua_editor)
 
         val applyScript = findViewById<Button>(R.id.apply_script)
         applyScript.setOnClickListener {
-            updateScript(luaEditor.text.toString(), this)
+            onApply.invoke(luaEditor.text.toString())
         }
-        updateScript(luaEditor.text.toString(), this)
         val copyBtn = findViewById<Button>(R.id.copy_script)
         val pasteBtn = findViewById<Button>(R.id.paste_script)
         val clearBtn = findViewById<Button>(R.id.clear_script)
 
-        val clipboard = activity.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
         copyBtn.setOnClickListener {
             val text = luaEditor.text.toString()
 
             if (text.isNotEmpty()) {
                 val clip = ClipData.newPlainText("lua_script", text)
                 clipboard.setPrimaryClip(clip)
-                Toast.makeText(activity, getString(activity,
+                Toast.makeText(context, getString(context,
                     R.string.sim_ecu_script_copy_success
                 ), Toast.LENGTH_SHORT).show()
             }
@@ -173,7 +151,7 @@ class EcuScript(
         pasteBtn.setOnClickListener {
             if (clipboard.hasPrimaryClip()) {
                 val item = clipboard.primaryClip?.getItemAt(0)
-                val pasted = item?.coerceToText(activity)?.toString()
+                val pasted = item?.coerceToText(context)?.toString()
 
                 if (!pasted.isNullOrEmpty()) {
                     luaEditor.setText(pasted)
@@ -188,7 +166,28 @@ class EcuScript(
                         "end"
             )
         }
+    }
+
+}
+class EcuScript(
+    address: EcuAddress = DEFAULT_ADDRESS,
+    name: String? = null,
+    service: EmulatorForegroundService
+): Ecu(EcuType.bytearray, service, address, name ?: service.getString(EcuType.bytearray.label_id)) {
+    init {
         libautodiag.registerOnSignalReceived(address, signalHandler)
+    }
+
+    fun onApply(text: String) {
+        updateScript(text)
+    }
+
+    override fun attachView(view: EcuView?) {
+        assert(view is EcuScriptView)
+        val view = view as EcuScriptView
+        this.view = view
+        view.onApply = ::onApply
+        updateScript(view.luaEditor.text.toString())
     }
 
     override fun loadStateFromGeneratorWhenShowing() {
@@ -197,15 +196,57 @@ class EcuScript(
 
     override fun fromJsonInternal(content: JSONObject) {
         val script = content.optString("script", "")
-        val editor = findViewById<EditText>(R.id.lua_editor)
-        updateScript(script, this)
-        editor.setText(script)
+        updateScript(script)
+        val view = this.view as EcuScriptView?
+        if ( view != null ) {
+            val activity = view.context as MainActivity
+            activity.runOnUiThread {
+                view.luaEditor.setText(script)
+            }
+        }
+    }
+
+    fun getScript(): String {
+        val view = view as EcuScriptView?
+        if ( view == null ) {
+            return ""
+        }
+        val luaEditor = view.findViewById<EditText>(R.id.lua_editor)
+        return luaEditor.text.toString()
     }
 
     override fun toJsonInternal(): JSONObject {
         val obj = JSONObject()
-        obj.put("script", getScript(this))
+        obj.put("script", getScript())
         return obj
+    }
+
+    fun updateScript(script: String) {
+        val view = view as EcuScriptView?
+        if ( view == null ) {
+            return
+        }
+        val errorReturn = view.findViewById<TextView>(R.id.error_return)
+        val activity = view.context as MainActivity
+        try {
+            val handler = LuaJEcuHandler(script, errorReturn)
+
+            // bind to ECU (native side)
+            libautodiag.setResponseByteArrayByAddress(
+                address,
+                handler
+            )
+            activity.runOnUiThread {
+                errorReturn.setText(getString(view.context,
+                    R.string.sim_ecu_script_lua_parse_success
+                ))
+            }
+        } catch (e: Exception) {
+            activity.runOnUiThread {
+                errorReturn.setText(getString(view.context,
+                    R.string.sim_ecu_script_lua_load_parse_error, e.message))
+            }
+        }
     }
 
 

@@ -55,7 +55,7 @@ class EcuGuiView(context: Context, allSignals:  Array<SimSignal>): EcuView(conte
     public lateinit var onSignalValueChanged: ((signal: SimSignal, value: Double) -> Unit)
     public lateinit var onDtcAddByCode: ((code: String) -> Unit)
     public lateinit var onSignalRemoved: ((signal: SimSignal) -> Unit)
-    public lateinit var getAddress: (() -> EcuAddress)
+    public lateinit var get_Address: (() -> EcuAddress)
     public lateinit var onDTCRemove: ((code: String) -> Unit)
     
 
@@ -94,7 +94,7 @@ class EcuGuiView(context: Context, allSignals:  Array<SimSignal>): EcuView(conte
                 val scale = (1.0 / step).toInt().coerceAtLeast(1)
                 val minI = (signal.min * scale).toInt()
                 val maxI = (signal.max * scale).toInt()
-                val initialI = (((getSignalInitialValue(getAddress.invoke(), signal)).coerceIn(signal.min, signal.max)) * scale).toInt()
+                val initialI = (((getSignalInitialValue(get_Address.invoke(), signal)).coerceIn(signal.min, signal.max)) * scale).toInt()
 
                 val valueText = TextView(context).apply {
                     val shown = initialI.toDouble() / scale
@@ -213,11 +213,11 @@ class EcuGui(
         guiView.onDtcAddByCode = ::addDtcByCode
         guiView.onSignalValueChanged = ::onSignalValueChanged
         guiView.onSignalRemoved = ::onSignalRemoved
-        guiView.getAddress = ::getAddress
+        guiView.get_Address = ::get_Address
         guiView.onDTCRemove = ::onDTCRemove
     }
 
-    fun getAddress(): EcuAddress {
+    fun get_Address(): EcuAddress {
         return address
     }
 
@@ -332,7 +332,7 @@ class EcuGui(
         }
     }
 
-    fun setEcuName(name: String) {
+    fun set_EcuName(name: String) {
         ecuName = name
         val view = this.view as EcuGuiView?
         if ( view != null ) {
@@ -355,7 +355,7 @@ class EcuGui(
     }
 
     override fun fromJsonInternal(content: JSONObject) {
-        setEcuName(content.optString("ecuName", ""))
+        set_EcuName(content.optString("ecuName", ""))
         setVIN(content.optString("vin", ""))
         setMILChecked(content.optBoolean("mil", false))
         setDTCsCleared(content.optBoolean("dtcCleared", false))
