@@ -69,7 +69,7 @@ class EmulatorForegroundService : Service() {
                 startEmulator()
             }
             null -> {
-                
+
             }
         }
 
@@ -86,6 +86,13 @@ class EmulatorForegroundService : Service() {
 
     public fun stopEmulator() {
         bridgeOrchestrator.stop()
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        } else {
+            @Suppress("DEPRECATION")
+            stopForeground(true)
+        }
     }
 
     private fun buildNotification(): Notification {
