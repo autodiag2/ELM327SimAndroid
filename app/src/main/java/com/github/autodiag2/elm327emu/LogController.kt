@@ -12,7 +12,7 @@ import java.io.File
 class LogController(private val context: Context) {
 
     val model = LogRepository(context)
-    val view: LogView? = null
+    lateinit var view: LogView
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val mainScope = CoroutineScope(Dispatchers.Main)
     var filename = "elm327emu_log.txt"
@@ -21,12 +21,10 @@ class LogController(private val context: Context) {
         scope.launch {
 
             val result: AppendResult? = model.append(text, level, data, size_used, serial, serial_size, type)
-            if ( view == null ) {
-                return@launch
-            }
             mainScope.launch {
                 refresh(result)
                 // ---- ONLY auto-scroll if allowed ----
+                val view = this@LogController.view
                 if (view.stickToBottom && !view.userTouching) {
                     view.scrollToBottomSafe()
                 }
@@ -55,18 +53,14 @@ class LogController(private val context: Context) {
     }
 
     fun save() {
-        if ( view == null ) {
-            return
-        }
+        val view = this.view
         val text = model.snapshotUnsafe().joinToString("\n") { it.text }
         view.modelText = text
         view.save(filename)
     }
 
     fun download() {
-        if ( view == null ) {
-            return
-        }
+        val view = this.view
         scope.launch {
             val file = File(context.getExternalFilesDir(null), filename)
             file.writeText(model.snapshotUnsafe().joinToString("\n") { it.text })
@@ -75,13 +69,15 @@ class LogController(private val context: Context) {
     }
 
     fun refresh(result: AppendResult? = null) {
-        if (view == null) {
-            return
-        }
+        val view = this.view
         scope.launch {
             val entries = model.search(view.search)
             view.refresh(result, entries)
         }
+    }
+
+    fun attachView(view: LogView) {
+        this.view = view
     }
 
 }

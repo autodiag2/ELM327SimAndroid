@@ -67,6 +67,7 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
             val connectedService = binder.getService()
             emulatorService = connectedService
             logController = connectedService.log
+            logController.attachView(logView)
             connectedService.sim.attachView(simView)
             serviceBound = true
         }
@@ -390,7 +391,6 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
         super.onCreate(savedInstanceState)
 
         MainActivityRef.activity = this
-        startForegroundService()
         setContentView(R.layout.activity_main)
         settingsContainer = findViewById(R.id.settingsContainer)
 
@@ -496,6 +496,7 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
             }
         }
 
+        startForegroundService()
     }
 
     fun startForegroundService() {

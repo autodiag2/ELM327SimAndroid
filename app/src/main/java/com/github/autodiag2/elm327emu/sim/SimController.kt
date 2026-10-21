@@ -108,12 +108,14 @@ class Sim(
     }
 
     fun stop() {
+        running = false
         service.stopEmulator()
         scope.coroutineContext.cancelChildren()
         appendLog(getString(R.string.log_main_bluetooth_server_stopped), LogLevel.INFO)
     }
 
     fun start() {
+        running = true
         service.startEmulator()
     }
 
