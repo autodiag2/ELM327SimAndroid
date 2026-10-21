@@ -43,7 +43,7 @@ abstract class Ecu(
     public var view: EcuView? = null
     val prefs by lazy { service.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
 
-    public fun attachView(view: EcuView?) {
+    public open fun attachView(view: EcuView?) {
         this.view = view
         if ( view != null ) {
             view.onShowHandler = ::loadStateFromGeneratorWhenShowing

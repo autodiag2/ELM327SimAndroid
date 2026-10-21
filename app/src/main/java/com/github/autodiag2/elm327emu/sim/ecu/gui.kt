@@ -20,6 +20,7 @@ import org.json.JSONObject
 import com.github.autodiag2.elm327emu.libautodiag.SignalReceivedHandler
 import com.github.autodiag2.elm327emu.sim.ecu.Ecu
 import android.util.Log
+import com.github.autodiag2.elm327emu.EmulatorForegroundService
 
 fun getName(context: Context, signal: SimSignal): String {
     val key = "signal_" + signal.path.replace(".", "_")
@@ -36,39 +37,42 @@ fun getName(context: Context, signal: SimSignal): String {
 fun getString(context: Context,resId: Int, vararg formatArgs: Any?): String {
     return context.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
 }
-
-class EcuGui(
-    address: EcuAddress = DEFAULT_ADDRESS,
-    name: String? = null,
-    private val activity: MainActivity,
-) : Ecu(EcuType.gui, address, name ?: activity.getString(EcuType.gui.label_id), activity) {
-
-    private val dynamicSignalsContainer: LinearLayout
-    private val dtcContainer: LinearLayout
-    private val dtcClearedCheck: CheckBox
-    private val ecuName: EditText
-    private val vin: EditText
-    private val milState: CheckBox
-    val allSignals = libautodiag.getSimSignals().sortedBy { it.name.lowercase() }
-    val dtcs: MutableList<String> = mutableListOf()
-    val signals: MutableMap<String, Double> = linkedMapOf()
+fun getSignalInitialValue(address: EcuAddress, signal: SimSignal): Double {
+    val v = libautodiag.getSignalValue(address, signal.path)
+    if (!v.isNaN()) {
+        return v
+    }
+    return signal.min
+}
+class EcuGuiView(context: Context, allSignals:  Array<SimSignal>): EcuView(context) {
+    public val dynamicSignalsContainer: LinearLayout
+    public val dtcContainer: LinearLayout
+    public val dtcClearedCheck: CheckBox
+    public val ecuName: EditText
+    public val vin: EditText
+    public val milState: CheckBox
+    public lateinit var onSignalAdd: ((signal: SimSignal) -> Unit)
+    public lateinit var onSignalValueChanged: ((signal: SimSignal, value: Double) -> Unit)
+    public lateinit var onDtcAddByCode: ((code: String) -> Unit)
+    public lateinit var onSignalRemoved: ((signal: SimSignal) -> Unit)
+    public lateinit var getAddress: (() -> EcuAddress)
+    public lateinit var onDTCRemove: ((code: String) -> Unit)
+    
 
     init {
-        LayoutInflater.from(activity).inflate(R.layout.sim_ecu_gui, this, true)
+        LayoutInflater.from(context).inflate(R.layout.sim_ecu_gui, this, true)
         dynamicSignalsContainer = findViewById(R.id.signal_container)
         dtcContainer = findViewById(R.id.dtc_list)
         ecuName = findViewById(R.id.ecu_name)
         vin = findViewById(R.id.vin)
         milState = findViewById(R.id.mil_state)
         dtcClearedCheck = findViewById(R.id.dtcs_cleared)
-        addDefaultSignals()
-        SimGeneratorGuiManager.add(address, this)
+
         val signalSpinner = findViewById<Spinner>(R.id.signal_choice)
-        val spinnerSignals = allSignals
         val spinnerAdapter = ArrayAdapter(
-            activity,
+            context,
             android.R.layout.simple_spinner_item,
-            spinnerSignals.map { getName(activity, it) }
+            allSignals.map { getName(context, it) }
         ).apply {
             setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         }
@@ -77,11 +81,64 @@ class EcuGui(
         findViewById<Button>(R.id.signal_add).apply {
             setOnClickListener {
                 val index = signalSpinner.selectedItemPosition
-
-                if (index in spinnerSignals.indices) {
-                    val signal = spinnerSignals[index]
-                    addSignalWidget(signal)
+                if (!(index in allSignals.indices)) {
+                    return @setOnClickListener
                 }
+                val signal = allSignals[index]
+                onSignalAdd.invoke(signal)
+                val title = TextView(context).apply {
+                    text = if (signal.unit.isNullOrBlank()) getName(context, signal) else "${getName(context, signal)} (${signal.unit})"
+                }
+
+                val step = if (signal.step <= 0.0) 1.0 else signal.step
+                val scale = (1.0 / step).toInt().coerceAtLeast(1)
+                val minI = (signal.min * scale).toInt()
+                val maxI = (signal.max * scale).toInt()
+                val initialI = (((getSignalInitialValue(getAddress.invoke(), signal)).coerceIn(signal.min, signal.max)) * scale).toInt()
+
+                val valueText = TextView(context).apply {
+                    val shown = initialI.toDouble() / scale
+                    text = if (signal.unit.isNullOrBlank()) "$shown" else "$shown ${signal.unit}"
+                }
+
+                val seek = SeekBar(context).apply {
+                    max = (maxI - minI).coerceAtLeast(0)
+                    progress = (initialI - minI).coerceIn(0, max)
+                    setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                        override fun onProgressChanged(s: SeekBar, p: Int, fromUser: Boolean) {
+                            val v = (p + minI).toDouble() / scale
+                            valueText.text = if (signal.unit.isNullOrBlank()) "$v" else "$v ${signal.unit}"
+                            onSignalValueChanged.invoke(signal, v)
+                        }
+                        override fun onStartTrackingTouch(s: SeekBar) {}
+                        override fun onStopTrackingTouch(s: SeekBar) {}
+                    })
+                }
+                
+                val removeBtn = Button(context).apply {
+                    text = getString(context, R.string.sim_ecu_gui_remove_signal)
+                }
+
+                val headerRow = LinearLayout(context).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    addView(title, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                    addView(removeBtn)
+                }
+
+                val block = LinearLayout(context).apply {
+                    orientation = LinearLayout.VERTICAL
+                    setPadding(0, 12, 0, 12)
+                    addView(headerRow)
+                    addView(valueText)
+                    addView(seek)
+                }
+
+                removeBtn.setOnClickListener {
+                    onSignalRemoved.invoke(signal)
+                    dynamicSignalsContainer.removeView(block)
+                }
+
+                dynamicSignalsContainer.addView(block)
             }
         }
 
@@ -91,150 +148,28 @@ class EcuGui(
             setOnClickListener {
                 val v = dtcInput.text.toString().uppercase()
                 if (v.isNotEmpty()) {
-                    addDtcByCode(v)
+                    onDtcAddByCode.invoke(v)
                     dtcInput.text.clear()
                 }
             }
         }
-
-        libautodiag.setResponseGuiByAddress(address)
-        libautodiag.registerOnSignalReceived(address, signalHandler)
     }
-
-    override fun loadStateFromGeneratorWhenShowing() {
-        // leave empty state stored externally
-    }
-
-    fun getECUName(): String {
-        return ecuName.text.toString()
-    }
-
-    fun getVIN(): String {
-        return vin.text.toString()
-    }
-
-    fun getMILState(): Boolean {
-        return milState.isChecked
-    }
-
-    fun areDTCsCleared(): Boolean {
-        return dtcClearedCheck.isChecked
-    }
-
-    fun setDTCsCleared(state: Boolean) {
-        activity.runOnUiThread {
-            dtcClearedCheck.isChecked = state
-        }
-    }
-
-    fun getSignalInitialValue(signal: SimSignal): Double {
-        val v = libautodiag.getSignalValue(address, signal.path)
-        if (!v.isNaN()) {
-            return v
-        }
-        return signal.min
-    }
-
-    fun setSignalValue(path: String, value: Double) {
-        signals[path] = value
-    }
-
-    fun addSignalWidget(signal: SimSignal) {
-        if (signals.containsKey(signal.path)) {
-            return
-        }
-        signals.put(signal.path, 0.0)
-
-        val title = TextView(activity).apply {
-            text = if (signal.unit.isNullOrBlank()) getName(activity, signal) else "${getName(activity, signal)} (${signal.unit})"
-        }
-
-        val step = if (signal.step <= 0.0) 1.0 else signal.step
-        val scale = (1.0 / step).toInt().coerceAtLeast(1)
-        val minI = (signal.min * scale).toInt()
-        val maxI = (signal.max * scale).toInt()
-        val initialI = (((getSignalInitialValue(signal)).coerceIn(signal.min, signal.max)) * scale).toInt()
-
-        val valueText = TextView(activity).apply {
-            val shown = initialI.toDouble() / scale
-            text = if (signal.unit.isNullOrBlank()) "$shown" else "$shown ${signal.unit}"
-        }
-
-        val seek = SeekBar(activity).apply {
-            max = (maxI - minI).coerceAtLeast(0)
-            progress = (initialI - minI).coerceIn(0, max)
-            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                override fun onProgressChanged(s: SeekBar, p: Int, fromUser: Boolean) {
-                    val v = (p + minI).toDouble() / scale
-                    valueText.text = if (signal.unit.isNullOrBlank()) "$v" else "$v ${signal.unit}"
-                    setSignalValue(signal.path, v)
-                }
-                override fun onStartTrackingTouch(s: SeekBar) {}
-                override fun onStopTrackingTouch(s: SeekBar) {}
-            })
-        }
-
-        setSignalValue(signal.path, initialI.toDouble() / scale)
-
-        val removeBtn = Button(activity).apply {
-            text = getString(activity, R.string.sim_ecu_gui_remove_signal)
-        }
-
-        val headerRow = LinearLayout(activity).apply {
-            orientation = LinearLayout.HORIZONTAL
-            addView(title, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-            addView(removeBtn)
-        }
-
-        val block = LinearLayout(activity).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(0, 12, 0, 12)
-            addView(headerRow)
-            addView(valueText)
-            addView(seek)
-        }
-
-        removeBtn.setOnClickListener {
-            signals.remove(signal.path)
-            dynamicSignalsContainer.removeView(block)
-        }
-
-        dynamicSignalsContainer.addView(block)
-    }
-
-    fun addSignalByPath(path: String) {
-        allSignals.firstOrNull { it.path == path }?.let { addSignalWidget(it) }
-    }
-
-    fun addDefaultSignals() {
-        addSignalByPath("SAEJ1979.engine_speed")
-        addSignalByPath("SAEJ1979.vehicle_speed")
-        addSignalByPath("SAEJ1979.coolant_temp")
-    }
-    fun clearSignals() {
+    fun onClearSignals() {
         dynamicSignalsContainer.removeAllViews()
-        signals.clear()
     }
-
-    fun clearDTCs() {
-        dtcs.clear()
+    fun onClearDTCs() {
         dtcContainer.removeAllViews()
     }
-
-    fun addDtcByCode(code: String) {
-        if (code.isBlank()) return
-
-        dtcs.add(code)
-
-        val text = TextView(activity).apply {
+    fun onAddDtcByCode(code: String) {
+        val text = TextView(context).apply {
             text = code
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         }
 
-        val removeBtn = Button(activity)
-        removeBtn.text = getString(activity, R.string.sim_ecu_gui_remove_dtc)
+        val removeBtn = Button(context)
+        removeBtn.text = getString(context, R.string.sim_ecu_gui_remove_dtc)
 
-        val row = LinearLayout(activity).apply {
+        val row = LinearLayout(context).apply {
             orientation = LinearLayout.HORIZONTAL
             setPadding(0, 8, 0, 8)
             addView(text)
@@ -243,21 +178,187 @@ class EcuGui(
 
         removeBtn.setOnClickListener {
             dtcContainer.removeView(row)
-            dtcs.remove(code)
+            onDTCRemove.invoke(code)
         }
 
         dtcContainer.addView(row)
     }
+}
+
+class EcuGui(
+    address: EcuAddress = DEFAULT_ADDRESS,
+    name: String? = null,
+    service: EmulatorForegroundService,
+) : Ecu(EcuType.gui, service, address, name ?: service.getString(EcuType.gui.label_id)) {
+    val allSignals = libautodiag.getSimSignals().sortedBy { it.name.lowercase() }
+    val dtcs: MutableList<String> = mutableListOf()
+    val signals: MutableMap<String, Double> = linkedMapOf()
+
+    var dtcClearedChecked: Boolean = false
+    var ecuName: String = ""
+    var vin: String = ""
+    var milState: Boolean = false
+
+    init {
+        addDefaultSignals()
+        SimGeneratorGuiManager.add(address, this)
+        libautodiag.setResponseGuiByAddress(address)
+        libautodiag.registerOnSignalReceived(address, signalHandler)
+    }
+
+    override fun attachView(view: EcuView?) {
+        assert(view is EcuGuiView)
+        val guiView = view as EcuGuiView
+        guiView.onSignalAdd = ::onSignalAdd
+        guiView.onDtcAddByCode = ::addDtcByCode
+        guiView.onSignalValueChanged = ::onSignalValueChanged
+        guiView.onSignalRemoved = ::onSignalRemoved
+        guiView.getAddress = ::getAddress
+        guiView.onDTCRemove = ::onDTCRemove
+    }
+
+    fun getAddress(): EcuAddress {
+        return address
+    }
+
+    fun onSignalRemoved(signal: SimSignal) {
+        signals.remove(signal.path)
+    }
+    fun onSignalValueChanged(signal: SimSignal, value: Double) {
+        setSignalValue(signal.path, value)
+    }
+
+    fun onSignalAdd(signal: SimSignal) {
+        addSignal(signal)
+    }
+
+    fun onDTCRemove(code: String) {
+        dtcs.remove(code)
+    }
+
+    override fun loadStateFromGeneratorWhenShowing() {
+        // leave empty state stored externally
+    }
+
+    fun getECUName(): String {
+        return ecuName
+    }
+
+    fun getVIN(): String {
+        return vin
+    }
+
+    fun getMILState(): Boolean {
+        return milState
+    }
+
+    fun setMILChecked(state: Boolean) {
+        milState = state
+        val view = this.view as EcuGuiView?
+        if ( view != null ) {
+            val activity = view.context as MainActivity
+            val mil = view.findViewById<CheckBox>(R.id.mil_state)
+            activity.runOnUiThread {
+                mil.isChecked = state
+            }
+        }
+    }
+
+    fun areDTCsCleared(): Boolean {
+        return dtcClearedChecked
+    }
+
+    fun setDTCsCleared(state: Boolean) {
+        dtcClearedChecked = state
+        val view = this.view as EcuGuiView?
+        if ( view != null ) {
+            val activity = view.context as MainActivity
+            activity.runOnUiThread {
+                view.dtcClearedCheck.isChecked = state
+            }
+        }
+    }
+
+    fun setSignalValue(path: String, value: Double) {
+        signals[path] = value
+    }
+
+    fun addSignal(signal: SimSignal) {
+        if (signals.containsKey(signal.path)) {
+            return
+        }
+        signals.put(signal.path, 0.0)
+
+        val step = if (signal.step <= 0.0) 1.0 else signal.step
+        val scale = (1.0 / step).toInt().coerceAtLeast(1)
+        val initialI = (((getSignalInitialValue(address, signal)).coerceIn(signal.min, signal.max)) * scale).toInt()
+
+        setSignalValue(signal.path, initialI.toDouble() / scale)
+    }
+
+    fun addSignalByPath(path: String) {
+        allSignals.firstOrNull { it.path == path }?.let { addSignal(it) }
+    }
+
+    fun addDefaultSignals() {
+        addSignalByPath("SAEJ1979.engine_speed")
+        addSignalByPath("SAEJ1979.vehicle_speed")
+        addSignalByPath("SAEJ1979.coolant_temp")
+    }
+    fun clearSignals() {
+        val view = this.view as EcuGuiView?
+        if ( view != null ) {
+            view.onClearSignals()
+        }
+        signals.clear()
+    }
+
+    fun clearDTCs() {
+        dtcs.clear()
+        val view = this.view as EcuGuiView?
+        if ( view != null ) {
+            view.onClearDTCs()
+        }
+    }
+
+    fun addDtcByCode(code: String) {
+        if (code.isBlank()) return
+
+        dtcs.add(code)
+
+        val view = this.view as EcuGuiView?
+        if ( view != null ) {
+            view.onAddDtcByCode(code)
+        }
+    }
+
+    fun setEcuName(name: String) {
+        ecuName = name
+        val view = this.view as EcuGuiView?
+        if ( view != null ) {
+            val activity = view.context as MainActivity
+            activity.runOnUiThread {
+                view.ecuName.setText(name)
+            }
+        }
+    }
+
+    fun setVIN(name: String) {
+        vin = name
+        val view = this.view as EcuGuiView?
+        if ( view != null ) {
+            val activity = view.context as MainActivity
+            activity.runOnUiThread {
+                view.vin.setText(name)
+            }
+        }
+    }
 
     override fun fromJsonInternal(content: JSONObject) {
-        val ecu_name = findViewById<EditText>(R.id.ecu_name)
-        ecu_name.setText(content.optString("ecuName", ""))
-        val vin = findViewById<EditText>(R.id.vin)
-        vin.setText(content.optString("vin", ""))
-        val mil = findViewById<CheckBox>(R.id.mil_state)
-        mil.isChecked = content.optBoolean("mil", false)
-        val dtcCleared = findViewById<CheckBox>(R.id.dtcs_cleared)
-        dtcCleared.isChecked = content.optBoolean("dtcCleared", false)
+        setEcuName(content.optString("ecuName", ""))
+        setVIN(content.optString("vin", ""))
+        setMILChecked(content.optBoolean("mil", false))
+        setDTCsCleared(content.optBoolean("dtcCleared", false))
 
         // dtcs
         clearDTCs()
