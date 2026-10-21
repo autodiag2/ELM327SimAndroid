@@ -133,10 +133,7 @@ class LogAdapter(
     }
 
     override fun onBindViewHolder(holder: VH, position: Int) {
-        if ( items.size <= position ) {
-            Log.w("LogView", "requested item does not exists")
-            return
-        }
+        assert(items.size <= position)
         val item = items[position]
         var displayText = item.text
         if ( item.data.size > 0 && item.type != LogEntryType.NONE ) {
@@ -201,6 +198,11 @@ class LogAdapter(
 class LogView(
     private val activity: MainActivity
 ) : FrameLayout(activity) {
+
+    companion object {
+        val OVERLAY_BUTTONS_ANIM_MS: Long = 1000
+    }
+
     val prefs by lazy { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val mainScope = CoroutineScope(Dispatchers.Main)
@@ -212,9 +214,6 @@ class LogView(
     private val uiHandler = Handler(Looper.getMainLooper())
 
     private lateinit var overlayButtons: View
-    companion object {
-        val OVERLAY_BUTTONS_ANIM_MS: Long = 1000
-    }
 
     private val hideOverlayRunnable = Runnable {
         overlayButtons.animate()
@@ -226,6 +225,29 @@ class LogView(
             }
             .start()
     }
+    public var modelText = ""
+    val saveLogLauncher =
+        activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                val uri = result.data?.data ?: return@registerForActivityResult
+                activity.lifecycleScope.launch(Dispatchers.IO) {
+                    activity.contentResolver.openOutputStream(uri)?.use { out ->
+                        val text = modelText
+                        out.write(text.toByteArray())
+                    }
+                }
+            }
+        }
+
+    public var stickToBottom = true
+    public var userTouching = false
+    private lateinit var searchInput: EditText
+
+    init {
+        LayoutInflater.from(context).inflate(R.layout.log, this, true)
+        setupLogsView()
+    }
+
     private fun showOverlayButtons() {
         uiHandler.removeCallbacks(hideOverlayRunnable)
 
@@ -245,27 +267,6 @@ class LogView(
 
         uiHandler.postDelayed(hideOverlayRunnable, OVERLAY_BUTTONS_ANIM_MS)
     }
-    public var modelText = ""
-    val saveLogLauncher =
-        activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == RESULT_OK) {
-                val uri = result.data?.data ?: return@registerForActivityResult
-                activity.lifecycleScope.launch(Dispatchers.IO) {
-                    activity.contentResolver.openOutputStream(uri)?.use { out ->
-                        val text = modelText
-                        out.write(text.toByteArray())
-                    }
-                }
-            }
-        }
-
-    public var stickToBottom = true
-    public var userTouching = false
-
-    init {
-        LayoutInflater.from(context).inflate(R.layout.log, this, true)
-        setupLogsView()
-    }
 
     private fun updateLayoutMetrics(rv: RecyclerView) {
         rv.post {
@@ -283,7 +284,6 @@ class LogView(
         }
     }
 
-    private lateinit var searchInput: EditText
     private fun setupLogsView() {
 
         logTopBar = findViewById(R.id.log_top_bar)
