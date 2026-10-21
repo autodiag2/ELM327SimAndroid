@@ -319,7 +319,7 @@ class Sim(
             for (i in 0 until content_ecus.length()) {
                 val ecuDesc = content_ecus.getJSONObject(i)
     
-                val ecu = Ecu.createFromJSON(ecuDesc, activity)
+                val ecu = Ecu.createFromJSON(ecuDesc, service)
                 if ( ecu != null ) {
                     ecus.add(ecu)
                     val view: SimView? = this.view
@@ -341,7 +341,7 @@ class Sim(
 
         ecuRemoveByAddress(address)
 
-        val ecu = Ecu.create(type, activity, address, name)
+        val ecu = Ecu.create(type, service, address, name)
 
         ecus.add(ecu)
         val view: SimView? = this.view

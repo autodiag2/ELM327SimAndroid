@@ -12,40 +12,55 @@ import org.json.JSONObject
 import com.github.autodiag2.elm327emu.libautodiag
 import com.github.autodiag2.elm327emu.libautodiag.SignalReceivedHandler
 import com.github.autodiag2.elm327emu.SimSignal
+import com.github.autodiag2.elm327emu.EmulatorForegroundService
 
 typealias EcuAddress = Byte
 
-abstract class Ecu(
-    val type: EcuType,
-    var address: EcuAddress = DEFAULT_ADDRESS,
-    var displayName: String = type.toString(),
-    context: Context
-) : ConstraintLayout(context), JsonConfigurable, NestedScreen {
-
-    protected val signalHandler = SignalReceivedHandler { signal, value ->
-        onSignalReceived(signal, value)
-    }
-
-    protected open fun onSignalReceived(signal: SimSignal, value: Double) {
-        if ( activity?.prefs?.getBoolean("log_signal_value", true) ?: true ) {
-            activity?.appendLog(
-                activity?.getString(R.string.sim_ecu_log_signal, getName(context, signal), value, signal.unit) ?: "",
-                LogLevel.INFO
-            )
-        }
-    }
+open class EcuView(context: Context) : ConstraintLayout(context), NestedScreen {
+    
+    public lateinit var onShowHandler: (() -> Unit)
 
     override fun onBack() {        
 
     }
+
+    override fun onShow() {
+        onShowHandler.invoke()
+    }
+}
+abstract class Ecu(
+    val type: EcuType,
+    val service: EmulatorForegroundService,
+    var address: EcuAddress = DEFAULT_ADDRESS,
+    var displayName: String = type.toString()
+) : JsonConfigurable {
 
     protected open fun loadStateFromGeneratorWhenShowing() {
         val json: String = libautodiag.simEcuToJson(address.toByte())
         fromJson(JSONObject(json))
     }
 
-    override fun onShow() {
-        loadStateFromGeneratorWhenShowing()
+    public var view: EcuView? = null
+    val prefs by lazy { service.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
+
+    public fun attachView(view: EcuView?) {
+        this.view = view
+        if ( view != null ) {
+            view.onShowHandler = ::loadStateFromGeneratorWhenShowing
+        }
+    }
+
+    protected val signalHandler = SignalReceivedHandler { signal, value ->
+        onSignalReceived(signal, value)
+    }
+
+    protected open fun onSignalReceived(signal: SimSignal, value: Double) {
+        if ( prefs.getBoolean("log_signal_value", true) ) {
+            service.log.append(
+                service.getString(R.string.sim_ecu_log_signal, getName(service, signal), value, signal.unit),
+                LogLevel.INFO
+            )
+        }
     }
 
     public companion object {
@@ -54,43 +69,43 @@ abstract class Ecu(
         const val SCHEMA: String = "autodiag/sim/ecu"
         const val SCHEMA_VERSION: Double = 1.0
 
-        fun create(type: EcuType, activity: MainActivity, address: EcuAddress = DEFAULT_ADDRESS, displayName: String = type.toString()) : Ecu {
+        fun create(type: EcuType, service: EmulatorForegroundService, address: EcuAddress = DEFAULT_ADDRESS, displayName: String = type.toString()) : Ecu {
             return when ( type ) {
-                EcuType.gui -> EcuGui(address, displayName, activity)
-                EcuType.bytearray -> EcuScript(address, displayName, activity)
-                EcuType.random -> EcuRandom(address, displayName, activity)
-                EcuType.cycle -> EcuCycle(address, displayName, activity)
-                EcuType.replay -> EcuReplay(address, displayName, activity)
-                EcuType.citroen_c5_x7 -> EcuCitroenC5X7(address, displayName, activity)
+                EcuType.gui -> EcuGui(address, displayName, service)
+                EcuType.bytearray -> EcuScript(address, displayName, service)
+                EcuType.random -> EcuRandom(address, displayName, service)
+                EcuType.cycle -> EcuCycle(address, displayName, service)
+                EcuType.replay -> EcuReplay(address, displayName, service)
+                EcuType.citroen_c5_x7 -> EcuCitroenC5X7(address, displayName, service)
             }
         }
-        fun createFromJSON(desc: JSONObject, activity: MainActivity): Ecu? {
+        fun createFromJSON(desc: JSONObject, service: EmulatorForegroundService): Ecu? {
 
             val schema = desc.optString("schema")
 
             if(schema.isEmpty() || !schema.startsWith(SCHEMA)) {
-                activity.appendLog(
-                    activity.getString(R.string.sim_ecu_invalid_ecu_schema, schema),
+                service.log.append(
+                    service.getString(R.string.sim_ecu_invalid_ecu_schema, schema),
                     LogLevel.ERROR
                 )
                 return null
             }
             val schemaVersion = desc.optDouble("version")
             if ( schemaVersion != SCHEMA_VERSION ) {
-                activity.appendLog(
-                    activity.getString(R.string.sim_ecu_unsupported_ecu_schema_version, schemaVersion),
+                service.log.append(
+                    service.getString(R.string.sim_ecu_unsupported_ecu_schema_version, schemaVersion),
                     LogLevel.ERROR
                 )
                 return null
             }
 
             val typeName = schema.removePrefix("${SCHEMA}/")
-            activity.appendLog("schema = ${schema} typeName = ${typeName}")
+            service.log.append("schema = ${schema} typeName = ${typeName}")
             var type = try {
                 EcuType.valueOf(typeName)
             } catch (e: IllegalArgumentException) {
-                activity.appendLog(
-                    activity.getString(R.string.sim_ecu_unknown_ecu_type, typeName),
+                service.log.append(
+                    service.getString(R.string.sim_ecu_unknown_ecu_type, typeName),
                     LogLevel.ERROR
                 )
                 return null
@@ -99,15 +114,15 @@ abstract class Ecu(
 
             val content = desc.optJSONObject("content")
             if ( content == null ) {
-                activity.appendLog(
-                    activity.getString(R.string.sim_ecu_no_content),
+                service.log.append(
+                    service.getString(R.string.sim_ecu_no_content),
                     LogLevel.ERROR
                 )
                 return null
             }
             val address = content.optInt("address", DEFAULT_ADDRESS.toInt()).toByte()
             val displayName = content.optString("displayName", type.toString())
-            val ecu = create(type, activity, address, displayName)
+            val ecu = create(type, service, address, displayName)
 
             ecu.fromJson(desc)
 

@@ -502,7 +502,10 @@ class SimView(private val context: Context): FrameLayout(context) {
         title.text = "ECU 0x${ecu.address.toUByte().toString(16).uppercase()} (${ecu.displayName})"
 
         row.setOnClickListener {
-            activity.showNestedScreen(ecu)
+            val view = ecu.view
+            if ( view != null ) {
+                activity.showNestedScreen(view)
+            }
         }
 
         cardView.setOnLongClickListener {
