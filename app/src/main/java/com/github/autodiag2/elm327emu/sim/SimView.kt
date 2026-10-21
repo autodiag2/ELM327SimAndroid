@@ -111,15 +111,15 @@ class SimView(private val context: Context): FrameLayout(context) {
         findViewById<Button>(R.id.sim_state).apply {
             setOnClickListener {
                 if (activity.isPermissionsGranted()) {
-                    val running = isRunning.invoke()
-                    text = if (running) {
-                        getString(R.string.sim_stop_sim)
-                    } else {
+                    val previousRunState = isRunning.invoke()
+                    text = if (previousRunState) {
                         getString(R.string.sim_start_sim)
+                    } else {
+                        getString(R.string.sim_stop_sim)
                     }
 
                     val colorAttr =
-                        if (running) {
+                        if (previousRunState) {
                             R.attr.colorAccentInProgress
                         } else {
                             R.attr.colorAccentSuccess
@@ -137,7 +137,7 @@ class SimView(private val context: Context): FrameLayout(context) {
                             typedValue.data
                         )
 
-                    if (running) {
+                    if (previousRunState) {
                         onStop.invoke()
                     } else {
                         onStart.invoke()
