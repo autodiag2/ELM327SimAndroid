@@ -82,7 +82,7 @@ class EcuGuiView(context: Context, allSignals:  Array<SimSignal>): EcuView(conte
             setOnClickListener {
                 val index = signalSpinner.selectedItemPosition
                 if (!(index in allSignals.indices)) {
-                    return @setOnClickListener
+                    return@setOnClickListener
                 }
                 val signal = allSignals[index]
                 onSignalAdd.invoke(signal)

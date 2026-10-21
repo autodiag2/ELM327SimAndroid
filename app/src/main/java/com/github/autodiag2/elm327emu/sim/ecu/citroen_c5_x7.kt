@@ -10,21 +10,15 @@ import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.libautodiag
 import org.json.JSONArray
 import org.json.JSONObject
+import com.github.autodiag2.elm327emu.EmulatorForegroundService
 
-class EcuCitroenC5X7(
-    address: EcuAddress = DEFAULT_ADDRESS,
-    name: String? = null,
-    activity: MainActivity
-) : Ecu(
-        EcuType.citroen_c5_x7, address, 
-        name ?: activity.getString(EcuType.citroen_c5_x7.label_id), 
-        activity
-    ) {
+import android.content.Context
 
-    private val dtcsView: LinearLayout
-
+class EcuCitroenC5X7View(context: Context): EcuView(context) {
+    public val dtcsView: LinearLayout
+    public lateinit var onValidate: (() -> Unit)
     init {
-        LayoutInflater.from(activity).inflate(R.layout.sim_ecu_citroen_c5_x7, this, true)
+        LayoutInflater.from(context).inflate(R.layout.sim_ecu_citroen_c5_x7, this, true)
 
         dtcsView = findViewById(R.id.sim_ecu_citroen_c5_x7_dtc_list)
 
@@ -43,41 +37,10 @@ class EcuCitroenC5X7(
 
         val validate: Button = findViewById(R.id.sim_ecu_citroen_c5_x7_validate)
         validate.setOnClickListener {
-            libautodiag.simEcuLoadFromJson(address.toByte(), toJson().toString())
+            onValidate.invoke()
         }
-
-        libautodiag.setResponseTypeByAddress(address, EcuType.citroen_c5_x7.name)
-        libautodiag.registerOnSignalReceived(address, signalHandler)
     }
-
-    override fun toJsonInternal(): JSONObject {
-        val content = JSONObject()
-
-        content.put(
-            "vin",
-            findViewById<EditText>(R.id.sim_ecu_citroen_c5_x7_vin_input).text.toString()
-        )
-
-        content.put(
-            "seed",
-            findViewById<EditText>(R.id.sim_ecu_citroen_c5_x7_seed_input).text.toString().toLongOrNull() ?: 0L
-        )
-
-        val dtcs = JSONArray()
-
-        for (i in 0 until dtcsView.childCount) {
-            val child = dtcsView.getChildAt(i)
-            if (child is TextView) {
-                dtcs.put(child.text.toString())
-            }
-        }
-
-        content.put("dtcs", dtcs)
-
-        return content
-    }
-
-    override fun fromJsonInternal(content: JSONObject) {
+    public fun fromJsonInternal(content: JSONObject) {
         findViewById<EditText>(R.id.sim_ecu_citroen_c5_x7_vin_input)
             .setText(content.optString("vin", ""))
 
@@ -92,6 +55,76 @@ class EcuCitroenC5X7(
             val label = TextView(context)
             label.text = dtcs.optString(i)
             dtcsView.addView(label)
+        }
+    }
+}
+
+class EcuCitroenC5X7(
+    address: EcuAddress = DEFAULT_ADDRESS,
+    name: String? = null,
+    service: EmulatorForegroundService
+) : Ecu(
+        EcuType.citroen_c5_x7,
+        service,
+        address, 
+        name ?: service.getString(EcuType.citroen_c5_x7.label_id)
+    ) {
+
+    init {
+        libautodiag.setResponseTypeByAddress(address, EcuType.citroen_c5_x7.name)
+        libautodiag.registerOnSignalReceived(address, signalHandler)
+    }
+
+    fun onValidate() {
+        libautodiag.simEcuLoadFromJson(address.toByte(), toJson().toString())
+    }
+
+    override fun attachView(view: EcuView?) {
+        assert(view is EcuCitroenC5X7View)
+        val view = view as EcuCitroenC5X7View
+        this.view = view
+        view.onValidate = ::onValidate
+    }
+
+    override fun toJsonInternal(): JSONObject {
+        val view = this.view as EcuCitroenC5X7View?
+        val content = JSONObject()
+        if ( view == null ) {
+            return content
+        }
+
+        content.put(
+            "vin",
+            view.findViewById<EditText>(R.id.sim_ecu_citroen_c5_x7_vin_input).text.toString()
+        )
+
+        content.put(
+            "seed",
+            view.findViewById<EditText>(R.id.sim_ecu_citroen_c5_x7_seed_input).text.toString().toLongOrNull() ?: 0L
+        )
+
+        val dtcs = JSONArray()
+
+        for (i in 0 until view.dtcsView.childCount) {
+            val child = view.dtcsView.getChildAt(i)
+            if (child is TextView) {
+                dtcs.put(child.text.toString())
+            }
+        }
+
+        content.put("dtcs", dtcs)
+
+        return content
+    }
+
+    override fun fromJsonInternal(content: JSONObject) {
+        val view = this.view as EcuCitroenC5X7View?
+        if ( view == null ) {
+            return
+        }
+        val activity = view.context as MainActivity
+        activity.runOnUiThread {
+            view.fromJsonInternal(content)
         }
     }
 
