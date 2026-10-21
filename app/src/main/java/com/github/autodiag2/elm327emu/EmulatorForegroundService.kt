@@ -30,8 +30,9 @@ class EmulatorForegroundService : Service() {
         private const val NOTIFICATION_ID = 1001
     }
 
-    val log = LogController(this)
-    val sim = Sim(this)
+    lateinit var log: LogController
+    lateinit var sim: Sim
+    lateinit var bridgeOrchestrator: BridgeOrchestrator
 
     inner class LocalBinder : Binder() {
         fun getService() = this@EmulatorForegroundService
@@ -41,13 +42,15 @@ class EmulatorForegroundService : Service() {
     protected val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     lateinit var btManager: BluetoothManager
     lateinit var btAdapter: BluetoothAdapter
-    val bridgeOrchestrator: BridgeOrchestrator = BridgeOrchestrator(service = this, clientConnectionListener = null)  // TODO clientConnectionListener = this)
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
         btManager = getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         btAdapter = btManager.adapter
+        log = LogController(this)
+        sim = Sim(this)
+        bridgeOrchestrator = BridgeOrchestrator(service = this, clientConnectionListener = null)  // TODO clientConnectionListener = this)
     }
 
     override fun onBind(intent: Intent?): IBinder = binder

@@ -77,13 +77,16 @@ class CustomController(
     val selectedBlocks = mutableSetOf<Int>()
     val selectedLinks = mutableSetOf<Pair<Int, Int>>()
 
-    init {
-        replayToolbar.setupReplayToolbar()
-        logPanel.setup()
-    }
-
     override fun onRunStateChanged(newState: Boolean) {
         listener?.customSerialOnRunStateChange(newState)
+    }
+
+    fun attachView(view: CustomView?) {
+        this.view = view
+        if ( view != null ) {
+            replayToolbar.setupReplayToolbar()
+            logPanel.setup()
+        }
     }
 
     fun isRunning(): Boolean {

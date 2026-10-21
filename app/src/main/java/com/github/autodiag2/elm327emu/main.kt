@@ -389,6 +389,7 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        MainActivityRef.activity = this
         startForegroundService()
         setContentView(R.layout.activity_main)
         settingsContainer = findViewById(R.id.settingsContainer)
@@ -422,9 +423,6 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
                 }
             }
         )
-
-        // ---- Init core components ----
-        MainActivityRef.activity = this
 
         // ---- Bind views ----
         drawer = findViewById(R.id.drawer)
