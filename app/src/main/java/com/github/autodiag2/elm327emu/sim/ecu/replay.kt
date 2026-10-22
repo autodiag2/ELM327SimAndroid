@@ -76,12 +76,15 @@ class EcuReplay(
 
         
     override fun attachView(view: EcuView?) {
-        assert(view is EcuReplayView)
-        val view = view as EcuReplayView
+        super.attachView(view)
+        assert(view is EcuReplayView?)
+        val view = view as EcuReplayView?
         this.view = view
-        view.onValidate = ::onValidate
-        view.onPaste = ::onPaste
-        setByAddressWithContext(view.jsonInput.text.toString())
+        if ( view != null ) {
+            view.onValidate = ::onValidate
+            view.onPaste = ::onPaste
+            setByAddressWithContext(view.jsonInput.text.toString())
+        }
     }
 
     private fun setJson(json: String) {

@@ -33,6 +33,7 @@ import com.github.autodiag2.elm327emu.IgnitionState
 import android.widget.FrameLayout
 import com.github.autodiag2.elm327emu.com.Bridge
 import com.github.autodiag2.elm327emu.sim.serial.CustomView
+import android.util.Log
 
 class SimView(private val context: Context): FrameLayout(context) {
 

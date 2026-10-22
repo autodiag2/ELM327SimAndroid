@@ -48,10 +48,13 @@ class EcuRandom(
     }
     
     override fun attachView(view: EcuView?) {
-        assert(view is EcuRandomView)
-        val view = view as EcuRandomView
+        super.attachView(view)
+        assert(view is EcuRandomView?)
+        val view = view as EcuRandomView?
         this.view = view
-        view.onValidate = ::onValidate
+        if ( view != null ) {
+            view.onValidate = ::onValidate
+        }
     }
 
     override fun toJsonInternal(): JSONObject {

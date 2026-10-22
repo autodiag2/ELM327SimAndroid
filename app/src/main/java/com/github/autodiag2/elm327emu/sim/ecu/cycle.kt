@@ -46,10 +46,13 @@ class EcuCycle(
     }
 
     override fun attachView(view: EcuView?) {
-        assert(view is EcuCycleView)
-        val view = view as EcuCycleView
+        super.attachView(view)
+        assert(view is EcuCycleView?)
+        val view = view as EcuCycleView?
         this.view = view
-        view.onValidate = ::onValidate
+        if ( view != null ) {
+            view.onValidate = ::onValidate
+        }
     }
 
     fun onValidate() {

@@ -190,7 +190,7 @@ class EcuGui(
     name: String? = null,
     service: EmulatorForegroundService,
 ) : Ecu(EcuType.gui, service, address, name ?: service.getString(EcuType.gui.label_id)) {
-    val allSignals = libautodiag.getSimSignals().sortedBy { it.name.lowercase() }
+    val allSignals: List<SimSignal> = libautodiag.getSimSignals().sortedBy { it.name.lowercase() }
     val dtcs: MutableList<String> = mutableListOf()
     val signals: MutableMap<String, Double> = linkedMapOf()
 
@@ -207,14 +207,18 @@ class EcuGui(
     }
 
     override fun attachView(view: EcuView?) {
-        assert(view is EcuGuiView)
-        val guiView = view as EcuGuiView
-        guiView.onSignalAdd = ::onSignalAdd
-        guiView.onDtcAddByCode = ::addDtcByCode
-        guiView.onSignalValueChanged = ::onSignalValueChanged
-        guiView.onSignalRemoved = ::onSignalRemoved
-        guiView.get_Address = ::get_Address
-        guiView.onDTCRemove = ::onDTCRemove
+        super.attachView(view)
+        assert(view is EcuGuiView?)
+        val guiView = view as EcuGuiView?
+        this.view = view
+        if ( guiView != null ) {
+            guiView.onSignalAdd = ::onSignalAdd
+            guiView.onDtcAddByCode = ::addDtcByCode
+            guiView.onSignalValueChanged = ::onSignalValueChanged
+            guiView.onSignalRemoved = ::onSignalRemoved
+            guiView.get_Address = ::get_Address
+            guiView.onDTCRemove = ::onDTCRemove
+        }
     }
 
     fun get_Address(): EcuAddress {

@@ -183,11 +183,14 @@ class EcuScript(
     }
 
     override fun attachView(view: EcuView?) {
-        assert(view is EcuScriptView)
-        val view = view as EcuScriptView
+        super.attachView(view)
+        assert(view is EcuScriptView?)
+        val view = view as EcuScriptView?
         this.view = view
-        view.onApply = ::onApply
-        updateScript(view.luaEditor.text.toString())
+        if ( view != null ) {
+            view.onApply = ::onApply
+            updateScript(view.luaEditor.text.toString())
+        }
     }
 
     override fun loadStateFromGeneratorWhenShowing() {

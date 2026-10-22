@@ -80,10 +80,13 @@ class EcuCitroenC5X7(
     }
 
     override fun attachView(view: EcuView?) {
-        assert(view is EcuCitroenC5X7View)
-        val view = view as EcuCitroenC5X7View
+        super.attachView(view)
+        assert(view is EcuCitroenC5X7View?)
+        val view = view as EcuCitroenC5X7View?
         this.view = view
-        view.onValidate = ::onValidate
+        if ( view != null ) {
+            view.onValidate = ::onValidate
+        }
     }
 
     override fun toJsonInternal(): JSONObject {

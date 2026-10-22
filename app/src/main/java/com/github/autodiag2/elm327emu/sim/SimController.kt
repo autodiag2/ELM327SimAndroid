@@ -18,11 +18,19 @@ import com.github.autodiag2.elm327emu.libautodiag
 import com.github.autodiag2.elm327emu.sim.ecu.Ecu
 import com.github.autodiag2.elm327emu.sim.ecu.EcuAddress
 import com.github.autodiag2.elm327emu.sim.ecu.EcuType
+import com.github.autodiag2.elm327emu.sim.ecu.EcuCitroenC5X7View
+import com.github.autodiag2.elm327emu.sim.ecu.EcuCycleView
+import com.github.autodiag2.elm327emu.sim.ecu.EcuGui
+import com.github.autodiag2.elm327emu.sim.ecu.EcuGuiView
+import com.github.autodiag2.elm327emu.sim.ecu.EcuRandomView
+import com.github.autodiag2.elm327emu.sim.ecu.EcuReplayView
+import com.github.autodiag2.elm327emu.sim.ecu.EcuScriptView
 import com.github.autodiag2.elm327emu.ui.JsonConfigurable
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
 import com.github.autodiag2.elm327emu.IgnitionState
+import android.content.Context
 
 import com.github.autodiag2.elm327emu.sim.serial.CustomController
 import com.github.autodiag2.elm327emu.sim.serial.CustomView
@@ -106,11 +114,28 @@ class Sim(
             view.post {
                 view.ecuListView.removeAllViews()
                 for(ecu in ecus) {
+                    createAttachEcuView(ecu, view.context)
                     view.addEcuRow(ecu)
                 }
+                view.uiSetRunState(isRunning())
                 view.setupCustomSerialScripts()
             }
         }
+    }
+
+    fun createAttachEcuView(ecu: Ecu, context: Context) {
+        val ecuView = when(ecu.type) {
+            EcuType.citroen_c5_x7 -> EcuCitroenC5X7View(context)
+            EcuType.cycle -> EcuCycleView(context)
+            EcuType.gui -> {
+                val ecu = ecu as EcuGui
+                EcuGuiView(context, ecu.allSignals.toTypedArray())
+            }
+            EcuType.random -> EcuRandomView(context)
+            EcuType.replay -> EcuReplayView(context)
+            EcuType.bytearray -> EcuScriptView(context)
+        }
+        ecu.attachView(ecuView)
     }
 
     fun stop() {
@@ -332,6 +357,7 @@ class Sim(
                     ecus.add(ecu)
                     val view: SimView? = this.view
                     if ( view != null ) {
+                        createAttachEcuView(ecu, view.context)
                         view.addEcuRow(ecu)
                     }
                 }
@@ -354,6 +380,7 @@ class Sim(
         ecus.add(ecu)
         val view: SimView? = this.view
         if ( view != null ) {
+            createAttachEcuView(ecu, view.context)
             view.addEcuRow(ecu)
         }
     }
