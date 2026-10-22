@@ -96,11 +96,7 @@ class MainActivity : AppCompatActivity() {
 
     private val enableBtLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == RESULT_OK) {
-                appendLog(getString(R.string.log_main_bluetooth_enabled), LogLevel.INFO)
-                service?.bridgeOrchestrator?.setupBluetoothBridge()
-                service?.bridgeOrchestrator?.setupBleBridge()
-            } else {
+            if (result.resultCode != RESULT_OK) {
                 appendLog(getString(R.string.log_main_bluetooth_enable_failed), LogLevel.ERROR)
             }
         }
