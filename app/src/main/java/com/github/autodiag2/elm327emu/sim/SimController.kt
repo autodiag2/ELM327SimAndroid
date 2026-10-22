@@ -73,7 +73,7 @@ class Sim(
     public val customSerialScreen: CustomController
     val ecus = mutableListOf<Ecu>()
     var running: Boolean = false
-    private var view: SimView? = null
+    public var view: SimView? = null
 
     companion object {
         const val SCHEMA: String = "autodiag/sim/any"
@@ -106,6 +106,7 @@ class Sim(
             view.onAddEcu = ::buildAddECU
             view.getCustomSerialExamples = ::getCustomSerialExamples
             view.onEcuRemoveByAddress = ::ecuRemoveByAddress
+            view.onShowConnectedClients = ::onShowConnectedClients
             view.getJson = {
                 customSerialScreen
                     .toJson()
@@ -121,6 +122,14 @@ class Sim(
                 view.setupCustomSerialScripts()
             }
         }
+    }
+
+    fun onShowConnectedClients() {
+        val view = this.view
+        if ( view == null ) {
+            return
+        }
+        view.showConnectedClients(service.clients)
     }
 
     fun createAttachEcuView(ecu: Ecu, context: Context) {

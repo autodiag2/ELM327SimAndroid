@@ -50,7 +50,7 @@ import android.os.IBinder
 
 private const val REQUEST_CODE = 1
 
-class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionListener {
+class MainActivity : AppCompatActivity() {
 
     public var emulatorService: EmulatorForegroundService? = null
     var service: EmulatorForegroundService?
@@ -73,6 +73,7 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
             assert(::simView.isInitialized)
             connectedService.sim.attachView(simView)
             connectedService.stats.attachView(statsView)
+            connectedService.refreshClientsConnected()
             serviceBound = true
 
             // autostart
@@ -185,36 +186,6 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
     fun launchJsonPicker(callback: (String) -> Unit) {
         pendingFileCallback = callback
         filePickerLauncher.launch("application/json")
-    }
-
-    public var clients: List<BridgeOrchestrator.ConnectedClient>? = null
-
-    override fun onClientConnectUpdate(
-        clients: List<BridgeOrchestrator.ConnectedClient>
-    ) {
-        for (client in clients) {
-            if (this.clients.orEmpty().none {
-                    it.clientIdentifier == client.clientIdentifier
-                } == true
-            ) {
-                service!!.sim.customSerialScreen.onClientConnected(
-                    client.clientIdentifier
-                )
-            }
-        }
-
-        for (client in this.clients.orEmpty()) {
-            if (clients.none {
-                    it.clientIdentifier == client.clientIdentifier
-                }
-            ) {
-                service!!.sim.customSerialScreen.onClientDisconnected(
-                    client.clientIdentifier
-                )
-            }
-        }
-        this.clients = clients
-        simView.updateConnectedClientsButton()
     }
 
     // -------------------------------

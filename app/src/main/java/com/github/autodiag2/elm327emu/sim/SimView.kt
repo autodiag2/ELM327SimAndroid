@@ -34,6 +34,7 @@ import android.widget.FrameLayout
 import com.github.autodiag2.elm327emu.com.Bridge
 import com.github.autodiag2.elm327emu.sim.serial.CustomView
 import android.util.Log
+import com.github.autodiag2.elm327emu.com.BridgeOrchestrator
 
 class SimView(private val context: Context): FrameLayout(context) {
 
@@ -57,6 +58,7 @@ class SimView(private val context: Context): FrameLayout(context) {
     public lateinit var onStop: (() -> Unit)
     public lateinit var onStart: (() -> Unit)
     public lateinit var onEcuRemoveByAddress: ((address: EcuAddress) -> Unit)
+    public lateinit var onShowConnectedClients: (() -> Unit)
     // -- End Controller events --
 
     init {
@@ -96,7 +98,7 @@ class SimView(private val context: Context): FrameLayout(context) {
             findViewById(R.id.sim_connected_clients)
 
         connectedClientsButton.setOnClickListener {
-            showConnectedClients()
+            onShowConnectedClients.invoke()
         }
         updateConnectedClientsButton()
 
@@ -342,9 +344,9 @@ class SimView(private val context: Context): FrameLayout(context) {
         }
     }
 
-    public fun updateConnectedClientsButton() {
+    public fun updateConnectedClientsButton(clients: List<BridgeOrchestrator.ConnectedClient> = listOf()) {
         post {
-            val nclient = activity.clients?.size ?: 0
+            val nclient = clients.size
             connectedClientsButton.text = getString(R.string.sim_connected_clients_format, nclient)
             val colorAttr =
                 if ( nclient == 1 ) {
@@ -381,38 +383,40 @@ class SimView(private val context: Context): FrameLayout(context) {
         }
     }
 
-    private fun showConnectedClients() {
-        val clients = activity.clients.orEmpty()
-        val view =
-            activity.layoutInflater.inflate(
-                R.layout.sim_connected_clients,
-                null
-            )
-        val list =
-            view.findViewById<ViewGroup>(
-                R.id.sim_connected_clients_list
-            )
-
-        for (client in clients) {
-            val textView =
-                TextView(activity)
-            textView.text =
-                "${bridgeType(client.bridge)}: ${client.clientIdentifier}"
-            textView.setPadding(8,8,8,8)
-            list.addView(textView)
-        }
-        AlertDialog.Builder(activity)
-            .setTitle(
-                getString(
-                    R.string.sim_connected_clients_dialog_title
+    public fun showConnectedClients(clients: List<BridgeOrchestrator.ConnectedClient>?) {
+        post {
+            val clients = clients.orEmpty()
+            val view =
+                activity.layoutInflater.inflate(
+                    R.layout.sim_connected_clients,
+                    null
                 )
-            )
-            .setView(view)
-            .setNegativeButton(
-                android.R.string.cancel,
-                null
-            )
-            .show()
+            val list =
+                view.findViewById<ViewGroup>(
+                    R.id.sim_connected_clients_list
+                )
+    
+            for (client in clients) {
+                val textView =
+                    TextView(activity)
+                textView.text =
+                    "${bridgeType(client.bridge)}: ${client.clientIdentifier}"
+                textView.setPadding(8,8,8,8)
+                list.addView(textView)
+            }
+            AlertDialog.Builder(activity)
+                .setTitle(
+                    getString(
+                        R.string.sim_connected_clients_dialog_title
+                    )
+                )
+                .setView(view)
+                .setNegativeButton(
+                    android.R.string.cancel,
+                    null
+                )
+                .show()
+        }
     }
 
     public fun setupCustomSerialScripts() {

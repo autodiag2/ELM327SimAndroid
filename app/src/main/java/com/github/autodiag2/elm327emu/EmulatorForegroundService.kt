@@ -22,7 +22,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import android.util.Log
 
-class EmulatorForegroundService : Service() {
+class EmulatorForegroundService : Service(), BridgeOrchestrator.ClientConnectionListener {
 
     companion object {
         const val ACTION_START = "com.github.autodiag2.elm327emu.START"
@@ -36,6 +36,7 @@ class EmulatorForegroundService : Service() {
     lateinit var sim: Sim
     lateinit var bridgeOrchestrator: BridgeOrchestrator
     lateinit var stats: StatsController
+    public var clients: List<BridgeOrchestrator.ConnectedClient>? = null
 
     inner class LocalBinder : Binder() {
         fun getService() = this@EmulatorForegroundService
@@ -54,7 +55,47 @@ class EmulatorForegroundService : Service() {
         log = LogController(this)
         sim = Sim(this)
         stats = StatsController()
-        bridgeOrchestrator = BridgeOrchestrator(service = this, clientConnectionListener = null)  // TODO clientConnectionListener = this)
+        bridgeOrchestrator = BridgeOrchestrator(service = this, clientConnectionListener = this)
+    }
+
+    override fun onClientConnectUpdate(
+        clients: List<BridgeOrchestrator.ConnectedClient>
+    ) {
+        for (client in clients) {
+            if (this.clients.orEmpty().none {
+                    it.clientIdentifier == client.clientIdentifier
+                } == true
+            ) {
+                sim.customSerialScreen.onClientConnected(
+                    client.clientIdentifier
+                )
+            }
+        }
+
+        for (client in this.clients.orEmpty()) {
+            if (clients.none {
+                    it.clientIdentifier == client.clientIdentifier
+                }
+            ) {
+                sim.customSerialScreen.onClientDisconnected(
+                    client.clientIdentifier
+                )
+            }
+        }
+        this.clients = clients
+        refreshClientsConnected()
+    }
+
+    fun refreshClientsConnected() {
+        val simView = sim.view
+        if ( simView == null ) {
+            return
+        }
+        val clients = this.clients
+        if ( clients == null ) {
+            return
+        }
+        simView.updateConnectedClientsButton(clients)
     }
 
     override fun onBind(intent: Intent?): IBinder = binder
