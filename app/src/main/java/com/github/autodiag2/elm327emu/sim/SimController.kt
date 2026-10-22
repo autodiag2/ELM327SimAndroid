@@ -107,6 +107,7 @@ class Sim(
             view.getCustomSerialExamples = ::getCustomSerialExamples
             view.onEcuRemoveByAddress = ::ecuRemoveByAddress
             view.onShowConnectedClients = ::onShowConnectedClients
+            view.onScriptOpen = ::onScriptOpen
             view.getJson = {
                 customSerialScreen
                     .toJson()
