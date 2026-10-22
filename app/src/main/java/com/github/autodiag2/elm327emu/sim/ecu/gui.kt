@@ -86,59 +86,6 @@ class EcuGuiView(context: Context, allSignals:  Array<SimSignal>): EcuView(conte
                 }
                 val signal = allSignals[index]
                 onSignalAdd.invoke(signal)
-                val title = TextView(context).apply {
-                    text = if (signal.unit.isNullOrBlank()) getName(context, signal) else "${getName(context, signal)} (${signal.unit})"
-                }
-
-                val step = if (signal.step <= 0.0) 1.0 else signal.step
-                val scale = (1.0 / step).toInt().coerceAtLeast(1)
-                val minI = (signal.min * scale).toInt()
-                val maxI = (signal.max * scale).toInt()
-                val initialI = (((getSignalInitialValue(get_Address.invoke(), signal)).coerceIn(signal.min, signal.max)) * scale).toInt()
-
-                val valueText = TextView(context).apply {
-                    val shown = initialI.toDouble() / scale
-                    text = if (signal.unit.isNullOrBlank()) "$shown" else "$shown ${signal.unit}"
-                }
-
-                val seek = SeekBar(context).apply {
-                    max = (maxI - minI).coerceAtLeast(0)
-                    progress = (initialI - minI).coerceIn(0, max)
-                    setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                        override fun onProgressChanged(s: SeekBar, p: Int, fromUser: Boolean) {
-                            val v = (p + minI).toDouble() / scale
-                            valueText.text = if (signal.unit.isNullOrBlank()) "$v" else "$v ${signal.unit}"
-                            onSignalValueChanged.invoke(signal, v)
-                        }
-                        override fun onStartTrackingTouch(s: SeekBar) {}
-                        override fun onStopTrackingTouch(s: SeekBar) {}
-                    })
-                }
-                
-                val removeBtn = Button(context).apply {
-                    text = getString(context, R.string.sim_ecu_gui_remove_signal)
-                }
-
-                val headerRow = LinearLayout(context).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                    addView(title, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-                    addView(removeBtn)
-                }
-
-                val block = LinearLayout(context).apply {
-                    orientation = LinearLayout.VERTICAL
-                    setPadding(0, 12, 0, 12)
-                    addView(headerRow)
-                    addView(valueText)
-                    addView(seek)
-                }
-
-                removeBtn.setOnClickListener {
-                    onSignalRemoved.invoke(signal)
-                    dynamicSignalsContainer.removeView(block)
-                }
-
-                dynamicSignalsContainer.addView(block)
             }
         }
 
@@ -153,6 +100,61 @@ class EcuGuiView(context: Context, allSignals:  Array<SimSignal>): EcuView(conte
                 }
             }
         }
+    }
+    fun addSignal(signal: SimSignal) {
+        val title = TextView(context).apply {
+            text = if (signal.unit.isNullOrBlank()) getName(context, signal) else "${getName(context, signal)} (${signal.unit})"
+        }
+
+        val step = if (signal.step <= 0.0) 1.0 else signal.step
+        val scale = (1.0 / step).toInt().coerceAtLeast(1)
+        val minI = (signal.min * scale).toInt()
+        val maxI = (signal.max * scale).toInt()
+        val initialI = (((getSignalInitialValue(get_Address.invoke(), signal)).coerceIn(signal.min, signal.max)) * scale).toInt()
+
+        val valueText = TextView(context).apply {
+            val shown = initialI.toDouble() / scale
+            text = if (signal.unit.isNullOrBlank()) "$shown" else "$shown ${signal.unit}"
+        }
+
+        val seek = SeekBar(context).apply {
+            max = (maxI - minI).coerceAtLeast(0)
+            progress = (initialI - minI).coerceIn(0, max)
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(s: SeekBar, p: Int, fromUser: Boolean) {
+                    val v = (p + minI).toDouble() / scale
+                    valueText.text = if (signal.unit.isNullOrBlank()) "$v" else "$v ${signal.unit}"
+                    onSignalValueChanged.invoke(signal, v)
+                }
+                override fun onStartTrackingTouch(s: SeekBar) {}
+                override fun onStopTrackingTouch(s: SeekBar) {}
+            })
+        }
+        
+        val removeBtn = Button(context).apply {
+            text = getString(context, R.string.sim_ecu_gui_remove_signal)
+        }
+
+        val headerRow = LinearLayout(context).apply {
+            orientation = LinearLayout.HORIZONTAL
+            addView(title, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            addView(removeBtn)
+        }
+
+        val block = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, 12, 0, 12)
+            addView(headerRow)
+            addView(valueText)
+            addView(seek)
+        }
+
+        removeBtn.setOnClickListener {
+            onSignalRemoved.invoke(signal)
+            dynamicSignalsContainer.removeView(block)
+        }
+
+        dynamicSignalsContainer.addView(block)
     }
     fun onClearSignals() {
         dynamicSignalsContainer.removeAllViews()
@@ -218,6 +220,16 @@ class EcuGui(
             guiView.onSignalRemoved = ::onSignalRemoved
             guiView.get_Address = ::get_Address
             guiView.onDTCRemove = ::onDTCRemove
+            view.post {
+                for(signal_entry in signals) {
+                    val signal = allSignals.find { it.path == signal_entry.key }
+                    if ( signal == null ) {
+                        Log.e("EcuGui", "signal not found")
+                        continue
+                    }
+                    view.addSignal(signal)
+                }
+            }
         }
     }
 
@@ -298,6 +310,12 @@ class EcuGui(
         val initialI = (((getSignalInitialValue(address, signal)).coerceIn(signal.min, signal.max)) * scale).toInt()
 
         setSignalValue(signal.path, initialI.toDouble() / scale)
+        val view = this.view as EcuGuiView?
+        if ( view != null ) {
+            view.post {
+                view.addSignal(signal)
+            }
+        }
     }
 
     fun addSignalByPath(path: String) {
