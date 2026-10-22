@@ -73,6 +73,7 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
             assert(::simView.isInitialized)
             connectedService.sim.attachView(simView)
             serviceBound = true
+
             // autostart
             if ( connectedService.sim.isRunning() ) {
                 runOnUiThread {

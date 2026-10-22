@@ -81,7 +81,7 @@ class Sim(
     init {
         customSerialScreen = CustomController(service, listener = this)
         //customSerialScreen.view = CustomView(activity)
-        buildAddECUToGUI(Ecu.DEFAULT_ADDRESS, getString(R.string.sim_ecu_gui_ecu_name), EcuType.gui)
+        buildAddECU(Ecu.DEFAULT_ADDRESS, getString(R.string.sim_ecu_gui_ecu_name), EcuType.gui)
         customSerialScreen.setReplayEntriesProvider {
             service.log.model.buffer
         }
@@ -95,7 +95,7 @@ class Sim(
             view.onStop = ::onStop
             view.isRunning = ::isRunning
             view.loadCustomSerialExample = ::loadCustomSerialExample
-            view.onAddEcu = ::buildAddECUToGUI
+            view.onAddEcu = ::buildAddECU
             view.getCustomSerialExamples = ::getCustomSerialExamples
             view.onEcuRemoveByAddress = ::ecuRemoveByAddress
             view.getJson = {
@@ -103,7 +103,13 @@ class Sim(
                     .toJson()
                     .toString(2)
             }
-            view.setupCustomSerialScripts()
+            view.post {
+                view.ecuListView.removeAllViews()
+                for(ecu in ecus) {
+                    view.addEcuRow(ecu)
+                }
+                view.setupCustomSerialScripts()
+            }
         }
     }
 
@@ -339,7 +345,7 @@ class Sim(
         return service.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
     }
 
-    private fun buildAddECUToGUI(address: EcuAddress, name: String, type: EcuType): Unit {
+    private fun buildAddECU(address: EcuAddress, name: String, type: EcuType): Unit {
 
         ecuRemoveByAddress(address)
 
