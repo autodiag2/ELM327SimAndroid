@@ -27,8 +27,8 @@ class EcuRandomView(context: Context) : EcuView(context) {
     }
 
     fun fromJsonInternal(content: JSONObject) {
-        seed.setText(content.getInt("seed").toString())
-        use_signals.isChecked = content.getBoolean("use_signals")
+        seed.setText(content.optInt("seed", 0).toString())
+        use_signals.isChecked = content.optBoolean("use_signals", false)
     }
 }
 

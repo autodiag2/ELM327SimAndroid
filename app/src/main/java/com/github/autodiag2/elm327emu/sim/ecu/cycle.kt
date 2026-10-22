@@ -28,8 +28,8 @@ class EcuCycleView(context: Context): EcuView(context) {
     }
     
     fun fromJsonInternal(content: JSONObject) {
-        gears.setText(content.getInt("gears").toString())
-        use_signals.isChecked = content.getBoolean("use_signals")
+        gears.setText(content.optInt("gears", 10).toString())
+        use_signals.isChecked = content.optBoolean("use_signals", false)
     }
 
 }
