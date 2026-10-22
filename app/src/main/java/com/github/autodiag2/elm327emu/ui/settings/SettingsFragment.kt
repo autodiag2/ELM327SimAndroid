@@ -55,6 +55,7 @@ private const val PREF_BT_NAME = "com_bt_name"
 private const val NETWORK_BT = 0
 private const val NETWORK_BLE = 1
 private const val NETWORK_IP = 2
+public const val SETTING_DEFAULT_APP_EMU_AUTOSTART = false
 
 data class BleProfile(
     val name: String,
@@ -476,7 +477,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
             true
         }
         val autostart = findPreference<SwitchPreferenceCompat>("app_emu_autostart")!!
-        autostart.isChecked = prefs.getBoolean("app_emu_autostart", true)
+        autostart.isChecked = prefs.getBoolean("app_emu_autostart", SETTING_DEFAULT_APP_EMU_AUTOSTART)
         autostart.setOnPreferenceChangeListener { _, newValue ->
             prefs.edit()
                 .putBoolean("app_emu_autostart", newValue as Boolean)

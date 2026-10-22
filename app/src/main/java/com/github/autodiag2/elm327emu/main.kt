@@ -32,6 +32,7 @@ import com.github.autodiag2.elm327emu.sim.SimList
 import com.github.autodiag2.elm327emu.sim.SimView
 import com.github.autodiag2.elm327emu.ui.NestedScreen
 import com.github.autodiag2.elm327emu.ui.settings.SettingsFragment
+import com.github.autodiag2.elm327emu.ui.settings.SETTING_DEFAULT_APP_EMU_AUTOSTART
 import com.github.autodiag2.elm327emu.sim.serial.CustomController
 import com.github.autodiag2.elm327emu.sim.serial.CustomView
 import java.io.File
@@ -72,6 +73,16 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
             assert(::simView.isInitialized)
             connectedService.sim.attachView(simView)
             serviceBound = true
+            // autostart
+            if ( ! connectedService.sim.isRunning() ) {
+                prefs.getBoolean("app_emu_autostart", SETTING_DEFAULT_APP_EMU_AUTOSTART).let { autostart ->
+                    if (autostart) {
+                        runOnUiThread {
+                            simView.findViewById<Button>(R.id.sim_state).performClick()
+                        }
+                    }
+                }
+            }
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -489,13 +500,6 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
         // ---- Permissions ----
         if (!isPermissionsGranted()) {
             requestPermissions()
-        }
-
-        // autostart
-        prefs.getBoolean("app_emu_autostart", true).let { autostart ->
-            if (false && autostart) {
-                simView.findViewById<Button>(R.id.sim_state).performClick()
-            }
         }
 
         startForegroundService()
