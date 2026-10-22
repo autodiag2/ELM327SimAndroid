@@ -452,7 +452,7 @@ class BLEBridge(
 
     override suspend fun start() {
         if (!service.btAdapter.isEnabled) {
-            //activity.showBluetoothEnablePopup()
+            EmulatorForegroundService.activity?.showBluetoothEnablePopup()
             return
         }
 

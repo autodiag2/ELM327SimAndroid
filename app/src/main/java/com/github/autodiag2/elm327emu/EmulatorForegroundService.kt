@@ -30,6 +30,7 @@ class EmulatorForegroundService : Service(), BridgeOrchestrator.ClientConnection
 
         private const val CHANNEL_ID = "emulator_service"
         private const val NOTIFICATION_ID = 1001
+        public var activity: MainActivity? = null
     }
 
     lateinit var log: LogController

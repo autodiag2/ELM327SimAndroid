@@ -375,7 +375,7 @@ class MainActivity : AppCompatActivity() {
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+        EmulatorForegroundService.activity = this
         MainActivityRef.activity = this
         setContentView(R.layout.activity_main)
         settingsContainer = findViewById(R.id.settingsContainer)
@@ -767,6 +767,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         MainActivityRef.activity = null
+        EmulatorForegroundService.activity = null
         super.onDestroy()
     }
 
