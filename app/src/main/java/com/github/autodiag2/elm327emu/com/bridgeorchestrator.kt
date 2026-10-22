@@ -247,6 +247,11 @@ class BridgeOrchestrator(
 
     protected fun emuStart() {
         val filesDirPath = service.filesDir.absolutePath
+        if (BuildConfig.DEBUG) {
+            libautodiag.setLogLevel("error")
+        } else {
+            libautodiag.setLogLevel("none")
+        }
         val location = libautodiag.launchEmu(filesDirPath)
         appendLog(getString(R.string.log_network_native_sim_location, location),
             LogLevel.DEBUG

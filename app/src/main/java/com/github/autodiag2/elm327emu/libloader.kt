@@ -93,6 +93,8 @@ object libautodiag {
     }
 
     @JvmStatic
+    external fun setLogLevel(level: String)
+    @JvmStatic
     external fun launchEmu(tmpDirPath: String, kind: String = "socket"): String
     @JvmStatic
     external fun getProtocols(): Array<String>
