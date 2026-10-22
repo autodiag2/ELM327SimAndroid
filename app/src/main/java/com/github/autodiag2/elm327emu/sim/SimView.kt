@@ -32,11 +32,14 @@ import com.github.autodiag2.elm327emu.sim.Sim.CustomSerialExample
 import com.github.autodiag2.elm327emu.IgnitionState
 import android.widget.FrameLayout
 import com.github.autodiag2.elm327emu.com.Bridge
+import com.github.autodiag2.elm327emu.sim.serial.CustomViewContainer
 import com.github.autodiag2.elm327emu.sim.serial.CustomView
 import android.util.Log
 import com.github.autodiag2.elm327emu.com.BridgeOrchestrator
 
 class SimView(private val context: Context): FrameLayout(context) {
+
+    lateinit var customViewContainer: CustomViewContainer
 
     public val ecuListView: ViewGroup
     private val ecuAddSelect: Spinner
@@ -167,6 +170,7 @@ class SimView(private val context: Context): FrameLayout(context) {
                 )
             }
         }
+        customViewContainer = CustomViewContainer(context)
     }
     fun uiSetRunState(newState: Boolean) {
         val button = findViewById<Button>(R.id.sim_state)
@@ -217,8 +221,8 @@ class SimView(private val context: Context): FrameLayout(context) {
     fun getString(resId: Int, vararg formatArgs: Any?): String {
         return context.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
     }
-    
-    fun doOnScriptOpen(view: CustomView?) {
+
+    fun doOnScriptOpen(view: CustomViewContainer?) {
         if ( view != null) {
             activity.showNestedScreen(view)
         }

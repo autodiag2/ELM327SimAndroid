@@ -38,7 +38,7 @@ class LogPanel(val custom: CustomController) {
     private lateinit var container: View
 
     fun setup() {
-        container = custom.view!!
+        container = custom.view!!.parentView
         panel = container.findViewById(R.id.custom_serial_log_panel)
         val logText = panel.findViewById<TextView>(R.id.custom_serial_log_text)
         val scroll = panel.findViewById<ScrollView>(R.id.custom_serial_log_scroll)

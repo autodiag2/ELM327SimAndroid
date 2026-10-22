@@ -8,6 +8,7 @@ import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.GestureDetector
 import android.view.MotionEvent
+import android.widget.FrameLayout
 import android.view.ScaleGestureDetector
 import android.view.View
 import kotlin.math.abs
@@ -22,11 +23,30 @@ import android.text.TextPaint
 import android.widget.LinearLayout
 import android.view.LayoutInflater
 import com.github.autodiag2.elm327emu.MainActivity
+import android.util.Log
+
+class CustomViewContainer(context: Context) : FrameLayout(context) {
+    lateinit var customView: CustomView
+
+    init {
+        LayoutInflater.from(context).inflate(
+            R.xml.sim_custom_serial_screen,
+            this,
+            true
+        )
+        customView = findViewById<CustomView>(R.id.custom_serial_view)
+        customView.parentView = this
+        setWillNotDraw(false)
+    }
+
+}
 
 class CustomView(
     context: Context,
     attrs: AttributeSet? = null
 ) : LinearLayout(context, attrs) {
+
+    public lateinit var parentView: CustomViewContainer
 
     data class Coordinates(
         public var x: Float = 0f,
@@ -81,14 +101,9 @@ class CustomView(
     private val activity: MainActivity
     init {
 
+        setWillNotDraw(false)
         activity = context as MainActivity
         orientation = VERTICAL
-
-        LayoutInflater.from(context).inflate(
-            R.xml.sim_custom_serial_screen,
-            this,
-            true
-        )
 
         linkPreviewPaint.style = Paint.Style.STROKE
         linkPreviewPaint.strokeWidth = 5f
@@ -715,7 +730,6 @@ class CustomView(
         canvas: Canvas
     ) {
         super.onDraw(canvas)
-
         val currentModel = model ?: return
         blocksById.clear()
         for (block in currentModel.blocks) {

@@ -86,6 +86,31 @@ class CustomController(
         if ( view != null ) {
             replayToolbar.setupReplayToolbar()
             logPanel.setup()
+            restoreViewState()
+        }
+    }
+
+    fun restoreViewState() {
+        val view = this.view
+        if ( view == null ) {
+            return
+        }
+        for(block in blocks) {
+            val blockView =
+                view.addBlock(
+                    model = block
+                )
+            block.viewLink(
+                blockView
+            )
+        }
+        for(link in links) {
+            val linkView =
+                view?.addLink(
+                    model = link
+                )
+
+            link.view = linkView
         }
     }
 
@@ -607,7 +632,7 @@ class CustomController(
                 view.addBlock(
                     model = block
                 )
-    
+
             block.viewLink(
                 blockView
             )

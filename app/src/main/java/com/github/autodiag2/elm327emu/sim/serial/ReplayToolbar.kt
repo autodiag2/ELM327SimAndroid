@@ -183,11 +183,11 @@ class ReplayToolbar(
     }
 
     fun setupReplayToolbar() {
-        root = customController.view!!.findViewById(
+        root = customController.view!!.parentView.findViewById(
             R.id.custom_serial_replay_toolbar
         )
 
-        content = customController.view!!.findViewById(
+        content = customController.view!!.parentView.findViewById(
             R.id.custom_serial_replay_toolbar_content
         )
 
@@ -200,23 +200,23 @@ class ReplayToolbar(
 
         customController.logReplay.setReplayTimelineView(replayTimeline)
 
-        arrow = customController.view!!.findViewById(
+        arrow = customController.view!!.parentView.findViewById(
             R.id.custom_serial_replay_toolbar_arrow
         )
 
-        arrowContainer = customController.view!!.findViewById(
+        arrowContainer = customController.view!!.parentView.findViewById(
             R.id.custom_serial_replay_toolbar_arrow_container
         )
 
-        speed = customController.view!!.findViewById(
+        speed = customController.view!!.parentView.findViewById(
             R.id.custom_serial_replay_speed
         )
 
-        speedValue = customController.view!!.findViewById(
+        speedValue = customController.view!!.parentView.findViewById(
             R.id.custom_serial_replay_speed_value
         )
 
-        startButton = customController.view!!.findViewById(
+        startButton = customController.view!!.parentView.findViewById(
             R.id.custom_serial_replay_start
         )
 

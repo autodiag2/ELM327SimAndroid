@@ -35,6 +35,7 @@ import com.github.autodiag2.elm327emu.ui.settings.SettingsFragment
 import com.github.autodiag2.elm327emu.ui.settings.SETTING_DEFAULT_APP_EMU_AUTOSTART
 import com.github.autodiag2.elm327emu.sim.serial.CustomController
 import com.github.autodiag2.elm327emu.sim.serial.CustomView
+import com.github.autodiag2.elm327emu.sim.serial.CustomViewContainer
 import java.io.File
 import com.github.autodiag2.elm327emu.sim.ecu.EcuGuiView
 import com.github.autodiag2.elm327emu.sim.GuiGodot
@@ -306,18 +307,19 @@ class MainActivity : AppCompatActivity() {
             activeScreen is EcuGuiView
         )
         menu.setGroupVisible(R.id.action_menu_group_sim_custom_serial_script,
-            activeScreen is CustomView
+            activeScreen is CustomViewContainer
         )
         menu.setGroupVisible(R.id.action_menu_group_logview,
             activeScreen is LogView
         )
         var simCustomSerialScreenIsSomeSelection = false
-        if ( activeScreen is CustomView ) {
-            val simCustomSerialScreen = activeScreen as CustomView
+        if ( activeScreen is CustomViewContainer ) {
+            val simCustomSerialScreenContainer = activeScreen as CustomViewContainer
+            val simCustomSerialScreen = simCustomSerialScreenContainer.customView
             simCustomSerialScreenIsSomeSelection = simCustomSerialScreen.model!!.isSomeSelection()
         }
         menu.setGroupVisible(R.id.action_menu_group_sim_custom_serial_script_any_element_selected,
-            activeScreen is CustomView && simCustomSerialScreenIsSomeSelection
+            activeScreen is CustomViewContainer && simCustomSerialScreenIsSomeSelection
         )
 
         return super.onPrepareOptionsMenu(menu)

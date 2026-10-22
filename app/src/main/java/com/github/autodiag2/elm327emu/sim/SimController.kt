@@ -33,7 +33,7 @@ import com.github.autodiag2.elm327emu.IgnitionState
 import android.content.Context
 
 import com.github.autodiag2.elm327emu.sim.serial.CustomController
-import com.github.autodiag2.elm327emu.sim.serial.CustomView
+import com.github.autodiag2.elm327emu.sim.serial.CustomViewContainer
 import android.widget.AdapterView
 import android.view.View
 import android.util.Log
@@ -88,7 +88,6 @@ class Sim(
 
     init {
         customSerialScreen = CustomController(service, listener = this)
-        //customSerialScreen.view = CustomView(activity)
         buildAddECU(Ecu.DEFAULT_ADDRESS, getString(R.string.sim_ecu_gui_ecu_name), EcuType.gui)
         customSerialScreen.setReplayEntriesProvider {
             service.log.model.buffer
@@ -122,6 +121,8 @@ class Sim(
                 view.uiSetRunState(isRunning())
                 view.setupCustomSerialScripts()
             }
+            view.customViewContainer.customView.model = customSerialScreen
+            customSerialScreen.attachView(view.customViewContainer.customView)
         }
     }
 
@@ -167,7 +168,7 @@ class Sim(
     fun onScriptOpen() {
         val view = this.view
         if ( view != null ) {
-            view.doOnScriptOpen(customSerialScreen.view)
+            view.doOnScriptOpen(customSerialScreen.view!!.parentView)
         }
     }
 
