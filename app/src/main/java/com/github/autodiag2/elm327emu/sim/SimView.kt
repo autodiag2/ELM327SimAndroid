@@ -112,31 +112,8 @@ class SimView(private val context: Context): FrameLayout(context) {
             setOnClickListener {
                 if (activity.isPermissionsGranted()) {
                     val previousRunState = isRunning.invoke()
-                    text = if (previousRunState) {
-                        getString(R.string.sim_start_sim)
-                    } else {
-                        getString(R.string.sim_stop_sim)
-                    }
-
-                    val colorAttr =
-                        if (previousRunState) {
-                            R.attr.colorAccentInProgress
-                        } else {
-                            R.attr.colorAccentSuccess
-                        }
-
-                    val typedValue = android.util.TypedValue()
-                    activity.theme.resolveAttribute(
-                        colorAttr,
-                        typedValue,
-                        true
-                    )
-
-                    backgroundTintList =
-                        android.content.res.ColorStateList.valueOf(
-                            typedValue.data
-                        )
-
+                    val newState = !previousRunState
+                    uiSetRunState(newState)
                     if (previousRunState) {
                         onStop.invoke()
                     } else {
@@ -187,6 +164,33 @@ class SimView(private val context: Context): FrameLayout(context) {
                 )
             }
         }
+    }
+    fun uiSetRunState(newState: Boolean) {
+        val button = findViewById<Button>(R.id.sim_state)
+        button.text = if (newState) {
+            getString(R.string.sim_stop_sim)
+        } else {
+            getString(R.string.sim_start_sim)
+        }
+
+        val colorAttr =
+            if (newState) {
+                R.attr.colorAccentSuccess
+            } else {
+                R.attr.colorAccentInProgress
+            }
+
+        val typedValue = android.util.TypedValue()
+        activity.theme.resolveAttribute(
+            colorAttr,
+            typedValue,
+            true
+        )
+
+        button.backgroundTintList =
+            android.content.res.ColorStateList.valueOf(
+                typedValue.data
+            )
     }
     fun onRunStateChanged(newState: Boolean) {
         Handler(Looper.getMainLooper()).post {

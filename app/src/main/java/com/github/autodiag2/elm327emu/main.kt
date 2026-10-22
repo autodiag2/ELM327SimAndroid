@@ -74,7 +74,11 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
             connectedService.sim.attachView(simView)
             serviceBound = true
             // autostart
-            if ( ! connectedService.sim.isRunning() ) {
+            if ( connectedService.sim.isRunning() ) {
+                runOnUiThread {
+                    simView.uiSetRunState(true)
+                }
+            } else {
                 prefs.getBoolean("app_emu_autostart", SETTING_DEFAULT_APP_EMU_AUTOSTART).let { autostart ->
                     if (autostart) {
                         runOnUiThread {
