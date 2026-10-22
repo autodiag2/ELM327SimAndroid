@@ -72,6 +72,7 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
             logController.attachView(logView)
             assert(::simView.isInitialized)
             connectedService.sim.attachView(simView)
+            connectedService.stats.attachView(statsView)
             serviceBound = true
 
             // autostart
@@ -798,15 +799,4 @@ class MainActivity : AppCompatActivity(), BridgeOrchestrator.ClientConnectionLis
         super.onDestroy()
     }
 
-    // TO remove
-    fun onDataReceived(data: ByteArray, size_used: Int) {
-        // log
-        statsView.onDataReceived(data, size_used)
-    }
-
-    fun onDataSent(data: ByteArray, size_used: Int) {
-        //logController.logData(LogEntryType.SENT, data, size_used)
-        statsView.onDataSent(data, size_used)
-    }
-    // END TO remove
 }

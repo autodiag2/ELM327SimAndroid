@@ -14,6 +14,7 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import com.github.autodiag2.elm327emu.com.BridgeOrchestrator
 import com.github.autodiag2.elm327emu.sim.Sim
+import com.github.autodiag2.elm327emu.StatsController
 import android.content.Context
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -34,6 +35,7 @@ class EmulatorForegroundService : Service() {
     lateinit var log: LogController
     lateinit var sim: Sim
     lateinit var bridgeOrchestrator: BridgeOrchestrator
+    lateinit var stats: StatsController
 
     inner class LocalBinder : Binder() {
         fun getService() = this@EmulatorForegroundService
@@ -51,6 +53,7 @@ class EmulatorForegroundService : Service() {
         btAdapter = btManager.adapter
         log = LogController(this)
         sim = Sim(this)
+        stats = StatsController()
         bridgeOrchestrator = BridgeOrchestrator(service = this, clientConnectionListener = null)  // TODO clientConnectionListener = this)
     }
 
@@ -147,12 +150,12 @@ class EmulatorForegroundService : Service() {
 
     fun onDataReceived(data: ByteArray, size_used: Int) {
         log.logData(LogEntryType.RECV, data, size_used)
-        //statsView.onDataReceived(data, size_used
+        stats.onDataReceived(data, size_used)
     }
 
     fun onDataSent(data: ByteArray, size_used: Int) {
         log.logData(LogEntryType.SENT, data, size_used)
-        //statsView.onDataSent(data, size_used)
+        stats.onDataSent(data, size_used)
     }
 
     fun clearSocketFiles() {
