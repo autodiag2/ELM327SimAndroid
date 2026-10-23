@@ -86,42 +86,11 @@ class CustomController(
         if ( view != null ) {
             replayToolbar.setupReplayToolbar()
             logPanel.setup()
-            restoreViewState()
         }
     }
 
     fun detachView() {
-        for(block in blocks) {
-            block.detachView()
-        }
-        for(link in links) {
-            link.detachView()
-        }
         this.view = null
-    }
-
-    fun restoreViewState() {
-        val view = this.view
-        if ( view == null ) {
-            return
-        }
-        for(block in blocks) {
-            val blockView =
-                view.addBlock(
-                    model = block
-                )
-            block.attachView(
-                blockView
-            )
-        }
-        for(link in links) {
-            val linkView =
-                view.addLink(
-                    model = link
-                )
-
-            link.attachView(linkView)
-        }
     }
 
     fun isRunning(): Boolean {
