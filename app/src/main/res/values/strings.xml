@@ -233,6 +233,7 @@
     <string name="sim_menu_save_as">Save as ...</string>
     <string name="sim_menu_import_clipboard">Import from clipboard</string>
     <string name="sim_menu_export_clipboard">Export to clipboard</string>
+    <string name="sim_list_share_config">Share config</string>
     <string name="sim_list_title">Load Car Configuration</string>
     <string name="sim_list_load_latest_success">Loaded latest config: %1$s</string>
     <string name="sim_list_load_latest_no_config">No config found</string>

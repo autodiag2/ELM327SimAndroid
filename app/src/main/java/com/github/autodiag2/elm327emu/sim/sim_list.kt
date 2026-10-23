@@ -51,7 +51,7 @@ private class SimListAdapter(
         }
 
         activity.startActivity(
-            Intent.createChooser(intent, "Share config")
+            Intent.createChooser(intent, getString(R.string.sim_list_share_config))
         )
         updateListState()
     }
