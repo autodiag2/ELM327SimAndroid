@@ -113,7 +113,7 @@
     <string name="custom_serial_log_hint">Logs will appear here...</string>
     <string name="sim_custom_serial_script_share_script_title">Share script</string>
     <string name="sim_custom_serial_script_export_share">Share</string>
-    <string name="sim_custom_serial_script_clear_emu_running">Running serial script running please stop it before</string>
+    <string name="sim_custom_serial_script_clear_emu_running">Running serial script please stop it before</string>
     <string name="sim_custom_serial_script_clear_confirm">This will delete completely your script, are you sure ?</string>
     <string name="sim_custom_serial_script_client_connection_state">Client connection state</string>
     <string name="sim_custom_serial_script_client_connection_state_timeout">Timeout (ms)</string>

@@ -91,6 +91,12 @@ class CustomController(
     }
 
     fun detachView() {
+        for(block in blocks) {
+            block.detachView()
+        }
+        for(link in links) {
+            link.detachView()
+        }
         this.view = null
     }
 
@@ -104,17 +110,17 @@ class CustomController(
                 view.addBlock(
                     model = block
                 )
-            block.viewLink(
+            block.attachView(
                 blockView
             )
         }
         for(link in links) {
             val linkView =
-                view?.addLink(
+                view.addLink(
                     model = link
                 )
 
-            link.view = linkView
+            link.attachView(linkView)
         }
     }
 
@@ -200,13 +206,15 @@ class CustomController(
                 to.model!!.id
             )
 
-        val linkView =
-            view?.addLink(
-                model = linkModel
-            )
-
-        linkModel.view = linkView
-
+        val view = this.view
+        if ( view != null ) {
+            val linkView =
+                view.addLink(
+                    model = linkModel
+                )
+    
+            linkModel.attachView(linkView)
+        }
         links.add(linkModel)
 
         onDataChanged()
@@ -637,7 +645,7 @@ class CustomController(
                     model = block
                 )
 
-            block.viewLink(
+            block.attachView(
                 blockView
             )
         }
@@ -1013,7 +1021,7 @@ class CustomController(
                         model = duplicate
                     )
     
-                duplicate.viewLink(
+                duplicate.attachView(
                     blockView
                 )
             }
@@ -1113,7 +1121,7 @@ class CustomController(
                         model = duplicateLink
                     )
     
-                duplicateLink.viewLink(
+                duplicateLink.attachView(
                     linkView
                 )
             }
@@ -1411,7 +1419,7 @@ class CustomController(
                         model = block
                     )
     
-                block.viewLink(
+                block.attachView(
                     blockView
                 )
             }
@@ -1511,7 +1519,7 @@ class CustomController(
                         model = link
                     )
     
-                link.viewLink(
+                link.attachView(
                     linkView
                 )
             }

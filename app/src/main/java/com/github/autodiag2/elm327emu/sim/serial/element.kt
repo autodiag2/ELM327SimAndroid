@@ -31,9 +31,14 @@ open class ElementController<V>(
         }
     }
 
-    fun viewLink(view_arg: V) {
+    open fun attachView(view_arg: V) {
         view = view_arg
     }
+
+    open fun detachView() {
+        view = null
+    }
+
 }
 
 open class ElementView<M>(
