@@ -60,8 +60,6 @@ class MainActivity : AppCompatActivity() {
             emulatorService = value
         }
 
-    private var serviceBound = false
-
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             val binder = service as EmulatorForegroundService.LocalBinder
@@ -75,7 +73,6 @@ class MainActivity : AppCompatActivity() {
             connectedService.sim.attachView(simView)
             connectedService.stats.attachView(statsView)
             connectedService.refreshClientsConnected()
-            serviceBound = true
 
             // autostart
             if ( ! connectedService.sim.isRunning() ) {
@@ -94,7 +91,6 @@ class MainActivity : AppCompatActivity() {
             emulatorService!!.sim.detachView()
             emulatorService!!.stats.detachView()
             emulatorService = null
-            serviceBound = false
         }
     }
 
@@ -367,9 +363,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onStop() {
-        if (serviceBound) {
+        if (emulatorService != null) {
             unbindService(serviceConnection)
-            serviceBound = false
             emulatorService = null
         }
         super.onStop()

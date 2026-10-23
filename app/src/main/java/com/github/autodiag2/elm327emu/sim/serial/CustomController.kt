@@ -1267,6 +1267,9 @@ class CustomController(
         desc: JSONObject,
         parseErrorHandler: ((String) -> Unit)?
     ) {
+        if ( feedbackIfRunning() ) {
+            return
+        }
         val schema =
             desc.optString(
                 "schema",
