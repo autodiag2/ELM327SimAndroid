@@ -131,7 +131,7 @@ class Sim(
             }
             view.customViewContainer.customView.model = customSerialScreen
             customSerialScreen.attachView(view.customViewContainer.customView)
-            customSerialOnRunStateChange(isRunning())
+            customSerialOnRunStateChange(customSerialScreen.isRunning())
         }
     }
 
