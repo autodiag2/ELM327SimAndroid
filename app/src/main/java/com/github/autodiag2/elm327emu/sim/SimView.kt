@@ -37,9 +37,13 @@ import com.github.autodiag2.elm327emu.sim.serial.CustomView
 import android.util.Log
 import com.github.autodiag2.elm327emu.com.BridgeOrchestrator
 
+const val SELECTED_SCRIPT_KEY = "sim_custom_serial_script_selected_script"
+const val SELECTED_SCRIPT_NAME = "elm327 basic"
+
 class SimView(private val context: Context): FrameLayout(context) {
 
     lateinit var customViewContainer: CustomViewContainer
+    val prefs by lazy { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
 
     public val ecuListView: ViewGroup
     private val ecuAddSelect: Spinner
@@ -199,8 +203,13 @@ class SimView(private val context: Context): FrameLayout(context) {
                 typedValue.data
             )
     }
+    private fun runOnUi(block: () -> Unit) {
+        post { 
+            block() 
+        }
+    }
     fun onRunStateChanged(newState: Boolean) {
-        Handler(Looper.getMainLooper()).post {
+        runOnUi {
             val button =
                 findViewById<ImageButton>(
                     R.id.sim_custom_serial_script_play_pause
@@ -423,10 +432,7 @@ class SimView(private val context: Context): FrameLayout(context) {
         }
     }
 
-    var existingEdit = false
-
-    public fun setupCustomSerialScripts(existingEdit: Boolean = false) {
-        this.existingEdit = existingEdit
+    public fun setupCustomSerialScripts() {
         customSerialScriptSpinner =
             findViewById(
                 R.id.custom_serial_script_spinner
@@ -453,16 +459,14 @@ class SimView(private val context: Context): FrameLayout(context) {
                     position: Int,
                     id: Long
                 ) {
-                    if ( this@SimView.existingEdit ) {
-                        this@SimView.existingEdit = false
-                        return
-                    }
                     if ( isRunning.invoke() ) {
                         return
                     }
                     val example =
                         customSerialExamples.getOrNull(position)
                             ?: return
+
+                    prefs.edit().putString(SELECTED_SCRIPT_KEY, example.file?.absolutePath ?: example.name).apply()
 
                     loadCustomSerialExample.invoke(
                         example
@@ -476,8 +480,21 @@ class SimView(private val context: Context): FrameLayout(context) {
             }
 
         refreshCustomSerialScripts(
-            preferredExample = null
+            preferredExample = getCustomSerialScriptByPathOrName(prefs.getString(SELECTED_SCRIPT_KEY, SELECTED_SCRIPT_NAME) ?: SELECTED_SCRIPT_NAME)
         )
+    }
+
+    private fun getCustomSerialScriptByPathOrName(selector: String): CustomSerialExample? {
+        val customSerialExamples = getCustomSerialExamples.invoke()
+        var res = customSerialExamples.firstOrNull {
+            it.file?.absolutePath == selector
+        }
+        if ( res == null ) {
+            res = customSerialExamples.firstOrNull {
+                it.name == selector
+            }
+        }
+        return res
     }
 
     private fun refreshCustomSerialScripts(
@@ -504,7 +521,7 @@ class SimView(private val context: Context): FrameLayout(context) {
                 }
             } else {
                 customSerialExamples.indexOfFirst {
-                    it.name == "elm327 basic"
+                    it.name == SELECTED_SCRIPT_NAME
                 }
             }
 
