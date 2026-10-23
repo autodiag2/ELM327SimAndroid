@@ -90,6 +90,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
+            emulatorService!!.log.detachView()
+            emulatorService!!.sim.detachView()
+            emulatorService!!.stats.detachView()
             emulatorService = null
             serviceBound = false
         }

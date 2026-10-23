@@ -18,6 +18,10 @@ class StatsController() {
         refresh()
     }
 
+    fun detachView() {
+        this.view = null
+    }
+
     fun onDataReceived(data: ByteArray, size_used: Int) {
         requestCount++
 

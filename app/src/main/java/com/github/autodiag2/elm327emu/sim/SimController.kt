@@ -94,6 +94,14 @@ class Sim(
         }
     }
 
+    fun detachView() {
+        this.view = null
+        for(ecu in ecus) {
+            ecu.detachView()
+        }
+        customSerialScreen.detachView()
+    }
+
     fun attachView(view: SimView?) {
         this.view = view
         if ( view != null ) {

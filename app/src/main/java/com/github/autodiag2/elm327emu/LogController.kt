@@ -12,7 +12,7 @@ import java.io.File
 class LogController(private val context: Context) {
 
     val model = LogRepository(context)
-    lateinit var view: LogView
+    var view: LogView? = null
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val mainScope = CoroutineScope(Dispatchers.Main)
     var filename = "elm327emu_log.txt"
@@ -21,10 +21,13 @@ class LogController(private val context: Context) {
         scope.launch {
 
             val result: AppendResult? = model.append(text, level, data, size_used, serial, serial_size, type)
+            val view = this@LogController.view
+            if ( view == null ) {
+                return@launch
+            }
             mainScope.launch {
                 refresh(result)
                 // ---- ONLY auto-scroll if allowed ----
-                val view = this@LogController.view
                 if (view.stickToBottom && !view.userTouching) {
                     view.scrollToBottomSafe()
                 }
@@ -54,6 +57,9 @@ class LogController(private val context: Context) {
 
     fun save() {
         val view = this.view
+        if ( view == null ) {
+            return
+        }
         val text = model.snapshotUnsafe().joinToString("\n") { it.text }
         view.modelText = text
         view.save(filename)
@@ -61,6 +67,9 @@ class LogController(private val context: Context) {
 
     fun download() {
         val view = this.view
+        if ( view == null ) {
+            return
+        }
         scope.launch {
             val file = File(context.getExternalFilesDir(null), filename)
             file.writeText(model.snapshotUnsafe().joinToString("\n") { it.text })
@@ -70,6 +79,9 @@ class LogController(private val context: Context) {
 
     fun refresh(result: AppendResult? = null) {
         val view = this.view
+        if ( view == null ) {
+            return
+        }
         scope.launch {
             val entries = model.search(view.search)
             view.refresh(result, entries)
@@ -78,6 +90,10 @@ class LogController(private val context: Context) {
 
     fun attachView(view: LogView) {
         this.view = view
+    }
+
+    fun detachView() {
+        this.view = null
     }
 
 }

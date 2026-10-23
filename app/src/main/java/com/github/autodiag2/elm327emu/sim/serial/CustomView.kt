@@ -26,7 +26,7 @@ import com.github.autodiag2.elm327emu.MainActivity
 import android.util.Log
 
 class CustomViewContainer(context: Context) : FrameLayout(context) {
-    lateinit var customView: CustomView
+    var customView: CustomView
 
     init {
         LayoutInflater.from(context).inflate(

@@ -43,6 +43,10 @@ abstract class Ecu(
     public var view: EcuView? = null
     val prefs by lazy { service.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
 
+    public open fun detachView() {
+        this.view = null
+    }
+
     public open fun attachView(view: EcuView?) {
         this.view = view
         if ( view != null ) {

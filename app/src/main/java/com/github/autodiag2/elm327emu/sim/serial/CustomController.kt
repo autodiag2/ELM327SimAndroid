@@ -90,6 +90,10 @@ class CustomController(
         }
     }
 
+    fun detachView() {
+        this.view = null
+    }
+
     fun restoreViewState() {
         val view = this.view
         if ( view == null ) {
