@@ -127,10 +127,11 @@ class Sim(
                     view.addEcuRow(ecu)
                 }
                 view.uiSetRunState(isRunning())
-                view.setupCustomSerialScripts()
+                view.setupCustomSerialScripts(0 < customSerialScreen.blocks.size)
             }
             view.customViewContainer.customView.model = customSerialScreen
             customSerialScreen.attachView(view.customViewContainer.customView)
+            customSerialOnRunStateChange(isRunning())
         }
     }
 

@@ -423,7 +423,10 @@ class SimView(private val context: Context): FrameLayout(context) {
         }
     }
 
-    public fun setupCustomSerialScripts() {
+    var existingEdit = false
+
+    public fun setupCustomSerialScripts(existingEdit: Boolean = false) {
+        this.existingEdit = existingEdit
         customSerialScriptSpinner =
             findViewById(
                 R.id.custom_serial_script_spinner
@@ -440,9 +443,7 @@ class SimView(private val context: Context): FrameLayout(context) {
             android.R.layout.simple_spinner_dropdown_item
         )
 
-        customSerialScriptSpinner.adapter =
-            customSerialScriptAdapter
-
+        customSerialScriptSpinner.adapter = customSerialScriptAdapter
         customSerialScriptSpinner.onItemSelectedListener =
             object : AdapterView.OnItemSelectedListener {
 
@@ -452,6 +453,13 @@ class SimView(private val context: Context): FrameLayout(context) {
                     position: Int,
                     id: Long
                 ) {
+                    if ( this@SimView.existingEdit ) {
+                        this@SimView.existingEdit = false
+                        return
+                    }
+                    if ( isRunning.invoke() ) {
+                        return
+                    }
                     val example =
                         customSerialExamples.getOrNull(position)
                             ?: return
