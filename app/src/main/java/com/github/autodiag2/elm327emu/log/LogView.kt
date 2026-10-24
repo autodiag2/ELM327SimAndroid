@@ -208,6 +208,7 @@ class LogView(
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val mainScope = CoroutineScope(Dispatchers.Main)
     var onSearchChanged: ((search: String) -> Unit)? = null
+    var onWidthChanged: (() -> Unit)? = null
     lateinit var btnSearch: EditText
 
     public val logAdapter = LogAdapter(context)
@@ -282,7 +283,10 @@ class LogView(
             if (availableWidthPx <= 0) return@post
 
             logAdapter.charsPerLine = (availableWidthPx / sampleCharWidth).toInt().coerceAtLeast(20)
-
+            val handler = onWidthChanged
+            if ( handler != null ) {
+                handler.invoke()
+            }
         }
     }
 
