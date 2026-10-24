@@ -248,7 +248,8 @@ class LogView(
     val prefs by lazy { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val mainScope = CoroutineScope(Dispatchers.Main)
-    public var search = ""
+    var onSearchChanged: ((search: String) -> Unit)? = null
+    lateinit var btnSearch: EditText
 
     public val logAdapter = LogAdapter(context)
     private lateinit var logTopBar: View
@@ -339,12 +340,11 @@ class LogView(
         val btnDown = findViewById<Button>(R.id.btnDown)
         overlayButtons = findViewById(R.id.overlayButtons)
         uiHandler.postDelayed(hideOverlayRunnable, OVERLAY_BUTTONS_ANIM_MS)
-        val btnSearch = findViewById<EditText>(R.id.log_search)
+        btnSearch = findViewById<EditText>(R.id.log_search)
         searchInput = btnSearch
 
         btnSearch.doAfterTextChanged {
-            search = it?.toString() ?: ""
-            refresh()
+            onSearchChanged!!.invoke(btnSearch.getText().toString())
         }
 
         rv.layoutManager = LinearLayoutManager(context)
@@ -392,11 +392,10 @@ class LogView(
         logTopBarExpanded = !logTopBarExpanded
         logTopBar.isVisible = logTopBarExpanded
         if (logTopBarExpanded) {
-            search = searchInput.getText().toString()
+            onSearchChanged!!.invoke(btnSearch.getText().toString())
         } else {
-            search = ""
+            onSearchChanged!!.invoke("")
         }
-        refresh()
     }
 
     // ---- PUBLIC BUTTON ACTIONS ----
@@ -459,8 +458,9 @@ class LogView(
     }
 
     fun refresh(result: AppendResult? = null, entries: List<LogEntry>? = null) {
+        val searchIsBlank = !logTopBarExpanded || btnSearch.getText().toString().isBlank()
         mainScope.launch {
-            if (result != null && search.isBlank()) {
+            if (result != null && searchIsBlank ) {
                 if (result.deleted != null) {
                     logAdapter.remove(result.deleted)
                 }
@@ -476,7 +476,7 @@ class LogView(
                 if (entries != null) {
                     logAdapter.replace(entries)
                 }
-                if (stickToBottom && search.isBlank()) {
+                if (stickToBottom && searchIsBlank) {
                     scrollToBottomSafe()
                 }
             }

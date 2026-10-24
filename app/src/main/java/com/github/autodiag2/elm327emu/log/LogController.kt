@@ -16,6 +16,7 @@ class LogController(private val context: Context) {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val mainScope = CoroutineScope(Dispatchers.Main)
     var filename = "elm327emu_log.txt"
+    var searchText = ""
 
     fun append(text: String, level: LogLevel = LogLevel.DEBUG, data: ByteArray? = null, size_used: Int = data?.size ?: 0, serial: ByteArray? = null, serial_size: Int = serial?.size ?: 0, type: LogEntryType = LogEntryType.NONE) {
         scope.launch {
@@ -83,13 +84,19 @@ class LogController(private val context: Context) {
             return
         }
         scope.launch {
-            val entries = model.search(view.search)
+            val entries = model.search(searchText)
             view.refresh(result, entries)
         }
     }
 
+    fun onSearchChanged(text: String) {
+        this.searchText = text
+        refresh()
+    }
+
     fun attachView(view: LogView) {
         this.view = view
+        view.onSearchChanged = ::onSearchChanged
     }
 
     fun detachView() {

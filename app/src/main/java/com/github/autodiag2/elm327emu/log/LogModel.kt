@@ -79,7 +79,7 @@ class LogRepository(private val context: Context) {
         return mutex.withLock {
 
             if (text.isBlank()) {
-                return@withLock buffer.toList()
+                return@withLock buffer.filter { it.type != LogEntryType.SEPARATOR }
             }
 
             val result = ArrayList<LogEntry>()
