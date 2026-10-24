@@ -4,6 +4,7 @@ package com.github.autodiag2.elm327emu.log
 import android.content.Context
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import com.github.autodiag2.elm327emu.R
 
 enum class LogLevel(val value: Int) {
     NONE(0),
@@ -112,25 +113,34 @@ private fun containsSubArray(data: ByteArray, pattern: ByteArray): Boolean {
     return false
 }
 
-fun search_match(entry: LogEntry, search: String): Boolean {
+fun search_match(entry: LogEntry, search: String, context: Context): Boolean {
     var text = entry.text
     if (text.contains(search, ignoreCase = true)) {
         return true
     }
-    val sb = StringBuilder()
-    LogEntry.formatDataToString(sb, entry.serial)
-    text = sb.toString()
-    if (text.contains(search, ignoreCase = true)) {
-        return true
+    if ( entry.type == LogEntryType.SENT || entry.type == LogEntryType.RECV ) {
+        val sb = StringBuilder()
+        LogEntry.formatDataToString(sb, entry.serial)
+        text = sb.toString()
+        if (text.contains(search, ignoreCase = true)) {
+            return true
+        }
+        text = context.getString(
+            if (entry.type == LogEntryType.RECV)
+                R.string.log_main_data_received
+            else
+                R.string.log_main_data_sent,
+            LogEntry.dataLogFormat(entry.serial)
+        )
+        if ( text.contains(search, ignoreCase = true) ) {
+            return true
+        }
+    
+        val pattern = parseHexString(search) ?: return false
+    
+        return containsSubArray(entry.data, pattern)
     }
-    text = LogEntry.dataLogFormat(entry.serial)
-    if ( text.contains(search, ignoreCase = true) ) {
-        return true
-    }
-
-    val pattern = parseHexString(search) ?: return false
-
-    return containsSubArray(entry.data, pattern)
+    return false
 }
 class LogRepository(private val context: Context) {
 
@@ -153,28 +163,28 @@ class LogRepository(private val context: Context) {
 
             for (i in buffer.indices) {
 
-                if (!search_match(buffer[i], text))
+                if (!search_match(buffer[i], text, context))
                     continue
 
                 val first = maxOf(0, i - showSz)
                 val last = minOf(buffer.lastIndex, i + showSz)
 
-                if ( 0 < result.size ) {
-                    if ( result[result.size-1].type != LogEntryType.SEPARATOR ) {
-
-                        val previousMatchInWindow =
-                            (first until i).any { search_match(buffer[it], text) }
-        
-                        if (!previousMatchInWindow) {
-                            result += LogEntry(
-                                id = -1,
-                                text = "",
-                                level = LogLevel.INFO,
-                                data = ByteArray(0),
-                                serial = ByteArray(0),
-                                type = LogEntryType.SEPARATOR
-                            )
-                        }
+                if (result.isNotEmpty() &&
+                    first > 0 &&
+                    result.last().type != LogEntryType.SEPARATOR
+                ) {
+                    val previousMatchInWindow =
+                        (first until i).any { search_match(buffer[it], text, context) }
+    
+                    if (!previousMatchInWindow) {
+                        result += LogEntry(
+                            id = -1,
+                            text = "",
+                            level = LogLevel.INFO,
+                            data = ByteArray(0),
+                            serial = ByteArray(0),
+                            type = LogEntryType.SEPARATOR
+                        )
                     }
                 }
 
@@ -187,7 +197,7 @@ class LogRepository(private val context: Context) {
 
                 if ( i < buffer.size - 1 ) {
                     val nextMatchInWindow =
-                        (i + 1..last).any { search_match(buffer[it], text) }
+                        (i + 1..last).any { search_match(buffer[it], text, context) }
     
                     if (!nextMatchInWindow) {
                         result += LogEntry(

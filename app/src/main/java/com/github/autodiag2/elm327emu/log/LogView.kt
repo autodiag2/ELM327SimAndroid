@@ -132,7 +132,7 @@ class LogAdapter(
         if ( item.type != LogEntryType.NONE ) {
             var data: ByteArray? = item.serial
             if ( data == null || data.size == 0 ) {
-                data = item.serial
+                data = item.data
             }
             if ( data.size > 0  ) {
                 displayText = context.getString(
