@@ -1,0 +1,61 @@
+
+name: Feature request
+description: Suggest a new feature or improvement
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the feature you would like to see.
+        You can include examples, sketches, drawings, or screenshots.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or motivation
+      description: What problem would this feature solve?
+      placeholder: |
+        As a user, I would like to...
+        Currently, it is difficult to...
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Feature description
+      description: Describe the proposed behavior.
+      placeholder: Explain how the feature should work.
+    validations:
+      required: true
+
+  - type: textarea
+    id: visual
+    attributes:
+      label: Drawings, sketches, or mockups
+      description: |
+        Describe the intended appearance or attach visual examples
+        in the issue after submitting it.
+      placeholder: |
+        What should the interface or feature look like?
+        Which elements should be added or changed?
+    validations:
+      required: false
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Have you considered other solutions?
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context
+      description: Links, examples, related issues, or other information.
+    validations:
+      required: false
