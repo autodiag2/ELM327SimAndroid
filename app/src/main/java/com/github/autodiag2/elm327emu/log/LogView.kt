@@ -50,7 +50,7 @@ class LogAdapter(
 ) : RecyclerView.Adapter<LogAdapter.VH>() {
 
     private val prefs by lazy { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
-    class VH(val tv: TextView) : RecyclerView.ViewHolder(tv)
+    class VH(val tv: View) : RecyclerView.ViewHolder(tv)
     public var charsPerLine = 30
 
     private val items = ArrayList<LogEntry>()
@@ -68,7 +68,27 @@ class LogAdapter(
         notifyDataSetChanged()
     }
 
+    override fun getItemViewType(position: Int): Int =
+        if (items[position].type == LogEntryType.SEPARATOR) 1 else 0
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
+        if (viewType == 1) {
+            val image = androidx.appcompat.widget.AppCompatImageView(parent.context).apply {
+                setImageDrawable(
+                    androidx.appcompat.content.res.AppCompatResources.getDrawable(
+                        context,
+                        R.drawable.log_search_separator
+                    )
+                )
+                scaleType = android.widget.ImageView.ScaleType.CENTER
+                layoutParams = RecyclerView.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    24
+                )
+            }
+            return VH(image)
+        }
+
         val tv = TextView(parent.context).apply {
             setPadding(16, 8, 16, 8)
             typeface = android.graphics.Typeface.MONOSPACE
@@ -138,7 +158,17 @@ class LogAdapter(
             Log.w("LogView", "Failed to display ${position}/${items.size}")
             return
         }
+        val view = holder.tv
         val item = items[position]
+        if ( item.type == LogEntryType.SEPARATOR ) {
+            holder.tv.layoutParams = holder.tv.layoutParams.apply {
+                height = (24 * context.resources.displayMetrics.density).toInt()
+            }
+            holder.tv.setBackgroundColor(android.graphics.Color.TRANSPARENT)
+        }
+        if ( ! ( view is TextView ) ) {
+            return
+        }
         var displayText = item.text
         if ( item.type != LogEntryType.NONE ) {
             var data: ByteArray? = item.serial
@@ -158,12 +188,12 @@ class LogAdapter(
             }
         }
         if (item.count > 1) {
-            holder.tv.text = "×${item.count} ${displayText}"
+            view.text = "×${item.count} ${displayText}"
         } else {
             if ( prefs.getBoolean("log_timestamp", false) ) {
-                holder.tv.text = "${SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date(item.ts))}: ${displayText}"
+                view.text = "${SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date(item.ts))}: ${displayText}"
             } else {
-                holder.tv.text = "${displayText}"
+                view.text = "${displayText}"
             }
         }
         val ctx = holder.tv.context
@@ -185,7 +215,7 @@ class LogAdapter(
             LogLevel.DEBUG -> androidx.core.graphics.ColorUtils.setAlphaComponent(primaryColor, 128)
         }
 
-        holder.tv.setTextColor(colorInt)
+        view.setTextColor(colorInt)
     }
 
     fun append(entry: LogEntry) {

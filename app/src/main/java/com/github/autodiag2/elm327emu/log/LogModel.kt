@@ -16,7 +16,7 @@ enum class LogLevel(val value: Int) {
 val LogLevel_DEFAULT = LogLevel.INFO
 
 enum class LogEntryType {
-    RECV, SENT, NONE
+    RECV, SENT, NONE, SEPARATOR
 }
 data class LogEntry(
     val id: Long,
@@ -95,17 +95,23 @@ class LogRepository(private val context: Context) {
                 val first = maxOf(0, i - showSz)
                 val last = minOf(buffer.lastIndex, i + showSz)
 
-                val previousMatchInWindow =
-                    (first until i).any { search_match(buffer[it], text) }
+                if ( 0 < result.size ) {
+                    if ( result[result.size-1].type != LogEntryType.SEPARATOR ) {
 
-                if (!previousMatchInWindow) {
-                    result += LogEntry(
-                        id = -1,
-                        text = "======================================",
-                        level = LogLevel.INFO,
-                        data = ByteArray(0),
-                        serial = ByteArray(0)
-                    )
+                        val previousMatchInWindow =
+                            (first until i).any { search_match(buffer[it], text) }
+        
+                        if (!previousMatchInWindow) {
+                            result += LogEntry(
+                                id = -1,
+                                text = "",
+                                level = LogLevel.INFO,
+                                data = ByteArray(0),
+                                serial = ByteArray(0),
+                                type = LogEntryType.SEPARATOR
+                            )
+                        }
+                    }
                 }
 
                 for (j in first..last) {
@@ -115,17 +121,20 @@ class LogRepository(private val context: Context) {
                     }
                 }
 
-                val nextMatchInWindow =
-                    (i + 1..last).any { search_match(buffer[it], text) }
-
-                if (!nextMatchInWindow) {
-                    result += LogEntry(
-                        id = -2,
-                        text = "======================================",
-                        level = LogLevel.INFO,
-                        data = ByteArray(0),
-                        serial = ByteArray(0)
-                    )
+                if ( i < buffer.size - 1 ) {
+                    val nextMatchInWindow =
+                        (i + 1..last).any { search_match(buffer[it], text) }
+    
+                    if (!nextMatchInWindow) {
+                        result += LogEntry(
+                            id = -2,
+                            text = "",
+                            level = LogLevel.INFO,
+                            data = ByteArray(0),
+                            serial = ByteArray(0),
+                            type = LogEntryType.SEPARATOR
+                        )
+                    }
                 }
             }
 
