@@ -421,11 +421,13 @@ class LogView(
         return context.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
     }
     fun onDownload(filename: String) {
-        Toast.makeText(
-            context,
-            getString(R.string.logview_saved_as, filename),
-            Toast.LENGTH_SHORT
-        ).show()
+        post {
+            Toast.makeText(
+                context,
+                getString(R.string.logview_saved_as, filename),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
     }
 
     // ---- SAFE SCROLL ----

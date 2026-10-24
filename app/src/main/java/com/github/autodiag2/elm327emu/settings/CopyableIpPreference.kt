@@ -7,11 +7,16 @@ import android.util.AttributeSet
 import android.widget.Toast
 import androidx.preference.Preference
 import androidx.preference.PreferenceViewHolder
+import com.github.autodiag2.elm327emu.R
 
 class CopyableIpPreference @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null
 ) : Preference(context, attrs) {
+
+    fun getString(resId: Int, vararg formatArgs: Any?): String {
+        return context.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
+    }
 
     override fun onBindViewHolder(holder: PreferenceViewHolder) {
         super.onBindViewHolder(holder)
@@ -24,12 +29,12 @@ class CopyableIpPreference @JvmOverloads constructor(
                     context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
 
                 clipboard.setPrimaryClip(
-                    ClipData.newPlainText("IP address", ip)
+                    ClipData.newPlainText(getString(R.string.settings_ip_title), ip)
                 )
 
                 Toast.makeText(
                     context,
-                    "IP address copied to clipboard",
+                    getString(R.string.settings_ip_copied_clipboard),
                     Toast.LENGTH_SHORT
                 ).show()
 
