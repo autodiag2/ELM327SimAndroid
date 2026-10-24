@@ -474,22 +474,17 @@ class MainActivity : AppCompatActivity() {
             requestPermissions()
         }
 
-        startForegroundService()
+        startEmulatorService()
     }
 
-    fun startForegroundService() {
+    fun startEmulatorService() {
         if ( service == null ) {
             val intent = Intent(this, EmulatorForegroundService::class.java)
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(intent)
-            } else {
-                startService(intent)
-            }
+            startService(intent)
         }
     }
 
-    fun stopForegroundService() {
+    fun stopEmulatorService() {
         if ( service != null ) {
             stopService(
                 Intent(this, EmulatorForegroundService::class.java)
