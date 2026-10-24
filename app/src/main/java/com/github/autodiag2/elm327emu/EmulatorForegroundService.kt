@@ -191,6 +191,7 @@ class EmulatorForegroundService : Service(),
             @Suppress("DEPRECATION")
             stopForeground(true)
         }
+        sim.ensureStopped()
     }
 
     private fun buildNotification(): Notification {

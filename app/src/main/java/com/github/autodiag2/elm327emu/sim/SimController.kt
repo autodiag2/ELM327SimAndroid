@@ -158,6 +158,13 @@ class Sim(
         ecu.attachView(ecuView)
     }
 
+    fun ensureStopped() {
+        running = false
+        view?.post {
+            view?.uiSetRunState(false)
+        }
+    }
+
     fun stop() {
         running = false
         service.stopEmulator()
