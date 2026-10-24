@@ -66,16 +66,19 @@ data class LogEntry(
                 sb.append("  ")
     
                 // ASCII PART
-                for (j in i until lineEnd) {
-                    val b = data[j].toInt() and 0xFF
-                    val c = if (b in 32..126) b.toChar() else '.'
-                    sb.append(c)
-                }
+                formatDataToString(sb, data, length, i, lineEnd)
     
                 sb.append("\n")
             }
     
             return sb.toString()
+        }
+        fun formatDataToString(sb: StringBuilder, data: ByteArray, length: Int = data.size, start_i: Int = 0, lineEnd: Int = length) {
+            for (j in start_i until lineEnd) {
+                val b = data[j].toInt() and 0xFF
+                val c = if (b in 32..126) b.toChar() else '.'
+                sb.append(c)
+            }
         }
     }
 }
@@ -110,10 +113,17 @@ private fun containsSubArray(data: ByteArray, pattern: ByteArray): Boolean {
 }
 
 fun search_match(entry: LogEntry, search: String): Boolean {
-    if (entry.text.contains(search, ignoreCase = true)) {
+    var text = entry.text
+    if (text.contains(search, ignoreCase = true)) {
         return true
     }
-    val text = LogEntry.dataLogFormat(entry.serial, entry.serial.size)
+    val sb = StringBuilder()
+    LogEntry.formatDataToString(sb, entry.serial)
+    text = sb.toString()
+    if (text.contains(search, ignoreCase = true)) {
+        return true
+    }
+    text = LogEntry.dataLogFormat(entry.serial)
     if ( text.contains(search, ignoreCase = true) ) {
         return true
     }
