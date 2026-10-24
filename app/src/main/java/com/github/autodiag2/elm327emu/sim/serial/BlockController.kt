@@ -16,7 +16,7 @@ import com.github.autodiag2.elm327emu.R
 import androidx.core.view.setPadding
 // end view imports
 
-import com.github.autodiag2.elm327emu.LogLevel
+import com.github.autodiag2.elm327emu.log.LogLevel
 
 private val DEFAULT_TIMEOUT_MS: Int = 0
 

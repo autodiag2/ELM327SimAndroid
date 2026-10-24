@@ -2,7 +2,7 @@ package com.github.autodiag2.elm327emu.sim.serial
 
 import android.util.Log
 import com.github.autodiag2.elm327emu.BuildConfig
-import com.github.autodiag2.elm327emu.LogLevel
+import com.github.autodiag2.elm327emu.log.LogLevel
 import com.github.autodiag2.elm327emu.sim.serial.CustomController.*
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel

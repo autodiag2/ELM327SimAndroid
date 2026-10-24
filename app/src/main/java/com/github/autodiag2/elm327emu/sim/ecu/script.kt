@@ -14,7 +14,7 @@ import org.json.JSONObject
 import org.luaj.vm2.LuaTable
 import org.luaj.vm2.LuaValue
 import org.luaj.vm2.lib.jse.JsePlatform
-import com.github.autodiag2.elm327emu.LogLevel
+import com.github.autodiag2.elm327emu.log.LogLevel
 import android.content.Context
 import com.github.autodiag2.elm327emu.EmulatorForegroundService
 

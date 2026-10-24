@@ -2,7 +2,7 @@ package com.github.autodiag2.elm327emu.com
 
 import android.net.LocalSocket
 import android.net.LocalSocketAddress
-import com.github.autodiag2.elm327emu.LogLevel
+import com.github.autodiag2.elm327emu.log.LogLevel
 import com.github.autodiag2.elm327emu.MainActivity
 import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.libautodiag

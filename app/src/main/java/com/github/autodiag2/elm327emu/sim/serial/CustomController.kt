@@ -23,8 +23,8 @@ import android.util.Log
 import com.github.autodiag2.elm327emu.BuildConfig
 import com.github.autodiag2.elm327emu.ui.JsonConfigurable
 import com.github.autodiag2.elm327emu.MainActivity
-import com.github.autodiag2.elm327emu.LogLevel
-import com.github.autodiag2.elm327emu.LogEntry
+import com.github.autodiag2.elm327emu.log.LogLevel
+import com.github.autodiag2.elm327emu.log.LogEntry
 import com.github.autodiag2.elm327emu.sim.EmuInterface
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

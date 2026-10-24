@@ -11,7 +11,7 @@ import android.os.ParcelUuid
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothGatt
-import com.github.autodiag2.elm327emu.LogLevel
+import com.github.autodiag2.elm327emu.log.LogLevel
 import com.github.autodiag2.elm327emu.MainActivity
 import java.nio.ByteBuffer
 import java.nio.ByteOrder

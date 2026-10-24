@@ -9,7 +9,7 @@ import androidx.core.content.ContextCompat
 import java.net.Inet4Address
 import java.net.NetworkInterface
 import com.github.autodiag2.elm327emu.MainActivity
-import com.github.autodiag2.elm327emu.LogLevel
+import com.github.autodiag2.elm327emu.log.LogLevel
 import com.github.autodiag2.elm327emu.R
 import android.net.wifi.SoftApConfiguration
 import android.net.wifi.WifiManager

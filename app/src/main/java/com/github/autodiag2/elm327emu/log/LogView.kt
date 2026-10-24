@@ -1,4 +1,4 @@
-package com.github.autodiag2.elm327emu
+package com.github.autodiag2.elm327emu.log
 
 import android.view.MotionEvent
 import android.view.ViewGroup
@@ -26,7 +26,7 @@ import android.view.LayoutInflater
 import android.widget.EditText
 import androidx.core.widget.doAfterTextChanged
 import com.github.autodiag2.elm327emu.R
-import com.github.autodiag2.elm327emu.LogEntryType
+import com.github.autodiag2.elm327emu.log.LogEntryType
 import android.util.Log
 import androidx.core.content.ContextCompat
 import java.text.DateFormat
@@ -41,8 +41,9 @@ import android.view.View
 import androidx.core.graphics.ColorUtils
 import android.widget.Button
 import android.widget.Toast
-import com.github.autodiag2.elm327emu.LogRepository.AppendResult
-import com.github.autodiag2.elm327emu.LogEntry
+import com.github.autodiag2.elm327emu.log.LogRepository.AppendResult
+import com.github.autodiag2.elm327emu.log.LogEntry
+import com.github.autodiag2.elm327emu.MainActivity
 
 class LogAdapter(
     private val context: Context

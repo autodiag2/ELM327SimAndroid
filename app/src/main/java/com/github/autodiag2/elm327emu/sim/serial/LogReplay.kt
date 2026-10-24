@@ -1,7 +1,7 @@
 package com.github.autodiag2.elm327emu.sim.serial
 
-import com.github.autodiag2.elm327emu.LogEntry
-import com.github.autodiag2.elm327emu.LogEntryType
+import com.github.autodiag2.elm327emu.log.LogEntry
+import com.github.autodiag2.elm327emu.log.LogEntryType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.io.IOException

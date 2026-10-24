@@ -1,7 +1,8 @@
 package com.github.autodiag2.elm327emu.sim.serial
 
-import com.github.autodiag2.elm327emu.LogEntry
-import com.github.autodiag2.elm327emu.LogEntryType
+import com.github.autodiag2.elm327emu.log.LogEntry
+import com.github.autodiag2.elm327emu.log.LogEntryType
+import com.github.autodiag2.elm327emu.log.LogLevel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import java.io.IOException
@@ -24,7 +25,6 @@ import android.text.style.ForegroundColorSpan
 import android.util.TypedValue
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
-import com.github.autodiag2.elm327emu.LogLevel
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale

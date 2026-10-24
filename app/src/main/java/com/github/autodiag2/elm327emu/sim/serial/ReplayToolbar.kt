@@ -21,8 +21,8 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.core.view.setPadding
 import com.github.autodiag2.elm327emu.BuildConfig
-import com.github.autodiag2.elm327emu.LogEntry
-import com.github.autodiag2.elm327emu.LogLevel
+import com.github.autodiag2.elm327emu.log.LogEntry
+import com.github.autodiag2.elm327emu.log.LogLevel
 import com.github.autodiag2.elm327emu.MainActivity
 import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.sim.EmuInterface

@@ -2,7 +2,7 @@ package com.github.autodiag2.elm327emu.sim.ecu
 
 import android.content.Context
 import androidx.constraintlayout.widget.ConstraintLayout
-import com.github.autodiag2.elm327emu.LogLevel
+import com.github.autodiag2.elm327emu.log.LogLevel
 import com.github.autodiag2.elm327emu.MainActivity
 import com.github.autodiag2.elm327emu.MainActivityRef.activity
 import com.github.autodiag2.elm327emu.R

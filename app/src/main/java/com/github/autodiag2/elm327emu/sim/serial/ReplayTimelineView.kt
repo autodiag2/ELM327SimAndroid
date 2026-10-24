@@ -8,8 +8,8 @@ import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.View
 
-import com.github.autodiag2.elm327emu.LogEntry
-import com.github.autodiag2.elm327emu.LogEntryType
+import com.github.autodiag2.elm327emu.log.LogEntry
+import com.github.autodiag2.elm327emu.log.LogEntryType
 import com.github.autodiag2.elm327emu.R
 
 class ReplayTimelineView @JvmOverloads constructor(

@@ -1,12 +1,12 @@
-package com.github.autodiag2.elm327emu
+package com.github.autodiag2.elm327emu.log
 
 import android.content.Context
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
-import com.github.autodiag2.elm327emu.LogRepository.AppendResult
-import com.github.autodiag2.elm327emu.LogEntry
+import com.github.autodiag2.elm327emu.log.LogRepository.AppendResult
+import com.github.autodiag2.elm327emu.log.LogEntry
 import java.io.File
 
 class LogController(private val context: Context) {

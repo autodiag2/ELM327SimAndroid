@@ -1,5 +1,5 @@
 
-package com.github.autodiag2.elm327emu
+package com.github.autodiag2.elm327emu.log
 
 import android.content.Context
 import kotlinx.coroutines.sync.Mutex

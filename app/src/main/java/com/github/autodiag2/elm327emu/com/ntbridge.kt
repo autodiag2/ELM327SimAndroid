@@ -3,7 +3,7 @@ package com.github.autodiag2.elm327emu.com
 import kotlinx.coroutines.*
 import java.io.*
 import java.net.Socket
-import com.github.autodiag2.elm327emu.LogLevel
+import com.github.autodiag2.elm327emu.log.LogLevel
 import com.github.autodiag2.elm327emu.MainActivity
 import com.github.autodiag2.elm327emu.R
 import java.io.InputStream

@@ -1,4 +1,4 @@
-package com.github.autodiag2.elm327emu.ui.settings
+package com.github.autodiag2.elm327emu.settings
 
 import android.content.ClipData
 import android.content.ClipboardManager

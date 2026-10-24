@@ -1,4 +1,4 @@
-package com.github.autodiag2.elm327emu.ui.settings
+package com.github.autodiag2.elm327emu.settings
 
 import android.os.Bundle
 import androidx.preference.EditTextPreference
@@ -20,10 +20,10 @@ import android.widget.Spinner
 import android.widget.ImageView
 import com.github.autodiag2.elm327emu.com.LocalHotspotManager
 import com.github.autodiag2.elm327emu.com.BLEBridge
-import com.github.autodiag2.elm327emu.ui.settings.generateQrBitmap
+import com.github.autodiag2.elm327emu.settings.generateQrBitmap
 import com.github.autodiag2.elm327emu.R
-import com.github.autodiag2.elm327emu.LogLevel
-import com.github.autodiag2.elm327emu.LogLevel_DEFAULT
+import com.github.autodiag2.elm327emu.log.LogLevel
+import com.github.autodiag2.elm327emu.log.LogLevel_DEFAULT
 import com.github.autodiag2.elm327emu.MainActivity
 import com.github.autodiag2.elm327emu.libautodiag
 import androidx.lifecycle.lifecycleScope
