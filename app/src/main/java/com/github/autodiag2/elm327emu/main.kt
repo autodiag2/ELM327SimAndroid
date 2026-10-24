@@ -551,7 +551,7 @@ class MainActivity : AppCompatActivity() {
                     val json = service!!.sim.saveConfigAsJson()
 
                     val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-                    val clip = android.content.ClipData.newPlainText("ECU Config", json)
+                    val clip = android.content.ClipData.newPlainText(getString(R.string.sim_menu_export_clipboard_content_title), json)
 
                     clipboard.setPrimaryClip(clip)
 
