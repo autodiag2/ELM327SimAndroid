@@ -141,7 +141,7 @@ class LogAdapter(
         val item = items[position]
         var displayText = item.text
         if ( item.type != LogEntryType.NONE ) {
-            var data: ByteArray? = item.data
+            var data: ByteArray? = item.serial
             if ( data == null || data.size == 0 ) {
                 data = item.serial
             }
