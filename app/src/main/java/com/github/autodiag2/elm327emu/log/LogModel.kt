@@ -28,7 +28,57 @@ data class LogEntry(
     var count: Int = 0,
     val type: LogEntryType = LogEntryType.NONE,
     val ts: Long = System.currentTimeMillis()
-)
+) {
+    companion object {
+        fun dataLogFormat(
+            data: ByteArray,
+            length: Int = data.size,
+            charsPerLine: Int = 10
+        ): String {
+            val sb = StringBuilder()
+    
+            // fixed layout parts
+            val indent = 1
+            val hexByteWidth = 3      // "FF "
+            val asciiSeparator = 2    // "  "
+    
+            // reserve space for ASCII area (~1 char per byte)
+            val usable = charsPerLine - indent - asciiSeparator
+    
+            // each byte takes ~4 chars in total (hex + space)
+            val bytesPerLine = (usable / 4).coerceIn(4, 64)
+    
+            for (i in 0 until length step bytesPerLine) {
+    
+                sb.append(" ")
+    
+                val lineEnd = minOf(i + bytesPerLine, length)
+    
+                // HEX PART
+                for (j in i until i + bytesPerLine) {
+                    if (j < lineEnd) {
+                        sb.append(String.format("%02X ", data[j]))
+                    } else {
+                        sb.append("   ")
+                    }
+                }
+    
+                sb.append("  ")
+    
+                // ASCII PART
+                for (j in i until lineEnd) {
+                    val b = data[j].toInt() and 0xFF
+                    val c = if (b in 32..126) b.toChar() else '.'
+                    sb.append(c)
+                }
+    
+                sb.append("\n")
+            }
+    
+            return sb.toString()
+        }
+    }
+}
 
 private fun parseHexString(text: String): ByteArray? {
     val hex = text.filter {
@@ -61,6 +111,10 @@ private fun containsSubArray(data: ByteArray, pattern: ByteArray): Boolean {
 
 fun search_match(entry: LogEntry, search: String): Boolean {
     if (entry.text.contains(search, ignoreCase = true)) {
+        return true
+    }
+    val text = LogEntry.dataLogFormat(entry.serial, entry.serial.size)
+    if ( text.contains(search, ignoreCase = true) ) {
         return true
     }
 
