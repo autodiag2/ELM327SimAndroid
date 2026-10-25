@@ -93,7 +93,7 @@ class EcuGuiView(context: Context, allSignals:  Array<SimSignal>): EcuView(conte
 
         findViewById<Button>(R.id.dtc_entry_validate).apply {
             setOnClickListener {
-                val v = dtcInput.text.toString().uppercase()
+                val v = dtcInput.getText().toString().uppercase()
                 if (v.isNotEmpty()) {
                     onDtcAddByCode.invoke(v)
                     dtcInput.text.clear()
@@ -162,7 +162,7 @@ class EcuGuiView(context: Context, allSignals:  Array<SimSignal>): EcuView(conte
     fun onClearDTCs() {
         dtcContainer.removeAllViews()
     }
-    fun onAddDtcByCode(code: String) {
+    fun addDtcByCode(code: String) {
         val text = TextView(context).apply {
             text = code
             layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
@@ -220,14 +220,14 @@ class EcuGui(
             guiView.onSignalRemoved = ::onSignalRemoved
             guiView.get_Address = ::get_Address
             guiView.onDTCRemove = ::onDTCRemove
-            view.post {
+            guiView.post {
                 for(signal_entry in signals) {
                     val signal = allSignals.find { it.path == signal_entry.key }
                     if ( signal == null ) {
                         Log.e("EcuGui", "signal not found")
                         continue
                     }
-                    view.addSignal(signal)
+                    guiView.addSignal(signal)
                 }
             }
         }
@@ -350,7 +350,7 @@ class EcuGui(
 
         val view = this.view as EcuGuiView?
         if ( view != null ) {
-            view.onAddDtcByCode(code)
+            view.addDtcByCode(code)
         }
     }
 
