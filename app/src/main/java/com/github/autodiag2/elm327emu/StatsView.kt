@@ -14,6 +14,9 @@ class StatsController() {
     private val requestStats = mutableMapOf<String, Int>()
 
     fun attachView(view: StatsView?) {
+        if ( this.view == view ) {
+            return
+        }
         this.view = view
         refresh()
     }

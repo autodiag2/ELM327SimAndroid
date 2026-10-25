@@ -3,6 +3,7 @@ package com.github.autodiag2.elm327emu
 import com.github.autodiag2.elm327emu.sim.ecu.EcuAddress
 import com.github.autodiag2.elm327emu.sim.ecu.EcuByteArrayHandler
 import com.github.autodiag2.elm327emu.sim.ecu.EcuGui
+import android.util.Log
 
 enum class IgnitionState(val value: Int) {
     OFF(0),

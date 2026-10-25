@@ -103,6 +103,9 @@ class Sim(
     }
 
     fun attachView(view: SimView?) {
+        if ( view == this.view ) {
+            return
+        }
         this.view = view
         if ( view != null ) {
             view.onToggleStart = ::onToggleStart
@@ -144,16 +147,19 @@ class Sim(
     }
 
     fun createAttachEcuView(ecu: Ecu, context: Context) {
-        val ecuView = when(ecu.type) {
-            EcuType.citroen_c5_x7 -> EcuCitroenC5X7View(context)
-            EcuType.cycle -> EcuCycleView(context)
-            EcuType.gui -> {
-                val ecu = ecu as EcuGui
-                EcuGuiView(context, ecu.allSignals.toTypedArray())
+        var ecuView = ecu.view
+        if ( ecuView == null ) {
+            ecuView = when(ecu.type) {
+                EcuType.citroen_c5_x7 -> EcuCitroenC5X7View(context)
+                EcuType.cycle -> EcuCycleView(context)
+                EcuType.gui -> {
+                    val ecuGui = ecu as EcuGui
+                    EcuGuiView(context, ecuGui.allSignals.toTypedArray())
+                }
+                EcuType.random -> EcuRandomView(context)
+                EcuType.replay -> EcuReplayView(context)
+                EcuType.bytearray -> EcuScriptView(context)
             }
-            EcuType.random -> EcuRandomView(context)
-            EcuType.replay -> EcuReplayView(context)
-            EcuType.bytearray -> EcuScriptView(context)
         }
         ecu.attachView(ecuView)
     }
@@ -399,7 +405,6 @@ class Sim(
     }
 
     private fun buildAddECU(address: EcuAddress, name: String, type: EcuType): Unit {
-
         ecuRemoveByAddress(address)
 
         val ecu = Ecu.create(type, service, address, name)

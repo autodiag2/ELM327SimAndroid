@@ -66,8 +66,10 @@ class MainActivity : AppCompatActivity() {
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             val binder = service as EmulatorForegroundService.LocalBinder
-            emulatorService = binder.getService()
             val connectedService = binder.getService()
+            if ( connectedService == emulatorService ) {
+                return
+            }
             emulatorService = connectedService
             logController = connectedService.log
             assert(::logView.isInitialized)

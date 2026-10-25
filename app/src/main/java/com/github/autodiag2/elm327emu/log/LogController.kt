@@ -95,6 +95,9 @@ class LogController(private val context: Context) {
     }
 
     fun attachView(view: LogView) {
+        if ( this.view == view ) {
+            return
+        }
         this.view = view
         view.onSearchChanged = ::onSearchChanged
         view.onWidthChanged = {
