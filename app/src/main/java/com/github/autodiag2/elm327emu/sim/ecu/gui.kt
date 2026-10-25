@@ -53,6 +53,7 @@ class EcuGuiView(context: Context, allSignals:  Array<SimSignal>): EcuView(conte
     public val ecuName: EditText
     public val vin: EditText
     public val milState: CheckBox
+    private val displayedSignals: MutableList<String> = mutableListOf()
     public lateinit var onSignalAdd: ((signal: SimSignal) -> Unit)
     public lateinit var onSignalValueChanged: ((signal: SimSignal, value: Double) -> Unit)
     public lateinit var onDtcAddByCode: ((code: String) -> Unit)
@@ -132,6 +133,12 @@ class EcuGuiView(context: Context, allSignals:  Array<SimSignal>): EcuView(conte
         }
     }
     fun addSignal(signal: SimSignal) {
+        val signalFound = displayedSignals.find { signal.path == it }
+        if ( signalFound == null ) {
+            displayedSignals.add(signal.path)
+        } else {
+            return
+        }
         val title = TextView(context).apply {
             text = if (signal.unit.isNullOrBlank()) getName(context, signal) else "${getName(context, signal)} (${signal.unit})"
         }
@@ -182,11 +189,14 @@ class EcuGuiView(context: Context, allSignals:  Array<SimSignal>): EcuView(conte
         removeBtn.setOnClickListener {
             onSignalRemoved.invoke(signal)
             dynamicSignalsContainer.removeView(block)
+            displayedSignals.remove(signal.path)
         }
 
         dynamicSignalsContainer.addView(block)
     }
+
     fun onClearSignals() {
+        displayedSignals.clear()
         dynamicSignalsContainer.removeAllViews()
     }
     fun onClearDTCs() {
