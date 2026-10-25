@@ -51,6 +51,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.ServiceConnection
 import android.os.IBinder
+import android.view.ViewGroup
 
 private const val REQUEST_CODE = 1
 
@@ -67,9 +68,6 @@ class MainActivity : AppCompatActivity() {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             val binder = service as EmulatorForegroundService.LocalBinder
             val connectedService = binder.getService()
-            if ( connectedService == emulatorService ) {
-                return
-            }
             emulatorService = connectedService
             logController = connectedService.log
             assert(::logView.isInitialized)
@@ -266,6 +264,7 @@ class MainActivity : AppCompatActivity() {
             androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
         )
 
+        (view.parent as? ViewGroup)?.removeView(view)
         contentFrame.removeAllViews()
         contentFrame.addView(view)
 

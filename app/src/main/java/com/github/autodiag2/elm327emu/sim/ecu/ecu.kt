@@ -48,9 +48,6 @@ abstract class Ecu(
     }
 
     public open fun attachView(view: EcuView?) {
-        if ( this.view == view ) {
-            return
-        }
         this.view = view
         if ( view != null ) {
             view.onShowHandler = ::loadStateFromGeneratorWhenShowing

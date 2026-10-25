@@ -103,9 +103,6 @@ class Sim(
     }
 
     fun attachView(view: SimView?) {
-        if ( view == this.view ) {
-            return
-        }
         this.view = view
         if ( view != null ) {
             view.onToggleStart = ::onToggleStart
