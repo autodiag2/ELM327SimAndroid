@@ -9,6 +9,8 @@ import android.widget.SeekBar
 import android.widget.Spinner
 import android.widget.TextView
 import android.content.Context
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import com.github.autodiag2.elm327emu.MainActivity
 import com.github.autodiag2.elm327emu.R
@@ -57,17 +59,45 @@ class EcuGuiView(context: Context, allSignals:  Array<SimSignal>): EcuView(conte
     public lateinit var onSignalRemoved: ((signal: SimSignal) -> Unit)
     public lateinit var get_Address: (() -> EcuAddress)
     public lateinit var onDTCRemove: ((code: String) -> Unit)
-    
+    public lateinit var onDTCsClearedStateChange: ((newState: Boolean) -> Unit)
+    public lateinit var onMilStateChange: ((newState: Boolean) -> Unit)
+    public lateinit var onVinChanged: ((newVin: String) -> Unit)
+    public lateinit var onEcuNameChanged: ((newEcuName: String) -> Unit)
 
     init {
         LayoutInflater.from(context).inflate(R.layout.sim_ecu_gui, this, true)
         dynamicSignalsContainer = findViewById(R.id.signal_container)
         dtcContainer = findViewById(R.id.dtc_list)
         ecuName = findViewById(R.id.ecu_name)
-        vin = findViewById(R.id.vin)
-        milState = findViewById(R.id.mil_state)
-        dtcClearedCheck = findViewById(R.id.dtcs_cleared)
+        ecuName.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+            }
+
+            override fun afterTextChanged(s: Editable?) {
+                onEcuNameChanged.invoke(s.toString())
+            }
+        })
+        vin = findViewById(R.id.vin)
+        vin.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+            }
+            
+            override fun afterTextChanged(s: Editable?) {
+                onVinChanged.invoke(s.toString())
+            }
+        })
+        milState = findViewById(R.id.mil_state)
+        milState.setOnCheckedChangeListener { _, isChecked ->
+            onMilStateChange.invoke(isChecked)
+        }
+        dtcClearedCheck = findViewById(R.id.dtcs_cleared)
+        dtcClearedCheck.setOnCheckedChangeListener { _, isChecked ->
+            onDTCsClearedStateChange.invoke(isChecked)
+        }
         val signalSpinner = findViewById<Spinner>(R.id.signal_choice)
         val spinnerAdapter = ArrayAdapter(
             context,
@@ -220,6 +250,18 @@ class EcuGui(
             guiView.onSignalRemoved = ::onSignalRemoved
             guiView.get_Address = ::get_Address
             guiView.onDTCRemove = ::onDTCRemove
+            guiView.onDTCsClearedStateChange = { newState ->
+                dtcClearedChecked = newState
+            }
+            guiView.onMilStateChange = { newState ->
+                milState = newState
+            }
+            guiView.onEcuNameChanged = { newEcuName ->
+                this.ecuName = newEcuName
+            }
+            guiView.onVinChanged = { newVin ->
+                this.vin = newVin
+            }
             guiView.post {
                 for(signal_entry in signals) {
                     val signal = allSignals.find { it.path == signal_entry.key }
