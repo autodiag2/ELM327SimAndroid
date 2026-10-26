@@ -723,9 +723,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private fun updateBleCustomSummary() {
         val custom = findPreference<Preference>("ble_custom")!!
 
-        val service = prefs.getString(PREF_BLE_SERVICE, "") ?: ""
-        val tx = prefs.getString(PREF_BLE_TX, "") ?: ""
-        val rx = prefs.getString(PREF_BLE_RX, "") ?: ""
+        val service = prefs.getString(PREF_BLE_SERVICE, BLEBridge.DEFAULT_UUID_SERVICE) ?: BLEBridge.DEFAULT_UUID_SERVICE
+        val tx = prefs.getString(PREF_BLE_TX, BLEBridge.DEFAULT_UUID_TX) ?: BLEBridge.DEFAULT_UUID_TX
+        val rx = prefs.getString(PREF_BLE_RX, BLEBridge.DEFAULT_UUID_RX) ?: BLEBridge.DEFAULT_UUID_RX
 
         custom.summary = listOf(
             service,
@@ -747,15 +747,15 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val rx = container.findViewById<EditText>(R.id.ble_rx)
 
         service.setText(
-            prefs.getString(PREF_BLE_SERVICE, "")
+            prefs.getString(PREF_BLE_SERVICE, BLEBridge.DEFAULT_UUID_SERVICE)
         )
 
         tx.setText(
-            prefs.getString(PREF_BLE_TX, "")
+            prefs.getString(PREF_BLE_TX, BLEBridge.DEFAULT_UUID_TX)
         )
 
         rx.setText(
-            prefs.getString(PREF_BLE_RX, "")
+            prefs.getString(PREF_BLE_RX, BLEBridge.DEFAULT_UUID_RX)
         )
 
         androidx.appcompat.app.AlertDialog.Builder(requireContext())
