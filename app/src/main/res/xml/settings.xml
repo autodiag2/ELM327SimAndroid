@@ -59,31 +59,14 @@
             android:defaultValue="true" />
 
         <SwitchPreferenceCompat
-            android:key="com_ble_enabled"
-            android:title="@string/settings_network_ble"
-            android:defaultValue="true" />
-
-        <SwitchPreferenceCompat
             android:key="com_nt_enabled"
             android:title="@string/settings_network_network"
             android:defaultValue="true" />
 
-    </PreferenceCategory>
-
-    <PreferenceCategory
-        android:title="@string/settings_section_bluetooth">
-
-        <EditTextPreference
-            android:key="com_bt_name"
-            android:title="@string/settings_btLabel"
-            android:dialogTitle="@string/settings_btLabel"
-            app:useSimpleSummaryProvider="true"
-            android:hint="@string/settings_btHint" />
-
-    </PreferenceCategory>
-
-    <PreferenceCategory
-        android:title="@string/settings_section_ble">
+        <SwitchPreferenceCompat
+            android:key="com_ble_enabled"
+            android:title="@string/settings_network_ble"
+            android:defaultValue="true" />
 
         <ListPreference
             android:key="ble_profile"
@@ -96,6 +79,18 @@
             android:key="ble_custom"
             android:title="@string/settings_ble_profile_custom_title"
             android:summary="@string/settings_ble_profile_service_uuid" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="@string/settings_section_bluetooth">
+
+        <EditTextPreference
+            android:key="com_bt_name"
+            android:title="@string/settings_btLabel"
+            android:dialogTitle="@string/settings_btLabel"
+            app:useSimpleSummaryProvider="true"
+            android:hint="@string/settings_btHint" />
 
     </PreferenceCategory>
 
