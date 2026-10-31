@@ -327,6 +327,11 @@
     <string name="log_ble_phy_update">BLE PHY updated: TX=%1$d RX=%2$d status=%3$d</string>
     <string name="log_ble_phy_read">BLE PHY read: TX=%1$d RX=%2$d status=%3$d</string>
     <string name="log_ble_send_initial_banner">Sending initial ELM banner</string>
+    <string name="ble_tpms_service_started">TPMS advertisement started</string>
+    <string name="ble_tpms_service_start_failed">TPMS advertisement failed: %1$s</string>
+    <string name="ble_tpms_start_fail_encoder">Unsupported TPMS manufacturer/model</string>
+    <string name="ble_tpms_rotation_failed">TPMS advertisement rotation failed: %1$s</string>
+    <string name="ble_tpms_no_sensor">TPMS encoder did not produce any sensor frames</string>
     <string name="signal_SAEJ1979_number_of_dtc">Number Of DTC</string>
     <string name="signal_SAEJ1979_mil_status">MIL Status</string>
     <string name="signal_SAEJ1979_engine_spark_or_compression">Type of engine</string>

@@ -18,10 +18,15 @@ class LogController(private val context: Context) {
     var filename = "elm327emu_log.txt"
     var searchText = ""
 
-    fun append(text: String, level: LogLevel = LogLevel.DEBUG, data: ByteArray? = null, size_used: Int = data?.size ?: 0, serial: ByteArray? = null, serial_size: Int = serial?.size ?: 0, type: LogEntryType = LogEntryType.NONE) {
+    fun append(text: Any, level: LogLevel = LogLevel.DEBUG, data: ByteArray? = null, size_used: Int = data?.size ?: 0, serial: ByteArray? = null, serial_size: Int = serial?.size ?: 0, type: LogEntryType = LogEntryType.NONE) {
         scope.launch {
-
-            val result: AppendResult? = model.append(text, level, data, size_used, serial, serial_size, type)
+            var decodedText = ""
+            if ( text is Int ) {
+                decodedText = context.getString(text)
+            } else if ( text is String ) {
+                decodedText = text
+            }
+            val result: AppendResult? = model.append(decodedText, level, data, size_used, serial, serial_size, type)
             val view = this@LogController.view
             if ( view == null ) {
                 return@launch

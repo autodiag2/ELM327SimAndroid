@@ -21,11 +21,12 @@ data class TpmsSensorAdvertisement(
 
 class TpmsService(service: EmulatorForegroundService, scope: CoroutineScope, private val onAdvertisingDataChanged: (suspend (sensor: TpmsSensorAdvertisement?) -> Unit)): BleService(service, scope) {
     companion object {
-        
+        const val DEFAULT_MANUFACTURER = "jk_tyre_treel"
+        const val DEFAULT_ENABLED = false
     }
     
     val enabled: Boolean
-        get() = prefs.getBoolean(TpmsManufacturerEncoders.PREF_ENABLED, false)
+        get() = prefs.getBoolean(TpmsManufacturerEncoders.PREF_ENABLED, DEFAULT_ENABLED)
 
     private var tpmsAdvertisementJob: Job? = null
     private val tpmsAdvertisementIntervalMs = 1000L
@@ -34,13 +35,13 @@ class TpmsService(service: EmulatorForegroundService, scope: CoroutineScope, pri
     public override val advertiseCallback = object : AdvertiseCallback() {
         override fun onStartSuccess(settingsInEffect: AdvertiseSettings) {
             if ( startupNotification ) {
-                appendLog("TPMS advertisement started", LogLevel.INFO)
+                appendLog(getString(R.string.ble_tpms_service_started), LogLevel.INFO)
                 startupNotification = false
             }
         }
 
         override fun onStartFailure(errorCode: Int) {
-            appendLog("TPMS advertisement failed: ${advertiseErrorToString(errorCode)}", LogLevel.ERROR)
+            appendLog(getString(R.string.ble_tpms_service_start_failed, advertiseErrorToString(errorCode)), LogLevel.ERROR)
         }
     }
 
@@ -67,10 +68,10 @@ class TpmsService(service: EmulatorForegroundService, scope: CoroutineScope, pri
         if ( ! enabled ) return null
         encoder = 
             TpmsManufacturerEncoders.find(
-                prefs.getString(TpmsManufacturerEncoders.PREF_TYPE, "jk_tyre_treel")
+                prefs.getString(TpmsManufacturerEncoders.PREF_TYPE, DEFAULT_MANUFACTURER)
             )
         if ( encoder == null) {
-            appendLog("Unsupported TPMS manufacturer/model", LogLevel.ERROR)
+            appendLog(R.string.ble_tpms_start_fail_encoder, LogLevel.ERROR)
             return null
         }
         val tpmsService = BluetoothGattService(
@@ -106,7 +107,7 @@ class TpmsService(service: EmulatorForegroundService, scope: CoroutineScope, pri
                 } catch (e: CancellationException) {
                     throw e
                 } catch (e: Exception) {
-                    appendLog("TPMS advertisement rotation failed: ${e.message}", LogLevel.ERROR)
+                    appendLog(getString(R.string.ble_tpms_rotation_failed,e.message), LogLevel.ERROR)
                 }
                 index = (index + 1) % tpmsSensors.size
             }
@@ -132,7 +133,7 @@ class TpmsService(service: EmulatorForegroundService, scope: CoroutineScope, pri
             }
         }.orEmpty()
         if ( tpmsSensors.isEmpty() ) {
-            appendLog("TPMS encoder did not produce any sensor frames", LogLevel.ERROR)
+            appendLog(R.string.ble_tpms_no_sensor, LogLevel.ERROR)
             return listOf()
         }
         return tpmsSensors
