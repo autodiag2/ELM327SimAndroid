@@ -58,7 +58,6 @@
             <!---->
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
-                tools:replace="android:resource"
                 android:resource="@xml/file_paths" />
         </provider>
         <service
