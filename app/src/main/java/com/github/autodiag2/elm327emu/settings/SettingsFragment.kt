@@ -20,6 +20,7 @@ import android.widget.Spinner
 import android.widget.ImageView
 import com.github.autodiag2.elm327emu.com.LocalHotspotManager
 import com.github.autodiag2.elm327emu.com.BLEBridge
+import com.github.autodiag2.elm327emu.com.ble.Elm327Service
 import com.github.autodiag2.elm327emu.settings.generateQrBitmap
 import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.log.LogLevel
@@ -723,9 +724,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private fun updateBleCustomSummary() {
         val custom = findPreference<Preference>("ble_custom")!!
 
-        val service = prefs.getString(PREF_BLE_SERVICE, BLEBridge.DEFAULT_UUID_SERVICE) ?: BLEBridge.DEFAULT_UUID_SERVICE
-        val tx = prefs.getString(PREF_BLE_TX, BLEBridge.DEFAULT_UUID_TX) ?: BLEBridge.DEFAULT_UUID_TX
-        val rx = prefs.getString(PREF_BLE_RX, BLEBridge.DEFAULT_UUID_RX) ?: BLEBridge.DEFAULT_UUID_RX
+        val service = prefs.getString(PREF_BLE_SERVICE, Elm327Service.DEFAULT_UUID_SERVICE) ?: Elm327Service.DEFAULT_UUID_SERVICE
+        val tx = prefs.getString(PREF_BLE_TX, Elm327Service.DEFAULT_UUID_TX) ?: Elm327Service.DEFAULT_UUID_TX
+        val rx = prefs.getString(PREF_BLE_RX, Elm327Service.DEFAULT_UUID_RX) ?: Elm327Service.DEFAULT_UUID_RX
 
         custom.summary = listOf(
             service,
@@ -747,15 +748,15 @@ class SettingsFragment : PreferenceFragmentCompat() {
         val rx = container.findViewById<EditText>(R.id.ble_rx)
 
         service.setText(
-            prefs.getString(PREF_BLE_SERVICE, BLEBridge.DEFAULT_UUID_SERVICE)
+            prefs.getString(PREF_BLE_SERVICE, Elm327Service.DEFAULT_UUID_SERVICE)
         )
 
         tx.setText(
-            prefs.getString(PREF_BLE_TX, BLEBridge.DEFAULT_UUID_TX)
+            prefs.getString(PREF_BLE_TX, Elm327Service.DEFAULT_UUID_TX)
         )
 
         rx.setText(
-            prefs.getString(PREF_BLE_RX, BLEBridge.DEFAULT_UUID_RX)
+            prefs.getString(PREF_BLE_RX, Elm327Service.DEFAULT_UUID_RX)
         )
 
         androidx.appcompat.app.AlertDialog.Builder(requireContext())
