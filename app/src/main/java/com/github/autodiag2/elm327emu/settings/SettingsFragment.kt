@@ -21,6 +21,7 @@ import android.widget.ImageView
 import com.github.autodiag2.elm327emu.com.LocalHotspotManager
 import com.github.autodiag2.elm327emu.com.BLEBridge
 import com.github.autodiag2.elm327emu.com.ble.Elm327Service
+import com.github.autodiag2.elm327emu.com.ble.TpmsService
 import com.github.autodiag2.elm327emu.settings.generateQrBitmap
 import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.log.LogLevel
@@ -675,6 +676,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private fun setupTpms() {
         val profile = findPreference<ListPreference>("com_ble_tpms_type")!!
         val tpmsEnabled = findPreference<SwitchPreferenceCompat>("com_ble_tpms_enabled")!!
+        if (!prefs.contains("com_ble_tpms_enabled")) {
+            tpmsEnabled.isChecked = TpmsService.DEFAULT_ENABLED
+        }
         profile.setOnPreferenceChangeListener { _, newValue ->
             activityMain.service?.bridgeOrchestrator?.setupBleBridge()
             true

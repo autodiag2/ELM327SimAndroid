@@ -397,17 +397,24 @@ class BLEBridge(
         }
     }
 
+    fun isElmEnabled(): Boolean {
+        return prefs.getBoolean("com_ble_enabled", false)
+    }
     override suspend fun start() {
-        regularAdvertised = false
+        val elmEnabled = isElmEnabled()
         if (!service.btAdapter.isEnabled) {
             EmulatorForegroundService.activity?.showBluetoothEnablePopup()
             return
         }
-        if ( ! elm327Service.prepareStart() ) {
-            return
+        if ( elmEnabled ) {
+            if ( ! elm327Service.prepareStart() ) {
+                return
+            }
         }
-        if ( ! tpmsService.prepareStart() ) {
-            return
+        if ( tpmsService.enabled ) {
+            if ( ! tpmsService.prepareStart() ) {
+                return
+            }
         }
         scope.launch(Dispatchers.IO) {
             advertiser = service.btAdapter.bluetoothLeAdvertiser ?: run {
@@ -418,11 +425,13 @@ class BLEBridge(
 
             val btManager = service.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
             gattServer = btManager.openGattServer(service, gattCallback)
-            val elmService = elm327Service.start()
-            appendLog(getString(R.string.log_ble_service_adding), LogLevel.DEBUG)
-            if (elmService == null || !addGattService(elmService)) {
-                logDebug("elm service null or failed to add elm service")
-                return@launch
+            if ( elmEnabled ) {
+                val elmService = elm327Service.start()
+                appendLog(getString(R.string.log_ble_service_adding), LogLevel.DEBUG)
+                if (elmService == null || !addGattService(elmService)) {
+                    logDebug("elm service null or failed to add elm service")
+                    return@launch
+                }
             }
             if (tpmsService.enabled) {
                 val gattService = tpmsService.start()
@@ -440,13 +449,14 @@ class BLEBridge(
         }
     }
 
-    var regularAdvertised = false
     suspend fun onAdvertisingDataChanged(tpmsSensor: TpmsSensorAdvertisement?) {
         logDebug("advertising data changed")
+        val elmEnabled = isElmEnabled()
         val settings = elm327Service.getSettings()
         val tpmsSettings = tpmsService.getSettings()
         if ( service.btAdapter.isMultipleAdvertisementSupported ) {
-            if ( ! regularAdvertised ) {
+            advertiser.stopAdvertising(elm327Service.advertiseCallback)
+            if ( elmEnabled ) {
                 val advData =
                     AdvertiseData.Builder()
                         .addServiceUuid(ParcelUuid(elm327Service.ELM_SERVICE_UUID))
@@ -455,11 +465,10 @@ class BLEBridge(
                     AdvertiseData.Builder()
                         .setIncludeDeviceName(true)
                         .build()
-                advertiser.stopAdvertising(elm327Service.advertiseCallback)
                 delay(onAdvertisingDataChangedRestartMs)
                 advertiser.startAdvertising(settings, advData, scanResp, elm327Service.advertiseCallback)
-                regularAdvertised = true
             }
+            advertiser.stopAdvertising(tpmsService.advertiseCallback)
             if ( tpmsService.enabled && tpmsSensor != null ) {
                 val tpmsAdvData =
                     AdvertiseData.Builder()
@@ -467,13 +476,19 @@ class BLEBridge(
                         .build()
                 val tpmsScanResp =
                     AdvertiseData.Builder().build()
-                advertiser.stopAdvertising(tpmsService.advertiseCallback)
                 delay(onAdvertisingDataChangedRestartMs)
                 advertiser.startAdvertising(tpmsSettings, tpmsAdvData, tpmsScanResp, tpmsService.advertiseCallback)
             }
         } else {
+            advertiser.stopAdvertising(elm327Service.advertiseCallback)
             val builder = AdvertiseData.Builder()
-            builder.addServiceUuid(ParcelUuid(elm327Service.ELM_SERVICE_UUID))
+            if ( elmEnabled ) {
+                builder.addServiceUuid(ParcelUuid(elm327Service.ELM_SERVICE_UUID))
+            } else {
+                if ( tpmsSensor != null ) {
+                    builder.addManufacturerData(tpmsSensor.companyId, tpmsSensor.payload)
+                }
+            }
             val advData = builder.build()
             val scanResp = if (tpmsService.enabled && tpmsSensor != null) {
                 AdvertiseData.Builder()
@@ -484,9 +499,10 @@ class BLEBridge(
                     .setIncludeDeviceName(true)
                     .build()
             }
-            advertiser.stopAdvertising(elm327Service.advertiseCallback)
-            delay(onAdvertisingDataChangedRestartMs)
-            advertiser.startAdvertising(settings, advData, scanResp, elm327Service.advertiseCallback)
+            if ( elmEnabled || tpmsService.enabled ) {
+                delay(onAdvertisingDataChangedRestartMs)
+                advertiser.startAdvertising(settings, advData, scanResp, elm327Service.advertiseCallback)
+            }
         }
     }
 
@@ -532,7 +548,6 @@ class BLEBridge(
     }
 
     override fun stop() {
-        regularAdvertised = false
         elm327Service.stop()
         tpmsService.stop()
         try {
