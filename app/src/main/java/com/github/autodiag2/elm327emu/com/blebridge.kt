@@ -455,7 +455,6 @@ class BLEBridge(
                     .setIncludeDeviceName(true)
                     .build()
             advertiser.stopAdvertising(elm327Service.advertiseCallback)
-            delay(onAdvertisingDataChangedRestartMs)
             advertiser.startAdvertising(settings, advData, scanResp, elm327Service.advertiseCallback)
             if ( tpmsService.enabled && tpmsSensor != null ) {
                 val tpmsAdvData =
@@ -464,9 +463,9 @@ class BLEBridge(
                         .build()
                 val tpmsScanResp =
                     AdvertiseData.Builder().build()
-                advertiser.startAdvertising(tpmsSettings, tpmsAdvData, tpmsScanResp, tpmsService.advertiseCallback)
-                delay(onAdvertisingDataChangedRestartMs)
                 advertiser.stopAdvertising(tpmsService.advertiseCallback)
+                delay(onAdvertisingDataChangedRestartMs)
+                advertiser.startAdvertising(tpmsSettings, tpmsAdvData, tpmsScanResp, tpmsService.advertiseCallback)
             }
         } else {
             val builder = AdvertiseData.Builder()
