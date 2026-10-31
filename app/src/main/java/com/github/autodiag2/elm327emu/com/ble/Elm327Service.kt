@@ -46,10 +46,14 @@ class Elm327Service(service: EmulatorForegroundService, scope: CoroutineScope): 
             )!!
         )
 
+    private var startupNotification = false
     public override val advertiseCallback = object : AdvertiseCallback() {
         override fun onStartSuccess(settingsInEffect: AdvertiseSettings) {
-            appendLog(getString(R.string.log_ble_advertising_started), LogLevel.DEBUG)
-            appendLog(getString(R.string.log_ble_server_started), LogLevel.INFO)
+            if ( startupNotification ) {
+                appendLog(getString(R.string.log_ble_advertising_started), LogLevel.DEBUG)
+                appendLog(getString(R.string.log_ble_server_started), LogLevel.INFO)
+                startupNotification = false
+            }
         }
 
         override fun onStartFailure(errorCode: Int) {
@@ -77,6 +81,7 @@ class Elm327Service(service: EmulatorForegroundService, scope: CoroutineScope): 
     }
 
     override fun start(): BluetoothGattService? {
+        startupNotification = true
         gattService = BluetoothGattService(
             ELM_SERVICE_UUID,
             BluetoothGattService.SERVICE_TYPE_PRIMARY
@@ -103,6 +108,7 @@ class Elm327Service(service: EmulatorForegroundService, scope: CoroutineScope): 
     }
 
     override fun stop() {
+        startupNotification = false
         txNotificationsEnabled.clear()
     }
 

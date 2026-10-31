@@ -58,6 +58,7 @@ class BLEBridge(
     private var gattServiceAddResult: Boolean? = null
     private val elm327Service: Elm327Service = Elm327Service(service, scope)
     private val tpmsService: TpmsService = TpmsService(service, scope, ::onAdvertisingDataChanged)
+    private val onAdvertisingDataChangedRestartMs = 100L
 
     @Suppress("DEPRECATION")
 
@@ -441,7 +442,7 @@ class BLEBridge(
         }
     }
 
-    fun onAdvertisingDataChanged(tpmsSensor: TpmsSensorAdvertisement?) {
+    suspend fun onAdvertisingDataChanged(tpmsSensor: TpmsSensorAdvertisement?) {
         val settings = elm327Service.getSettings()
         val tpmsSettings = tpmsService.getSettings()
         if ( service.btAdapter.isMultipleAdvertisementSupported ) {
@@ -454,6 +455,7 @@ class BLEBridge(
                     .setIncludeDeviceName(true)
                     .build()
             advertiser.stopAdvertising(elm327Service.advertiseCallback)
+            delay(onAdvertisingDataChangedRestartMs)
             advertiser.startAdvertising(settings, advData, scanResp, elm327Service.advertiseCallback)
             if ( tpmsService.enabled && tpmsSensor != null ) {
                 val tpmsAdvData =
@@ -463,6 +465,7 @@ class BLEBridge(
                 val tpmsScanResp =
                     AdvertiseData.Builder().build()
                 advertiser.startAdvertising(tpmsSettings, tpmsAdvData, tpmsScanResp, tpmsService.advertiseCallback)
+                delay(onAdvertisingDataChangedRestartMs)
                 advertiser.stopAdvertising(tpmsService.advertiseCallback)
             }
         } else {
@@ -477,6 +480,7 @@ class BLEBridge(
                     .setIncludeDeviceName(true)
                     .build()
             advertiser.stopAdvertising(elm327Service.advertiseCallback)
+            delay(onAdvertisingDataChangedRestartMs)
             advertiser.startAdvertising(settings, advData, scanResp, elm327Service.advertiseCallback)
         }
     }

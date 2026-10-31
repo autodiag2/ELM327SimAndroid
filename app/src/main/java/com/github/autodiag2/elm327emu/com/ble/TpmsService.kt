@@ -19,7 +19,7 @@ data class TpmsSensorAdvertisement(
     val payload: ByteArray
 )
 
-class TpmsService(service: EmulatorForegroundService, scope: CoroutineScope, private val onAdvertisingDataChanged: ((sensor: TpmsSensorAdvertisement?) -> Unit)): BleService(service, scope) {
+class TpmsService(service: EmulatorForegroundService, scope: CoroutineScope, private val onAdvertisingDataChanged: (suspend (sensor: TpmsSensorAdvertisement?) -> Unit)): BleService(service, scope) {
     companion object {
         
     }
@@ -29,11 +29,14 @@ class TpmsService(service: EmulatorForegroundService, scope: CoroutineScope, pri
 
     private var tpmsAdvertisementJob: Job? = null
     private val tpmsAdvertisementIntervalMs = 1000L
-    private val tpmsAdvertisementRestartDelayMs = 100L
+    private var startupNotification = false
 
     public override val advertiseCallback = object : AdvertiseCallback() {
         override fun onStartSuccess(settingsInEffect: AdvertiseSettings) {
-            appendLog("TPMS advertisement started", LogLevel.INFO)
+            if ( startupNotification ) {
+                appendLog("TPMS advertisement started", LogLevel.INFO)
+                startupNotification = false
+            }
         }
 
         override fun onStartFailure(errorCode: Int) {
@@ -108,6 +111,7 @@ class TpmsService(service: EmulatorForegroundService, scope: CoroutineScope, pri
                 index = (index + 1) % tpmsSensors.size
             }
         }
+        startupNotification = true
         return tpmsService
     }
 
