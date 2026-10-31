@@ -3,8 +3,8 @@ package com.github.autodiag2.elm327emu.com.tpms
 import java.util.UUID
 
 data class TpmsReading(
-    val pressurePsi: Int = 55,
-    val temperatureC: Int = 55
+    val pressurePsi: Int,
+    val temperatureC: Int
 )
 
 data class TpmsManufacturerFrame(
@@ -62,5 +62,4 @@ object TpmsGattProfile {
     val SERVICE_UUID: UUID = UUID.fromString("9f2c0001-75d8-4e7d-a28c-9b3b6c17e001")
     val TEMPERATURE_UUID: UUID = UUID.fromString("9f2c0002-75d8-4e7d-a28c-9b3b6c17e001")
     val PRESSURE_UUID: UUID = UUID.fromString("9f2c0003-75d8-4e7d-a28c-9b3b6c17e001")
-    const val TEST_VALUE = 55
 }
