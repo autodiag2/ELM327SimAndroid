@@ -10,8 +10,9 @@ import android.bluetooth.*
 import android.bluetooth.le.*
 import com.github.autodiag2.elm327emu.log.LogLevel
 import com.github.autodiag2.elm327emu.R
+import kotlinx.coroutines.*
 
-class Elm327Service(service: EmulatorForegroundService): BleService(service) {
+class Elm327Service(service: EmulatorForegroundService, scope: CoroutineScope): BleService(service, scope) {
     companion object {
         const val DEFAULT_UUID_SERVICE =    "6E400001-B5A3-F393-E0A9-E50E24DCCA9E"
         const val DEFAULT_UUID_RX =         "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
@@ -75,7 +76,7 @@ class Elm327Service(service: EmulatorForegroundService): BleService(service) {
         return true
     }
 
-    override fun start(): BluetoothGattService {
+    override fun start(): BluetoothGattService? {
         gattService = BluetoothGattService(
             ELM_SERVICE_UUID,
             BluetoothGattService.SERVICE_TYPE_PRIMARY

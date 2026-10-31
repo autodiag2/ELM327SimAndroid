@@ -25,18 +25,13 @@ import com.github.autodiag2.elm327emu.EmulatorForegroundService
 import com.github.autodiag2.elm327emu.com.tpms.*
 import com.github.autodiag2.elm327emu.com.ble.Elm327Service
 import com.github.autodiag2.elm327emu.com.ble.TpmsService
+import com.github.autodiag2.elm327emu.com.ble.TpmsSensorAdvertisement
 
 private data class PendingRequest(
     val device: BluetoothDevice,
     val requestId: Int,
     val responseNeeded: Boolean,
     val value: ByteArray
-)
-
-private data class TpmsSensorAdvertisement(
-    val position: String,
-    val companyId: Int,
-    val payload: ByteArray
 )
 
 class BLEBridge(
@@ -61,8 +56,8 @@ class BLEBridge(
     private var gattReady = false
     private var pendingGattServiceUuid: UUID? = null
     private var gattServiceAddResult: Boolean? = null
-    private val elm327Service: Elm327Service = Elm327Service(service)
-    private val tpmsService: TpmsService = TpmsService(service)
+    private val elm327Service: Elm327Service = Elm327Service(service, scope)
+    private val tpmsService: TpmsService = TpmsService(service, scope, ::onAdvertisingDataChanged)
 
     @Suppress("DEPRECATION")
 
@@ -105,9 +100,6 @@ class BLEBridge(
     )
     private val notificationQueue = Channel<NotificationPacket>(Channel.UNLIMITED)
     private var notificationJob: Job? = null
-    private var tpmsAdvertisementJob: Job? = null
-    private val tpmsAdvertisementIntervalMs = 1000L
-    private val tpmsAdvertisementRestartDelayMs = 100L
 
     private fun sendTx(device: BluetoothDevice?, input: Any): Boolean {
         if (device == null) return false
@@ -421,150 +413,71 @@ class BLEBridge(
         if ( ! tpmsService.prepareStart() ) {
             return
         }
-        val tpmsEnabled = prefs.getBoolean(TpmsManufacturerEncoders.PREF_ENABLED, false)
-        val tpmsEncoder = if (tpmsEnabled) {
-            TpmsManufacturerEncoders.find(
-                prefs.getString(TpmsManufacturerEncoders.PREF_TYPE, "jk_tyre_treel")
-            )
-        } else {
-            null
-        }
-        if (tpmsEnabled && tpmsEncoder == null) {
-            appendLog("Unsupported TPMS manufacturer/model", LogLevel.ERROR)
-            return
-        }
         scope.launch(Dispatchers.IO) {
-            val supportsMultipleAdvertising = service.btAdapter.isMultipleAdvertisementSupported
-            if (!supportsMultipleAdvertising) {
-                appendLog(getString(R.string.log_ble_advertising_not_supported), LogLevel.WARNING)
-            }
             advertiser = service.btAdapter.bluetoothLeAdvertiser ?: run {
                 appendLog(getString(R.string.log_ble_advertiser_null), LogLevel.DEBUG)
                 appendLog(getString(R.string.log_ble_peripherical_mode_error), LogLevel.ERROR)
                 return@launch
             }
-            val tpmsSensors: List<TpmsSensorAdvertisement> = tpmsEncoder?.let { encoder ->
-                val reading = TpmsReading(pressurePsi = 55, temperatureC = 55)
-                listOf(
-                    "FL" to byteArrayOf(0x00, 0x00, 0x01),
-                    "FR" to byteArrayOf(0x00, 0x00, 0x02),
-                    "RL" to byteArrayOf(0x00, 0x00, 0x03),
-                    "RR" to byteArrayOf(0x00, 0x00, 0x04),
-                    "SP" to byteArrayOf(0x00, 0x00, 0x05)
-                ).mapNotNull { (position, sensorId) ->
-                    encoder.encode(reading, sensorId).let { frame ->
-                        TpmsSensorAdvertisement(position, frame.companyId, frame.payload)
-                    }
-                }
-            }.orEmpty()
-            if (tpmsEnabled && tpmsSensors.isEmpty()) {
-                appendLog("TPMS encoder did not produce any sensor frames", LogLevel.ERROR)
-            }
-            val firstTpmsFrame = tpmsSensors.firstOrNull()
-            val advData = if (supportsMultipleAdvertising || firstTpmsFrame == null) {
-                AdvertiseData.Builder()
-                    .addServiceUuid(ParcelUuid(elm327Service.ELM_SERVICE_UUID))
-                    .build()
-            } else {
-                AdvertiseData.Builder()
-                    .addManufacturerData(firstTpmsFrame.companyId, firstTpmsFrame.payload)
-                    .build()
-            }
-            val scanResp = if (!supportsMultipleAdvertising && firstTpmsFrame != null) {
-                AdvertiseData.Builder()
-                    .addServiceUuid(ParcelUuid(elm327Service.ELM_SERVICE_UUID))
-                    .build()
-            } else {
-                AdvertiseData.Builder()
-                    .setIncludeDeviceName(true)
-                    .build()
-            }
+
             val btManager = service.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
             gattServer = btManager.openGattServer(service, gattCallback)
             val elmService = elm327Service.start()
             appendLog(getString(R.string.log_ble_service_adding), LogLevel.DEBUG)
-            if (!addGattService(elmService)) return@launch
-            if (tpmsEnabled && !addGattService(tpmsService.start())) {
-                appendLog("TPMS GATT service could not be added; continuing with Treel advertisement", LogLevel.ERROR)
-            }
-            appendLog(getString(R.string.log_ble_advertising_starting), LogLevel.DEBUG)
-            val settings = elm327Service.getSettings()
-            val tpmsSettings = tpmsService.getSettings()
-            advertiser.startAdvertising(settings, advData, scanResp, elm327Service.advertiseCallback)
-            if (tpmsSensors.isNotEmpty()) {
-                appendLog(
-                    "Cycling TPMS test sensors: ${tpmsSensors.joinToString { it.position }} (55 psi, 55 °C)",
-                    LogLevel.INFO
-                )
-                if (supportsMultipleAdvertising) {
-                    val firstFrame = tpmsSensors.first()
-                    advertiser.startAdvertising(
-                        tpmsSettings,
-                        AdvertiseData.Builder()
-                            .addManufacturerData(firstFrame.companyId, firstFrame.payload)
-                            .build(),
-                        AdvertiseData.Builder().build(),
-                        tpmsService.advertiseCallback
-                    )
-                    if (tpmsSensors.size > 1) {
-                        tpmsAdvertisementJob?.cancel()
-                        tpmsAdvertisementJob = scope.launch(Dispatchers.IO) {
-                            var index = 1
-                            while (isActive) {
-                                delay(tpmsAdvertisementIntervalMs)
-                                val sensor = tpmsSensors[index]
-                                try {
-                                    advertiser.stopAdvertising(tpmsService.advertiseCallback)
-                                    delay(tpmsAdvertisementRestartDelayMs)
-                                    advertiser.startAdvertising(
-                                        tpmsSettings,
-                                        AdvertiseData.Builder()
-                                            .addManufacturerData(sensor.companyId, sensor.payload)
-                                            .build(),
-                                        AdvertiseData.Builder().build(),
-                                        tpmsService.advertiseCallback
-                                    )
-                                } catch (e: CancellationException) {
-                                    throw e
-                                } catch (e: Exception) {
-                                    appendLog("TPMS advertisement rotation failed: ${e.message}", LogLevel.ERROR)
-                                }
-                                index = (index + 1) % tpmsSensors.size
-                            }
-                        }
-                    }
-                } else if (tpmsSensors.size > 1) {
-                    tpmsAdvertisementJob?.cancel()
-                    tpmsAdvertisementJob = scope.launch(Dispatchers.IO) {
-                        var index = 1
-                        while (isActive) {
-                            delay(tpmsAdvertisementIntervalMs)
-                            val sensor = tpmsSensors[index]
-                            try {
-                                advertiser.stopAdvertising(elm327Service.advertiseCallback)
-                                delay(tpmsAdvertisementRestartDelayMs)
-                                val sensorAdvData = AdvertiseData.Builder()
-                                    .addManufacturerData(sensor.companyId, sensor.payload)
-                                    .build()
-                                val sensorScanResp = AdvertiseData.Builder()
-                                    .addServiceUuid(ParcelUuid(elm327Service.ELM_SERVICE_UUID))
-                                    .build()
-                                advertiser.startAdvertising(
-                                    settings,
-                                    sensorAdvData,
-                                    sensorScanResp,
-                                    elm327Service.advertiseCallback
-                                )
-                            } catch (e: CancellationException) {
-                                throw e
-                            } catch (e: Exception) {
-                                appendLog("TPMS advertisement rotation failed: ${e.message}", LogLevel.ERROR)
-                            }
-                            index = (index + 1) % tpmsSensors.size
-                        }
-                    }
+            if (elmService == null || !addGattService(elmService)) return@launch
+            if (tpmsService.enabled) {
+                val gattService = tpmsService.start()
+                if ( gattService == null || !addGattService(gattService)) {
+                    appendLog("TPMS GATT service could not be added; continuing with Treel advertisement", LogLevel.ERROR)
                 }
             }
+            appendLog(getString(R.string.log_ble_advertising_starting), LogLevel.DEBUG)
+            val tpmsSensors = tpmsService.getSensors()
+            val firstTpmsFrame = tpmsSensors.firstOrNull()
+            if (!service.btAdapter.isMultipleAdvertisementSupported) {
+                appendLog(getString(R.string.log_ble_advertising_not_supported), LogLevel.WARNING)
+            }
+            onAdvertisingDataChanged(firstTpmsFrame)
+        }
+    }
+
+    fun onAdvertisingDataChanged(tpmsSensor: TpmsSensorAdvertisement?) {
+        val settings = elm327Service.getSettings()
+        val tpmsSettings = tpmsService.getSettings()
+        if ( service.btAdapter.isMultipleAdvertisementSupported ) {
+            val advData =
+                AdvertiseData.Builder()
+                    .addServiceUuid(ParcelUuid(elm327Service.ELM_SERVICE_UUID))
+                    .build()
+            val scanResp = 
+                AdvertiseData.Builder()
+                    .setIncludeDeviceName(true)
+                    .build()
+            advertiser.stopAdvertising(elm327Service.advertiseCallback)
+            advertiser.startAdvertising(settings, advData, scanResp, elm327Service.advertiseCallback)
+            if ( tpmsService.enabled && tpmsSensor != null ) {
+                val tpmsAdvData =
+                    AdvertiseData.Builder()
+                        .addManufacturerData(tpmsSensor.companyId, tpmsSensor.payload)
+                        .build()
+                val tpmsScanResp =
+                    AdvertiseData.Builder().build()
+                advertiser.startAdvertising(tpmsSettings, tpmsAdvData, tpmsScanResp, tpmsService.advertiseCallback)
+                advertiser.stopAdvertising(tpmsService.advertiseCallback)
+            }
+        } else {
+            val builder = AdvertiseData.Builder()
+            builder.addServiceUuid(ParcelUuid(elm327Service.ELM_SERVICE_UUID))
+            if ( tpmsService.enabled && tpmsSensor != null ) {
+                builder.addManufacturerData(tpmsSensor.companyId, tpmsSensor.payload)
+            }
+            val advData = builder.build()
+            val scanResp = 
+                AdvertiseData.Builder()
+                    .setIncludeDeviceName(true)
+                    .build()
+            advertiser.stopAdvertising(elm327Service.advertiseCallback)
+            advertiser.startAdvertising(settings, advData, scanResp, elm327Service.advertiseCallback)
         }
     }
 
@@ -610,8 +523,6 @@ class BLEBridge(
     }
 
     override fun stop() {
-        tpmsAdvertisementJob?.cancel()
-        tpmsAdvertisementJob = null
         try {
             advertiser.stopAdvertising(tpmsService.advertiseCallback)
         } catch (e: Exception) {
@@ -637,6 +548,7 @@ class BLEBridge(
         notificationJob = null
         gattReady = false
         elm327Service.stop()
+        tpmsService.stop()
         negotiatedMtu.clear()
     }
 

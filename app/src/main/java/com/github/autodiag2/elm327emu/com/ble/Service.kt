@@ -8,8 +8,9 @@ import java.util.UUID
 import com.github.autodiag2.elm327emu.log.LogLevel
 import android.bluetooth.*
 import android.bluetooth.le.*
+import kotlinx.coroutines.*
 
-abstract class BleService(public val service: EmulatorForegroundService) {
+abstract class BleService(public val service: EmulatorForegroundService, public val scope: CoroutineScope) {
     protected val prefs = service.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
     public abstract val advertiseCallback: AdvertiseCallback
     protected fun appendLog(text: String, level: LogLevel = LogLevel.DEBUG) {
@@ -22,7 +23,7 @@ abstract class BleService(public val service: EmulatorForegroundService) {
 
     abstract fun getSettings(): AdvertiseSettings
     abstract fun prepareStart(): Boolean
-    abstract fun start(): BluetoothGattService
+    abstract fun start(): BluetoothGattService?
 
     open fun stop() {
 
