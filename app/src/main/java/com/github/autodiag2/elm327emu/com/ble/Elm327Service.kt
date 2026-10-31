@@ -18,6 +18,14 @@ class Elm327Service(service: EmulatorForegroundService, scope: CoroutineScope): 
         const val DEFAULT_UUID_RX =         "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"
         const val DEFAULT_UUID_TX =         "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"
         const val CCCD_UUID       =         "00002902-0000-1000-8000-00805f9b34fb"
+        fun logDebug(message: String) {
+            if (BuildConfig.DEBUG) {
+                Log.d(
+                    "com.ble.Elm327Service",
+                    message
+                )
+            }
+        }
     }
     public lateinit var rxChar: BluetoothGattCharacteristic
     public lateinit var txChar: BluetoothGattCharacteristic
@@ -47,8 +55,9 @@ class Elm327Service(service: EmulatorForegroundService, scope: CoroutineScope): 
         )
 
     private var startupNotification = false
-    public override val advertiseCallback = object : AdvertiseCallback() {
+    public val advertiseCallback = object : AdvertiseCallback() {
         override fun onStartSuccess(settingsInEffect: AdvertiseSettings) {
+            logDebug("here startupNotification=${startupNotification}")
             if ( startupNotification ) {
                 appendLog(getString(R.string.log_ble_advertising_started), LogLevel.DEBUG)
                 appendLog(getString(R.string.log_ble_server_started), LogLevel.INFO)

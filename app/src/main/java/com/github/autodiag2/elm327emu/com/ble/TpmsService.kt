@@ -41,6 +41,15 @@ class TpmsService(
         const val DEFAULT_ENABLED = false
     }
 
+    fun logDebug(message: String) {
+        if (BuildConfig.DEBUG) {
+            Log.d(
+                "com.ble.TpmsService",
+                message
+            )
+        }
+    }
+
     private data class SensorDefinition(
         val position: String,
         val sensorId: ByteArray,
@@ -71,7 +80,7 @@ class TpmsService(
     val enabled: Boolean
         get() = prefs.getBoolean(TpmsManufacturerEncoders.PREF_ENABLED, DEFAULT_ENABLED)
 
-    public override val advertiseCallback = object : AdvertiseCallback() {
+    public val advertiseCallback = object : AdvertiseCallback() {
         override fun onStartSuccess(settingsInEffect: AdvertiseSettings) {
             if (startupNotification) {
                 appendLog(getString(R.string.ble_tpms_service_started), LogLevel.INFO)

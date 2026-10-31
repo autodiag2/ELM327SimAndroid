@@ -12,7 +12,6 @@ import kotlinx.coroutines.*
 
 abstract class BleService(public val service: EmulatorForegroundService, public val scope: CoroutineScope) {
     protected val prefs = service.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-    public abstract val advertiseCallback: AdvertiseCallback
     protected fun appendLog(text: Any, level: LogLevel = LogLevel.DEBUG) {
         service.log.append(text, level)
     }

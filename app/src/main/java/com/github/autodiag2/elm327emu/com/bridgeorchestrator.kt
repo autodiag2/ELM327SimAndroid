@@ -124,7 +124,7 @@ class BridgeOrchestrator(
     }
     fun setupBleBridge() {
         scope.launch {
-            setupBridge(arrayOf("com_ble_enabled", "com_ble_tpms_enabled"), bleBridge)
+            setupBridge("com_ble_enabled", bleBridge)
         }
     }
     fun setupBluetoothBridge() {
@@ -132,17 +132,8 @@ class BridgeOrchestrator(
             setupBridge("com_bt_enabled", btBridge)
         }
     }
-    suspend fun setupBridge(pref_deps: Any, bridge: Bridge) {
-        val enabled = when (pref_deps) {
-            is String -> prefs.getBoolean(pref_deps, true)
-            is Array<*> -> pref_deps.filterIsInstance<String>().any { pref ->
-                prefs.getBoolean(pref, false)
-            }
-            else -> {
-                assert(false)
-                false
-            }
-        }
+    suspend fun setupBridge(pref: String, bridge: Bridge) {
+        val enabled = prefs.getBoolean(pref, true)
         val job = when (bridge) {
             bleBridge -> bleBridgeJob
             ntBridge -> ntBridgeJob
@@ -163,8 +154,11 @@ class BridgeOrchestrator(
             }
             bridge.start()
 
-            if ( prefs.getBoolean("com_ble_tpms_enabled", TpmsService.DEFAULT_ENABLED) && ! prefs.getBoolean("com_ble_enabled", false) ) {
-                return
+            if ( bridge is BLEBridge ) {
+                if ( prefs.getBoolean("com_ble_tpms_enabled", TpmsService.DEFAULT_ENABLED) && ! prefs.getBoolean("com_ble_enabled", false) ) {
+                    setJob(null)
+                    return
+                }
             }
 
             setJob(scope.launch {
@@ -226,8 +220,8 @@ class BridgeOrchestrator(
             btBridge -> btBridgeJob
             else -> null
         }
-        bridge.stop()
         job?.cancel()
+        bridge.stop()
     }
     fun stopBridges() {
         stopBridge(bleBridge)
