@@ -55,18 +55,15 @@
 
         <SwitchPreferenceCompat
             android:key="com_bt_enabled"
-            android:title="@string/settings_network_bluetooth"
-            android:defaultValue="true" />
+            android:title="@string/settings_network_bluetooth" />
 
         <SwitchPreferenceCompat
             android:key="com_nt_enabled"
-            android:title="@string/settings_network_network"
-            android:defaultValue="true" />
+            android:title="@string/settings_network_network" />
 
         <SwitchPreferenceCompat
             android:key="com_ble_enabled"
-            android:title="@string/settings_network_ble"
-            android:defaultValue="true" />
+            android:title="@string/settings_network_ble" />
 
         <ListPreference
             android:key="ble_profile"
@@ -87,8 +84,7 @@
 
         <SwitchPreferenceCompat
             android:key="com_ble_tpms_enabled"
-            android:title="@string/settings_title_tpms_enabled"
-            android:defaultValue="false" />
+            android:title="@string/settings_title_tpms_enabled" />
 
         <ListPreference
             android:key="com_ble_tpms_type"

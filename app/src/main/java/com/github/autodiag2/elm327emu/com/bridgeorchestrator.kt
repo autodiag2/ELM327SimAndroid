@@ -133,7 +133,14 @@ class BridgeOrchestrator(
         }
     }
     suspend fun setupBridge(pref: String, bridge: Bridge) {
-        val enabled = prefs.getBoolean(pref, true)
+        val elmServiceEnabled = prefs.getBoolean("com_ble_enabled", BLEBridge.DEFAULT_ENABLED)
+        val tpmsServiceEnabled = prefs.getBoolean("com_ble_tpms_enabled", TpmsService.DEFAULT_ENABLED)
+        val enabled: Boolean
+        if ( bridge is BLEBridge ) {
+            enabled = elmServiceEnabled || tpmsServiceEnabled
+        } else {
+            enabled = prefs.getBoolean(pref, Bridge.DEFAULT_ENABLED)
+        }
         val job = when (bridge) {
             bleBridge -> bleBridgeJob
             ntBridge -> ntBridgeJob
@@ -155,7 +162,7 @@ class BridgeOrchestrator(
             bridge.start()
 
             if ( bridge is BLEBridge ) {
-                if ( prefs.getBoolean("com_ble_tpms_enabled", TpmsService.DEFAULT_ENABLED) && ! prefs.getBoolean("com_ble_enabled", false) ) {
+                if ( tpmsServiceEnabled && ! elmServiceEnabled ) {
                     setJob(null)
                     return
                 }

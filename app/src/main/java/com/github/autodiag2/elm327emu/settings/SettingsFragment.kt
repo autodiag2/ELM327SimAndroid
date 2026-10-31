@@ -20,8 +20,10 @@ import android.widget.Spinner
 import android.widget.ImageView
 import com.github.autodiag2.elm327emu.com.LocalHotspotManager
 import com.github.autodiag2.elm327emu.com.BLEBridge
+import com.github.autodiag2.elm327emu.com.Bridge
 import com.github.autodiag2.elm327emu.com.ble.Elm327Service
 import com.github.autodiag2.elm327emu.com.ble.TpmsService
+import com.github.autodiag2.elm327emu.com.tpms.TpmsManufacturerEncoders
 import com.github.autodiag2.elm327emu.settings.generateQrBitmap
 import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.log.LogLevel
@@ -44,6 +46,8 @@ import android.os.Build
 import android.provider.Settings
 import android.view.Gravity
 import androidx.core.app.ActivityCompat
+import android.os.Handler
+import android.os.Looper
 
 private const val PREFS = "app_prefs"
 
@@ -572,8 +576,11 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         for (key in bridgePreferences) {
             val preference = findPreference<SwitchPreferenceCompat>(key) ?: continue
-
-            preference.isChecked = prefs.getBoolean(key, true)
+            if ( key == "com_ble_enabled" ) {
+                preference.isChecked = prefs.getBoolean(key, BLEBridge.DEFAULT_ENABLED)
+            } else {
+                preference.isChecked = prefs.getBoolean(key, Bridge.DEFAULT_ENABLED)
+            }
 
             preference.setOnPreferenceChangeListener { _, newValue ->
                 prefs.edit()
@@ -676,15 +683,28 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private fun setupTpms() {
         val profile = findPreference<ListPreference>("com_ble_tpms_type")!!
         val tpmsEnabled = findPreference<SwitchPreferenceCompat>("com_ble_tpms_enabled")!!
-        if (!prefs.contains("com_ble_tpms_enabled")) {
+        if (!prefs.contains(TpmsManufacturerEncoders.PREF_ENABLED)) {
             tpmsEnabled.isChecked = TpmsService.DEFAULT_ENABLED
         }
-        profile.setOnPreferenceChangeListener { _, newValue ->
-            activityMain.service?.bridgeOrchestrator?.setupBleBridge()
+        if (!prefs.contains(TpmsManufacturerEncoders.PREF_TYPE)) {
+            profile.value = TpmsService.DEFAULT_MANUFACTURER
+        }
+        val restartBleBridge = {
+            Handler(Looper.getMainLooper()).post {
+                activityMain.service?.bridgeOrchestrator?.setupBleBridge()
+            }
+        }
+
+        profile.setOnPreferenceChangeListener { _, _ ->
+            restartBleBridge()
             true
         }
-        tpmsEnabled.setOnPreferenceChangeListener { _, newValue -> 
-            activityMain.service?.bridgeOrchestrator?.setupBleBridge()
+
+        tpmsEnabled.setOnPreferenceChangeListener { _, newState ->
+            if (newState is Boolean) {
+                prefs.edit().putBoolean(TpmsManufacturerEncoders.PREF_ENABLED, newState).apply()
+                restartBleBridge()
+            }
             true
         }
     }

@@ -88,6 +88,7 @@ class BLEBridge(
             }
         }
         val getScanResponseAvailableSpace: Int = 29
+        const val DEFAULT_ENABLED = Bridge.DEFAULT_ENABLED
     }
     data class NotificationPacket(
         val device: BluetoothDevice,
@@ -398,7 +399,7 @@ class BLEBridge(
     }
 
     fun isElmEnabled(): Boolean {
-        return prefs.getBoolean("com_ble_enabled", false)
+        return prefs.getBoolean("com_ble_enabled", DEFAULT_ENABLED)
     }
     override suspend fun start() {
         val elmEnabled = isElmEnabled()
@@ -428,12 +429,14 @@ class BLEBridge(
             if ( elmEnabled ) {
                 val elmService = elm327Service.start()
                 appendLog(getString(R.string.log_ble_service_adding), LogLevel.DEBUG)
+                logDebug("XXX: Add service elm")
                 if (elmService == null || !addGattService(elmService)) {
                     logDebug("elm service null or failed to add elm service")
                     return@launch
                 }
             }
             if (tpmsService.enabled) {
+                logDebug("XXX: Add service tpms ${prefs.getBoolean(TpmsManufacturerEncoders.PREF_ENABLED, false)} ${tpmsService.enabled}}")
                 val gattService = tpmsService.start()
                 if ( gattService == null || !addGattService(gattService)) {
                     appendLog("TPMS GATT service could not be added; continuing with Treel advertisement", LogLevel.ERROR)

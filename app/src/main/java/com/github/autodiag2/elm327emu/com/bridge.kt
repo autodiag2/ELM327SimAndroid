@@ -25,6 +25,9 @@ open class Bridge(
     protected val listener: Listener? = null
 ) {
 
+    companion object {
+        const val DEFAULT_ENABLED = true
+    }
     interface Listener {
         fun onClientConnect(clientIdentifier: String, bridge: Bridge)
         fun onClientDisconnect(clientIdentifier: String, bridge: Bridge)
