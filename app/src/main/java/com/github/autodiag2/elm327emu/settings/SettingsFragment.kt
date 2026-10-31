@@ -145,6 +145,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         setupElm()
         setupBluetooth()
         setupBle()
+        setupTpms()
         setupWifi()
         setupBtClassic()
     }
@@ -668,6 +669,19 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
                 true
             }
+        }
+    }
+
+    private fun setupTpms() {
+        val profile = findPreference<ListPreference>("com_ble_tpms_type")!!
+        val tpmsEnabled = findPreference<SwitchPreferenceCompat>("com_ble_tpms_enabled")!!
+        profile.setOnPreferenceChangeListener { _, newValue ->
+            activityMain.service?.bridgeOrchestrator?.setupBleBridge()
+            true
+        }
+        tpmsEnabled.setOnPreferenceChangeListener { _, newValue -> 
+            activityMain.service?.bridgeOrchestrator?.setupBleBridge()
+            true
         }
     }
 

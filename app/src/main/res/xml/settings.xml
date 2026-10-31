@@ -83,6 +83,23 @@
     </PreferenceCategory>
 
     <PreferenceCategory
+        android:title="@string/settings_section_tpms">
+
+        <SwitchPreferenceCompat
+            android:key="com_ble_tpms_enabled"
+            android:title="@string/settings_title_tpms_enabled"
+            android:defaultValue="false" />
+
+        <ListPreference
+            android:key="com_ble_tpms_type"
+            android:title="@string/settings_title_tpms_profile_title"
+            android:entries="@array/tpms_profile"
+            app:useSimpleSummaryProvider="true"
+            android:entryValues="@array/tpms_profile_values" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
         android:title="@string/settings_section_bluetooth">
 
         <EditTextPreference

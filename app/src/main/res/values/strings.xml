@@ -22,6 +22,9 @@
     <string name="logview_saved_as">Saved as %1$s</string>
     <string name="logview_clear">Clear</string>
     <string name="settings_autostart">Autostart emulator on app launch</string>
+    <string name="settings_section_tpms">TPMS</string>
+    <string name="settings_title_tpms_enabled">Enabled</string>
+    <string name="settings_title_tpms_profile_title">TPMS type</string>
     <string name="settings_section_general">General Settings</string>
     <string name="settings_section_bluetooth">Bluetooth Settings</string>
     <string name="settings_section_ble">Bluetooth LE Settings</string>

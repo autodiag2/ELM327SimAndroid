@@ -526,6 +526,8 @@ class BLEBridge(
     }
 
     override fun stop() {
+        elm327Service.stop()
+        tpmsService.stop()
         try {
             advertiser.stopAdvertising(tpmsService.advertiseCallback)
         } catch (e: Exception) {
@@ -550,8 +552,6 @@ class BLEBridge(
         notificationJob?.cancel()
         notificationJob = null
         gattReady = false
-        elm327Service.stop()
-        tpmsService.stop()
         negotiatedMtu.clear()
     }
 

@@ -24,7 +24,7 @@ import com.github.autodiag2.elm327emu.BuildConfig
 import kotlinx.coroutines.*
 import com.github.autodiag2.elm327emu.sim.EmuManaged
 import com.github.autodiag2.elm327emu.EmulatorForegroundService
-
+import com.github.autodiag2.elm327emu.com.ble.TpmsService
 /**
  * Driven by the need of hotpluging and unplugging interfaces, this class orchestrates the bridges and the emulator.
  */
@@ -124,7 +124,7 @@ class BridgeOrchestrator(
     }
     fun setupBleBridge() {
         scope.launch {
-            setupBridge("com_ble_enabled", bleBridge)
+            setupBridge(arrayOf("com_ble_enabled", "com_ble_tpms_enabled"), bleBridge)
         }
     }
     fun setupBluetoothBridge() {
@@ -132,8 +132,17 @@ class BridgeOrchestrator(
             setupBridge("com_bt_enabled", btBridge)
         }
     }
-    suspend fun setupBridge(pref: String, bridge: Bridge) {
-        val enabled = prefs.getBoolean(pref, true)
+    suspend fun setupBridge(pref_deps: Any, bridge: Bridge) {
+        val enabled = when (pref_deps) {
+            is String -> prefs.getBoolean(pref_deps, true)
+            is Array<*> -> pref_deps.filterIsInstance<String>().any { pref ->
+                prefs.getBoolean(pref, false)
+            }
+            else -> {
+                assert(false)
+                false
+            }
+        }
         val job = when (bridge) {
             bleBridge -> bleBridgeJob
             ntBridge -> ntBridgeJob
@@ -153,6 +162,10 @@ class BridgeOrchestrator(
                 setJob(null)
             }
             bridge.start()
+
+            if ( prefs.getBoolean("com_ble_tpms_enabled", TpmsService.DEFAULT_ENABLED) && ! prefs.getBoolean("com_ble_enabled", false) ) {
+                return
+            }
 
             setJob(scope.launch {
 
@@ -193,7 +206,7 @@ class BridgeOrchestrator(
             job.cancel()
             setJob(null)
         } else if (!enabled && job == null) {
-            // Already stopped, do nothing
+            bridge.stop()
         }
     }
 

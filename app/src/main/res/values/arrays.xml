@@ -70,4 +70,12 @@
         <item>4</item>
     </string-array>
 
+    <string-array name="tpms_profile">
+        <item>JK Tyre Treel</item>
+    </string-array>
+
+    <string-array name="tpms_profile_values">
+        <item>jk_tyre_treel</item>
+    </string-array>
+
 </resources>
