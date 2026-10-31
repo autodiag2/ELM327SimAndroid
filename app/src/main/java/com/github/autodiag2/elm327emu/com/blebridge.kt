@@ -23,6 +23,8 @@ import com.github.autodiag2.elm327emu.sim.EmuInterface
 import android.util.Log
 import com.github.autodiag2.elm327emu.BuildConfig
 import com.github.autodiag2.elm327emu.EmulatorForegroundService
+import com.github.autodiag2.elm327emu.com.tpms.*
+
 private data class PendingRequest(
     val device: BluetoothDevice,
     val requestId: Int,
@@ -63,6 +65,13 @@ class BLEBridge(
                 DEFAULT_UUID_TX
             )!!
         )
+
+    init {
+        prefs.edit()
+            .putBoolean(TpmsManufacturerEncoders.PREF_ENABLED, true)
+            .putString(TpmsManufacturerEncoders.PREF_TYPE, "jk_tyre_treel")
+            .apply()
+    }
     
     // Client Characteristic Configuration Descriptor
     private val cccdUuid = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
@@ -72,6 +81,8 @@ class BLEBridge(
     private val negotiatedMtu = mutableMapOf<String, Int>()
     private var txNotificationsEnabled = mutableMapOf<String, Boolean>()
     private var gattReady = false
+    private var pendingGattServiceUuid: UUID? = null
+    private var gattServiceAddResult: Boolean? = null
 
     private lateinit var rxChar: BluetoothGattCharacteristic
     private lateinit var txChar: BluetoothGattCharacteristic
@@ -177,6 +188,15 @@ class BLEBridge(
             }
         }
         return true
+    }
+
+    private val tpmsAdvertiseCallback = object : AdvertiseCallback() {
+        override fun onStartSuccess(settingsInEffect: AdvertiseSettings) {
+            appendLog("TPMS advertisement started", LogLevel.INFO)
+        }
+        override fun onStartFailure(errorCode: Int) {
+            appendLog("TPMS advertisement failed: ${advertiseErrorToString(errorCode)}", LogLevel.ERROR)
+        }
     }
 
     private val gattCallback = object : BluetoothGattServerCallback() {
@@ -322,16 +342,17 @@ class BLEBridge(
                 BluetoothProfile.STATE_DISCONNECTING -> appendLog(getString(R.string.log_ble_disconnecting, addr, status, statusString), LogLevel.DEBUG)
             }
         }
-        
+
         override fun onServiceAdded(status: Int, service: BluetoothGattService) {
-            logDebug("onServiceAdded : ${status}")
-            if (status == BluetoothGatt.GATT_SUCCESS) {
+            logDebug("onServiceAdded : $status : ${service.uuid}")
+            if (service.uuid == pendingGattServiceUuid) {
+                gattServiceAddResult = status == BluetoothGatt.GATT_SUCCESS
                 gattReady = true
+            }
+            if (status == BluetoothGatt.GATT_SUCCESS) {
                 appendLog(getString(R.string.log_ble_gatt_service_added), LogLevel.DEBUG)
             } else {
-                appendLog(getString(R.string.log_ble_gatt_service_add_failed, status),
-                    LogLevel.DEBUG
-                )
+                appendLog(getString(R.string.log_ble_gatt_service_add_failed, status), LogLevel.ERROR)
             }
         }
 
@@ -453,92 +474,162 @@ class BLEBridge(
         return System.currentTimeMillis()
     }
 
+    private suspend fun addGattService(gattService: BluetoothGattService): Boolean {
+        pendingGattServiceUuid = gattService.uuid
+        gattReady = false
+        gattServiceAddResult = null
+        if (!gattServer.addService(gattService)) {
+            pendingGattServiceUuid = null
+            appendLog("GATT addService() failed: ${gattService.uuid}", LogLevel.ERROR)
+            return false
+        }
+        return try {
+            withTimeout(5000L) {
+                while (!gattReady) delay(10L)
+            }
+            gattServiceAddResult == true
+        } catch (_: TimeoutCancellationException) {
+            appendLog("Timed out adding GATT service ${gattService.uuid}", LogLevel.ERROR)
+            false
+        } finally {
+            pendingGattServiceUuid = null
+            gattReady = false
+        }
+    }
+    private fun createTpmsGattService(): BluetoothGattService {
+        val tpmsService = BluetoothGattService(
+            TpmsGattProfile.SERVICE_UUID,
+            BluetoothGattService.SERVICE_TYPE_PRIMARY
+        )
+        val temperatureChar = BluetoothGattCharacteristic(
+            TpmsGattProfile.TEMPERATURE_UUID,
+            BluetoothGattCharacteristic.PROPERTY_READ,
+            BluetoothGattCharacteristic.PERMISSION_READ
+        ).apply {
+            value = byteArrayOf(TpmsGattProfile.TEST_VALUE.toByte())
+        }
+        val pressureChar = BluetoothGattCharacteristic(
+            TpmsGattProfile.PRESSURE_UUID,
+            BluetoothGattCharacteristic.PROPERTY_READ,
+            BluetoothGattCharacteristic.PERMISSION_READ
+        ).apply {
+            value = byteArrayOf(TpmsGattProfile.TEST_VALUE.toByte())
+        }
+        tpmsService.addCharacteristic(temperatureChar)
+        tpmsService.addCharacteristic(pressureChar)
+        return tpmsService
+    }
     override suspend fun start() {
         if (!service.btAdapter.isEnabled) {
             EmulatorForegroundService.activity?.showBluetoothEnablePopup()
             return
         }
-
         try {
             ELM_SERVICE_UUID
             ELM_RX_UUID
             ELM_TX_UUID
         } catch (e: Exception) {
-            appendLog(
-                getString(R.string.log_ble_uuid_validation, e.message),
-                LogLevel.ERROR
-            )
+            appendLog(getString(R.string.log_ble_uuid_validation, e.message), LogLevel.ERROR)
             return
         }
-
+        val tpmsEnabled = prefs.getBoolean(TpmsManufacturerEncoders.PREF_ENABLED, false)
+        val tpmsEncoder = if (tpmsEnabled) {
+            TpmsManufacturerEncoders.find(
+                prefs.getString(TpmsManufacturerEncoders.PREF_TYPE, "jk_tyre_treel")
+            )
+        } else {
+            null
+        }
+        if (tpmsEnabled && tpmsEncoder == null) {
+            appendLog("Unsupported TPMS manufacturer/model", LogLevel.ERROR)
+            return
+        }
         scope.launch(Dispatchers.IO) {
-
             val settings = AdvertiseSettings.Builder()
                 .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
                 .setConnectable(true)
                 .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
                 .build()
-            
-            val advData = AdvertiseData.Builder()
-                .addServiceUuid(ParcelUuid(ELM_SERVICE_UUID))
-                .build()
-            
-            if (!service.btAdapter.isMultipleAdvertisementSupported) {
+            val supportsMultipleAdvertising = service.btAdapter.isMultipleAdvertisementSupported
+            if (!supportsMultipleAdvertising) {
                 appendLog(getString(R.string.log_ble_advertising_not_supported), LogLevel.WARNING)
             }
-
             advertiser = service.btAdapter.bluetoothLeAdvertiser ?: run {
                 appendLog(getString(R.string.log_ble_advertiser_null), LogLevel.DEBUG)
                 appendLog(getString(R.string.log_ble_peripherical_mode_error), LogLevel.ERROR)
                 return@launch
             }
-            val scanResp = AdvertiseData.Builder()
-                .setIncludeDeviceName(true)
-                .build()
-
+            val tpmsFrame = tpmsEncoder?.encode(
+                TpmsReading(pressurePsi = 55, temperatureC = 55),
+                byteArrayOf(0x01, 0x02, 0x03)
+            )
+            val separateTpmsAdvertisement = tpmsFrame != null && supportsMultipleAdvertising
+            val combinedTpmsAdvertisement = tpmsFrame != null && !supportsMultipleAdvertising
+            val advData = if (combinedTpmsAdvertisement) {
+                AdvertiseData.Builder()
+                    .addManufacturerData(tpmsFrame!!.companyId, tpmsFrame.payload)
+                    .build()
+            } else {
+                AdvertiseData.Builder()
+                    .addServiceUuid(ParcelUuid(ELM_SERVICE_UUID))
+                    .build()
+            }
+            val scanResp = if (combinedTpmsAdvertisement) {
+                AdvertiseData.Builder()
+                    .addServiceUuid(ParcelUuid(ELM_SERVICE_UUID))
+                    .build()
+            } else {
+                AdvertiseData.Builder()
+                    .setIncludeDeviceName(true)
+                    .build()
+            }
             val btManager = service.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
             gattServer = btManager.openGattServer(service, gattCallback)
-
-            val service = BluetoothGattService(
+            val elmService = BluetoothGattService(
                 ELM_SERVICE_UUID,
                 BluetoothGattService.SERVICE_TYPE_PRIMARY
             )
-
             rxChar = BluetoothGattCharacteristic(
                 ELM_RX_UUID,
                 BluetoothGattCharacteristic.PROPERTY_WRITE or
-                        BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE,
+                    BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE,
                 BluetoothGattCharacteristic.PERMISSION_WRITE
             )
-
             txChar = BluetoothGattCharacteristic(
                 ELM_TX_UUID,
                 BluetoothGattCharacteristic.PROPERTY_NOTIFY,
                 0
             )
-
             val cccd = BluetoothGattDescriptor(
                 cccdUuid,
                 BluetoothGattDescriptor.PERMISSION_READ or BluetoothGattDescriptor.PERMISSION_WRITE
             )
-
             txChar.addDescriptor(cccd)
-            service.addCharacteristic(rxChar)
-            service.addCharacteristic(txChar)
-
-            appendLog(
-                getString(R.string.log_ble_service_adding),
-                LogLevel.DEBUG
-            )
-            gattServer.addService(service)
-            while (!gattReady) {
-                delay(10)
+            elmService.addCharacteristic(rxChar)
+            elmService.addCharacteristic(txChar)
+            appendLog(getString(R.string.log_ble_service_adding), LogLevel.DEBUG)
+            if (!addGattService(elmService)) return@launch
+            if (tpmsEnabled && !addGattService(createTpmsGattService())) {
+                appendLog("TPMS GATT service could not be added; continuing with Treel advertisement", LogLevel.ERROR)
             }
-            appendLog(
-                getString(R.string.log_ble_advertising_starting),
-                LogLevel.DEBUG
-            )
+            appendLog(getString(R.string.log_ble_advertising_starting), LogLevel.DEBUG)
             advertiser.startAdvertising(settings, advData, scanResp, advertiseCallback)
+            if (separateTpmsAdvertisement && tpmsFrame != null) {
+                val tpmsSettings = AdvertiseSettings.Builder()
+                    .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
+                    .setConnectable(false)
+                    .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
+                    .build()
+                val tpmsAdvData = AdvertiseData.Builder()
+                    .addManufacturerData(tpmsFrame.companyId, tpmsFrame.payload)
+                    .build()
+                advertiser.startAdvertising(
+                    tpmsSettings,
+                    tpmsAdvData,
+                    AdvertiseData.Builder().build(),
+                    tpmsAdvertiseCallback
+                )
+            }
         }
     }
 
@@ -592,6 +683,11 @@ class BLEBridge(
     }
 
     override fun stop() {
+        try {
+            advertiser.stopAdvertising(tpmsAdvertiseCallback)
+        } catch (e: Exception) {
+            logDebug("Unable to stop TPMS advertising: ${e.message}")
+        }
         try {
             advertiser.stopAdvertising(advertiseCallback)
         } catch (e: Exception) {
