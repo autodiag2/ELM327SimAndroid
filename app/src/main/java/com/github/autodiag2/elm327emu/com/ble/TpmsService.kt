@@ -2,7 +2,6 @@ package com.github.autodiag2.elm327emu.com.ble
 
 import android.bluetooth.BluetoothGattCharacteristic
 import android.bluetooth.BluetoothGattService
-import android.bluetooth.BluetoothGatt
 import android.bluetooth.le.AdvertiseCallback
 import android.bluetooth.le.AdvertiseSettings
 import android.util.Log
@@ -43,10 +42,7 @@ class TpmsService(
 
     fun logDebug(message: String) {
         if (BuildConfig.DEBUG) {
-            Log.d(
-                "com.ble.TpmsService",
-                message
-            )
+            Log.d("com.ble.TpmsService", message)
         }
     }
 
@@ -68,6 +64,7 @@ class TpmsService(
         .associate { it.position to it.initialReading }
         .toMutableMap()
 
+    private val externallyUpdatedSignals = mutableSetOf<String>()
     private val random = Random.Default
     private val tpmsAdvertisementIntervalMs = 1000L
 
@@ -78,9 +75,12 @@ class TpmsService(
     private var pressureCharacteristic: BluetoothGattCharacteristic? = null
 
     val enabled: Boolean
-        get() = prefs.getBoolean(TpmsManufacturerEncoders.PREF_ENABLED, DEFAULT_ENABLED)
+        get() = prefs.getBoolean(
+            TpmsManufacturerEncoders.PREF_ENABLED,
+            DEFAULT_ENABLED
+        )
 
-    public val advertiseCallback = object : AdvertiseCallback() {
+    val advertiseCallback = object : AdvertiseCallback() {
         override fun onStartSuccess(settingsInEffect: AdvertiseSettings) {
             if (startupNotification) {
                 appendLog(getString(R.string.ble_tpms_service_started), LogLevel.INFO)
@@ -162,11 +162,9 @@ class TpmsService(
 
         tpmsAdvertisementJob?.cancel()
         tpmsAdvertisementJob = scope.launch(Dispatchers.IO) {
-            var index = 1
+            var index = 0
 
             while (isActive) {
-                delay(tpmsAdvertisementIntervalMs)
-
                 val definition = sensorDefinitions[index]
 
                 try {
@@ -190,6 +188,7 @@ class TpmsService(
                 }
 
                 index = (index + 1) % sensorDefinitions.size
+                delay(tpmsAdvertisementIntervalMs)
             }
         }
 
@@ -198,27 +197,80 @@ class TpmsService(
     }
 
     @Synchronized
+    fun updateTmpsSensor(signalPath: String, value: Double) {
+        val normalizedPath = signalPath
+
+        val definition = sensorDefinitions.firstOrNull {
+            normalizedPath.startsWith("${it.position.lowercase()}_")
+        } ?: return
+
+        val position = definition.position
+        val field = normalizedPath.removePrefix("${position.lowercase()}_")
+        val current = currentReadings.getValue(position)
+
+        currentReadings[position] = when (field) {
+            "pressure_psi", "pressure" -> {
+                externallyUpdatedSignals.add("$position:pressure")
+                TpmsReading(
+                    pressurePsi = value.toInt().coerceIn(0, 255),
+                    temperatureC = current.temperatureC
+                )
+            }
+
+            "temperature_c", "temperature" -> {
+                externallyUpdatedSignals.add("$position:temperature")
+                TpmsReading(
+                    pressurePsi = current.pressurePsi,
+                    temperatureC = value.toInt().coerceIn(-110, 145)
+                )
+            }
+
+            else -> return
+        }
+
+        updateCharacteristics(currentReadings.getValue(position))
+    }
+
+    @Synchronized
+    private fun updateCharacteristics(reading: TpmsReading) {
+        temperatureCharacteristic?.value = byteArrayOf(reading.temperatureC.toByte())
+        pressureCharacteristic?.value = byteArrayOf(reading.pressurePsi.toByte())
+    }
+
+    @Synchronized
     private fun nextReading(definition: SensorDefinition): TpmsReading {
+        val position = definition.position
+        val current = currentReadings.getValue(position)
         val baseline = definition.initialReading
-        val current = currentReadings.getValue(definition.position)
 
         val pressureMin = (baseline.pressurePsi - 2).coerceAtLeast(0)
         val pressureMax = (baseline.pressurePsi + 2).coerceAtMost(255)
         val temperatureMin = (baseline.temperatureC - 4).coerceAtLeast(-110)
         val temperatureMax = (baseline.temperatureC + 4).coerceAtMost(145)
 
-        val next = TpmsReading(
-            pressurePsi = (current.pressurePsi + random.nextInt(-1, 2))
-                .coerceIn(pressureMin, pressureMax),
-            temperatureC = (
+        val pressure = if ("$position:pressure" in externallyUpdatedSignals) {
+            current.pressurePsi
+        } else {
+            (current.pressurePsi + random.nextInt(-1, 2))
+                .coerceIn(pressureMin, pressureMax)
+        }
+
+        val temperature = if ("$position:temperature" in externallyUpdatedSignals) {
+            current.temperatureC
+        } else {
+            (
                 current.temperatureC +
                     if (random.nextInt(0, 4) == 0) random.nextInt(-1, 2) else 0
                 ).coerceIn(temperatureMin, temperatureMax)
+        }
+
+        val next = TpmsReading(
+            pressurePsi = pressure,
+            temperatureC = temperature
         )
 
-        currentReadings[definition.position] = next
-        temperatureCharacteristic?.value = byteArrayOf(next.temperatureC.toByte())
-        pressureCharacteristic?.value = byteArrayOf(next.pressurePsi.toByte())
+        currentReadings[position] = next
+        updateCharacteristics(next)
 
         return next
     }

@@ -84,6 +84,13 @@ class GuiGodot(
                     )
                 }
 
+                val tpmsPaths = CarBridge.getTpmsSignalsPath()
+                while (tpmsPaths.hasMoreElements()) {
+                    val path = tpmsPaths.nextElement()
+                    updateTmpsSensor(path, CarBridge.getTpmsSignal(path))
+                }
+
+
                 handler.postDelayed(
                     this,
                     intervalMs
@@ -107,6 +114,13 @@ class GuiGodot(
             }
         }
     }
+
+    fun updateTmpsSensor(
+        signalPath: String,
+        value: Double
+    ) {
+        activity.service?.bridgeOrchestrator?.bleBridge?.updateTmpsSensor(signalPath, value) ?: return
+    } 
 
     fun onDestroy() {
         isShowing = false

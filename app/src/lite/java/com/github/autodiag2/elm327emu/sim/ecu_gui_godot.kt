@@ -70,6 +70,14 @@ class GuiGodot(
     ) {
     }
 
+    fun updateTmpsSensor(
+        @Suppress("UNUSED_PARAMETER")
+        signalPath: String,
+        @Suppress("UNUSED_PARAMETER")
+        value: Double
+    ) {
+    }
+
     fun onDestroy() {
     }
 

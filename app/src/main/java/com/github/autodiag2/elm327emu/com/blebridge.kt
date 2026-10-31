@@ -97,6 +97,13 @@ class BLEBridge(
     private val notificationQueue = Channel<NotificationPacket>(Channel.UNLIMITED)
     private var notificationJob: Job? = null
 
+    public fun updateTmpsSensor(
+        signalPath: String,
+        value: Double
+    ) {
+        tpmsService.updateTmpsSensor(signalPath, value)
+    }
+
     private fun sendTx(device: BluetoothDevice?, input: Any): Boolean {
         if (device == null) return false
         if (elm327Service.txNotificationsEnabled[device.address] != true) {
