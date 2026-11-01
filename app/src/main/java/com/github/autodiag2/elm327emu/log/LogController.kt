@@ -94,13 +94,19 @@ class LogController(private val context: Context) {
         }
     }
 
+    fun logAsText(): String {
+        return model.snapshotUnsafe().joinToString("\n") {
+            if (it.text.isNotEmpty()) it.text
+            else LogEntry.dataLogFormat(it.serial, it.serial.size, view?.logAdapter?.charsPerLine ?: 80)
+        }
+    }
+
     fun save() {
         val view = this.view
         if ( view == null ) {
             return
         }
-        val text = model.snapshotUnsafe().joinToString("\n") { it.text }
-        view.modelText = text
+        view.modelText = logAsText()
         view.save(filename)
     }
 
@@ -111,7 +117,7 @@ class LogController(private val context: Context) {
         }
         scope.launch {
             val file = File(context.getExternalFilesDir(null), filename)
-            file.writeText(model.snapshotUnsafe().joinToString("\n") { it.text })
+            file.writeText(logAsText())
             view.onDownload(filename)
         }
     }
