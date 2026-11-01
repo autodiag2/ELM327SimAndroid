@@ -1,57 +1,56 @@
 package com.github.autodiag2.elm327emu.log
 
-import android.view.MotionEvent
-import android.view.ViewGroup
-import android.widget.TextView
-
-import androidx.recyclerview.widget.RecyclerView
-import androidx.recyclerview.widget.LinearLayoutManager
-
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-
 import android.content.Context
-import android.widget.FrameLayout
-import kotlinx.coroutines.launch
-import java.io.File
-import androidx.lifecycle.lifecycleScope
-
 import android.content.Intent
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
+import android.os.Handler
+import android.os.Looper
+import android.view.LayoutInflater
+import android.view.MotionEvent
+import android.view.View
+import android.view.ViewGroup
+import android.widget.Button
+import android.widget.EditText
+import android.widget.FrameLayout
+import android.widget.LinearLayout
+import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.ColorUtils
+import androidx.core.view.isVisible
+import androidx.core.widget.doAfterTextChanged
+import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.github.autodiag2.elm327emu.MainActivity
+import com.github.autodiag2.elm327emu.R
+import com.github.autodiag2.elm327emu.log.LogRepository.AppendResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import androidx.activity.result.contract.ActivityResultContracts
-import android.app.Activity.RESULT_OK
-import android.view.LayoutInflater
-import android.widget.EditText
-import androidx.core.widget.doAfterTextChanged
-import com.github.autodiag2.elm327emu.R
-import com.github.autodiag2.elm327emu.log.LogEntryType
-import android.util.Log
-import androidx.core.content.ContextCompat
-import java.text.DateFormat
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import android.content.SharedPreferences
-import android.os.Handler
-import android.os.Looper
-import androidx.core.view.isVisible
-import android.view.View
-import androidx.core.graphics.ColorUtils
-import android.widget.Button
-import android.widget.Toast
-import com.github.autodiag2.elm327emu.log.LogRepository.AppendResult
-import com.github.autodiag2.elm327emu.log.LogEntry
-import com.github.autodiag2.elm327emu.MainActivity
 
 class LogAdapter(
     private val context: Context
 ) : RecyclerView.Adapter<LogAdapter.VH>() {
 
-    private val prefs by lazy { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
+    private val prefs by lazy {
+        context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+    }
+
+    fun getString(resId: Int, vararg formatArgs: Any?): String {
+        return context.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
+    }
+
     class VH(val tv: View) : RecyclerView.ViewHolder(tv)
-    public var charsPerLine = 30
+
+    var charsPerLine = 30
 
     private val items = ArrayList<LogEntry>()
 
@@ -69,7 +68,11 @@ class LogAdapter(
     }
 
     override fun getItemViewType(position: Int): Int =
-        if (items[position].type == LogEntryType.SEPARATOR) 1 else 0
+        when (items[position].type) {
+            LogEntryType.SEPARATOR -> 1
+            LogEntryType.RECV, LogEntryType.SENT -> 2
+            else -> 0
+        }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
         if (viewType == 1) {
@@ -83,22 +86,113 @@ class LogAdapter(
                 scaleType = android.widget.ImageView.ScaleType.CENTER
                 layoutParams = RecyclerView.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
-                    24
+                    (24 * context.resources.displayMetrics.density).toInt()
                 )
             }
             return VH(image)
         }
 
+        if (viewType == 2) {
+            val density = context.resources.displayMetrics.density
+            val horizontalPadding = (12 * density).toInt()
+            val verticalPadding = (8 * density).toInt()
+            val marginHorizontal = (8 * density).toInt()
+            val marginVertical = (4 * density).toInt()
+
+            val container = LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(
+                    horizontalPadding,
+                    verticalPadding,
+                    horizontalPadding,
+                    verticalPadding
+                )
+                layoutParams = RecyclerView.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    setMargins(
+                        marginHorizontal,
+                        marginVertical,
+                        marginHorizontal,
+                        marginVertical
+                    )
+                }
+            }
+
+            val header = LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+            }
+
+            val badge = TextView(context).apply {
+                textSize = 12f
+                typeface = Typeface.DEFAULT_BOLD
+                setPadding(
+                    (8 * density).toInt(),
+                    (3 * density).toInt(),
+                    (8 * density).toInt(),
+                    (3 * density).toInt()
+                )
+            }
+
+            val timestamp = TextView(context).apply {
+                textSize = 11f
+                alpha = 0.7f
+                gravity = android.view.Gravity.END or
+                    android.view.Gravity.CENTER_VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    0,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    1f
+                )
+            }
+
+            header.addView(badge)
+            header.addView(timestamp)
+
+            val content = TextView(context).apply {
+                typeface = Typeface.MONOSPACE
+                textSize = 12f
+                setTextIsSelectable(true)
+                setPadding(0, (6 * density).toInt(), 0, 0)
+            }
+
+            container.addView(header)
+            container.addView(content)
+            container.tag = CardViews(badge, timestamp, content)
+
+            return VH(container)
+        }
+
         val tv = TextView(parent.context).apply {
             setPadding(16, 8, 16, 8)
-            typeface = android.graphics.Typeface.MONOSPACE
+            typeface = Typeface.MONOSPACE
         }
         return VH(tv)
     }
 
+    private fun resolveColor(attribute: Int): Int {
+        val ta = context.theme.obtainStyledAttributes(intArrayOf(attribute))
+        return try {
+            ta.getColor(
+                0,
+                ContextCompat.getColor(context, R.color.sol_magenta)
+            )
+        } finally {
+            ta.recycle()
+        }
+    }
+
+    private data class CardViews(
+        val badge: TextView,
+        val timestamp: TextView,
+        val content: TextView
+    )
+
     fun testTextView(context: Context): TextView {
         return TextView(context).apply {
-            typeface = android.graphics.Typeface.MONOSPACE
+            typeface = Typeface.MONOSPACE
             setPadding(0, 0, 0, 0)
         }
     }
@@ -113,65 +207,103 @@ class LogAdapter(
     }
 
     override fun onBindViewHolder(holder: VH, position: Int) {
-        if ( items.size <= position ) {
-            Log.w("LogView", "Failed to display ${position}/${items.size}")
+        if (items.size <= position) {
+            android.util.Log.w("LogView", "Failed to display $position/${items.size}")
             return
         }
-        val view = holder.tv
+
         val item = items[position]
-        if ( item.type == LogEntryType.SEPARATOR ) {
-            holder.tv.layoutParams = holder.tv.layoutParams.apply {
+        val view = holder.tv
+        val viewType = getItemViewType(position)
+
+        if (viewType == 1) {
+            view.layoutParams = view.layoutParams.apply {
                 height = (24 * context.resources.displayMetrics.density).toInt()
             }
-            holder.tv.setBackgroundColor(android.graphics.Color.TRANSPARENT)
-        }
-        if ( ! ( view is TextView ) ) {
+            view.setBackgroundColor(resolveColor(android.R.attr.colorBackground))
             return
         }
+
         var displayText = item.text
-        if ( item.type != LogEntryType.NONE ) {
+
+        if (item.type != LogEntryType.NONE) {
             var data: ByteArray? = item.serial
-            if ( data == null || data.size == 0 ) {
+            if (data == null || data.isEmpty()) {
                 data = item.data
             }
-            if ( data.size > 0  ) {
-                displayText = context.getString(
-                    if (item.type == LogEntryType.RECV)
-                        R.string.log_main_data_received
-                    else
-                        R.string.log_main_data_sent,
-                    dataLogFormat(data, data.size)
-                )
-            } else {
-                displayText = item.text
+
+            if (data != null && data.isNotEmpty()) {
+                displayText = dataLogFormat(data, data.size)
             }
         }
+
         if (item.count > 1) {
-            view.text = "×${item.count} ${displayText}"
+            displayText = "×${item.count} $displayText"
+        }
+
+        val timestamp = if (prefs.getBoolean("log_timestamp", false)) {
+            SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date(item.ts))
         } else {
-            if ( prefs.getBoolean("log_timestamp", false) ) {
-                view.text = "${SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date(item.ts))}: ${displayText}"
-            } else {
-                view.text = "${displayText}"
-            }
+            ""
         }
-        val ctx = holder.tv.context
-        val primaryColor = run {
-            val ta = ctx.theme.obtainStyledAttributes(
-                intArrayOf(android.R.attr.textColorPrimary)
+
+        if (viewType == 2 && view is LinearLayout) {
+            val cardViews = view.tag as CardViews
+            val isReceived = item.type == LogEntryType.RECV
+            val accentColor = ContextCompat.getColor(
+                context,
+                if (isReceived) R.color.sol_green else R.color.sol_blue
             )
-            try {
-                ta.getColor(0, 0xFFAAAAAA.toInt())
-            } finally {
-                ta.recycle()
+
+            cardViews.badge.text = if (isReceived) getString(R.string.log_main_data_received) else getString(R.string.log_main_data_sent)
+            cardViews.badge.setTextColor(accentColor)
+            cardViews.badge.background = null
+            cardViews.timestamp.text = timestamp
+            cardViews.content.text = displayText
+
+            val textColor = when (item.level) {
+                LogLevel.INFO -> resolveColor(android.R.attr.textColorPrimary)
+                LogLevel.ERROR -> ContextCompat.getColor(context, R.color.sol_red)
+                LogLevel.WARNING -> ContextCompat.getColor(context, R.color.sol_orange)
+                LogLevel.NONE -> ContextCompat.getColor(context, R.color.sol_magenta)
+                LogLevel.DEBUG -> ColorUtils.setAlphaComponent(
+                    resolveColor(android.R.attr.textColorPrimary),
+                    160
+                )
             }
+
+            cardViews.content.setTextColor(textColor)
+
+            view.background = GradientDrawable().apply {
+                cornerRadius = 10 * context.resources.displayMetrics.density
+                setColor(resolveColor(android.R.attr.colorBackground))
+                setStroke(
+                    (context.resources.displayMetrics.density).toInt().coerceAtLeast(1),
+                    accentColor
+                )
+            }
+            return
         }
+
+        if (view !is TextView) {
+            return
+        }
+
+        view.text = if (timestamp.isNotEmpty()) {
+            "$timestamp: $displayText"
+        } else {
+            displayText
+        }
+
         val colorInt = when (item.level) {
-            LogLevel.INFO -> primaryColor
-            LogLevel.ERROR -> ContextCompat.getColor(ctx, R.color.sol_red)
-            LogLevel.WARNING -> ContextCompat.getColor(ctx, R.color.sol_orange)
-            LogLevel.NONE -> ContextCompat.getColor(ctx, R.color.sol_magenta)
-            LogLevel.DEBUG -> androidx.core.graphics.ColorUtils.setAlphaComponent(primaryColor, 128)
+            LogLevel.INFO -> resolveColor(android.R.attr.textColorPrimary)
+            LogLevel.ERROR -> ContextCompat.getColor(context, R.color.sol_red)
+            LogLevel.WARNING -> ContextCompat.getColor(context, R.color.sol_orange)
+            LogLevel.NONE -> ContextCompat.getColor(context, R.color.sol_magenta)
+            LogLevel.DEBUG -> ColorUtils.setAlphaComponent(
+                resolveColor(android.R.attr.textColorPrimary),
+                128
+            )
         }
 
         view.setTextColor(colorInt)
@@ -184,7 +316,7 @@ class LogAdapter(
 
     fun remove(entry: LogEntry) {
         val i = items.indexOf(entry)
-        if ( i < 0 ) {
+        if (i < 0) {
             return
         }
         items.remove(entry)
@@ -196,6 +328,7 @@ class LogAdapter(
         notifyDataSetChanged()
     }
 }
+
 class LogView(
     private val activity: MainActivity
 ) : FrameLayout(activity) {
@@ -204,18 +337,21 @@ class LogView(
         val OVERLAY_BUTTONS_ANIM_MS: Long = 1000
     }
 
-    val prefs by lazy { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
+    val prefs by lazy {
+        context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+    }
+
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val mainScope = CoroutineScope(Dispatchers.Main)
+
     var onSearchChanged: ((search: String) -> Unit)? = null
     var onWidthChanged: (() -> Unit)? = null
     lateinit var btnSearch: EditText
 
-    public val logAdapter = LogAdapter(context)
+    val logAdapter = LogAdapter(context)
     private lateinit var logTopBar: View
     private var logTopBarExpanded = false
     private val uiHandler = Handler(Looper.getMainLooper())
-
     private lateinit var overlayButtons: View
 
     private val hideOverlayRunnable = Runnable {
@@ -228,22 +364,23 @@ class LogView(
             }
             .start()
     }
-    public var modelText = ""
+
+    var modelText = ""
+
     val saveLogLauncher =
         activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == RESULT_OK) {
+            if (result.resultCode == AppCompatActivity.RESULT_OK) {
                 val uri = result.data?.data ?: return@registerForActivityResult
                 activity.lifecycleScope.launch(Dispatchers.IO) {
                     activity.contentResolver.openOutputStream(uri)?.use { out ->
-                        val text = modelText
-                        out.write(text.toByteArray())
+                        out.write(modelText.toByteArray())
                     }
                 }
             }
         }
 
-    public var stickToBottom = true
-    public var userTouching = false
+    var stickToBottom = true
+    var userTouching = false
     private lateinit var searchInput: EditText
 
     init {
@@ -274,47 +411,43 @@ class LogView(
     private fun updateLayoutMetrics(rv: RecyclerView) {
         rv.post {
             val tv = logAdapter.testTextView(rv.context)
-
-            val paint = tv.paint
-
-            val sampleCharWidth = paint.measureText("M")
-
+            val sampleCharWidth = tv.paint.measureText("M")
             val availableWidthPx = rv.width.toFloat()
             if (availableWidthPx <= 0) return@post
 
-            logAdapter.charsPerLine = (availableWidthPx / sampleCharWidth).toInt().coerceAtLeast(20)
-            val handler = onWidthChanged
-            if ( handler != null ) {
-                handler.invoke()
-            }
+            logAdapter.charsPerLine =
+                (availableWidthPx / sampleCharWidth).toInt().coerceAtLeast(20)
+
+            onWidthChanged?.invoke()
         }
     }
 
     private fun setupLogsView() {
-
         logTopBar = findViewById(R.id.log_top_bar)
         logTopBar.isVisible = false
+
         val rv = findViewById<RecyclerView>(R.id.rvLogs)
 
         rv.viewTreeObserver.addOnGlobalLayoutListener {
             updateLayoutMetrics(rv)
         }
+
         val btnUp = findViewById<Button>(R.id.btnUp)
         val btnDown = findViewById<Button>(R.id.btnDown)
         overlayButtons = findViewById(R.id.overlayButtons)
         uiHandler.postDelayed(hideOverlayRunnable, OVERLAY_BUTTONS_ANIM_MS)
-        btnSearch = findViewById<EditText>(R.id.log_search)
+
+        btnSearch = findViewById(R.id.log_search)
         searchInput = btnSearch
 
         btnSearch.doAfterTextChanged {
-            onSearchChanged!!.invoke(btnSearch.getText().toString())
+            onSearchChanged?.invoke(btnSearch.text.toString())
         }
 
         rv.layoutManager = LinearLayoutManager(context)
         rv.adapter = logAdapter
         rv.itemAnimator = null
 
-        // ---- user scroll detection (IMPORTANT) ----
         rv.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> userTouching = true
@@ -331,6 +464,7 @@ class LogView(
                     showOverlayButtons()
                 }
             }
+
             override fun onScrolled(rv: RecyclerView, dx: Int, dy: Int) {
                 if (dy < 0) {
                     stickToBottom = false
@@ -348,21 +482,19 @@ class LogView(
             stickToBottom = true
             scrollToBottom(rv)
         }
-
     }
 
     fun toggleTopBar() {
         previousSearchState = null
         logTopBarExpanded = !logTopBarExpanded
         logTopBar.isVisible = logTopBarExpanded
+
         if (logTopBarExpanded) {
-            onSearchChanged!!.invoke(btnSearch.getText().toString())
+            onSearchChanged?.invoke(btnSearch.text.toString())
         } else {
-            onSearchChanged!!.invoke("")
+            onSearchChanged?.invoke("")
         }
     }
-
-    // ---- PUBLIC BUTTON ACTIONS ----
 
     fun scrollUp() {
         val rv = findViewById<RecyclerView>(R.id.rvLogs)
@@ -379,10 +511,11 @@ class LogView(
     fun save(filename: String) {
         openSaveLogDialog(filename)
     }
-    
+
     fun getString(resId: Int, vararg formatArgs: Any?): String {
         return context.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
     }
+
     fun onDownload(filename: String) {
         post {
             Toast.makeText(
@@ -393,8 +526,7 @@ class LogView(
         }
     }
 
-    // ---- SAFE SCROLL ----
-    public fun scrollToBottomSafe() {
+    fun scrollToBottomSafe() {
         val rv = findViewById<RecyclerView>(R.id.rvLogs)
         rv.post {
             val count = logAdapter.itemCount
@@ -407,7 +539,9 @@ class LogView(
     private fun scrollToBottom(rv: RecyclerView) {
         rv.post {
             val count = logAdapter.itemCount
-            if (count > 0) rv.scrollToPosition(count - 1)
+            if (count > 0) {
+                rv.scrollToPosition(count - 1)
+            }
         }
     }
 
@@ -422,17 +556,20 @@ class LogView(
     }
 
     var previousSearchState: Boolean? = null
+
     fun refresh(result: AppendResult? = null, entries: List<LogEntry>? = null) {
-        val searchIsBlank = !logTopBarExpanded || btnSearch.getText().toString().isBlank()
+        val searchIsBlank =
+            !logTopBarExpanded || btnSearch.text.toString().isBlank()
+
         mainScope.launch {
-            if ( previousSearchState != searchIsBlank) {
+            if (previousSearchState != searchIsBlank) {
                 if (entries != null) {
                     logAdapter.replace(entries)
                 }
                 if (stickToBottom && searchIsBlank) {
                     scrollToBottomSafe()
                 }
-            } else if (result != null && searchIsBlank ) {
+            } else if (result != null && searchIsBlank) {
                 if (result.deleted != null) {
                     logAdapter.remove(result.deleted)
                 }
@@ -453,7 +590,7 @@ class LogView(
                 }
             }
         }
+
         previousSearchState = searchIsBlank
     }
-
 }

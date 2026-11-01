@@ -296,8 +296,8 @@
     <string name="log_bt_connection_closed">Bluetooth connection closed</string>
     <string name="log_main_bluetooth_server_stopped">Bluetooth server stopped</string>
     <string name="log_main_network_mode_not_implemented">Network mode not implemented</string>
-    <string name="log_main_data_received">recv : \n%1$s</string>
-    <string name="log_main_data_sent">send : \n%1$s</string>
+    <string name="log_main_data_sent">TX · SENT</string>
+    <string name="log_main_data_received">RX · RECEIVED</string>
     <string name="log_main_bluetooth_enabled">Bluetooth enabled</string>
     <string name="log_main_bluetooth_enable_failed">User denied Bluetooth access: SPP and BLE not available</string>
     <string name="log_network_server_listening">Network server listening on port %1$d</string>
