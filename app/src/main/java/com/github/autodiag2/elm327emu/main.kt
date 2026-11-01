@@ -97,8 +97,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private var bluetoothEnableRequestPending = false
     private val enableBtLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            bluetoothEnableRequestPending = false
             if (result.resultCode != RESULT_OK) {
                 appendLog(getString(R.string.log_main_bluetooth_enable_failed), LogLevel.ERROR)
             }
@@ -752,6 +754,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun showBluetoothEnablePopup() {
+        if (bluetoothEnableRequestPending) return
+
+        bluetoothEnableRequestPending = true
         val intent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
         enableBtLauncher.launch(intent)
     }
