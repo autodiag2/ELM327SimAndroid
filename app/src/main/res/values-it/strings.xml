@@ -141,7 +141,7 @@
     <string name="sim_unsupported_ecu_schema_version">Versione dello schema della simulazione non supportata: %1$.1f</string>
     <string name="sim_invalid_ecu_schema">Schema della simulazione non valido: %1$s</string>
     <string name="sim_ecu_no_content">Nessun contenuto nella descrizione della ECU</string>
-    <string name="sim_ecu_log_signal">Invio di %1$s: %2$.2f %3$s</string>
+    <string name="sim_ecu_log_signal">%1$s: %2$.2f %3$s</string>
     <string name="sim_ecu_unsupported_ecu_schema_version">Versione dello schema ECU non supportata: %1$.1f</string>
     <string name="sim_ecu_invalid_ecu_schema">Schema ECU non valido: %1$s</string>
     <string name="sim_ecu_unknown_ecu_type">Tipo di ECU sconosciuto: %1$s</string>
@@ -270,8 +270,8 @@
     <string name="log_bt_connection_closed">Connessione Bluetooth chiusa</string>
     <string name="log_main_bluetooth_server_stopped">Server Bluetooth arrestato</string>
     <string name="log_main_network_mode_not_implemented">Modalità di rete non implementata</string>
-    <string name="log_main_data_received">ricevuto: \n%1$s</string>
-    <string name="log_main_data_sent">inviato: \n%1$s</string>
+    <string name="log_main_data_sent">TX · SENT</string>
+    <string name="log_main_data_received">RX · RECEIVED</string>
     <string name="log_main_bluetooth_enabled">Bluetooth abilitato</string>
     <string name="log_main_bluetooth_enable_failed">L’utente ha negato l’accesso Bluetooth: SPP e BLE non disponibili</string>
     <string name="log_network_server_listening">Server di rete in ascolto sulla porta %1$d</string>

@@ -141,7 +141,7 @@
     <string name="sim_unsupported_ecu_schema_version">サポートされていないシミュレーションスキーマバージョン: %1$.1f</string>
     <string name="sim_invalid_ecu_schema">無効なシミュレーションスキーマ: %1$s</string>
     <string name="sim_ecu_no_content">ECU 記述にコンテンツがありません</string>
-    <string name="sim_ecu_log_signal">%1$s を送信中: %2$.2f %3$s</string>
+    <string name="sim_ecu_log_signal">%1$s: %2$.2f %3$s</string>
     <string name="sim_ecu_unsupported_ecu_schema_version">サポートされていない ECU スキーマバージョン: %1$.1f</string>
     <string name="sim_ecu_invalid_ecu_schema">無効な ECU スキーマ: %1$s</string>
     <string name="sim_ecu_unknown_ecu_type">不明な ECU タイプ: %1$s</string>
@@ -270,8 +270,8 @@
     <string name="log_bt_connection_closed">Bluetooth 接続が閉じられました</string>
     <string name="log_main_bluetooth_server_stopped">Bluetooth サーバーを停止しました</string>
     <string name="log_main_network_mode_not_implemented">ネットワークモードは実装されていません</string>
-    <string name="log_main_data_received">受信: \n%1$s</string>
-    <string name="log_main_data_sent">送信: \n%1$s</string>
+    <string name="log_main_data_sent">TX · SENT</string>
+    <string name="log_main_data_received">RX · RECEIVED</string>
     <string name="log_main_bluetooth_enabled">Bluetooth が有効です</string>
     <string name="log_main_bluetooth_enable_failed">ユーザーが Bluetooth アクセスを拒否しました: SPP と BLE は利用できません</string>
     <string name="log_network_server_listening">ネットワークサーバーがポート %1$d で待機中</string>

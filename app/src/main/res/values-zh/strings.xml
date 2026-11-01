@@ -141,7 +141,7 @@
     <string name="sim_unsupported_ecu_schema_version">不支持的模拟架构版本：%1$.1f</string>
     <string name="sim_invalid_ecu_schema">无效的模拟架构：%1$s</string>
     <string name="sim_ecu_no_content">ECU 描述中没有内容</string>
-    <string name="sim_ecu_log_signal">正在发送 %1$s：%2$.2f %3$s</string>
+    <string name="sim_ecu_log_signal">%1$s：%2$.2f %3$s</string>
     <string name="sim_ecu_unsupported_ecu_schema_version">不支持的 ECU 架构版本：%1$.1f</string>
     <string name="sim_ecu_invalid_ecu_schema">无效的 ECU 架构：%1$s</string>
     <string name="sim_ecu_unknown_ecu_type">未知的 ECU 类型：%1$s</string>
@@ -270,8 +270,8 @@
     <string name="log_bt_connection_closed">蓝牙连接已关闭</string>
     <string name="log_main_bluetooth_server_stopped">蓝牙服务器已停止</string>
     <string name="log_main_network_mode_not_implemented">网络模式尚未实现</string>
-    <string name="log_main_data_received">接收：\n%1$s</string>
-    <string name="log_main_data_sent">发送：\n%1$s</string>
+    <string name="log_main_data_sent">TX · SENT</string>
+    <string name="log_main_data_received">RX · RECEIVED</string>
     <string name="log_main_bluetooth_enabled">蓝牙已启用</string>
     <string name="log_main_bluetooth_enable_failed">用户拒绝了蓝牙访问：SPP 和 BLE 不可用</string>
     <string name="log_network_server_listening">网络服务器正在端口 %1$d 上监听</string>

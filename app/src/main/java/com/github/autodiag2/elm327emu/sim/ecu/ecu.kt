@@ -13,6 +13,11 @@ import com.github.autodiag2.elm327emu.libautodiag
 import com.github.autodiag2.elm327emu.libautodiag.SignalReceivedHandler
 import com.github.autodiag2.elm327emu.SimSignal
 import com.github.autodiag2.elm327emu.EmulatorForegroundService
+import android.util.Log
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 
 typealias EcuAddress = Byte
 
@@ -57,13 +62,13 @@ abstract class Ecu(
     protected val signalHandler = SignalReceivedHandler { signal, value ->
         onSignalReceived(signal, value)
     }
+    protected val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     protected open fun onSignalReceived(signal: SimSignal, value: Double) {
         if ( prefs.getBoolean("log_signal_value", true) ) {
-            service.log.append(
-                service.getString(R.string.sim_ecu_log_signal, getName(service, signal), value, signal.unit),
-                LogLevel.INFO
-            )
+            scope.launch {
+                service.log.setPendingSignal(Pair(signal, value))
+            }
         }
     }
 

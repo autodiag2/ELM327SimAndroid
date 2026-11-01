@@ -5,6 +5,8 @@ import android.content.Context
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import com.github.autodiag2.elm327emu.R
+import com.github.autodiag2.elm327emu.SimSignal
+import android.util.Log
 
 enum class LogLevel(val value: Int) {
     NONE(0),
@@ -28,6 +30,7 @@ data class LogEntry(
     var match: Boolean = false,
     var count: Int = 0,
     val type: LogEntryType = LogEntryType.NONE,
+    var pendingSignal: Pair<SimSignal, Double>? = null,
     val ts: Long = System.currentTimeMillis()
 ) {
     companion object {
@@ -230,13 +233,13 @@ class LogRepository(private val context: Context) {
         size_used: Int = data?.size ?: 0,
         serial: ByteArray? = null,
         serial_size: Int = serial?.size ?: 0,
-        type: LogEntryType = LogEntryType.NONE
+        type: LogEntryType = LogEntryType.NONE,
+        pendingSignal: Pair<SimSignal, Double>? = null
     ): AppendResult? {
         val currentLevel = prefs.getInt("log_level", LogLevel_DEFAULT.ordinal)
         if (currentLevel < level.ordinal) return null
         
         return mutex.withLock {
-
             var entry: LogEntry? = null
             var deleted: LogEntry? = null
             var modified: LogEntry? = null
@@ -290,6 +293,9 @@ class LogRepository(private val context: Context) {
                             previousRecv.count++
                             modified = previousRecv
                             entry = previousSent
+                            if ( pendingSignal != null ) {
+                                entry.pendingSignal = pendingSignal
+                            }
                             break
                         }
                     }
@@ -305,7 +311,8 @@ class LogRepository(private val context: Context) {
                     level = level,
                     data = data?.copyOf(size_used) ?: ByteArray(0),
                     serial = serial?.copyOf(serial_size) ?: ByteArray(0),
-                    type = type
+                    type = type,
+                    pendingSignal = pendingSignal
                 )
                 buffer.add(entry)
             }
@@ -376,7 +383,8 @@ class LogRepository(private val context: Context) {
     suspend fun logData(
         type: LogEntryType,
         data: ByteArray,
-        length: Int = data.size
+        length: Int = data.size,
+        pendingSignal: Pair<SimSignal, Double>? = null
     ): AppendResult? {
         val binary = decodeHexAscii(data, length)
             ?: ByteArray(0)
@@ -388,7 +396,8 @@ class LogRepository(private val context: Context) {
             binary.size,
             data,
             length,
-            type
+            type,
+            pendingSignal
         )
     }
 

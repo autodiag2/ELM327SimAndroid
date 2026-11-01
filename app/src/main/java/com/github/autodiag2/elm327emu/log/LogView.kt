@@ -35,6 +35,8 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import com.github.autodiag2.elm327emu.sim.ecu.getName
+import android.util.Log
 
 class LogAdapter(
     private val context: Context
@@ -232,7 +234,7 @@ class LogAdapter(
                 data = item.data
             }
 
-            if (data != null && data.isNotEmpty()) {
+            if (data.isNotEmpty()) {
                 displayText = dataLogFormat(data, data.size)
             }
         }
@@ -256,6 +258,10 @@ class LogAdapter(
             )
 
             cardViews.badge.text = if (isReceived) getString(R.string.log_main_data_received) else getString(R.string.log_main_data_sent)
+            if ( item.type == LogEntryType.SENT && item.pendingSignal != null ) {
+                val signalText = getString(R.string.sim_ecu_log_signal, getName(context, item.pendingSignal!!.first), item.pendingSignal!!.second, item.pendingSignal!!.first.unit)
+                cardViews.badge.text = "${cardViews.badge.text}\n${signalText}"
+            }
             cardViews.badge.setTextColor(accentColor)
             cardViews.badge.background = null
             cardViews.timestamp.text = timestamp

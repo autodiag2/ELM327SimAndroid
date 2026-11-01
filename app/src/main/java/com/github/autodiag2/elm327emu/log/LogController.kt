@@ -8,6 +8,10 @@ import kotlinx.coroutines.launch
 import com.github.autodiag2.elm327emu.log.LogRepository.AppendResult
 import com.github.autodiag2.elm327emu.log.LogEntry
 import java.io.File
+import com.github.autodiag2.elm327emu.SimSignal
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import android.util.Log
 
 class LogController(private val context: Context) {
 
@@ -17,6 +21,17 @@ class LogController(private val context: Context) {
     private val mainScope = CoroutineScope(Dispatchers.Main)
     var filename = "elm327emu_log.txt"
     var searchText = ""
+    private val pendingSignalMutex = Mutex()
+    var pendingSignal: Pair<SimSignal, Double>? = null
+        set(value) {
+            field = value
+        }
+
+    suspend fun setPendingSignal(signal: Pair<SimSignal, Double>?) {
+        pendingSignalMutex.withLock {
+            pendingSignal = signal
+        }
+    }
 
     fun append(text: Any, level: LogLevel = LogLevel.DEBUG, data: ByteArray? = null, size_used: Int = data?.size ?: 0, serial: ByteArray? = null, serial_size: Int = serial?.size ?: 0, type: LogEntryType = LogEntryType.NONE) {
         scope.launch {
@@ -26,7 +41,16 @@ class LogController(private val context: Context) {
             } else if ( text is String ) {
                 decodedText = text
             }
-            val result: AppendResult? = model.append(decodedText, level, data, size_used, serial, serial_size, type)
+            val pendingSignal = if (type == LogEntryType.SENT) {
+                pendingSignalMutex.withLock {
+                    this@LogController.pendingSignal.also {
+                        this@LogController.pendingSignal = null
+                    }
+                }
+            } else {
+                null
+            }
+            val result: AppendResult? = model.append(decodedText, level, data, size_used, serial, serial_size, type, pendingSignal)
             val view = this@LogController.view
             if ( view == null ) {
                 return@launch
@@ -47,7 +71,16 @@ class LogController(private val context: Context) {
         length: Int = data.size
     ) {
         scope.launch {
-            val result = model.logData(type, data, length)
+            val pendingSignal = if (type == LogEntryType.SENT) {
+                pendingSignalMutex.withLock {
+                    this@LogController.pendingSignal.also {
+                        this@LogController.pendingSignal = null
+                    }
+                }
+            } else {
+                null
+            }
+            val result = model.logData(type, data, length, pendingSignal)
             refresh(result)
         }
     }
