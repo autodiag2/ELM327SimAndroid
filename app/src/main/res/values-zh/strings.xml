@@ -249,7 +249,7 @@
     <string name="log_ble_gatt_service_added">GATT 服务已添加</string>
     <string name="log_ble_gatt_service_add_failed">GATT 服务添加失败：%1$d</string>
     <string name="log_ble_gatt_characteristic_write_failed">GATT 特征写入失败：%1$s</string>
-    <string name="log_ble_server_started">服务器已启动</string>
+    <string name="log_ble_server_started">BLE: 服务器已启动</string>
     <string name="log_ble_advertising_started">已开始广播</string>
     <string name="log_ble_advertising_failed">广播失败：%1$s</string>
     <string name="log_ble_advertising_data">广播数据（%1$d 字节）</string>

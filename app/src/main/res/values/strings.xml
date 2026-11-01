@@ -282,7 +282,7 @@
     <string name="log_ble_gatt_service_added">GATT service added</string>
     <string name="log_ble_gatt_service_add_failed">GATT service add failed: %1$d</string>
     <string name="log_ble_gatt_characteristic_write_failed">GATT characteristic write failed: %1$s</string>
-    <string name="log_ble_server_started">Server started</string>
+    <string name="log_ble_server_started">BLE: Server started</string>
     <string name="log_ble_advertising_started">advertising started</string>
     <string name="log_ble_advertising_failed">advertising failed: %1$s</string>
     <string name="log_ble_advertising_data">Advertising data (%1$d bytes)</string>

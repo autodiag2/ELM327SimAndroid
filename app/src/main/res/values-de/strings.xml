@@ -249,7 +249,7 @@
     <string name="log_ble_gatt_service_added">GATT-Dienst hinzugefügt</string>
     <string name="log_ble_gatt_service_add_failed">GATT-Dienst konnte nicht hinzugefügt werden: %1$d</string>
     <string name="log_ble_gatt_characteristic_write_failed">Schreiben in GATT-Characteristic fehlgeschlagen: %1$s</string>
-    <string name="log_ble_server_started">Server gestartet</string>
+    <string name="log_ble_server_started">BLE: Server gestartet</string>
     <string name="log_ble_advertising_started">Werbung gestartet</string>
     <string name="log_ble_advertising_failed">Werbung fehlgeschlagen: %1$s</string>
     <string name="log_ble_advertising_data">Werbedaten (%1$d Bytes)</string>

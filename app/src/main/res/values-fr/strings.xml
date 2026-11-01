@@ -249,7 +249,7 @@
     <string name="log_ble_gatt_service_added">Service GATT ajouté</string>
     <string name="log_ble_gatt_service_add_failed">Échec de l’ajout du service GATT : %1$d</string>
     <string name="log_ble_gatt_characteristic_write_failed">Échec de l’écriture de la caractéristique GATT : %1$s</string>
-    <string name="log_ble_server_started">Serveur démarré</string>
+    <string name="log_ble_server_started">BLE: Serveur démarré</string>
     <string name="log_ble_advertising_started">Publicité démarrée</string>
     <string name="log_ble_advertising_failed">Échec de la publicité : %1$s</string>
     <string name="log_ble_advertising_data">Données de publicité (%1$d octets)</string>
