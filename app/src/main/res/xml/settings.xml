@@ -62,7 +62,7 @@
             android:title="@string/settings_network_network" />
 
         <SwitchPreferenceCompat
-            android:key="com_ble_enabled"
+            android:key="com_ble_elm_enabled"
             android:title="@string/settings_network_ble" />
 
         <ListPreference

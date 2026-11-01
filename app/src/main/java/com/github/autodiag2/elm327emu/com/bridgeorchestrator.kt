@@ -124,7 +124,7 @@ class BridgeOrchestrator(
     }
     fun setupBleBridge() {
         scope.launch {
-            setupBridge("com_ble_enabled", bleBridge)
+            setupBridge("com_ble_elm_enabled", bleBridge)
         }
     }
     fun setupBluetoothBridge() {
@@ -133,7 +133,7 @@ class BridgeOrchestrator(
         }
     }
     suspend fun setupBridge(pref: String, bridge: Bridge) {
-        val elmServiceEnabled = prefs.getBoolean("com_ble_enabled", BLEBridge.DEFAULT_ENABLED)
+        val elmServiceEnabled = prefs.getBoolean("com_ble_elm_enabled", BLEBridge.DEFAULT_ENABLED)
         val tpmsServiceEnabled = prefs.getBoolean("com_ble_tpms_enabled", TpmsService.DEFAULT_ENABLED)
         val enabled: Boolean
         if ( bridge is BLEBridge ) {

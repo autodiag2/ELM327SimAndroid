@@ -571,13 +571,13 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private fun setupNetwork() {
         val bridgePreferences = listOf(
             "com_nt_enabled",
-            "com_ble_enabled",
+            "com_ble_elm_enabled",
             "com_bt_enabled"
         )
 
         for (key in bridgePreferences) {
             val preference = findPreference<SwitchPreferenceCompat>(key) ?: continue
-            if ( key == "com_ble_enabled" ) {
+            if ( key == "com_ble_elm_enabled" ) {
                 preference.isChecked = prefs.getBoolean(key, BLEBridge.DEFAULT_ENABLED)
             } else {
                 preference.isChecked = prefs.getBoolean(key, Bridge.DEFAULT_ENABLED)
@@ -590,7 +590,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
                 when(key) {
                     "com_nt_enabled" -> activityMain.service?.bridgeOrchestrator?.setupNetworkBridge()
-                    "com_ble_enabled" -> activityMain.service?.bridgeOrchestrator?.setupBleBridge()
+                    "com_ble_elm_enabled" -> activityMain.service?.bridgeOrchestrator?.setupBleBridge()
                     "com_bt_enabled" -> activityMain.service?.bridgeOrchestrator?.setupBluetoothBridge()
                 }
 

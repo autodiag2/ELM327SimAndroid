@@ -54,11 +54,11 @@ class BLEBridge(
     private val tpmsService: TpmsService = TpmsService(service, scope, ::onAdvertisingDataChanged)
     private val onAdvertisingDataChangedRestartMs = 100L
 
-    @Suppress("DEPRECATION")
-
     public fun updateTpmsSensorConfiguration() {
         tpmsService.updateSensorConfiguration()
     }
+
+    @Suppress("DEPRECATION")
     private fun notifyCharacteristicChangedCompat(
         device: BluetoothDevice,
         characteristic: BluetoothGattCharacteristic,
@@ -161,8 +161,8 @@ class BLEBridge(
     }
 
     private val gattCallback = object : BluetoothGattServerCallback() {
-        @RequiresApi(Build.VERSION_CODES.O)
 
+        @RequiresApi(Build.VERSION_CODES.O)
         override fun onPhyUpdate(
             device: BluetoothDevice,
             txPhy: Int,
@@ -179,8 +179,8 @@ class BLEBridge(
                 LogLevel.DEBUG
             )
         }
-        @RequiresApi(Build.VERSION_CODES.O)
 
+        @RequiresApi(Build.VERSION_CODES.O)
         override fun onPhyRead(
             device: BluetoothDevice,
             txPhy: Int,
@@ -197,8 +197,8 @@ class BLEBridge(
                 LogLevel.DEBUG
             )
         }
-        @RequiresApi(Build.VERSION_CODES.O)
 
+        @RequiresApi(Build.VERSION_CODES.O)
         private fun phyToString(phy: Int): String = when (phy) {
             BluetoothDevice.PHY_LE_1M -> "1M"
             BluetoothDevice.PHY_LE_2M -> "2M"
@@ -409,7 +409,7 @@ class BLEBridge(
     }
 
     fun isElmEnabled(): Boolean {
-        return prefs.getBoolean("com_ble_enabled", DEFAULT_ENABLED)
+        return prefs.getBoolean("com_ble_elm_enabled", DEFAULT_ENABLED)
     }
     override suspend fun start() {
         val elmEnabled = isElmEnabled()
