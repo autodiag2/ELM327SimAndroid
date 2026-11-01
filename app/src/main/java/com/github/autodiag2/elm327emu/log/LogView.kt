@@ -124,19 +124,9 @@ class LogAdapter(
 
             val header = LinearLayout(context).apply {
                 orientation = LinearLayout.HORIZONTAL
-                gravity = android.view.Gravity.CENTER_VERTICAL
+                gravity = android.view.Gravity.TOP
             }
 
-            val count = TextView(context).apply {
-                textSize = 11f
-                typeface = Typeface.DEFAULT_BOLD
-                setPadding(
-                    (4 * density).toInt(),
-                    (3 * density).toInt(),
-                    (8 * density).toInt(),
-                    (3 * density).toInt()
-                )
-            }
             val badge = TextView(context).apply {
                 textSize = 12f
                 typeface = Typeface.DEFAULT_BOLD
@@ -146,13 +136,6 @@ class LogAdapter(
                     (8 * density).toInt(),
                     (3 * density).toInt()
                 )
-            }
-
-            val timestamp = TextView(context).apply {
-                textSize = 11f
-                alpha = 0.7f
-                gravity = android.view.Gravity.END or
-                    android.view.Gravity.CENTER_VERTICAL
                 layoutParams = LinearLayout.LayoutParams(
                     0,
                     ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -160,8 +143,36 @@ class LogAdapter(
                 )
             }
 
-            header.addView(count)
+            val count = TextView(context).apply {
+                textSize = 11f
+                typeface = Typeface.DEFAULT_BOLD
+                gravity = android.view.Gravity.TOP or android.view.Gravity.CENTER_HORIZONTAL
+                setPadding(
+                    (4 * density).toInt(),
+                    (3 * density).toInt(),
+                    (4 * density).toInt(),
+                    (3 * density).toInt()
+                )
+                layoutParams = LinearLayout.LayoutParams(
+                    (40 * density).toInt(),
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+            }
+
+            val timestamp = TextView(context).apply {
+                textSize = 11f
+                alpha = 0.7f
+                gravity = android.view.Gravity.TOP or android.view.Gravity.END
+                maxLines = 1
+                includeFontPadding = false
+                layoutParams = LinearLayout.LayoutParams(
+                    (100 * density).toInt(),
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+            }
+
             header.addView(badge)
+            header.addView(count)
             header.addView(timestamp)
 
             val content = TextView(context).apply {
@@ -264,6 +275,8 @@ class LogAdapter(
                 if (isReceived) R.color.sol_green else R.color.sol_blue
             )
             cardViews.count.text = if (item.count > 1) "${item.count}" else ""
+            cardViews.count.isVisible = item.count > 1 && prefs.getBoolean(LogRepository.PREF_LOG_GROUP, LogRepository.PREF_LOG_GROUP_DEFAULT)
+
             cardViews.count.setTextColor(
                 resolveColor(android.R.attr.textColorSecondary)
             )
@@ -275,6 +288,7 @@ class LogAdapter(
             cardViews.badge.setTextColor(accentColor)
             cardViews.badge.background = null
             cardViews.timestamp.text = timestamp
+            cardViews.timestamp.isVisible = timestamp.isNotEmpty()
             cardViews.content.text = displayText
 
             val textColor = when (item.level) {

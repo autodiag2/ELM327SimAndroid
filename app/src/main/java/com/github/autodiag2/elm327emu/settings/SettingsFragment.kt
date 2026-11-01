@@ -29,6 +29,7 @@ import com.github.autodiag2.elm327emu.settings.generateQrBitmap
 import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.log.LogLevel
 import com.github.autodiag2.elm327emu.log.LogLevel_DEFAULT
+import com.github.autodiag2.elm327emu.log.LogRepository
 import com.github.autodiag2.elm327emu.MainActivity
 import com.github.autodiag2.elm327emu.libautodiag
 import androidx.lifecycle.lifecycleScope
@@ -495,7 +496,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
         val group = findPreference<SwitchPreferenceCompat>(PREF_LOG_GROUP)!!
 
-        group.isChecked = prefs.getBoolean(PREF_LOG_GROUP, false)
+        group.isChecked = prefs.getBoolean(PREF_LOG_GROUP, LogRepository.PREF_LOG_GROUP_DEFAULT)
 
         group.setOnPreferenceChangeListener { _, newValue ->
             prefs.edit()

@@ -152,6 +152,10 @@ class LogRepository(private val context: Context) {
     private var counter = 0L
     val prefs by lazy { context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
 
+    companion object {
+        const val PREF_LOG_GROUP = "log_exchange_dup_search"
+        const val PREF_LOG_GROUP_DEFAULT = false
+    }
     suspend fun search(text: String): List<LogEntry> {
         return mutex.withLock {
 
@@ -243,7 +247,7 @@ class LogRepository(private val context: Context) {
             var entry: LogEntry? = null
             var deleted: LogEntry? = null
             var modified: LogEntry? = null
-            if (prefs.getBoolean("log_exchange_dup_search", false) &&
+            if (prefs.getBoolean(PREF_LOG_GROUP, PREF_LOG_GROUP_DEFAULT) &&
                 type == LogEntryType.SENT &&
                 buffer.size >= 3
             ) {
