@@ -127,6 +127,16 @@ class LogAdapter(
                 gravity = android.view.Gravity.CENTER_VERTICAL
             }
 
+            val count = TextView(context).apply {
+                textSize = 11f
+                typeface = Typeface.DEFAULT_BOLD
+                setPadding(
+                    (4 * density).toInt(),
+                    (3 * density).toInt(),
+                    (8 * density).toInt(),
+                    (3 * density).toInt()
+                )
+            }
             val badge = TextView(context).apply {
                 textSize = 12f
                 typeface = Typeface.DEFAULT_BOLD
@@ -150,6 +160,7 @@ class LogAdapter(
                 )
             }
 
+            header.addView(count)
             header.addView(badge)
             header.addView(timestamp)
 
@@ -162,8 +173,7 @@ class LogAdapter(
 
             container.addView(header)
             container.addView(content)
-            container.tag = CardViews(badge, timestamp, content)
-
+            container.tag = CardViews(count, badge, timestamp, content)
             return VH(container)
         }
 
@@ -187,6 +197,7 @@ class LogAdapter(
     }
 
     private data class CardViews(
+        val count: TextView,
         val badge: TextView,
         val timestamp: TextView,
         val content: TextView
@@ -239,10 +250,6 @@ class LogAdapter(
             }
         }
 
-        if (item.count > 1) {
-            displayText = "×${item.count} $displayText"
-        }
-
         val timestamp = if (prefs.getBoolean("log_timestamp", false)) {
             SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date(item.ts))
         } else {
@@ -256,7 +263,10 @@ class LogAdapter(
                 context,
                 if (isReceived) R.color.sol_green else R.color.sol_blue
             )
-
+            cardViews.count.text = if (item.count > 1) "${item.count}" else ""
+            cardViews.count.setTextColor(
+                resolveColor(android.R.attr.textColorSecondary)
+            )
             cardViews.badge.text = if (isReceived) getString(R.string.log_main_data_received) else getString(R.string.log_main_data_sent)
             if ( item.type == LogEntryType.SENT && item.pendingSignal != null ) {
                 val signalText = getString(R.string.sim_ecu_log_signal, getName(context, item.pendingSignal!!.first), item.pendingSignal!!.second, item.pendingSignal!!.first.unit)
@@ -289,6 +299,10 @@ class LogAdapter(
                 )
             }
             return
+        }
+
+        if (item.count > 1) {
+            displayText = "×${item.count} $displayText"
         }
 
         if (view !is TextView) {

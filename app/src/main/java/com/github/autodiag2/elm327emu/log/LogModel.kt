@@ -286,8 +286,10 @@ class LogRepository(private val context: Context) {
                         val previousRecv = buffer[i]
                         val previousSent = buffer[sent_idx]
 
-                        if (previousRecv.text == currentRecv.text &&
-                            previousSent.text == text
+                        if ( ( text != "" && previousSent.text != "" &&
+                            previousRecv.text != "" && currentRecv.text != "" &&
+                            previousRecv.text == currentRecv.text &&
+                            previousSent.text == text ) || previousSent.serial.contentEquals(serial?.copyOf(serial_size) ?: ByteArray(0))
                         ) {
                             deleted = buffer.removeAt(currentRecvIdx)
                             previousRecv.count++
