@@ -629,7 +629,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
     }
 
-    private fun setupBluetooth() {
+    fun setupBluetooth() {
         val name = findPreference<EditTextPreference>(PREF_BT_NAME)!!
 
         val adapterName =
@@ -641,6 +641,15 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         name.text = adapterName
         name.isEnabled = activityMain.isPermissionsGranted()
+
+        name.setOnPreferenceClickListener {
+            if (!activityMain.isPermissionsGranted()) {
+                activityMain.requestPermissions()
+                true
+            } else {
+                false
+            }
+        }
 
         name.setOnBindEditTextListener { editText ->
             fun updateNameWarning() {

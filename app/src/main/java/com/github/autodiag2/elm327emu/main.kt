@@ -101,7 +101,9 @@ class MainActivity : AppCompatActivity() {
     private val enableBtLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             bluetoothEnableRequestPending = false
-            if (result.resultCode != RESULT_OK) {
+            if (result.resultCode == RESULT_OK) {
+                settingsFragment.setupBluetooth()
+            } else {
                 appendLog(getString(R.string.log_main_bluetooth_enable_failed), LogLevel.ERROR)
             }
         }
