@@ -56,6 +56,9 @@ class BLEBridge(
 
     @Suppress("DEPRECATION")
 
+    public fun updateTpmsSensorConfiguration() {
+        tpmsService.updateSensorConfiguration()
+    }
     private fun notifyCharacteristicChangedCompat(
         device: BluetoothDevice,
         characteristic: BluetoothGattCharacteristic,

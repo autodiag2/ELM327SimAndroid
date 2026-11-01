@@ -13,6 +13,7 @@ import com.github.autodiag2.elm327emu.com.tpms.TpmsManufacturerEncoder
 import com.github.autodiag2.elm327emu.com.tpms.TpmsManufacturerEncoders
 import com.github.autodiag2.elm327emu.com.tpms.TpmsManufacturerFrame
 import com.github.autodiag2.elm327emu.com.tpms.TpmsReading
+import com.github.autodiag2.elm327emu.com.tpms.TpmsSensorConfiguration
 import com.github.autodiag2.elm327emu.log.LogLevel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -46,13 +47,13 @@ class TpmsService(
         }
     }
 
-    private data class SensorDefinition(
+    public data class SensorDefinition(
         val position: String,
         val sensorId: ByteArray,
         val initialReading: TpmsReading
     )
 
-    private val sensorDefinitions = listOf(
+    public val sensorDefinitions = listOf(
         SensorDefinition("FL", byteArrayOf(0x00, 0x00, 0x01), TpmsReading(34, 32)),
         SensorDefinition("FR", byteArrayOf(0x00, 0x00, 0x02), TpmsReading(35, 33)),
         SensorDefinition("RL", byteArrayOf(0x00, 0x00, 0x03), TpmsReading(33, 29)),
@@ -60,7 +61,22 @@ class TpmsService(
         SensorDefinition("SP", byteArrayOf(0x00, 0x00, 0x05), TpmsReading(36, 18))
     )
 
-    private val currentReadings = sensorDefinitions
+    public fun updateSensorConfiguration() {
+        sensorDefinitions.forEach { definition ->
+            val newId = TpmsSensorConfiguration.sensorId(
+                prefs,
+                definition.position,
+                definition.sensorId
+            )
+            if (!newId.contentEquals(definition.sensorId)) {
+                logDebug("Updating sensor ID for ${definition.position} from ${TpmsSensorConfiguration.formatId(definition.sensorId)} to ${TpmsSensorConfiguration.formatId(newId)}")
+                definition.sensorId.fill(0)
+                System.arraycopy(newId, 0, definition.sensorId, 0, newId.size)
+            }
+        }
+    }
+
+    public val currentReadings = sensorDefinitions
         .associate { it.position to it.initialReading }
         .toMutableMap()
 
@@ -117,7 +133,6 @@ class TpmsService(
 
     override fun start(): BluetoothGattService? {
         if (!enabled) return null
-
         encoder = TpmsManufacturerEncoders.find(
             prefs.getString(
                 TpmsManufacturerEncoders.PREF_TYPE,
@@ -130,7 +145,7 @@ class TpmsService(
             appendLog(R.string.ble_tpms_start_fail_encoder, LogLevel.ERROR)
             return null
         }
-
+        updateSensorConfiguration()
         val initialReading = currentReadings.getValue("FL")
 
         val tpmsService = BluetoothGattService(

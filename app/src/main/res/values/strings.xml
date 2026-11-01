@@ -64,6 +64,13 @@
     <string name="settings_ble_profile_service_uuid">Service UUID</string>
     <string name="settings_ble_profile_tx_uuid">TX Characteristic UUID</string>
     <string name="settings_ble_profile_rx_uuid">RX Characteristic UUID</string>
+    <string name="tpms_sensor_configure">Configure TPMS sensors</string>
+    <string name="tpms_sensor_configure_summary">Configure sensor IDs for each wheel position</string>
+    <string name="tpms_sensor_configure_dialog_title">TPMS sensor configuration</string>
+    <string name="tpms_sensor_configure_hint">Tap a wheel on the car diagram to edit its sensor ID (3 bytes, hexadecimal).</string>
+    <string name="tpms_sensor_id_title">%1$s sensor ID</string>
+    <string name="tpms_sensor_id_invalid">Enter exactly 6 hexadecimal characters.</string>
+    <string name="settings_tpms_sensor_configure">Configure TPMS sensors</string>
     <string name="sim_connected_clients">0 connected</string>
     <string name="sim_connected_clients_format">%1$d connected</string>
     <string name="sim_connected_clients_dialog_title">Connected clients</string>

@@ -93,6 +93,10 @@
             app:useSimpleSummaryProvider="true"
             android:entryValues="@array/tpms_profile_values" />
 
+        <Preference
+            android:key="settings_tpms_sensor_configure"
+            android:title="@string/settings_tpms_sensor_configure" />
+
     </PreferenceCategory>
 
     <PreferenceCategory

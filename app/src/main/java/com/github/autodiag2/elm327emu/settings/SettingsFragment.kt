@@ -24,6 +24,7 @@ import com.github.autodiag2.elm327emu.com.Bridge
 import com.github.autodiag2.elm327emu.com.ble.Elm327Service
 import com.github.autodiag2.elm327emu.com.ble.TpmsService
 import com.github.autodiag2.elm327emu.com.tpms.TpmsManufacturerEncoders
+import com.github.autodiag2.elm327emu.com.tpms.TpmsSensorConfiguration
 import com.github.autodiag2.elm327emu.settings.generateQrBitmap
 import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.log.LogLevel
@@ -681,6 +682,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
     }
 
     private fun setupTpms() {
+        val configure = findPreference<Preference>("settings_tpms_sensor_configure")!!
         val profile = findPreference<ListPreference>("com_ble_tpms_type")!!
         val tpmsEnabled = findPreference<SwitchPreferenceCompat>("com_ble_tpms_enabled")!!
         if (!prefs.contains(TpmsManufacturerEncoders.PREF_ENABLED)) {
@@ -688,6 +690,12 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
         if (!prefs.contains(TpmsManufacturerEncoders.PREF_TYPE)) {
             profile.value = TpmsService.DEFAULT_MANUFACTURER
+        }
+        configure.setOnPreferenceClickListener {
+            TpmsSensorConfigurationDialog(context!!, prefs, {
+                activityMain.service?.bridgeOrchestrator?.bleBridge?.updateTpmsSensorConfiguration()
+            }).show()
+            true
         }
         val restartBleBridge = {
             Handler(Looper.getMainLooper()).post {
