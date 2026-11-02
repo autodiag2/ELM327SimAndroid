@@ -17,6 +17,7 @@ import com.github.autodiag2.elm327emu.com.tpms.TpmsManufacturerEncoder
 import com.github.autodiag2.elm327emu.com.tpms.TpmsManufacturerEncoders
 import com.github.autodiag2.elm327emu.com.tpms.TpmsReading
 import com.github.autodiag2.elm327emu.com.tpms.TpmsSensorConfiguration
+import com.github.autodiag2.elm327emu.com.tpms.TeslaTpmsEncoder
 import com.github.autodiag2.elm327emu.log.LogLevel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -106,6 +107,19 @@ class TpmsService(
     val additionalGattServices: List<BluetoothGattService>
         get() = protocolGattProfiles.values.flatten().map { it.service }.distinctBy { it.uuid }
 
+    val connectable: Boolean
+        get() = activeEncoders.values.any { it.connectable }
+
+    fun handleGattWrite(characteristicUuid: java.util.UUID, value: ByteArray): ByteArray? =
+        protocolGattProfiles.values.flatten()
+            .firstOrNull { it.requestCharacteristic?.uuid == characteristicUuid }
+            ?.handleRequest(value)
+
+    fun getIndicationCharacteristic(characteristicUuid: java.util.UUID) =
+        protocolGattProfiles.values.flatten()
+            .firstOrNull { it.requestCharacteristic?.uuid == characteristicUuid }
+            ?.indicationCharacteristic
+
     val enabled: Boolean
         get() = prefs.getBoolean(TpmsManufacturerEncoders.PREF_ENABLED, DEFAULT_ENABLED)
 
@@ -127,7 +141,7 @@ class TpmsService(
 
     override fun getSettings(): AdvertiseSettings = AdvertiseSettings.Builder()
         .setAdvertiseMode(AdvertiseSettings.ADVERTISE_MODE_LOW_LATENCY)
-        .setConnectable(false)
+        .setConnectable(connectable)
         .setTxPowerLevel(AdvertiseSettings.ADVERTISE_TX_POWER_HIGH)
         .build()
 
@@ -152,9 +166,18 @@ class TpmsService(
         }
 
         activeEncoders = selectedEncoders
-        val activeDefinitions = sensorDefinitions.filter { selectedEncoders.containsKey(it.position) }
+        val activeDefinitions = activeSensorDefinitions(selectedEncoders)
+        if (activeDefinitions.isEmpty()) {
+            appendLog(R.string.ble_tpms_start_fail_encoder, LogLevel.ERROR)
+            activeEncoders = emptyMap()
+            return null
+        }
         val firstDefinition = activeDefinitions.first()
-        gattProfile = TpmsGattProfile.create(currentReadings.getValue(firstDefinition.position))
+        gattProfile = if (activeDefinitions.any { selectedEncoders.getValue(it.position).connectable }) {
+            null
+        } else {
+            TpmsGattProfile.create(currentReadings.getValue(firstDefinition.position))
+        }
         protocolGattProfiles = createProtocolGattProfiles(activeDefinitions, selectedEncoders)
 
         tpmsAdvertisementJob = scope.launch(Dispatchers.IO) {
@@ -201,6 +224,15 @@ class TpmsService(
         }
     }
 
+    private fun activeSensorDefinitions(
+        encoders: Map<String, TpmsManufacturerEncoder>
+    ): List<SensorDefinition> {
+        val selected = sensorDefinitions.filter { encoders.containsKey(it.position) }
+        if (encoders.values.none { it.connectable }) return selected
+        val position = prefs.getString(TeslaTpmsEncoder.PREF_POSITION, "FL") ?: "FL"
+        return selected.filter { it.position == position }
+    }
+
     private fun resolveEncoders(): Map<String, TpmsManufacturerEncoder> {
         val selected = LinkedHashMap<String, TpmsManufacturerEncoder>()
         val defaultId = prefs.getString(TpmsManufacturerEncoders.PREF_TYPE, DEFAULT_MANUFACTURER)
@@ -224,7 +256,7 @@ class TpmsService(
     fun getInitialSensor(): TpmsSensorAdvertisement? {
         if (!enabled) return null
         val encoders = activeEncoders.ifEmpty { resolveEncoders() }
-        val definition = sensorDefinitions.firstOrNull { encoders.containsKey(it.position) } ?: return null
+        val definition = activeSensorDefinitions(encoders).firstOrNull() ?: return null
         val encoder = encoders.getValue(definition.position)
         return TpmsSensorAdvertisement(
             definition.position,
@@ -350,7 +382,7 @@ class TpmsService(
     fun getSensors(): List<TpmsSensorAdvertisement> {
         if (!enabled) return emptyList()
         val encoders = activeEncoders.ifEmpty { resolveEncoders() }
-        return sensorDefinitions.mapNotNull { definition ->
+        return activeSensorDefinitions(encoders).mapNotNull { definition ->
             val encoder = encoders[definition.position] ?: return@mapNotNull null
             TpmsSensorAdvertisement(
                 definition.position,
