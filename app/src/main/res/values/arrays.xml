@@ -74,12 +74,30 @@
         <item>JK Tyre Treel</item>
         <item>ZEEPIN / TP630</item>
         <item>BR TPMS (0x27A5)</item>
+        <item>Tesla / Autel BLE</item>
     </string-array>
 
     <string-array name="tpms_profile_values">
         <item>jk_tyre_treel</item>
         <item>zeepin_tp630</item>
         <item>br_tpms</item>
+        <item>tesla_ble</item>
+    </string-array>
+
+    <string-array name="tpms_wheel_positions">
+        <item>Front left</item>
+        <item>Front right</item>
+        <item>Rear left</item>
+        <item>Rear right</item>
+        <item>Spare</item>
+    </string-array>
+
+    <string-array name="tpms_wheel_position_values">
+        <item>FL</item>
+        <item>FR</item>
+        <item>RL</item>
+        <item>RR</item>
+        <item>SP</item>
     </string-array>
 
 </resources>
