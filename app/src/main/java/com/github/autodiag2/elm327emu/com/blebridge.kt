@@ -446,10 +446,19 @@ class BLEBridge(
                 }
             }
             if (tpmsService.enabled) {
-                logDebug("XXX: Add service tpms ${prefs.getBoolean(TpmsManufacturerEncoders.PREF_ENABLED, false)} ${tpmsService.enabled}}")
                 val gattService = tpmsService.start()
-                if ( gattService == null || !addGattService(gattService)) {
-                    appendLog("TPMS GATT service could not be added; continuing with Treel advertisement", LogLevel.ERROR)
+
+                if (gattService != null && !addGattService(gattService)) {
+                    appendLog("TPMS GATT service could not be added", LogLevel.ERROR)
+                }
+
+                tpmsService.additionalGattServices.forEach { additionalService ->
+                    if (!addGattService(additionalService)) {
+                        appendLog(
+                            "Additional TPMS GATT service could not be added: ${additionalService.uuid}",
+                            LogLevel.ERROR
+                        )
+                    }
                 }
             }
             appendLog(getString(R.string.log_ble_advertising_starting), LogLevel.DEBUG)
@@ -483,14 +492,13 @@ class BLEBridge(
             }
             advertiser.stopAdvertising(tpmsService.advertiseCallback)
             if ( tpmsService.enabled && tpmsSensor != null ) {
-                val tpmsAdvData =
-                    AdvertiseData.Builder()
-                        .addManufacturerData(tpmsSensor.companyId, tpmsSensor.payload)
-                        .build()
-                val tpmsScanResp =
-                    AdvertiseData.Builder().build()
                 delay(onAdvertisingDataChangedRestartMs)
-                advertiser.startAdvertising(tpmsSettings, tpmsAdvData, tpmsScanResp, tpmsService.advertiseCallback)
+                advertiser.startAdvertising(
+                    tpmsSettings, 
+                    tpmsSensor.toAdvertiseData(),
+                    AdvertiseData.Builder().build(), 
+                    tpmsService.advertiseCallback
+                )
             }
         } else {
             advertiser.stopAdvertising(elm327Service.advertiseCallback)
@@ -499,22 +507,22 @@ class BLEBridge(
                 builder.addServiceUuid(ParcelUuid(elm327Service.ELM_SERVICE_UUID))
             } else {
                 if ( tpmsSensor != null ) {
-                    builder.addManufacturerData(tpmsSensor.companyId, tpmsSensor.payload)
+                    tpmsSensor.addTo(builder)
                 }
             }
             val advData = builder.build()
-            val scanResp = if (tpmsService.enabled && tpmsSensor != null) {
+            val scanRespBuilder = if (tpmsService.enabled && tpmsSensor != null) {
                 AdvertiseData.Builder()
-                    .addManufacturerData(tpmsSensor.companyId, tpmsSensor.payload)
-                    .build()
             } else {
                 AdvertiseData.Builder()
                     .setIncludeDeviceName(true)
-                    .build()
+            }
+            if (tpmsService.enabled && tpmsSensor != null) {
+                tpmsSensor.addTo(scanRespBuilder)
             }
             if ( elmEnabled || tpmsService.enabled ) {
                 delay(onAdvertisingDataChangedRestartMs)
-                advertiser.startAdvertising(settings, advData, scanResp, elm327Service.advertiseCallback)
+                advertiser.startAdvertising(settings, advData, scanRespBuilder.build(), elm327Service.advertiseCallback)
             }
         }
     }

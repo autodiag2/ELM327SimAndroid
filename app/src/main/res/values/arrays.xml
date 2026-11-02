@@ -72,10 +72,14 @@
 
     <string-array name="tpms_profile">
         <item>JK Tyre Treel</item>
+        <item>ZEEPIN / TP630</item>
+        <item>BR TPMS (0x27A5)</item>
     </string-array>
 
     <string-array name="tpms_profile_values">
         <item>jk_tyre_treel</item>
+        <item>zeepin_tp630</item>
+        <item>br_tpms</item>
     </string-array>
 
 </resources>
