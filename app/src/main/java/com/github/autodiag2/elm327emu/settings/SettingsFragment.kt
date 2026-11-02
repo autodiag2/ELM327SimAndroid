@@ -694,6 +694,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private fun setupTpms() {
         val configure = findPreference<Preference>("settings_tpms_sensor_configure")!!
         val profile = findPreference<ListPreference>("com_ble_tpms_type")!!
+        val teslaPosition = findPreference<ListPreference>("com_ble_tpms_tesla_position")!!
         val tpmsEnabled = findPreference<SwitchPreferenceCompat>("com_ble_tpms_enabled")!!
         if (!prefs.contains(TpmsManufacturerEncoders.PREF_ENABLED)) {
             tpmsEnabled.isChecked = TpmsService.DEFAULT_ENABLED
@@ -713,9 +714,21 @@ class SettingsFragment : PreferenceFragmentCompat() {
             }
         }
 
+        teslaPosition.value = prefs.getString(TeslaTpmsEncoder.PREF_POSITION, "FL")
+        teslaPosition.isVisible = profile.value == "tesla_ble"
+
         profile.setOnPreferenceChangeListener { _, newValue ->
             prefs.edit()
                 .putString(TpmsManufacturerEncoders.PREF_TYPE, newValue as String)
+                .apply()
+            teslaPosition.isVisible = newValue == "tesla_ble"
+            restartBleBridge()
+            true
+        }
+
+        teslaPosition.setOnPreferenceChangeListener { _, newValue ->
+            prefs.edit()
+                .putString(TeslaTpmsEncoder.PREF_POSITION, newValue as String)
                 .apply()
             restartBleBridge()
             true
