@@ -1,6 +1,7 @@
 package com.github.autodiag2.elm327emu.com.tpms
 
 import android.bluetooth.BluetoothGattCharacteristic
+import android.bluetooth.BluetoothGattDescriptor
 import android.bluetooth.BluetoothGattService
 import java.util.UUID
 import kotlin.math.roundToLong
@@ -53,16 +54,22 @@ data class TpmsSensorFrame(
 
 class TpmsGattProfileInstance(
     val service: BluetoothGattService,
-    private val updater: (TpmsReading) -> Unit
+    private val updater: (TpmsReading) -> Unit,
+    val requestCharacteristic: BluetoothGattCharacteristic? = null,
+    val indicationCharacteristic: BluetoothGattCharacteristic? = null,
+    private val requestHandler: ((ByteArray) -> ByteArray?)? = null
 ) {
     fun update(reading: TpmsReading) {
         updater(reading)
     }
+
+    fun handleRequest(value: ByteArray): ByteArray? = requestHandler?.invoke(value)
 }
 
 interface TpmsManufacturerEncoder {
     val id: String
     val displayName: String
+    val connectable: Boolean get() = false
     fun encode(reading: TpmsReading, sensorId: ByteArray): TpmsSensorFrame
     fun createGattProfiles(
         position: String,
@@ -82,6 +89,7 @@ object TpmsManufacturerEncoders {
         register(JkTyreTreelEncoder())
         register(ZeepinTp630Encoder())
         register(BrTpmsEncoder())
+        register(TeslaTpmsEncoder())
     }
 
     @Synchronized
@@ -218,6 +226,130 @@ class BrTpmsEncoder : TpmsManufacturerEncoder {
         const val DEFAULT_BATTERY_TENTHS_VOLT = 29
         private const val ATMOSPHERIC_PSI = 14.5
         val SERVICE_UUID: UUID = UUID.fromString("000027a5-0000-1000-8000-00805f9b34fb")
+    }
+}
+
+
+class TeslaTpmsEncoder : TpmsManufacturerEncoder {
+    override val id = "tesla_ble"
+    override val displayName = "Tesla / Autel BLE"
+    override val connectable = true
+
+    override fun encode(reading: TpmsReading, sensorId: ByteArray): TpmsSensorFrame {
+        val pressureKpa = ((reading.pressureCentiPsi ?: reading.pressurePsi * 100) / 100.0 * PSI_TO_KPA + ATMOSPHERE_KPA)
+            .roundToLong().coerceIn(0L, 100000L).toInt()
+        val temperature = ((reading.temperatureCentiC ?: reading.temperatureC * 100) / 100.0)
+            .roundToLong().toInt().coerceIn(-50, 150)
+        val batteryMv = ((reading.batteryVoltageTenths ?: 29) * 100).coerceIn(1500, 4300)
+        val payload = byteArrayOf(
+            0x01,
+            0x02,
+            0x05,
+            (pressureKpa and 0xFF).toByte(),
+            ((pressureKpa ushr 8) and 0xFF).toByte(),
+            (temperature + 50).toByte(),
+            (batteryMv and 0xFF).toByte(),
+            ((batteryMv ushr 8) and 0xFF).toByte()
+        )
+        return TpmsSensorFrame(
+            TpmsAdvertisingData.ManufacturerData(TESLA_COMPANY_ID, payload)
+        )
+    }
+
+    override fun createGattProfiles(
+        position: String,
+        initialReading: TpmsReading
+    ): List<TpmsGattProfileInstance> {
+        val service = BluetoothGattService(
+            SERVICE_UUID,
+            BluetoothGattService.SERVICE_TYPE_PRIMARY
+        )
+        val writeCharacteristic = BluetoothGattCharacteristic(
+            WRITE_UUID,
+            BluetoothGattCharacteristic.PROPERTY_WRITE or BluetoothGattCharacteristic.PROPERTY_WRITE_NO_RESPONSE,
+            BluetoothGattCharacteristic.PERMISSION_WRITE
+        )
+        val indicationCharacteristic = BluetoothGattCharacteristic(
+            INDICATE_UUID,
+            BluetoothGattCharacteristic.PROPERTY_INDICATE,
+            BluetoothGattCharacteristic.PERMISSION_READ
+        )
+        indicationCharacteristic.addDescriptor(
+            BluetoothGattDescriptor(
+                CCCD_UUID,
+                BluetoothGattDescriptor.PERMISSION_READ or BluetoothGattDescriptor.PERMISSION_WRITE
+            )
+        )
+        val versionCharacteristic = BluetoothGattCharacteristic(
+            VERSION_UUID,
+            BluetoothGattCharacteristic.PROPERTY_READ,
+            BluetoothGattCharacteristic.PERMISSION_READ
+        ).apply { value = byteArrayOf(1) }
+        service.addCharacteristic(writeCharacteristic)
+        service.addCharacteristic(indicationCharacteristic)
+        service.addCharacteristic(versionCharacteristic)
+        var current = initialReading
+        fun response(reading: TpmsReading): ByteArray {
+            val psi = (reading.pressureCentiPsi ?: reading.pressurePsi * 100) / 100.0
+            val pressure = (psi * PSI_TO_KPA + ATMOSPHERE_KPA).roundToLong().toInt()
+            val temperature = ((reading.temperatureCentiC ?: reading.temperatureC * 100) / 100.0)
+                .roundToLong().toInt()
+            val zigzag = (temperature shl 1) xor (temperature shr 31)
+            val body = encodeVarint(0x08) + encodeVarint(pressure) +
+                encodeVarint(0x10) + encodeVarint(zigzag)
+            val wheel = encodeLengthDelimited(0xE2, body)
+            return encodeLengthDelimited(0x12, wheel)
+        }
+        indicationCharacteristic.value = response(current)
+        return listOf(
+            TpmsGattProfileInstance(
+                service = service,
+                updater = { reading ->
+                    current = reading
+                    indicationCharacteristic.value = response(reading)
+                },
+                requestCharacteristic = writeCharacteristic,
+                indicationCharacteristic = indicationCharacteristic,
+                requestHandler = { request ->
+                    if (isTpDataRequest(request)) response(current) else null
+                }
+            )
+        )
+    }
+
+    private fun isTpDataRequest(value: ByteArray): Boolean {
+        var i = 0
+        while (i + 1 < value.size) {
+            if (value[i] == 0x08.toByte() && value[i + 1] == 0x01.toByte()) return true
+            i++
+        }
+        return false
+    }
+
+    private fun encodeLengthDelimited(tag: Int, value: ByteArray): ByteArray =
+        encodeVarint(tag) + encodeVarint(value.size) + value
+
+    private fun encodeVarint(input: Int): ByteArray {
+        var value = input
+        val result = ArrayList<Byte>()
+        while (value and 0x7F.inv() != 0) {
+            result.add(((value and 0x7F) or 0x80).toByte())
+            value = value ushr 7
+        }
+        result.add(value.toByte())
+        return result.toByteArray()
+    }
+
+    companion object {
+        const val TESLA_COMPANY_ID = 0x022B
+        const val PREF_POSITION = "com_ble_tpms_tesla_position"
+        private const val PSI_TO_KPA = 6.894757293
+        private const val ATMOSPHERE_KPA = 101.325
+        val SERVICE_UUID: UUID = UUID.fromString("00000211-b2d1-43f0-9b88-960cebf8b91e")
+        val WRITE_UUID: UUID = UUID.fromString("00000212-b2d1-43f0-9b88-960cebf8b91e")
+        val INDICATE_UUID: UUID = UUID.fromString("00000213-b2d1-43f0-9b88-960cebf8b91e")
+        val VERSION_UUID: UUID = UUID.fromString("00000214-b2d1-43f0-9b88-960cebf8b91e")
+        val CCCD_UUID: UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb")
     }
 }
 
