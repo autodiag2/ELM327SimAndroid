@@ -61,6 +61,7 @@ jobs:
 
           FULL_APK=$(find app/build/outputs/apk/full/release -name "*.apk" | head -n1)
           LITE_APK=$(find app/build/outputs/apk/lite/release -name "*.apk" | head -n1)
+          DEFAULT_APK="${LITE_APK}"
 
           if [ -z "$FULL_APK" ] || [ -z "$LITE_APK" ]; then
             echo "Release APK(s) not found"
@@ -69,13 +70,16 @@ jobs:
 
           FULL_OUT="$(dirname "$FULL_APK")/${NS}-full.apk"
           LITE_OUT="$(dirname "$LITE_APK")/${NS}-lite.apk"
+          DEFAULT_OUT="$(dirname "$FULL_APK")/${NS}.apk"
 
           mv "$FULL_APK" "$FULL_OUT"
           mv "$LITE_APK" "$LITE_OUT"
+          mv "$DEFAULT_APK" "$DEFAULT_OUT"
 
           {
             echo "FULL_APK=$FULL_OUT"
             echo "LITE_APK=$LITE_OUT"
+            echo "DEFAULT_APK=$DEFAULT_OUT"
           } >> "$GITHUB_ENV"
 
       - name: Upload APKs
@@ -84,3 +88,4 @@ jobs:
           files: |
             ${{ env.FULL_APK }}
             ${{ env.LITE_APK }}
+            ${{ env.DEFAULT_APK }}
