@@ -74,7 +74,7 @@ jobs:
 
           mv "$FULL_APK" "$FULL_OUT"
           mv "$LITE_APK" "$LITE_OUT"
-          mv "$DEFAULT_APK" "$DEFAULT_OUT"
+          cp "$LITE_OUT" "$DEFAULT_OUT"
 
           {
             echo "FULL_APK=$FULL_OUT"
