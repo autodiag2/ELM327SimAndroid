@@ -2,10 +2,9 @@ package com.github.autodiag2.elm327emu.log
 
 import android.content.Context
 import android.content.Intent
-import android.graphics.Typeface
-import android.graphics.drawable.GradientDrawable
 import android.os.Handler
 import android.os.Looper
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -14,12 +13,9 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.LinearLayout
-import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
-import androidx.core.graphics.ColorUtils
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
@@ -30,338 +26,11 @@ import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.log.LogRepository.AppendResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import com.github.autodiag2.elm327emu.sim.ecu.getName
-import android.util.Log
-
-class LogAdapter(
-    private val context: Context
-) : RecyclerView.Adapter<LogAdapter.VH>() {
-
-    private val prefs by lazy {
-        context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-    }
-
-    fun getString(resId: Int, vararg formatArgs: Any?): String {
-        return context.getString(resId, *formatArgs.map { it ?: "" }.toTypedArray())
-    }
-
-    class VH(val tv: View) : RecyclerView.ViewHolder(tv)
-
-    var charsPerLine = 30
-
-    private val items = ArrayList<LogEntry>()
-
-    fun notifyChanged(entry: LogEntry) {
-        val index = items.indexOfFirst { it.id == entry.id }
-        if (index >= 0) {
-            notifyItemChanged(index)
-        }
-    }
-
-    fun replace(entries: List<LogEntry>) {
-        items.clear()
-        items.addAll(entries)
-        notifyDataSetChanged()
-    }
-
-    override fun getItemViewType(position: Int): Int =
-        when (items[position].type) {
-            LogEntryType.SEPARATOR -> 1
-            LogEntryType.RECV, LogEntryType.SENT -> 2
-            else -> 0
-        }
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
-        if (viewType == 1) {
-            val image = androidx.appcompat.widget.AppCompatImageView(parent.context).apply {
-                setImageDrawable(
-                    androidx.appcompat.content.res.AppCompatResources.getDrawable(
-                        context,
-                        R.drawable.log_search_separator
-                    )
-                )
-                scaleType = android.widget.ImageView.ScaleType.CENTER
-                layoutParams = RecyclerView.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    (24 * context.resources.displayMetrics.density).toInt()
-                )
-            }
-            return VH(image)
-        }
-
-        if (viewType == 2) {
-            val density = context.resources.displayMetrics.density
-            val horizontalPadding = (12 * density).toInt()
-            val verticalPadding = (8 * density).toInt()
-            val marginHorizontal = (8 * density).toInt()
-            val marginVertical = (4 * density).toInt()
-
-            val container = LinearLayout(context).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(
-                    horizontalPadding,
-                    verticalPadding,
-                    horizontalPadding,
-                    verticalPadding
-                )
-                layoutParams = RecyclerView.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    setMargins(
-                        marginHorizontal,
-                        marginVertical,
-                        marginHorizontal,
-                        marginVertical
-                    )
-                }
-            }
-
-            val header = LinearLayout(context).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = android.view.Gravity.TOP
-            }
-
-            val badge = TextView(context).apply {
-                textSize = 12f
-                typeface = Typeface.DEFAULT_BOLD
-                setPadding(
-                    (8 * density).toInt(),
-                    (3 * density).toInt(),
-                    (8 * density).toInt(),
-                    (3 * density).toInt()
-                )
-                layoutParams = LinearLayout.LayoutParams(
-                    0,
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    1f
-                )
-            }
-
-            val count = TextView(context).apply {
-                textSize = 11f
-                typeface = Typeface.DEFAULT_BOLD
-                gravity = android.view.Gravity.TOP or android.view.Gravity.CENTER_HORIZONTAL
-                setPadding(
-                    (4 * density).toInt(),
-                    (3 * density).toInt(),
-                    (4 * density).toInt(),
-                    (3 * density).toInt()
-                )
-                layoutParams = LinearLayout.LayoutParams(
-                    (40 * density).toInt(),
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-            }
-
-            val timestamp = TextView(context).apply {
-                textSize = 11f
-                alpha = 0.7f
-                gravity = android.view.Gravity.TOP or android.view.Gravity.END
-                maxLines = 1
-                includeFontPadding = false
-                layoutParams = LinearLayout.LayoutParams(
-                    (100 * density).toInt(),
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
-            }
-
-            header.addView(badge)
-            header.addView(count)
-            header.addView(timestamp)
-
-            val content = TextView(context).apply {
-                typeface = Typeface.MONOSPACE
-                textSize = 12f
-                setTextIsSelectable(true)
-                setPadding(0, (6 * density).toInt(), 0, 0)
-            }
-
-            container.addView(header)
-            container.addView(content)
-            container.tag = CardViews(count, badge, timestamp, content)
-            return VH(container)
-        }
-
-        val tv = TextView(parent.context).apply {
-            setPadding(16, 8, 16, 8)
-            typeface = Typeface.MONOSPACE
-        }
-        return VH(tv)
-    }
-
-    private fun resolveColor(attribute: Int): Int {
-        val ta = context.theme.obtainStyledAttributes(intArrayOf(attribute))
-        return try {
-            ta.getColor(
-                0,
-                ContextCompat.getColor(context, R.color.sol_magenta)
-            )
-        } finally {
-            ta.recycle()
-        }
-    }
-
-    private data class CardViews(
-        val count: TextView,
-        val badge: TextView,
-        val timestamp: TextView,
-        val content: TextView
-    )
-
-    fun testTextView(context: Context): TextView {
-        return TextView(context).apply {
-            typeface = Typeface.MONOSPACE
-            setPadding(0, 0, 0, 0)
-        }
-    }
-
-    override fun getItemCount(): Int = items.size
-
-    fun dataLogFormat(
-        data: ByteArray,
-        length: Int = data.size
-    ): String {
-        return LogEntry.dataLogFormat(data, length, charsPerLine)
-    }
-
-    override fun onBindViewHolder(holder: VH, position: Int) {
-        if (items.size <= position) {
-            android.util.Log.w("LogView", "Failed to display $position/${items.size}")
-            return
-        }
-
-        val item = items[position]
-        val view = holder.tv
-        val viewType = getItemViewType(position)
-
-        if (viewType == 1) {
-            view.layoutParams = view.layoutParams.apply {
-                height = (24 * context.resources.displayMetrics.density).toInt()
-            }
-            view.setBackgroundColor(resolveColor(android.R.attr.colorBackground))
-            return
-        }
-
-        var displayText = item.text
-
-        if (item.type != LogEntryType.NONE) {
-            var data: ByteArray? = item.serial
-            if (data == null || data.isEmpty()) {
-                data = item.data
-            }
-
-            if (data.isNotEmpty()) {
-                displayText = dataLogFormat(data, data.size)
-            }
-        }
-
-        val timestamp = if (prefs.getBoolean("log_timestamp", false)) {
-            SimpleDateFormat("HH:mm:ss.SSS", Locale.getDefault()).format(Date(item.ts))
-        } else {
-            ""
-        }
-
-        if (viewType == 2 && view is LinearLayout) {
-            val cardViews = view.tag as CardViews
-            val isReceived = item.type == LogEntryType.RECV
-            val accentColor = ContextCompat.getColor(
-                context,
-                if (isReceived) R.color.sol_green else R.color.sol_blue
-            )
-            cardViews.count.text = if (item.count > 1) "${item.count}" else ""
-            cardViews.count.isVisible = item.count > 1 && prefs.getBoolean(LogRepository.PREF_LOG_GROUP, LogRepository.PREF_LOG_GROUP_DEFAULT)
-
-            cardViews.count.setTextColor(
-                resolveColor(android.R.attr.textColorSecondary)
-            )
-            cardViews.badge.text = if (isReceived) getString(R.string.log_main_data_received) else getString(R.string.log_main_data_sent)
-            if ( item.type == LogEntryType.SENT && item.pendingSignal != null ) {
-                val signalText = getString(R.string.sim_ecu_log_signal, getName(context, item.pendingSignal!!.first), item.pendingSignal!!.second, item.pendingSignal!!.first.unit)
-                cardViews.badge.text = "${cardViews.badge.text}\n${signalText}"
-            }
-            cardViews.badge.setTextColor(accentColor)
-            cardViews.badge.background = null
-            cardViews.timestamp.text = timestamp
-            cardViews.timestamp.isVisible = timestamp.isNotEmpty()
-            cardViews.content.text = displayText
-
-            val textColor = when (item.level) {
-                LogLevel.INFO -> resolveColor(android.R.attr.textColorPrimary)
-                LogLevel.ERROR -> ContextCompat.getColor(context, R.color.sol_red)
-                LogLevel.WARNING -> ContextCompat.getColor(context, R.color.sol_orange)
-                LogLevel.NONE -> ContextCompat.getColor(context, R.color.sol_magenta)
-                LogLevel.DEBUG -> ColorUtils.setAlphaComponent(
-                    resolveColor(android.R.attr.textColorPrimary),
-                    160
-                )
-            }
-
-            cardViews.content.setTextColor(textColor)
-
-            view.background = GradientDrawable().apply {
-                cornerRadius = 10 * context.resources.displayMetrics.density
-                setColor(resolveColor(android.R.attr.colorBackground))
-                setStroke(
-                    (context.resources.displayMetrics.density).toInt().coerceAtLeast(1),
-                    accentColor
-                )
-            }
-            return
-        }
-
-        if (item.count > 1) {
-            displayText = "×${item.count} $displayText"
-        }
-
-        if (view !is TextView) {
-            return
-        }
-
-        view.text = if (timestamp.isNotEmpty()) {
-            "$timestamp: $displayText"
-        } else {
-            displayText
-        }
-
-        val colorInt = when (item.level) {
-            LogLevel.INFO -> resolveColor(android.R.attr.textColorPrimary)
-            LogLevel.ERROR -> ContextCompat.getColor(context, R.color.sol_red)
-            LogLevel.WARNING -> ContextCompat.getColor(context, R.color.sol_orange)
-            LogLevel.NONE -> ContextCompat.getColor(context, R.color.sol_magenta)
-            LogLevel.DEBUG -> ColorUtils.setAlphaComponent(
-                resolveColor(android.R.attr.textColorPrimary),
-                128
-            )
-        }
-
-        view.setTextColor(colorInt)
-    }
-
-    fun append(entry: LogEntry) {
-        items.add(entry)
-        notifyItemInserted(items.size - 1)
-    }
-
-    fun remove(entry: LogEntry) {
-        val i = items.indexOf(entry)
-        if (i < 0) {
-            return
-        }
-        items.remove(entry)
-        notifyItemRemoved(i)
-    }
-
-    fun clear() {
-        items.clear()
-        notifyDataSetChanged()
-    }
-}
 
 class LogView(
     private val activity: MainActivity
@@ -369,14 +38,15 @@ class LogView(
 
     companion object {
         val OVERLAY_BUTTONS_ANIM_MS: Long = 1000
+        private const val SEARCH_DEBOUNCE_MS = 180L
+        private const val SEARCH_UPDATE_DEBOUNCE_MS = 80L
     }
 
     val prefs by lazy {
         context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
     }
 
-    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-    private val mainScope = CoroutineScope(Dispatchers.Main)
+    private val mainScope = CoroutineScope(Dispatchers.Main.immediate + SupervisorJob())
 
     var onSearchChanged: ((search: String) -> Unit)? = null
     var onWidthChanged: (() -> Unit)? = null
@@ -387,6 +57,12 @@ class LogView(
     private var logTopBarExpanded = false
     private val uiHandler = Handler(Looper.getMainLooper())
     private lateinit var overlayButtons: View
+    private lateinit var searchInput: EditText
+    private lateinit var previousMatchButton: Button
+    private lateinit var nextMatchButton: Button
+    private var searchText = ""
+    private var searchJob: Job? = null
+    private var searchGeneration = 0L
 
     private val hideOverlayRunnable = Runnable {
         overlayButtons.animate()
@@ -400,6 +76,8 @@ class LogView(
     }
 
     var modelText = ""
+    var stickToBottom = true
+    var userTouching = false
 
     val saveLogLauncher =
         activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -413,10 +91,6 @@ class LogView(
             }
         }
 
-    var stickToBottom = true
-    var userTouching = false
-    private lateinit var searchInput: EditText
-
     init {
         LayoutInflater.from(context).inflate(R.layout.log, this, true)
         setupLogsView()
@@ -424,7 +98,6 @@ class LogView(
 
     private fun showOverlayButtons() {
         uiHandler.removeCallbacks(hideOverlayRunnable)
-
         if (!overlayButtons.isVisible) {
             overlayButtons.apply {
                 alpha = 0f
@@ -432,13 +105,11 @@ class LogView(
                 isVisible = true
             }
         }
-
         overlayButtons.animate()
             .alpha(1f)
             .translationY(0f)
             .setDuration(150)
             .start()
-
         uiHandler.postDelayed(hideOverlayRunnable, OVERLAY_BUTTONS_ANIM_MS)
     }
 
@@ -448,11 +119,82 @@ class LogView(
             val sampleCharWidth = tv.paint.measureText("M")
             val availableWidthPx = rv.width.toFloat()
             if (availableWidthPx <= 0) return@post
-
-            logAdapter.charsPerLine =
+            val charsPerLine =
                 (availableWidthPx / sampleCharWidth).toInt().coerceAtLeast(20)
+            if (charsPerLine != logAdapter.charsPerLine) {
+                logAdapter.charsPerLine = charsPerLine
+                onWidthChanged?.invoke()
+            }
+        }
+    }
 
-            onWidthChanged?.invoke()
+    private fun createMatchButton(label: String, description: String): Button {
+        val density = resources.displayMetrics.density
+        return Button(context).apply {
+            text = label
+            textSize = 20f
+            isAllCaps = false
+            setMinWidth(0)
+            setMinimumWidth(0)
+            setMinHeight(0)
+            setMinimumHeight(0)
+            contentDescription = description
+            gravity = Gravity.CENTER
+            setPadding(0, 0, 0, 0)
+            layoutParams = LinearLayout.LayoutParams(
+                (40 * density).toInt(),
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+        }
+    }
+
+    private fun addMatchNavigationButtons() {
+        val parent = searchInput.parent as? ViewGroup ?: return
+        val index = parent.indexOfChild(searchInput)
+        if (index < 0) return
+        val originalLayoutParams = searchInput.layoutParams
+        val inputHeight = originalLayoutParams.height
+        val originalId = searchInput.id
+        parent.removeView(searchInput)
+        val container = LinearLayout(context).apply {
+            id = originalId
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = originalLayoutParams
+        }
+        searchInput.id = View.generateViewId()
+        parent.addView(container, index)
+        container.addView(
+            searchInput,
+            LinearLayout.LayoutParams(0, inputHeight, 1f)
+        )
+        previousMatchButton = createMatchButton("‹", "Previous match")
+        nextMatchButton = createMatchButton("›", "Next match")
+        container.addView(previousMatchButton)
+        container.addView(nextMatchButton)
+        previousMatchButton.setOnClickListener {
+            navigateToMatch(-1)
+        }
+        nextMatchButton.setOnClickListener {
+            navigateToMatch(1)
+        }
+    }
+
+    private fun updateMatchNavigationState() {
+        val enabled = logAdapter.matchCount() > 0
+        previousMatchButton.isEnabled = enabled
+        nextMatchButton.isEnabled = enabled
+        val count = logAdapter.matchCount()
+        val current = logAdapter.currentMatchNumber()
+        previousMatchButton.contentDescription = if (count > 0) {
+            "Previous match, $current of $count"
+        } else {
+            "Previous match"
+        }
+        nextMatchButton.contentDescription = if (count > 0) {
+            "Next match, $current of $count"
+        } else {
+            "Next match"
         }
     }
 
@@ -461,7 +203,6 @@ class LogView(
         logTopBar.isVisible = false
 
         val rv = findViewById<RecyclerView>(R.id.rvLogs)
-
         rv.viewTreeObserver.addOnGlobalLayoutListener {
             updateLayoutMetrics(rv)
         }
@@ -473,6 +214,7 @@ class LogView(
 
         btnSearch = findViewById(R.id.log_search)
         searchInput = btnSearch
+        addMatchNavigationButtons()
 
         btnSearch.doAfterTextChanged {
             onSearchChanged?.invoke(btnSearch.text.toString())
@@ -516,13 +258,92 @@ class LogView(
             stickToBottom = true
             scrollToBottom(rv)
         }
+
+        updateMatchNavigationState()
+    }
+
+    fun search(text: String) {
+        scheduleSearch(text, SEARCH_DEBOUNCE_MS)
+    }
+
+    fun refreshSearch() {
+        if (searchText.isBlank() || searchJob?.isActive == true) return
+        scheduleSearch(
+            searchText,
+            SEARCH_UPDATE_DEBOUNCE_MS,
+            scrollToMatch = false
+        )
+    }
+
+    fun cancelSearch() {
+        searchGeneration++
+        searchJob?.cancel()
+        searchJob = null
+        logAdapter.clearSearch()
+        updateMatchNavigationState()
+    }
+
+    private fun scheduleSearch(
+        text: String,
+        debounceMs: Long,
+        scrollToMatch: Boolean = true
+    ) {
+        searchText = text
+        searchGeneration++
+        val generation = searchGeneration
+        searchJob?.cancel()
+        searchJob = null
+
+        if (text.isBlank()) {
+            logAdapter.clearSearch()
+            updateMatchNavigationState()
+            return
+        }
+
+        searchJob = mainScope.launch {
+            if (debounceMs > 0) delay(debounceMs)
+            val rv = findViewById<RecyclerView>(R.id.rvLogs)
+            val anchorPosition = (rv.layoutManager as? LinearLayoutManager)
+                ?.findFirstVisibleItemPosition()
+                ?.coerceAtLeast(0) ?: 0
+            val request = logAdapter.createSearchRequest(text, anchorPosition)
+            val result = logAdapter.executeSearch(request)
+            if (!isActive || generation != searchGeneration) return@launch
+
+            val applied = logAdapter.applySearchResult(result)
+            if (!applied.accepted) {
+                scheduleSearch(searchText, SEARCH_UPDATE_DEBOUNCE_MS)
+                return@launch
+            }
+
+            updateMatchNavigationState()
+            if (scrollToMatch && applied.position != null) {
+                stickToBottom = false
+                rv.scrollToPosition(applied.position)
+            }
+
+            if (applied.hasAppendedEntries) {
+                scheduleSearch(
+                    searchText,
+                    SEARCH_UPDATE_DEBOUNCE_MS,
+                    scrollToMatch = false
+                )
+            }
+        }
+    }
+
+    private fun navigateToMatch(direction: Int) {
+        val position = logAdapter.moveMatch(direction)
+        updateMatchNavigationState()
+        if (position != null) {
+            stickToBottom = false
+            findViewById<RecyclerView>(R.id.rvLogs).scrollToPosition(position)
+        }
     }
 
     fun toggleTopBar() {
-        previousSearchState = null
         logTopBarExpanded = !logTopBarExpanded
         logTopBar.isVisible = logTopBarExpanded
-
         if (logTopBarExpanded) {
             onSearchChanged?.invoke(btnSearch.text.toString())
         } else {
@@ -585,25 +406,14 @@ class LogView(
             type = "text/plain"
             putExtra(Intent.EXTRA_TITLE, filename)
         }
-
         saveLogLauncher.launch(intent)
     }
 
-    var previousSearchState: Boolean? = null
-
     fun refresh(result: AppendResult? = null, entries: List<LogEntry>? = null) {
-        val searchIsBlank =
-            !logTopBarExpanded || btnSearch.text.toString().isBlank()
-
         mainScope.launch {
-            if (previousSearchState != searchIsBlank) {
-                if (entries != null) {
-                    logAdapter.replace(entries)
-                }
-                if (stickToBottom && searchIsBlank) {
-                    scrollToBottomSafe()
-                }
-            } else if (result != null && searchIsBlank) {
+            if (entries != null) {
+                logAdapter.replace(entries)
+            } else if (result != null) {
                 if (result.deleted != null) {
                     logAdapter.remove(result.deleted)
                 }
@@ -615,16 +425,13 @@ class LogView(
                 } else {
                     logAdapter.notifyChanged(result.entry)
                 }
-            } else {
-                if (entries != null) {
-                    logAdapter.replace(entries)
-                }
-                if (stickToBottom && searchIsBlank) {
-                    scrollToBottomSafe()
-                }
+            }
+            updateMatchNavigationState()
+            if (searchText.isNotBlank()) {
+                refreshSearch()
+            } else if (stickToBottom && !userTouching) {
+                scrollToBottomSafe()
             }
         }
-
-        previousSearchState = searchIsBlank
     }
 }

@@ -1,12 +1,10 @@
-
 package com.github.autodiag2.elm327emu.log
 
 import android.content.Context
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import com.github.autodiag2.elm327emu.R
 import com.github.autodiag2.elm327emu.SimSignal
-import android.util.Log
+
 
 enum class LogLevel(val value: Int) {
     NONE(0),
@@ -21,6 +19,7 @@ val LogLevel_DEFAULT = LogLevel.INFO
 enum class LogEntryType {
     RECV, SENT, NONE, SEPARATOR
 }
+
 data class LogEntry(
     val id: Long,
     val text: String,
@@ -40,25 +39,13 @@ data class LogEntry(
             charsPerLine: Int = 10
         ): String {
             val sb = StringBuilder()
-    
-            // fixed layout parts
             val indent = 1
-            val hexByteWidth = 3      // "FF "
-            val asciiSeparator = 2    // "  "
-    
-            // reserve space for ASCII area (~1 char per byte)
+            val asciiSeparator = 2
             val usable = charsPerLine - indent - asciiSeparator
-    
-            // each byte takes ~4 chars in total (hex + space)
             val bytesPerLine = (usable / 4).coerceIn(4, 64)
-    
             for (i in 0 until length step bytesPerLine) {
-    
                 sb.append(" ")
-    
                 val lineEnd = minOf(i + bytesPerLine, length)
-    
-                // HEX PART
                 for (j in i until i + bytesPerLine) {
                     if (j < lineEnd) {
                         sb.append(String.format("%02X ", data[j]))
@@ -66,18 +53,20 @@ data class LogEntry(
                         sb.append("   ")
                     }
                 }
-    
                 sb.append("  ")
-    
-                // ASCII PART
                 formatDataToString(sb, data, length, i, lineEnd)
-    
                 sb.append("\n")
             }
-    
             return sb.toString()
         }
-        fun formatDataToString(sb: StringBuilder, data: ByteArray, length: Int = data.size, start_i: Int = 0, lineEnd: Int = length) {
+
+        fun formatDataToString(
+            sb: StringBuilder,
+            data: ByteArray,
+            length: Int = data.size,
+            start_i: Int = 0,
+            lineEnd: Int = length
+        ) {
             for (j in start_i until lineEnd) {
                 val b = data[j].toInt() and 0xFF
                 val c = if (b in 32..126) b.toChar() else '.'
@@ -87,66 +76,7 @@ data class LogEntry(
     }
 }
 
-private fun parseHexString(text: String): ByteArray? {
-    val hex = text.filter {
-        !it.isWhitespace() && it != ':' && it != '-'
-    }
-
-    if (hex.length % 2 != 0) return null
-    if (!hex.all { it.isDigit() || it.uppercaseChar() in 'A'..'F' }) return null
-
-    return ByteArray(hex.length / 2) { i ->
-        hex.substring(i * 2, i * 2 + 2).toInt(16).toByte()
-    }
-}
-
-private fun containsSubArray(data: ByteArray, pattern: ByteArray): Boolean {
-    if (pattern.isEmpty()) return true
-    if (pattern.size > data.size) return false
-
-    outer@ for (i in 0 .. data.size - pattern.size) {
-        for (j in pattern.indices) {
-            if (data[i + j] != pattern[j]) {
-                continue@outer
-            }
-        }
-        return true
-    }
-
-    return false
-}
-
-fun search_match(entry: LogEntry, search: String, context: Context): Boolean {
-    var text = entry.text
-    if (text.contains(search, ignoreCase = true)) {
-        return true
-    }
-    if ( entry.type == LogEntryType.SENT || entry.type == LogEntryType.RECV ) {
-        val sb = StringBuilder()
-        LogEntry.formatDataToString(sb, entry.serial)
-        text = sb.toString()
-        if (text.contains(search, ignoreCase = true)) {
-            return true
-        }
-        text = context.getString(
-            if (entry.type == LogEntryType.RECV)
-                R.string.log_main_data_received
-            else
-                R.string.log_main_data_sent,
-            LogEntry.dataLogFormat(entry.serial)
-        )
-        if ( text.contains(search, ignoreCase = true) ) {
-            return true
-        }
-    
-        val pattern = parseHexString(search) ?: return false
-    
-        return containsSubArray(entry.data, pattern)
-    }
-    return false
-}
 class LogRepository(private val context: Context) {
-
     public val buffer = ArrayList<LogEntry>()
     private val mutex = Mutex()
     private var counter = 0L
@@ -155,72 +85,6 @@ class LogRepository(private val context: Context) {
     companion object {
         const val PREF_LOG_GROUP = "log_exchange_dup_search"
         const val PREF_LOG_GROUP_DEFAULT = false
-    }
-    suspend fun search(text: String): List<LogEntry> {
-        return mutex.withLock {
-
-            if (text.isBlank()) {
-                return@withLock buffer.filter { it.type != LogEntryType.SEPARATOR }
-            }
-
-            val result = ArrayList<LogEntry>()
-            val added = HashSet<Long>()
-
-            val showSz = 2
-
-            for (i in buffer.indices) {
-
-                if (!search_match(buffer[i], text, context))
-                    continue
-
-                val first = maxOf(0, i - showSz)
-                val last = minOf(buffer.lastIndex, i + showSz)
-
-                if (result.isNotEmpty() &&
-                    first > 0 &&
-                    result.last().type != LogEntryType.SEPARATOR
-                ) {
-                    val previousMatchInWindow =
-                        (first until i).any { search_match(buffer[it], text, context) }
-    
-                    if (!previousMatchInWindow) {
-                        result += LogEntry(
-                            id = -1,
-                            text = "",
-                            level = LogLevel.INFO,
-                            data = ByteArray(0),
-                            serial = ByteArray(0),
-                            type = LogEntryType.SEPARATOR
-                        )
-                    }
-                }
-
-                for (j in first..last) {
-                    if (added.add(buffer[j].id)) {
-                        buffer[j].match = (i == j)
-                        result += buffer[j]
-                    }
-                }
-
-                if ( i < buffer.size - 1 ) {
-                    val nextMatchInWindow =
-                        (i + 1..last).any { search_match(buffer[it], text, context) }
-    
-                    if (!nextMatchInWindow) {
-                        result += LogEntry(
-                            id = -2,
-                            text = "",
-                            level = LogLevel.INFO,
-                            data = ByteArray(0),
-                            serial = ByteArray(0),
-                            type = LogEntryType.SEPARATOR
-                        )
-                    }
-                }
-            }
-
-            return result
-        }
     }
 
     data class AppendResult(
@@ -242,7 +106,6 @@ class LogRepository(private val context: Context) {
     ): AppendResult? {
         val currentLevel = prefs.getInt("log_level", LogLevel_DEFAULT.ordinal)
         if (currentLevel < level.ordinal) return null
-        
         return mutex.withLock {
             var entry: LogEntry? = null
             var deleted: LogEntry? = null
@@ -251,55 +114,50 @@ class LogRepository(private val context: Context) {
                 type == LogEntryType.SENT &&
                 buffer.size >= 3
             ) {
-
                 var exchanges = 0
                 var currentRecv: LogEntry? = null
                 var currentRecvIdx = -1
                 for (i in buffer.size - 1 downTo 1) {
-                    if ( buffer[i].type == LogEntryType.RECV ) {
+                    if (buffer[i].type == LogEntryType.RECV) {
                         currentRecv = buffer[i]
                         currentRecvIdx = i
                         break
                     }
                 }
-                if ( currentRecv != null ) {
-
+                if (currentRecv != null) {
                     for (i in currentRecvIdx - 1 downTo 0) {
-
                         if (buffer[i].type != LogEntryType.RECV) {
                             continue
                         }
                         var sent_idx = -1
-                        for (idx in (i+1) until currentRecvIdx) {
-                            if ( buffer[idx].type == LogEntryType.SENT ) {
+                        for (idx in (i + 1) until currentRecvIdx) {
+                            if (buffer[idx].type == LogEntryType.SENT) {
                                 sent_idx = idx
                                 break
-                            } else if ( buffer[idx].type == LogEntryType.RECV ) {
+                            } else if (buffer[idx].type == LogEntryType.RECV) {
                                 break
                             }
                         }
-                        if ( sent_idx == -1 ) {
+                        if (sent_idx == -1) {
                             continue
                         }
-
                         exchanges++
                         if (exchanges > prefs.getInt("log_exchange_dup_search_depth", 10)) {
                             break
                         }
-
                         val previousRecv = buffer[i]
                         val previousSent = buffer[sent_idx]
-
-                        if ( ( text != "" && previousSent.text != "" &&
-                            previousRecv.text != "" && currentRecv.text != "" &&
-                            previousRecv.text == currentRecv.text &&
-                            previousSent.text == text ) || previousSent.serial.contentEquals(serial?.copyOf(serial_size) ?: ByteArray(0))
+                        if ((text != "" && previousSent.text != "" &&
+                                previousRecv.text != "" && currentRecv.text != "" &&
+                                previousRecv.text == currentRecv.text &&
+                                previousSent.text == text) ||
+                            previousSent.serial.contentEquals(serial?.copyOf(serial_size) ?: ByteArray(0))
                         ) {
                             deleted = buffer.removeAt(currentRecvIdx)
                             previousRecv.count++
                             modified = previousRecv
                             entry = previousSent
-                            if ( pendingSignal != null ) {
+                            if (pendingSignal != null) {
                                 entry.pendingSignal = pendingSignal
                             }
                             break
@@ -307,9 +165,7 @@ class LogRepository(private val context: Context) {
                     }
                 }
             }
-
             val inserted = entry == null
-
             if (entry == null) {
                 entry = LogEntry(
                     id = counter++,
@@ -322,9 +178,7 @@ class LogRepository(private val context: Context) {
                 )
                 buffer.add(entry)
             }
-
             entry.count++
-
             AppendResult(entry, inserted, deleted, modified)
         }
     }
@@ -332,6 +186,12 @@ class LogRepository(private val context: Context) {
     suspend fun clear() {
         mutex.withLock {
             buffer.clear()
+        }
+    }
+
+    suspend fun snapshot(): List<LogEntry> {
+        return mutex.withLock {
+            buffer.toList()
         }
     }
 
@@ -349,28 +209,22 @@ class LogRepository(private val context: Context) {
 
     private fun decodeHexAscii(data: ByteArray, length: Int): ByteArray? {
         val out = ArrayList<Byte>()
-
         var hi = -1
-
         fun hex(c: Int): Int = when (c) {
             in '0'.code..'9'.code -> c - '0'.code
             in 'A'.code..'F'.code -> c - 'A'.code + 10
             in 'a'.code..'f'.code -> c - 'a'.code + 10
             else -> -1
         }
-
         for (i in 0 until length) {
             val b = data[i].toInt() and 0xff
-
             when (b) {
                 '\r'.code, '\n'.code, ' '.code, '>'.code -> continue
             }
-
             val v = hex(b)
             if (v < 0) {
                 return null
             }
-
             if (hi < 0) {
                 hi = v
             } else {
@@ -378,11 +232,9 @@ class LogRepository(private val context: Context) {
                 hi = -1
             }
         }
-
         if (hi >= 0) {
             return null
         }
-
         return out.toByteArray()
     }
 
@@ -392,9 +244,7 @@ class LogRepository(private val context: Context) {
         length: Int = data.size,
         pendingSignal: Pair<SimSignal, Double>? = null
     ): AppendResult? {
-        val binary = decodeHexAscii(data, length)
-            ?: ByteArray(0)
-        
+        val binary = decodeHexAscii(data, length) ?: ByteArray(0)
         return append(
             "",
             LogLevel.INFO,
@@ -406,5 +256,4 @@ class LogRepository(private val context: Context) {
             pendingSignal
         )
     }
-
 }
