@@ -203,7 +203,6 @@ class LogAdapter(
 
     override fun getItemViewType(position: Int): Int =
         when (items[position].type) {
-            LogEntryType.SEPARATOR -> 1
             LogEntryType.RECV, LogEntryType.SENT -> 2
             else -> 0
         }
@@ -689,7 +688,6 @@ class LogAdapter(
                 val sourceItems = request.items ?: emptyList()
                 for ((position, item) in sourceItems.withIndex()) {
                     if (position % 64 == 0) currentCoroutineContext().ensureActive()
-                    if (item.type == LogEntryType.SEPARATOR) continue
                     val cachedEntry = if (item.id in dirtyIds) null else request.cacheSnapshot[item.id]
                     val entry = cachedEntry ?: buildSearchableEntry(
                         searchInput(item, position),

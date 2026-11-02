@@ -17,7 +17,7 @@ enum class LogLevel(val value: Int) {
 val LogLevel_DEFAULT = LogLevel.INFO
 
 enum class LogEntryType {
-    RECV, SENT, NONE, SEPARATOR
+    RECV, SENT, NONE
 }
 
 data class LogEntry(

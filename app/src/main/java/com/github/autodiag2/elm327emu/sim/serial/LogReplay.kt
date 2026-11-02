@@ -238,7 +238,6 @@ class LogReplayController(
                                 }
                             }
 
-                            LogEntryType.SEPARATOR,
                             LogEntryType.NONE -> {
                             }
                         }
