@@ -93,6 +93,14 @@
             app:useSimpleSummaryProvider="true"
             android:entryValues="@array/tpms_profile_values" />
 
+        <ListPreference
+            android:key="com_ble_tpms_tesla_position"
+            android:title="@string/settings_tpms_tesla_position"
+            android:entries="@array/tpms_wheel_positions"
+            android:entryValues="@array/tpms_wheel_position_values"
+            app:useSimpleSummaryProvider="true"
+            android:defaultValue="FL" />
+
         <Preference
             android:key="settings_tpms_sensor_configure"
             android:title="@string/settings_tpms_sensor_configure" />
