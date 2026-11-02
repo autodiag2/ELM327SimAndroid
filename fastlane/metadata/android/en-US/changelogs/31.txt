@@ -1,0 +1,10 @@
+- add a time line view to the replay log feature
+- fix issues in custom script editing
+- add script editing blocks: connected disconnected logger
+- add a side panel logger in script edit
+- allow to fold/unfold containers
+- run emu as foreground service (allow to run even if app killed)
+- add a bluetooth receiver to get notified when user enable bluetooth
+- fix initial startup bugs
+- add support for TPMS emulation (TPMS Libre supported with sensors BLE clear text eg Treel)
+- improve log ui
