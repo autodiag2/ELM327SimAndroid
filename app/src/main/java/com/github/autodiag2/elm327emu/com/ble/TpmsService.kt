@@ -166,6 +166,7 @@ class TpmsService(
                 try {
                     val reading = nextReading(definition)
                     val encoder = selectedEncoders.getValue(definition.position)
+                    logDebug("Advertising TPMS sensor ${definition.position} with encoder ${encoder.id}: $reading")
                     onAdvertisingDataChanged(
                         TpmsSensorAdvertisement(
                             definition.position,

@@ -713,7 +713,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
             }
         }
 
-        profile.setOnPreferenceChangeListener { _, _ ->
+        profile.setOnPreferenceChangeListener { _, newValue ->
+            prefs.edit()
+                .putString(TpmsManufacturerEncoders.PREF_TYPE, newValue as String)
+                .apply()
             restartBleBridge()
             true
         }
