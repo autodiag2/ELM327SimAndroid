@@ -47,6 +47,7 @@ class BLEBridge(
     private lateinit var gattServer: BluetoothGattServer
     private lateinit var advertiser: BluetoothLeAdvertiser
     private val negotiatedMtu = mutableMapOf<String, Int>()
+    private val tpmsIndicationsEnabled = mutableSetOf<String>()
     private var gattReady = false
     private var pendingGattServiceUuid: UUID? = null
     private var gattServiceAddResult: Boolean? = null
@@ -105,6 +106,29 @@ class BLEBridge(
         value: Double
     ) {
         tpmsService.updateTmpsSensor(signalPath, value)
+    }
+
+    @Suppress("DEPRECATION")
+    private fun notifyIndicationCompat(
+        device: BluetoothDevice,
+        characteristic: BluetoothGattCharacteristic,
+        value: ByteArray
+    ): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            gattServer.notifyCharacteristicChanged(
+                device,
+                characteristic,
+                true,
+                value
+            ) == BluetoothStatusCodes.SUCCESS
+        } else {
+            characteristic.value = value
+            gattServer.notifyCharacteristicChanged(
+                device,
+                characteristic,
+                true
+            )
+        }
     }
 
     private fun sendTx(device: BluetoothDevice?, input: Any): Boolean {
@@ -252,6 +276,13 @@ class BLEBridge(
             if (descriptor.uuid == elm327Service.cccdUuid) {
                 elm327Service.onDescriptorWriteRequest(device, requestId, descriptor, preparedWrite, responseNeeded, offset, value)
             }
+            if (descriptor.uuid == TeslaTpmsEncoder.CCCD_UUID) {
+                if (value.size >= 2 && (value[0].toInt() and 0x02) != 0) {
+                    tpmsIndicationsEnabled.add(device.address)
+                } else {
+                    tpmsIndicationsEnabled.remove(device.address)
+                }
+            }
         }
 
         override fun onConnectionStateChange(
@@ -287,6 +318,7 @@ class BLEBridge(
                 BluetoothProfile.STATE_DISCONNECTED  -> {
                     negotiatedMtu.remove(addr)
                     elm327Service.txNotificationsEnabled.remove(addr)
+                    tpmsIndicationsEnabled.remove(addr)
                     appendLog(getString(R.string.log_ble_disconnected, addr, status, statusString), LogLevel.INFO)
                     listener?.onClientDisconnect("${addr}", this@BLEBridge)
                 }
@@ -318,6 +350,25 @@ class BLEBridge(
             value: ByteArray
         ) {
             logDebug("onCharacteristicWriteRequest")
+            val tpmsResponse = tpmsService.handleGattWrite(characteristic.uuid, value)
+            if (tpmsResponse != null) {
+                if (responseNeeded) {
+                    gattServer.sendResponse(
+                        device,
+                        requestId,
+                        BluetoothGatt.GATT_SUCCESS,
+                        0,
+                        null
+                    )
+                }
+                val indication = tpmsService.getIndicationCharacteristic(characteristic.uuid)
+                if (indication != null && device.address in tpmsIndicationsEnabled) {
+                    indication.value = tpmsResponse
+                    notifyIndicationCompat(device, indication, tpmsResponse)
+                }
+                appendLog("Tesla TPMS data requested (${value.size} bytes)", LogLevel.DEBUG)
+                return
+            }
             if (characteristic.uuid != elm327Service.ELM_RX_UUID) {
                 if (responseNeeded) {
                     gattServer.sendResponse(
@@ -474,7 +525,7 @@ class BLEBridge(
     suspend fun onAdvertisingDataChanged(tpmsSensor: TpmsSensorAdvertisement?) {
         logDebug("advertising data changed")
         val elmEnabled = isElmEnabled()
-        val settings = elm327Service.getSettings()
+        val settings = if (tpmsService.connectable) tpmsService.getSettings() else elm327Service.getSettings()
         val tpmsSettings = tpmsService.getSettings()
         if ( service.btAdapter.isMultipleAdvertisementSupported ) {
             advertiser.stopAdvertising(elm327Service.advertiseCallback)
@@ -596,6 +647,7 @@ class BLEBridge(
         notificationJob = null
         gattReady = false
         negotiatedMtu.clear()
+        tpmsIndicationsEnabled.clear()
         logDebug("BLE bridge stop end")
     }
 
