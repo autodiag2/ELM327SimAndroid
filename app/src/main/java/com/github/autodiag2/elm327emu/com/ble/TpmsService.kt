@@ -17,6 +17,7 @@ import com.github.autodiag2.elm327emu.com.tpms.TpmsManufacturerEncoder
 import com.github.autodiag2.elm327emu.com.tpms.TpmsManufacturerEncoders
 import com.github.autodiag2.elm327emu.com.tpms.TpmsReading
 import com.github.autodiag2.elm327emu.com.tpms.TpmsSensorConfiguration
+import com.github.autodiag2.elm327emu.com.tpms.TeslaTpmsEncoder
 import com.github.autodiag2.elm327emu.log.LogLevel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope

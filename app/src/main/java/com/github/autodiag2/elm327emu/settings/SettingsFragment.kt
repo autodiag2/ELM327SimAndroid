@@ -50,6 +50,7 @@ import android.view.Gravity
 import androidx.core.app.ActivityCompat
 import android.os.Handler
 import android.os.Looper
+import com.github.autodiag2.elm327emu.com.tpms.TeslaTpmsEncoder
 
 private const val PREFS = "app_prefs"
 

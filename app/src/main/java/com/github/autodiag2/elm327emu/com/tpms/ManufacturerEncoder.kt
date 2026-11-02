@@ -372,9 +372,9 @@ object TpmsGattProfile {
         ).apply { value = byteArrayOf(initialReading.pressurePsi.toByte()) }
         service.addCharacteristic(temperatureCharacteristic)
         service.addCharacteristic(pressureCharacteristic)
-        return TpmsGattProfileInstance(service) { reading ->
+        return TpmsGattProfileInstance(service, updater = { reading ->
             temperatureCharacteristic.value = byteArrayOf(reading.temperatureC.toByte())
             pressureCharacteristic.value = byteArrayOf(reading.pressurePsi.toByte())
-        }
+        })
     }
 }
