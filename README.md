@@ -49,7 +49,8 @@ See [this](/doc/DEV.md)
 
 ## Credits
  - [Godot-Advanced-Vehicle](https://github.com/Dechode/Godot-Advanced-Vehicle) for the car sim view
- - Tmps emulation: 
+ - Tmps sim: 
     - https://github.com/pankajsammal/jktyre_treel_esp32_oled
     - https://github.com/andi38/TPMS
     - https://github.com/ra6070/BLE-TPMS
+    - https://github.com/anufryieu/tesla-tpms-ble
