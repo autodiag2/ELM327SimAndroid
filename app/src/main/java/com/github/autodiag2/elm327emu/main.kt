@@ -121,7 +121,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var settingsContainer: FrameLayout
     lateinit var statsView: StatsView
     private lateinit var simListView: SimList
-    private var activeScreen: View? = null
     private val godotGui: GuiGodot? by lazy(LazyThreadSafetyMode.NONE) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             GuiGodot(this)
@@ -131,6 +130,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     val screenStack = ArrayDeque<View?>()
+    var activeScreen: View? = null
     var pendingExportConfig: SimSummary? = null
     val prefs by lazy { getSharedPreferences("app_prefs", Context.MODE_PRIVATE) }
 

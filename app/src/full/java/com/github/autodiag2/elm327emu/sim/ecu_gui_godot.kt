@@ -8,8 +8,10 @@ import android.widget.FrameLayout
 import androidx.fragment.app.FragmentContainerView
 import com.github.autodiag2.elm327emu.MainActivity
 import com.github.autodiag2.elm327emu.sim.ecu.EcuGui
+import com.github.autodiag2.elm327emu.sim.ecu.EcuGuiView
 import com.github.autodiag2.elm327emu.R
 import org.godotengine.godot.GodotFragment
+import android.util.Log
 
 class GuiGodot(
     private val activity: MainActivity
@@ -106,8 +108,8 @@ class GuiGodot(
         value: Double
     ) {
         activity.screenStack.lastOrNull()?.let { screen ->
-            (screen as? EcuGui)?.let { ecuGui ->
-                ecuGui.setSignalValue(
+            (screen as? EcuGuiView)?.let { ecuGui ->
+                ecuGui.onSignalValueChanged(
                     signalPath,
                     value
                 )

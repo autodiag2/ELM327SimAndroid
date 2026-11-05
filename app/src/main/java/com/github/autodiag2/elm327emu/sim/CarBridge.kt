@@ -2,6 +2,7 @@ package com.github.autodiag2.elm327emu.sim
 
 import java.util.Enumeration
 import java.util.concurrent.ConcurrentHashMap
+import android.util.Log
 
 object CarBridge {
     private val signals = ConcurrentHashMap<String, Double>()

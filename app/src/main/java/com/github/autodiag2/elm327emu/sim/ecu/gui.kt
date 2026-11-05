@@ -55,7 +55,7 @@ class EcuGuiView(context: Context, allSignals:  Array<SimSignal>): EcuView(conte
     public val milState: CheckBox
     private val displayedSignals: MutableList<String> = mutableListOf()
     public lateinit var onSignalAdd: ((signal: SimSignal) -> Unit)
-    public lateinit var onSignalValueChanged: ((signal: SimSignal, value: Double) -> Unit)
+    public lateinit var onSignalValueChanged: ((signal: Any, value: Double) -> Unit)
     public lateinit var onDtcAddByCode: ((code: String) -> Unit)
     public lateinit var onSignalRemoved: ((signal: SimSignal) -> Unit)
     public lateinit var get_Address: (() -> EcuAddress)
@@ -292,8 +292,14 @@ class EcuGui(
     fun onSignalRemoved(signal: SimSignal) {
         signals.remove(signal.path)
     }
-    fun onSignalValueChanged(signal: SimSignal, value: Double) {
-        setSignalValue(signal.path, value)
+    fun onSignalValueChanged(signal: Any, value: Double) {
+        if ( signal is SimSignal ) {
+            setSignalValue(signal.path, value)
+        } else if ( signal is String ) {
+            setSignalValue(signal, value)
+        } else {
+            Log.e("EcuGui", "onSignalValueChanged: signal is not SimSignal or String")
+        }
     }
 
     fun onSignalAdd(signal: SimSignal) {
