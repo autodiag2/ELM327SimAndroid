@@ -107,7 +107,7 @@ android {
     defaultConfig {
         applicationId "com.github.autodiag2.elm327emu"
         minSdk 22
-        targetSdk 35
+        targetSdk 36
         versionCode 31
         versionName "31"
 
@@ -151,6 +151,16 @@ android {
         }
     }
 
+}
+
+androidComponents {
+    beforeVariants(selector().all()) { variant ->
+        if (variant.productFlavors.any {
+            it.first == "edition" && it.second == "full"
+        }) {
+            variant.minSdk = 24
+        }
+    }
 }
 
 dependencies {
