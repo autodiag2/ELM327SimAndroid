@@ -3,6 +3,9 @@ package com.github.autodiag2.elm327emu.com
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.net.TetheringManager
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
@@ -168,15 +171,137 @@ public class LocalHotspotManager(
             }
             return true
         }
-        fun findHotspotIp(preferCommonIp: Boolean = false): HotspotIpResult {
+        private fun findPublicHotspotIp(context: Context, preferCommonIp: Boolean): HotspotIpResult? {
             try {
+                if (Build.VERSION.SDK_INT >= 36) {
+                    findTetheredWifiAp(context, preferCommonIp)?.let { return it }
+                }
+
+                if (Build.VERSION.SDK_INT >= 35) {
+                    val connectivityManager =
+                        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+                    val candidates = connectivityManager.allNetworks.mapNotNull { network ->
+                        val capabilities = connectivityManager.getNetworkCapabilities(network)
+                            ?: return@mapNotNull null
+
+                        if (!capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                            !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_LOCAL_NETWORK)
+                        ) {
+                            return@mapNotNull null
+                        }
+
+                        val properties = connectivityManager.getLinkProperties(network)
+                            ?: return@mapNotNull null
+                        val interfaceName = properties.interfaceName ?: return@mapNotNull null
+                        val addresses = properties.linkAddresses.mapNotNull { linkAddress ->
+                            (linkAddress.address as? Inet4Address)?.takeIf {
+                                !it.isLoopbackAddress && !it.isLinkLocalAddress
+                            }?.hostAddress
+                        }.distinct()
+
+                        if (addresses.isEmpty()) null else interfaceName to addresses
+                    }
+
+                    if (candidates.size == 1) {
+                        val (interfaceName, addresses) = candidates.first()
+                        val commonIps = listOf(
+                            "192.168.0.10",
+                            "192.168.0.123",
+                            "192.168.1.10",
+                            "192.168.1.123"
+                        )
+                        val ip = if (preferCommonIp) {
+                            commonIps.firstOrNull { it in addresses } ?: addresses.first()
+                        } else {
+                            addresses.first()
+                        }
+                        return HotspotIpResult.Success(interfaceName, ip)
+                    }
+
+                    if (candidates.size > 1) {
+                        return HotspotIpResult.MultipleApInterfaces(candidates.map { it.first })
+                    }
+                }
+            } catch (_: Throwable) {
+            }
+
+            return null
+        }
+
+        @RequiresApi(36)
+        private fun findTetheredWifiAp(
+            context: Context,
+            preferCommonIp: Boolean
+        ): HotspotIpResult? {
+            val manager = context.getSystemService(TetheringManager::class.java) ?: return null
+            var interfaces = emptyList<String>()
+            val callback = object : TetheringManager.TetheringEventCallback {
+                override fun onTetheredInterfacesChanged(
+                    tetheredInterfaces: MutableSet<android.net.TetheringInterface>
+                ) {
+                    interfaces = tetheredInterfaces
+                        .filter { it.type == TetheringManager.TETHERING_WIFI }
+                        .map { it.getInterface() }
+                }
+            }
+
+            return try {
+                manager.registerTetheringEventCallback(java.util.concurrent.Executor { it.run() }, callback)
+                manager.unregisterTetheringEventCallback(callback)
+
+                val candidates = interfaces.mapNotNull { interfaceName ->
+                    val addresses = NetworkInterface.getByName(interfaceName)
+                        ?.inetAddresses
+                        ?.toList()
+                        ?.filterIsInstance<Inet4Address>()
+                        ?.filter { !it.isLoopbackAddress && !it.isLinkLocalAddress }
+                        ?.mapNotNull { it.hostAddress }
+                        ?.distinct()
+                        ?: emptyList()
+
+                    if (addresses.isEmpty()) null else interfaceName to addresses
+                }
+
+                if (candidates.size == 1) {
+                    val (interfaceName, addresses) = candidates.first()
+                    val commonIps = listOf(
+                        "192.168.0.10",
+                        "192.168.0.123",
+                        "192.168.1.10",
+                        "192.168.1.123"
+                    )
+                    val ip = if (preferCommonIp) {
+                        commonIps.firstOrNull { it in addresses } ?: addresses.first()
+                    } else {
+                        addresses.first()
+                    }
+                    HotspotIpResult.Success(interfaceName, ip)
+                } else if (candidates.size > 1) {
+                    HotspotIpResult.MultipleApInterfaces(candidates.map { it.first })
+                } else {
+                    null
+                }
+            } catch (_: Throwable) {
+                try {
+                    manager.unregisterTetheringEventCallback(callback)
+                } catch (_: Throwable) {
+                }
+                null
+            }
+        }
+
+        fun findHotspotIp(
+            preferCommonIp: Boolean = false,
+            context: Context? = null
+        ): HotspotIpResult {
+            try {
+                context?.let { appContext ->
+                    findPublicHotspotIp(appContext.applicationContext, preferCommonIp)?.let { return it }
+                }
+
                 when (getRootStatus()) {
-                    RootStatus.NoRootInstalled ->
-                        return HotspotIpResult.NoRootInstalled
-
-                    RootStatus.PermissionDenied ->
-                        return HotspotIpResult.RootPermissionDenied
-
+                    RootStatus.NoRootInstalled -> return HotspotIpResult.NoRootInstalled
+                    RootStatus.PermissionDenied -> return HotspotIpResult.RootPermissionDenied
                     RootStatus.Granted -> {}
                 }
 
@@ -187,74 +312,40 @@ public class LocalHotspotManager(
                 ).redirectErrorStream(true).start()
 
                 val interfaces = ifaceProcess.inputStream.bufferedReader().useLines { lines ->
-                    lines.map(String::trim)
-                        .filter(String::isNotEmpty)
-                        .distinct()
-                        .toList()
+                    lines.map(String::trim).filter(String::isNotEmpty).distinct().toList()
                 }
-
                 ifaceProcess.waitFor()
 
                 when {
-                    interfaces.isEmpty() ->
-                        return HotspotIpResult.NoApInterface
-
-                    interfaces.size > 1 ->
-                        return HotspotIpResult.MultipleApInterfaces(interfaces)
+                    interfaces.isEmpty() -> return HotspotIpResult.NoApInterface
+                    interfaces.size > 1 -> return HotspotIpResult.MultipleApInterfaces(interfaces)
                 }
 
                 val iface = interfaces.first()
-
-                if (preferCommonIp) {
-                    val commonIps = listOf(
-                        "192.168.0.10",
-                        "192.168.0.123",
-                        "192.168.1.10",
-                        "192.168.1.123"
-                    )
-
-                    val addrProcess = ProcessBuilder(
-                        "su",
-                        "-c",
-                        "ip -4 -o addr show dev $iface"
-                    ).redirectErrorStream(true).start()
-
-                    val addresses = Regex("""inet\s+(\d+\.\d+\.\d+\.\d+)""")
-                        .findAll(addrProcess.inputStream.bufferedReader().use { it.readText() })
-                        .map { it.groupValues[1] }
-                        .toSet()
-
-                    addrProcess.waitFor()
-
-                    commonIps.firstOrNull { it in addresses }?.let {
-                        return HotspotIpResult.Success(
-                            interfaceName = iface,
-                            ip = it
-                        )
-                    }
-                }
-
                 val ipProcess = ProcessBuilder(
                     "su",
                     "-c",
                     "ip -4 -o addr show dev $iface"
                 ).redirectErrorStream(true).start()
-
                 val output = ipProcess.inputStream.bufferedReader().use { it.readText() }
-
                 ipProcess.waitFor()
-
-                val ip = Regex("""inet\s+(\d+\.\d+\.\d+\.\d+)""")
-                    .find(output)
-                    ?.groupValues
-                    ?.get(1)
-                    ?: return HotspotIpResult.NoApInterface
-
-                return HotspotIpResult.Success(
-                    interfaceName = iface,
-                    ip = ip
+                val addresses = Regex("""inet\s+(\d+\.\d+\.\d+\.\d+)""")
+                    .findAll(output)
+                    .map { it.groupValues[1] }
+                    .toSet()
+                val commonIps = listOf(
+                    "192.168.0.10",
+                    "192.168.0.123",
+                    "192.168.1.10",
+                    "192.168.1.123"
                 )
+                val ip = if (preferCommonIp) {
+                    commonIps.firstOrNull { it in addresses } ?: addresses.firstOrNull()
+                } else {
+                    addresses.firstOrNull()
+                } ?: return HotspotIpResult.NoApInterface
 
+                return HotspotIpResult.Success(iface, ip)
             } catch (e: Throwable) {
                 return HotspotIpResult.Exception(e)
             }
