@@ -380,8 +380,8 @@
     <string name="settings_wifi_hotspot_not_started">WLAN-Hotspot nicht gestartet</string>
     <string name="settings_wifi_hotspot_qrcode">WLAN-QR-Code</string>
     <string name="settings_wifi_hotspot_gatewayIp">%1$s</string>
-    <string name="settings_wifi_hotspot_gatewayIpBtn">IP-Adresse des ELM327-Emulators per Root ermitteln</string>
-    <string name="settings_wifi_hotspot_gatewayIp_error">IP-Adresse des ELM327-Emulators konnte per Root nicht ermittelt werden: %1$s</string>
+    <string name="settings_wifi_hotspot_gatewayIpBtn">IP-Adresse des ELM327-Emulators ermitteln</string>
+    <string name="settings_wifi_hotspot_gatewayIp_error">IP-Adresse des ELM327-Emulators konnte nicht ermittelt werden: %1$s</string>
     <string name="settings_wifi_hotspot_gatewayIp_error_no_ap_interface">Keine WLAN-AP-Schnittstelle gefunden (stellen Sie sicher, dass der Hotspot zuerst gestartet wurde)</string>
     <string name="settings_wifi_hotspot_gatewayIp_error_multiple_ap_interfaces">Mehrere WLAN-AP-Schnittstellen gefunden: %1$s</string>
     <string name="settings_wifi_hotspot_gatewayIp_error_no_root">Kein Root installiert</string>
