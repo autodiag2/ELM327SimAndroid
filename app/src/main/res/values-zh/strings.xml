@@ -380,8 +380,8 @@
     <string name="settings_wifi_hotspot_not_started">Wi-Fi 热点未启动</string>
     <string name="settings_wifi_hotspot_qrcode">Wi-Fi 二维码</string>
     <string name="settings_wifi_hotspot_gatewayIp">%1$s</string>
-    <string name="settings_wifi_hotspot_gatewayIpBtn">使用 root 获取 ELM327 模拟器 IP</string>
-    <string name="settings_wifi_hotspot_gatewayIp_error">使用 root 获取 ELM327 模拟器 IP 失败：%1$s</string>
+    <string name="settings_wifi_hotspot_gatewayIpBtn">检测 ELM327 模拟器 IP 地址</string>
+    <string name="settings_wifi_hotspot_gatewayIp_error">无法检测 ELM327 模拟器 IP 地址：%1$s</string>
     <string name="settings_wifi_hotspot_gatewayIp_error_no_ap_interface">未找到 Wi-Fi AP 接口（请确保先启动热点）</string>
     <string name="settings_wifi_hotspot_gatewayIp_error_multiple_ap_interfaces">找到多个 Wi-Fi AP 接口：%1$s</string>
     <string name="settings_wifi_hotspot_gatewayIp_error_no_root">未安装 root</string>
