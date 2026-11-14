@@ -380,8 +380,8 @@
     <string name="settings_wifi_hotspot_not_started">Wi-Fi ホットスポットは開始されていません</string>
     <string name="settings_wifi_hotspot_qrcode">Wi-Fi QR コード</string>
     <string name="settings_wifi_hotspot_gatewayIp">%1$s</string>
-    <string name="settings_wifi_hotspot_gatewayIpBtn">root を使用して ELM327 エミュレーターの IP を取得</string>
-    <string name="settings_wifi_hotspot_gatewayIp_error">root を使用した ELM327 エミュレーター IP の取得に失敗しました: %1$s</string>
+    <string name="settings_wifi_hotspot_gatewayIpBtn">ELM327 エミュレーターの IP を検出</string>
+    <string name="settings_wifi_hotspot_gatewayIp_error">ELM327 エミュレーターの IP を検出できませんでした: %1$s</string>
     <string name="settings_wifi_hotspot_gatewayIp_error_no_ap_interface">Wi-Fi AP インターフェースが見つかりません（最初にホットスポットを開始してください）</string>
     <string name="settings_wifi_hotspot_gatewayIp_error_multiple_ap_interfaces">複数の Wi-Fi AP インターフェースが見つかりました: %1$s</string>
     <string name="settings_wifi_hotspot_gatewayIp_error_no_root">root がインストールされていません</string>
