@@ -380,8 +380,8 @@
     <string name="settings_wifi_hotspot_not_started">Punto de acceso Wi-Fi no iniciado</string>
     <string name="settings_wifi_hotspot_qrcode">Código QR de Wi-Fi</string>
     <string name="settings_wifi_hotspot_gatewayIp">%1$s</string>
-    <string name="settings_wifi_hotspot_gatewayIpBtn">Obtener la IP del emulador ELM327 mediante root</string>
-    <string name="settings_wifi_hotspot_gatewayIp_error">No se ha podido obtener la IP del emulador ELM327 mediante root: %1$s</string>
+    <string name="settings_wifi_hotspot_gatewayIpBtn">Detectar la IP del emulador ELM327</string>
+    <string name="settings_wifi_hotspot_gatewayIp_error">No se pudo detectar la IP del emulador ELM327: %1$s</string>
     <string name="settings_wifi_hotspot_gatewayIp_error_no_ap_interface">No se ha encontrado ninguna interfaz Wi-Fi AP (asegúrese de iniciar primero el punto de acceso)</string>
     <string name="settings_wifi_hotspot_gatewayIp_error_multiple_ap_interfaces">Se han encontrado varias interfaces Wi-Fi AP: %1$s</string>
     <string name="settings_wifi_hotspot_gatewayIp_error_no_root">No hay root instalado</string>
