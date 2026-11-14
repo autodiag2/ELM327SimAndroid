@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.net.TetheringManager
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
@@ -173,10 +172,6 @@ public class LocalHotspotManager(
         }
         private fun findPublicHotspotIp(context: Context, preferCommonIp: Boolean): HotspotIpResult? {
             try {
-                if (Build.VERSION.SDK_INT >= 36) {
-                    findTetheredWifiAp(context, preferCommonIp)?.let { return it }
-                }
-
                 if (Build.VERSION.SDK_INT >= 35) {
                     val connectivityManager =
                         context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -226,68 +221,6 @@ public class LocalHotspotManager(
             }
 
             return null
-        }
-
-        @RequiresApi(36)
-        private fun findTetheredWifiAp(
-            context: Context,
-            preferCommonIp: Boolean
-        ): HotspotIpResult? {
-            val manager = context.getSystemService(TetheringManager::class.java) ?: return null
-            var interfaces = emptyList<String>()
-            val callback = object : TetheringManager.TetheringEventCallback {
-                override fun onTetheredInterfacesChanged(
-                    tetheredInterfaces: MutableSet<android.net.TetheringInterface>
-                ) {
-                    interfaces = tetheredInterfaces
-                        .filter { it.type == TetheringManager.TETHERING_WIFI }
-                        .map { it.getInterface() }
-                }
-            }
-
-            return try {
-                manager.registerTetheringEventCallback(java.util.concurrent.Executor { it.run() }, callback)
-                manager.unregisterTetheringEventCallback(callback)
-
-                val candidates = interfaces.mapNotNull { interfaceName ->
-                    val addresses = NetworkInterface.getByName(interfaceName)
-                        ?.inetAddresses
-                        ?.toList()
-                        ?.filterIsInstance<Inet4Address>()
-                        ?.filter { !it.isLoopbackAddress && !it.isLinkLocalAddress }
-                        ?.mapNotNull { it.hostAddress }
-                        ?.distinct()
-                        ?: emptyList()
-
-                    if (addresses.isEmpty()) null else interfaceName to addresses
-                }
-
-                if (candidates.size == 1) {
-                    val (interfaceName, addresses) = candidates.first()
-                    val commonIps = listOf(
-                        "192.168.0.10",
-                        "192.168.0.123",
-                        "192.168.1.10",
-                        "192.168.1.123"
-                    )
-                    val ip = if (preferCommonIp) {
-                        commonIps.firstOrNull { it in addresses } ?: addresses.first()
-                    } else {
-                        addresses.first()
-                    }
-                    HotspotIpResult.Success(interfaceName, ip)
-                } else if (candidates.size > 1) {
-                    HotspotIpResult.MultipleApInterfaces(candidates.map { it.first })
-                } else {
-                    null
-                }
-            } catch (_: Throwable) {
-                try {
-                    manager.unregisterTetheringEventCallback(callback)
-                } catch (_: Throwable) {
-                }
-                null
-            }
         }
 
         fun findHotspotIp(
