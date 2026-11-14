@@ -926,8 +926,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
 
         ip_addr.setOnPreferenceClickListener {
+            val context = requireContext().applicationContext
             activityMain.lifecycleScope.launch(Dispatchers.IO) {
-                val result = LocalHotspotManager.findHotspotIp(true, requireContext())
+                val result = LocalHotspotManager.findHotspotIp(true, context)
 
                 withContext(Dispatchers.Main) {
                     ip_addr.summary = when (result) {
