@@ -73,7 +73,16 @@
     <string-array name="tpms_profile">
         <item>JK Tyre Treel</item>
         <item>ZEEPIN / TP630</item>
-        <item>BR TPMS (0x27A5)</item>
+        <item>BR / SYTPMS / Pecham / Bekubee KY</item>
+        <item>TPMSII Type A</item>
+        <item>Michelin TMS Type C</item>
+        <item>WODHMIEY / ITPMS K Type D</item>
+        <item>Salutica FOBO Type E</item>
+        <item>Bekubee HRTPMS Type F</item>
+        <item>Ai TPMS AI-8000 Type G</item>
+        <item>TC.TPMS Type H</item>
+        <item>Sysgration</item>
+        <item>Bekubee TPMS (HRTPMS app)</item>
         <item>Tesla / Autel BLE</item>
     </string-array>
 
@@ -81,6 +90,15 @@
         <item>jk_tyre_treel</item>
         <item>zeepin_tp630</item>
         <item>br_tpms</item>
+        <item>tpms_ble_a</item>
+        <item>tpms_ble_c</item>
+        <item>tpms_ble_d</item>
+        <item>tpms_ble_e</item>
+        <item>tpms_ble_f</item>
+        <item>tpms_ble_g</item>
+        <item>tpms_ble_h</item>
+        <item>sysgration</item>
+        <item>bekubee_tpms</item>
         <item>tesla_ble</item>
     </string-array>
 
