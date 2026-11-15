@@ -90,7 +90,7 @@ class TpmsBleTypeCEncoder : TpmsManufacturerEncoder {
         payload[0] = 0x01
         payload[1] = 0x03
         payload[2] = (TpmsBleEncoding.celsius(reading) + 60.0).roundToInt().toByte()
-        payload[3] = 190
+        payload[3] = 190.toByte()
         val rawPressure = ((TpmsBleEncoding.pressureBar(reading) + 1.0) * 1000.0)
             .roundToInt()
             .coerceIn(0, 65535)
@@ -234,7 +234,7 @@ class SysgrationEncoder : TpmsManufacturerEncoder {
 
     override fun encode(reading: TpmsReading, sensorId: ByteArray): TpmsSensorFrame {
         val payload = ByteArray(16)
-        payload[0] = 0x80
+        payload[0] = 0x80.toByte()
         payload[1] = 0xea.toByte()
         payload[2] = 0xca.toByte()
         System.arraycopy(sensorId.reversedArray(), 0, payload, 3, sensorId.size.coerceAtMost(3))
