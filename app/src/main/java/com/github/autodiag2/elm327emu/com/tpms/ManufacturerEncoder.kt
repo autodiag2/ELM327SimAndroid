@@ -89,6 +89,15 @@ object TpmsManufacturerEncoders {
         register(JkTyreTreelEncoder())
         register(ZeepinTp630Encoder())
         register(BrTpmsEncoder())
+        register(TpmsBleTypeAEncoder())
+        register(TpmsBleTypeCEncoder())
+        register(TpmsBleTypeDEncoder())
+        register(TpmsBleTypeEEncoder())
+        register(TpmsBleTypeFEncoder())
+        register(TpmsBleTypeGEncoder())
+        register(TpmsBleTypeHEncoder())
+        register(SysgrationEncoder())
+        register(BekubeeTpmsEncoder())
         register(TeslaTpmsEncoder())
     }
 
@@ -194,7 +203,7 @@ class ZeepinTp630Encoder : TpmsManufacturerEncoder {
 
 class BrTpmsEncoder : TpmsManufacturerEncoder {
     override val id = "br_tpms"
-    override val displayName = "BR TPMS (0x27A5)"
+    override val displayName = "BR / SYTPMS / Pecham / Bekubee KY (0x27A5)"
 
     override fun encode(reading: TpmsReading, sensorId: ByteArray): TpmsSensorFrame {
         val pressureAbsoluteTenthsPsi = (((reading.pressureCentiPsi ?: reading.pressurePsi * 100) / 100.0) + ATMOSPHERIC_PSI)
@@ -214,6 +223,10 @@ class BrTpmsEncoder : TpmsManufacturerEncoder {
             TpmsAdvertisingData.Composite(
                 listOf(
                     TpmsAdvertisingData.ServiceUuid(SERVICE_UUID),
+                    TpmsAdvertisingData.ServiceData(
+                        TpmsBleProtocolIds.TYPE_B_SENSOR_ID,
+                        sensorId.copyOf()
+                    ),
                     TpmsAdvertisingData.ManufacturerData(manufacturerId, payload)
                 ),
                 payload

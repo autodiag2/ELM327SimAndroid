@@ -49,8 +49,12 @@ See [this](/doc/DEV.md)
 
 ## Credits
  - [Godot-Advanced-Vehicle](https://github.com/Dechode/Godot-Advanced-Vehicle) for the car sim view
- - TPMS sim: 
+ - TPMS simulators:
     - https://github.com/pankajsammal/jktyre_treel_esp32_oled
     - https://github.com/andi38/TPMS
     - https://github.com/ra6070/BLE-TPMS
     - https://github.com/anufryieu/tesla-tpms-ble
+    - https://github.com/bkbilly/tpms_ble
+    - https://github.com/VincentMasselis/TPMS-advanced
+
+The BLE TPMS simulator can advertise Treel, ZEEPIN, BR/SYTPMS, TPMSII, Michelin, WODHMIEY/ITPMS, FOBO, Bekubee HRTPMS, AI TPMS, TC.TPMS and Sysgration payloads. Configure the protocol and the five wheel sensor IDs in Settings → TPMS. Protocols without an identity field use a small additional service-data field so all simulated wheels remain separately identifiable.
